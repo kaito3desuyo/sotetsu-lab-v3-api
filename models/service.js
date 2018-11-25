@@ -22,6 +22,7 @@ module.exports = (sequelize, DataTypes) => {
     service.hasMany(models.calender, {
       foreignKey: 'service_id'
     })
+    service.hasMany(models.trip_class, { foreignKey: 'service_id' })
   }
   return service
 }

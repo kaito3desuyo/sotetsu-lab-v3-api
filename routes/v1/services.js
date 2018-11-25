@@ -16,6 +16,10 @@ router.get('/', (req, res, next) => {
         {
           model: db.calender,
           required: true
+        },
+        {
+          model: db.trip_class,
+          required: false
         }
       ],
       order: [

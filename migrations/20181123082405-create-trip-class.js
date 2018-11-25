@@ -15,6 +15,9 @@ module.exports = {
       trip_class_color: {
         type: Sequelize.STRING
       },
+      sequence: {
+        type: Sequelize.SMALLINT
+      },
       created_at: {
         allowNull: false,
         type: Sequelize.DATE

@@ -9,7 +9,8 @@ module.exports = (sequelize, DataTypes) => {
       },
       service_id: DataTypes.UUID,
       trip_class_name: DataTypes.STRING,
-      trip_class_color: DataTypes.STRING
+      trip_class_color: DataTypes.STRING,
+      sequence: DataTypes.SMALLINT
     },
     {
       underscored: true

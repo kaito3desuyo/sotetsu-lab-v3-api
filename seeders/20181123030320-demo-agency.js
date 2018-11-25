@@ -789,6 +789,54 @@ module.exports = {
       })
       return queryInterface.bulkInsert('route_systems', routeSystems, {})
     })
+
+    await queryInterface.bulkInsert('trip_classes', [
+      {
+        id: uuidv4(),
+        service_id: serviceId,
+        trip_class_name: '特急',
+        trip_class_color: '#ff8000',
+        sequence: 1,
+        created_at: '2018-11-23 12:00:00',
+        updated_at: '2018-11-23 12:00:00'
+      },
+      {
+        id: uuidv4(),
+        service_id: serviceId,
+        trip_class_name: '急行',
+        trip_class_color: '#ff0000',
+        sequence: 2,
+        created_at: '2018-11-23 12:00:00',
+        updated_at: '2018-11-23 12:00:00'
+      },
+      {
+        id: uuidv4(),
+        service_id: serviceId,
+        trip_class_name: '快速',
+        trip_class_color: '#000080',
+        sequence: 3,
+        created_at: '2018-11-23 12:00:00',
+        updated_at: '2018-11-23 12:00:00'
+      },
+      {
+        id: uuidv4(),
+        service_id: serviceId,
+        trip_class_name: '各停',
+        trip_class_color: '#000000',
+        sequence: 4,
+        created_at: '2018-11-23 12:00:00',
+        updated_at: '2018-11-23 12:00:00'
+      },
+      {
+        id: uuidv4(),
+        service_id: serviceId,
+        trip_class_name: '回送',
+        trip_class_color: '#808080',
+        sequence: 5,
+        created_at: '2018-11-23 12:00:00',
+        updated_at: '2018-11-23 12:00:00'
+      }
+    ])
   },
   down: async (queryInterface, Sequelize) => {
     /*
