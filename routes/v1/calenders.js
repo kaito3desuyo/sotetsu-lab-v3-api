@@ -43,4 +43,26 @@ router.get('/', (req, res, next) => {
     })
 })
 
+router.get('/:id', (req, res, next) => {
+  db.calender
+    .findOne({
+      include: [
+        {
+          model: db.operation,
+          required: false
+        }
+      ],
+      where: {
+        id: req.params.id
+      },
+      order: [[db.calender.associations.operations, 'operation_number', 'ASC']]
+    })
+    .then(result => {
+      res.json(result)
+    })
+    .catch(err => {
+      res.json(err)
+    })
+})
+
 module.exports = router

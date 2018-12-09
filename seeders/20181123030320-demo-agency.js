@@ -581,152 +581,117 @@ module.exports = {
       {}
     )
 
+    const operationArray = [
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      68,
+      69
+    ]
+
     const calenderDetail = [
       {
         name: '平日ダイヤ',
         startDate: '2009-11-01',
         endDate: '2012-04-28',
-        operation: []
+        operation: operationArray
       },
       {
         name: '土休日ダイヤ',
         startDate: '2009-11-01',
         endDate: '2012-04-28',
-        operation: []
+        operation: operationArray
       },
       {
         name: '平日ダイヤ',
         startDate: '2012-04-29',
         endDate: '2014-04-26',
-        operation: []
+        operation: operationArray
       },
       {
         name: '土休日ダイヤ',
         startDate: '2012-04-29',
         endDate: '2014-04-26',
-        operation: []
+        operation: operationArray
       },
       {
         name: '平日ダイヤ',
         startDate: '2014-04-27',
         endDate: '2015-05-30',
-        operation: []
+        operation: operationArray
       },
       {
         name: '土休日ダイヤ',
         startDate: '2014-04-27',
         endDate: '2015-05-30',
-        operation: []
+        operation: operationArray
       },
       {
         name: '平日ダイヤ',
         startDate: '2015-05-31',
         endDate: '2017-03-17',
-        operation: []
+        operation: operationArray
       },
       {
         name: '土休日ダイヤ',
         startDate: '2015-05-31',
         endDate: '2017-03-17',
-        operation: []
+        operation: operationArray
       },
       {
         name: '平日ダイヤ',
         startDate: '2017-03-18',
         endDate: '2018-12-07',
-        operation: [
-          11,
-          12,
-          13,
-          14,
-          15,
-          16,
-          17,
-          18,
-          19,
-          41,
-          42,
-          43,
-          44,
-          45,
-          46,
-          47,
-          48,
-          49,
-          51,
-          52,
-          53,
-          54,
-          55,
-          56,
-          57,
-          58,
-          59,
-          61,
-          62,
-          63,
-          64,
-          65,
-          66,
-          67,
-          68,
-          69
-        ]
+        operation: operationArray
       },
       {
         name: '土休日ダイヤ',
         startDate: '2017-03-18',
         endDate: '2018-12-07',
-        operation: [
-          11,
-          12,
-          13,
-          14,
-          15,
-          16,
-          17,
-          18,
-          19,
-          41,
-          42,
-          43,
-          44,
-          45,
-          46,
-          47,
-          48,
-          49,
-          51,
-          52,
-          53,
-          54,
-          55,
-          56,
-          57,
-          58,
-          59,
-          61,
-          62,
-          63,
-          64,
-          65,
-          66,
-          67,
-          68,
-          69
-        ]
+        operation: operationArray
       },
       {
         name: '平日ダイヤ',
         startDate: '2018-12-08',
         endDate: null,
-        operation: []
+        operation: operationArray
       },
       {
         name: '土休日ダイヤ',
         startDate: '2018-12-08',
         endDate: null,
-        operation: []
+        operation: operationArray
       }
     ]
 

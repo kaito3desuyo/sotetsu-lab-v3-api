@@ -24,6 +24,8 @@ module.exports = (sequelize, DataTypes) => {
   trip.associate = function(models) {
     // associations can be defined here
     trip.hasMany(models.time, { foreignKey: 'trip_id' })
+    trip.belongsTo(models.operation, { foreignKey: 'operation_id' })
+    trip.belongsTo(models.calender, { foreignKey: 'calender_id' })
   }
   return trip
 }
