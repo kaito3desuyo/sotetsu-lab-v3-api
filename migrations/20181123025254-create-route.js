@@ -22,7 +22,7 @@ module.exports = {
         type: Sequelize.TEXT
       },
       route_type: {
-        type: Sequelize.TINYINT
+        type: Sequelize.SMALLINT
       },
       route_url: {
         type: Sequelize.STRING

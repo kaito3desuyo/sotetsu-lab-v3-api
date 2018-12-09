@@ -19,7 +19,7 @@ module.exports = {
         type: Sequelize.STRING
       },
       agency_type: {
-        type: Sequelize.TINYINT
+        type: Sequelize.SMALLINT
       },
       agency_url: {
         type: Sequelize.STRING
