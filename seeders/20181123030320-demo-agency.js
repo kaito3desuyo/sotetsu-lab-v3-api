@@ -1,4 +1,5 @@
 const uuidv4 = require('uuid/v4')
+const _ = require('lodash')
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
@@ -802,6 +803,204 @@ module.exports = {
         updated_at: '2018-11-23 12:00:00'
       }
     ])
+
+    const formationDetails = [
+      {
+        forNum: 7707,
+        vehicles: [
+          { vehNum: 7707 },
+          { vehNum: 7131 },
+          { vehNum: 7132 },
+          { vehNum: 7513 },
+          { vehNum: 7605 },
+          { vehNum: 7123 },
+          { vehNum: 7124 },
+          { vehNum: 7508 }
+        ]
+      },
+      {
+        forNum: 7710,
+        vehicles: [
+          { vehNum: 7710 },
+          { vehNum: 7125 },
+          { vehNum: 7126 },
+          { vehNum: 7505 },
+          { vehNum: 7602 },
+          { vehNum: 7107 },
+          { vehNum: 7108 },
+          { vehNum: 7509 }
+        ]
+      },
+      {
+        forNum: 7712,
+        vehicles: [
+          { vehNum: 7712 },
+          { vehNum: 7129 },
+          { vehNum: 7130 },
+          { vehNum: 7607 },
+          { vehNum: 7703 },
+          { vehNum: 7127 },
+          { vehNum: 7128 },
+          { vehNum: 7511 }
+        ]
+      },
+      {
+        forNum: 7713,
+        vehicles: [
+          { vehNum: 7713 },
+          { vehNum: 7149 },
+          { vehNum: 7150 },
+          { vehNum: 7151 },
+          { vehNum: 7152 },
+          { vehNum: 7514 },
+          { vehNum: 7714 },
+          { vehNum: 7153 },
+          { vehNum: 7154 },
+          { vehNum: 7515 }
+        ]
+      },
+      {
+        forNum: 7715,
+        vehicles: [
+          { vehNum: 7715 },
+          { vehNum: 7155 },
+          { vehNum: 7158 },
+          { vehNum: 7516 },
+          { vehNum: 7716 },
+          { vehNum: 7159 },
+          { vehNum: 7160 },
+          { vehNum: 7517 }
+        ]
+      },
+      {
+        forNum: 7751,
+        vehicles: [
+          { vehNum: 7751 },
+          { vehNum: 7351 },
+          { vehNum: 7651 },
+          { vehNum: 7352 },
+          { vehNum: 7551 },
+          { vehNum: 7752 },
+          { vehNum: 7353 },
+          { vehNum: 7652 },
+          { vehNum: 7354 },
+          { vehNum: 7552 }
+        ]
+      },
+      {
+        forNum: 7753,
+        vehicles: [
+          { vehNum: 7753 },
+          { vehNum: 7355 },
+          { vehNum: 7653 },
+          { vehNum: 7356 },
+          { vehNum: 7654 },
+          { vehNum: 7655 },
+          { vehNum: 7357 },
+          { vehNum: 7656 },
+          { vehNum: 7358 },
+          { vehNum: 7553 }
+        ]
+      },
+      {
+        forNum: 7754,
+        vehicles: [
+          { vehNum: 7754 },
+          { vehNum: 7359 },
+          { vehNum: 7657 },
+          { vehNum: 7360 },
+          { vehNum: 7658 },
+          { vehNum: 7659 },
+          { vehNum: 7361 },
+          { vehNum: 7660 },
+          { vehNum: 7362 },
+          { vehNum: 7554 }
+        ]
+      },
+      {
+        forNum: 7755,
+        vehicles: [
+          { vehNum: 7755 },
+          { vehNum: 7363 },
+          { vehNum: 7661 },
+          { vehNum: 7364 },
+          { vehNum: 7662 },
+          { vehNum: 7663 },
+          { vehNum: 7365 },
+          { vehNum: 7664 },
+          { vehNum: 7366 },
+          { vehNum: 7555 }
+        ]
+      }
+    ]
+
+    const formations = []
+    const vehicles = []
+
+    formationDetails.forEach(formation => {
+      const forId = uuidv4()
+      formations.push({
+        id: forId,
+        agency_id: agencyId,
+        vehicle_type: null,
+        formation_number: formation.forNum,
+        start_date: null,
+        end_date: null,
+        created_at: '2018-11-23 12:00:00',
+        updated_at: '2018-11-23 12:00:00'
+      })
+      formation.vehicles.forEach(vehicle => {
+        vehicles.push({
+          id: uuidv4(),
+          formation_id: null,
+          vehicle_number: vehicle.vehNum,
+          belongs: '相模鉄道かしわ台車両センター',
+          production_date: null,
+          scrapped_date: null,
+          created_at: '2018-11-23 12:00:00',
+          updated_at: '2018-11-23 12:00:00'
+        })
+      })
+    })
+
+    await queryInterface.bulkInsert('formations', formations, {})
+    await queryInterface.bulkInsert('vehicles', vehicles, {})
+
+    await Promise.all([
+      sequelize.query('SELECT * FROM formations', {
+        type: sequelize.QueryTypes.SELECT
+      }),
+      sequelize.query('SELECT * FROM vehicles', {
+        type: sequelize.QueryTypes.SELECT
+      })
+    ]).then(result => {
+      console.log(result[0])
+      const returnArray = []
+      formationDetails.forEach(formation => {
+        const forArr = _.find(result[0], [
+          'formation_number',
+          formation.forNum.toString()
+        ])
+
+        formation.vehicles.forEach((vehicle, index) => {
+          const vehArr = _.find(result[1], [
+            'vehicle_number',
+            vehicle.vehNum.toString()
+          ])
+          returnArray.push({
+            id: uuidv4(),
+            formation_id: forArr.id,
+            vehicle_id: vehArr.id,
+            car_number: index + 1,
+            created_at: '2018-11-23 12:00:00',
+            updated_at: '2018-11-23 12:00:00'
+          })
+        })
+      })
+
+      console.log(returnArray)
+      return queryInterface.bulkInsert('vehicle_formations', returnArray, {})
+    })
   },
   down: async (queryInterface, Sequelize) => {
     /*
@@ -819,5 +1018,8 @@ module.exports = {
     await queryInterface.bulkDelete('services', null, {})
     await queryInterface.bulkDelete('calenders', null, {})
     await queryInterface.bulkDelete('route_systems', null, {})
+    await queryInterface.bulkDelete('formations', null, {})
+    await queryInterface.bulkDelete('vehicles', null, {})
+    await queryInterface.bulkDelete('vehicle_formations', null, {})
   }
 }

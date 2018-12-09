@@ -20,6 +20,7 @@ module.exports = (sequelize, DataTypes) => {
   )
   formation.associate = function(models) {
     // associations can be defined here
+    formation.hasMany(models.vehicle_formation, { foreignKey: 'formation_id' })
   }
   return formation
 }

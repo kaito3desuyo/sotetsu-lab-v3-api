@@ -8,6 +8,8 @@ const services = require('./services')
 const stations = require('./stations')
 const calenders = require('./calenders')
 const trips = require('./trips')
+const formations = require('./formations')
+const vehicles = require('./vehicles')
 
 router.use('/agencies', agencies)
 router.use('/routes', routes)
@@ -15,5 +17,7 @@ router.use('/services', services)
 router.use('/stations', stations)
 router.use('/calenders', calenders)
 router.use('/trips', trips)
+router.use('/formations', formations)
+router.use('/vehicles', vehicles)
 
 module.exports = router
