@@ -10,6 +10,7 @@ const calenders = require('./calenders')
 const trips = require('./trips')
 const formations = require('./formations')
 const vehicles = require('./vehicles')
+const operations = require('./operations')
 
 router.use('/agencies', agencies)
 router.use('/routes', routes)
@@ -19,5 +20,6 @@ router.use('/calenders', calenders)
 router.use('/trips', trips)
 router.use('/formations', formations)
 router.use('/vehicles', vehicles)
+router.use('/operations', operations)
 
 module.exports = router

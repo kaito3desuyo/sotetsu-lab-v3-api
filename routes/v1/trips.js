@@ -11,15 +11,15 @@ router.get('/', (req, res, next) => {
       include: [
         {
           model: db.time,
-          required: true
+          required: false
         },
         {
           model: db.operation,
-          required: true
+          required: false
         },
         {
           model: db.calender,
-          required: true
+          required: false
         }
       ]
     })
