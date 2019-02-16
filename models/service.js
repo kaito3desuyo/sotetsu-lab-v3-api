@@ -14,7 +14,7 @@ module.exports = (sequelize, DataTypes) => {
       underscored: true
     }
   )
-  service.associate = function(models) {
+  service.associate = models => {
     // associations can be defined here
     service.belongsToMany(models.route, {
       through: 'route_systems'

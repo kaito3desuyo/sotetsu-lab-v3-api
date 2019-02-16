@@ -16,7 +16,7 @@ module.exports = (sequelize, DataTypes) => {
       underscored: true
     }
   )
-  tripClass.associate = function(models) {
+  tripClass.associate = models => {
     // associations can be defined here
   }
   return tripClass

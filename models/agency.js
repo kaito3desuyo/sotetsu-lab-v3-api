@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
       underscored: true
     }
   )
-  agency.associate = function(models) {
+  agency.associate = models => {
     // associations can be defined here
     agency.hasMany(models.route, { foreignKey: 'agency_id' })
   }

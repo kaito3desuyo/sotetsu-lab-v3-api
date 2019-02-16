@@ -14,10 +14,11 @@ module.exports = (sequelize, DataTypes) => {
       underscored: true
     }
   )
-  operation.associate = function(models) {
+  operation.associate = models => {
     // associations can be defined here
     operation.belongsTo(models.calender, { foreignKey: 'calender_id' })
     operation.hasMany(models.trip, { foreignKey: 'operation_id' })
+    operation.hasMany(models.operation_sighting, { foreignKey: 'operation_id' })
   }
   return operation
 }

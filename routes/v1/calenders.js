@@ -2,7 +2,10 @@ const express = require('express')
 
 const router = express.Router()
 
+const Sequelize = require('sequelize')
 const db = require('../../models')
+
+const Op = Sequelize.Op
 
 /* GET users listing. */
 router.get('/', (req, res, next) => {
@@ -24,7 +27,12 @@ router.get('/', (req, res, next) => {
         },
         {
           model: db.operation,
-          required: false
+          required: false,
+          where: {
+            [Op.not]: {
+              operation_number: '100'
+            }
+          }
         }
       ],
       order: [
@@ -49,7 +57,12 @@ router.get('/:id', (req, res, next) => {
       include: [
         {
           model: db.operation,
-          required: false
+          required: false,
+          where: {
+            [Op.not]: {
+              operation_number: '100'
+            }
+          }
         }
       ],
       where: {

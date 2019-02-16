@@ -21,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
       underscored: true
     }
   )
-  route.associate = function(models) {
+  route.associate = models => {
     // associations can be defined here
     route.belongsTo(models.agency, { foreignKey: 'agency_id' })
     route.belongsToMany(models.service, {

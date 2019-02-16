@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
       underscored: true
     }
   )
-  time.associate = function(models) {
+  time.associate = models => {
     // associations can be defined here
   }
   return time

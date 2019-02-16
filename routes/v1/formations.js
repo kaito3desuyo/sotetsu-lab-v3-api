@@ -18,11 +18,22 @@ router.get('/', (req, res, next) => {
               required: true
             }
           ]
+        },
+        {
+          model: db.operation_sighting,
+          required: false,
+          include: [
+            {
+              model: db.operation,
+              required: true
+            }
+          ]
         }
       ],
       order: [
         ['formation_number', 'ASC'],
-        [db.formation.associations.vehicle_formations, 'car_number', 'ASC']
+        [db.formation.associations.vehicle_formations, 'car_number', 'ASC'],
+        [db.formation.associations.operation_sightings, 'sighting_time', 'DESC']
       ]
     })
     .then(result => {

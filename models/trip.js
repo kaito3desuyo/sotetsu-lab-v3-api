@@ -21,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
       underscored: true
     }
   )
-  trip.associate = function(models) {
+  trip.associate = models => {
     // associations can be defined here
     trip.hasMany(models.time, { foreignKey: 'trip_id' })
     trip.belongsTo(models.operation, { foreignKey: 'operation_id' })

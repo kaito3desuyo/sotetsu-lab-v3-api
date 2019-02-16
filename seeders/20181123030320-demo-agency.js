@@ -618,7 +618,8 @@ module.exports = {
       66,
       67,
       68,
-      69
+      69,
+      100
     ]
 
     const calenderDetail = [
@@ -1021,5 +1022,10 @@ module.exports = {
     await queryInterface.bulkDelete('formations', null, {})
     await queryInterface.bulkDelete('vehicles', null, {})
     await queryInterface.bulkDelete('vehicle_formations', null, {})
+    await queryInterface.bulkDelete('operations', null, {})
+    await queryInterface.bulkDelete('operation_sightings', null, {})
+    await queryInterface.bulkDelete('times', null, {})
+    await queryInterface.bulkDelete('trip_classes', null, {})
+    await queryInterface.bulkDelete('trips', null, {})
   }
 }

@@ -17,7 +17,7 @@ module.exports = (sequelize, DataTypes) => {
       underscored: true
     }
   )
-  stop.associate = function(models) {
+  stop.associate = models => {
     // associations can be defined here
   }
   return stop

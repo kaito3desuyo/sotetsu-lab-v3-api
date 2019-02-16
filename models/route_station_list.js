@@ -16,7 +16,7 @@ module.exports = (sequelize, DataTypes) => {
       underscored: true
     }
   )
-  routeStationList.associate = function(models) {
+  routeStationList.associate = models => {
     // associations can be defined here
     routeStationList.belongsTo(models.route, { foreignKey: 'route_id' })
     routeStationList.belongsTo(models.station, { foreignKey: 'station_id' })

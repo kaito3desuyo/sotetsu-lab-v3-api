@@ -23,7 +23,7 @@ module.exports = (sequelize, DataTypes) => {
       underscored: true
     }
   )
-  calender.associate = function(models) {
+  calender.associate = models => {
     // associations can be defined here
     calender.hasMany(models.operation, { foreignKey: 'calender_id' })
     calender.belongsTo(models.service, { foreignKey: 'service_id' })

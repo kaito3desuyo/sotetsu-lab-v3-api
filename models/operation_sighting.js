@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
       underscored: true
     }
   )
-  operationSighting.associate = function(models) {
+  operationSighting.associate = models => {
     // associations can be defined here
     operationSighting.belongsTo(models.formation, {
       foreignKey: 'formation_id'

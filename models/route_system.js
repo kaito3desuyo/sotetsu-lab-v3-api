@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
       underscored: true
     }
   )
-  routeSystem.associate = function(models) {
+  routeSystem.associate = models => {
     // associations can be defined here
   }
   return routeSystem

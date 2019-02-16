@@ -46,7 +46,20 @@ router.get('/date/:date', (req, res, next) => {
       return new Promise((resolve, reject) => {
         db.operation
           .findAll({
-            include: generateIncludeObject(dayName, req.params.date)
+            include: generateIncludeObject(dayName, req.params.date),
+            where: {
+              [Op.not]: {
+                operation_number: '100'
+              }
+            },
+            order: [
+              ['operation_number', 'ASC'],
+              [
+                db.operation.associations.operation_sightings,
+                'sighting_time',
+                'DESC'
+              ]
+            ]
           })
           .then(result => {
             res.json(result)
@@ -106,6 +119,28 @@ router.get('/sightings', (req, res, next) => {
     })
     .then(result => res.json(result))
 })
+
+router.get('/sightings/formation/:number', (req, res, next) => {
+  db.operation_sighting
+    .findAll({
+      include: [
+        {
+          model: db.formation,
+          required: true,
+          where: {
+            formation_number: req.params.number
+          }
+        },
+        {
+          model: db.operation,
+          required: true
+        }
+      ],
+      order: [['sighting_time', 'DESC']]
+    })
+    .then(result => res.json(result))
+})
+
 router.post('/sightings', (req, res, next) => {
   if (
     !req.body ||
@@ -178,6 +213,16 @@ function generateIncludeObject(dayName, date) {
           }
         }
       }
+    },
+    {
+      model: db.operation_sighting,
+      required: false,
+      include: [
+        {
+          model: db.formation,
+          required: false
+        }
+      ]
     }
   ]
 }

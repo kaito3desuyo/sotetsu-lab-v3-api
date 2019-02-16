@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
       underscored: true
     }
   )
-  vehicleFormation.associate = function(models) {
+  vehicleFormation.associate = models => {
     // associations can be defined here
     vehicleFormation.belongsTo(models.vehicle, { foreignKey: 'vehicle_id' })
     vehicleFormation.belongsTo(models.formation, { foreignKey: 'formation_id' })
