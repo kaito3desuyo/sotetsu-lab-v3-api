@@ -1,4 +1,4 @@
-const express = require('express')
+import * as express from 'express'
 
 const router = express.Router()
 
@@ -30,72 +30,57 @@ router.get('/', (req, res, next) => {
 /*
  * 日付指定検索
  */
-router.get('/date/:date', (req, res, next) => {
-  Promise.resolve()
-    .then(() => holidayCheck(req.params.date))
-    .then(checkDate => {
-      let dayName = moment(req.params.date, 'YYYYMMDD')
-        .format('dddd')
-        .toLowerCase()
+router.get('/date/:date', async (req, res, next) => {
+  const checkDate = await holidayCheck(req.params.date)
 
-      // holiday判定のときはsundayに書き換える
-      if (checkDate === 'holiday') {
-        dayName = 'sunday'
-      }
+  let dayName = moment(req.params.date, 'YYYYMMDD')
+    .format('dddd')
+    .toLowerCase()
 
-      return new Promise((resolve, reject) => {
-        db.operation
-          .findAll({
-            include: generateIncludeObject(dayName, req.params.date),
-            where: {
-              [Op.not]: {
-                operation_number: '100'
-              }
-            },
-            order: [
-              ['operation_number', 'ASC'],
-              [
-                db.operation.associations.operation_sightings,
-                'sighting_time',
-                'DESC'
-              ]
-            ]
-          })
-          .then(result => {
-            res.json(result)
-          })
-      })
+  // holiday判定のときはsundayに書き換える
+  if (checkDate === 'holiday') {
+    dayName = 'sunday'
+  }
+
+  db.operation
+    .findAll({
+      include: generateIncludeObject(dayName, req.params.date),
+      where: {
+        [Op.not]: {
+          operation_number: '100'
+        }
+      },
+      order: [['operation_number', 'ASC'], [db.operation.associations.operation_sightings, 'sighting_time', 'DESC']]
+    })
+    .then(result => {
+      res.json(result)
     })
 })
 
 /*
  * 日付+運用番号指定検索
  */
-router.get('/date/:date/number/:number', (req, res, next) => {
-  Promise.resolve()
-    .then(() => holidayCheck(req.params.date))
-    .then(checkDate => {
-      let dayName = moment(req.params.date, 'YYYYMMDD')
-        .format('dddd')
-        .toLowerCase()
+router.get('/date/:date/number/:number', async (req, res, next) => {
+  const checkDate = await holidayCheck(req.params.date)
 
-      // holiday判定のときはsundayに書き換える
-      if (checkDate === 'holiday') {
-        dayName = 'sunday'
-      }
+  let dayName = moment(req.params.date, 'YYYYMMDD')
+    .format('dddd')
+    .toLowerCase()
 
-      return new Promise((resolve, reject) => {
-        db.operation
-          .find({
-            where: {
-              operation_number: String(req.params.number)
-            },
-            include: generateIncludeObject(dayName, req.params.date)
-          })
-          .then(result => {
-            res.json(result)
-          })
-      })
+  // holiday判定のときはsundayに書き換える
+  if (checkDate === 'holiday') {
+    dayName = 'sunday'
+  }
+
+  db.operation
+    .find({
+      where: {
+        operation_number: String(req.params.number)
+      },
+      include: generateIncludeObject(dayName, req.params.date)
+    })
+    .then(result => {
+      res.json(result)
     })
 })
 
@@ -142,18 +127,12 @@ router.get('/sightings/formation/:number', (req, res, next) => {
 })
 
 router.post('/sightings', (req, res, next) => {
-  if (
-    !req.body ||
-    !req.body.formationId ||
-    !req.body.operationId ||
-    !req.body.sightingTime
-  ) {
+  if (!req.body || !req.body.formationId || !req.body.operationId || !req.body.sightingTime) {
     res.status(400).json({
       status: 'error',
       message: {
         title: 'エラー',
-        text:
-          '送信されたデータの形式が不正です。\n管理者にお問い合わせください。'
+        text: '送信されたデータの形式が不正です。\n管理者にお問い合わせください。'
       }
     })
   }
@@ -175,8 +154,7 @@ router.post('/sightings', (req, res, next) => {
         status: 'error',
         message: {
           title: 'エラー',
-          text:
-            'データベース登録に失敗しました。\n管理者にお問い合わせください。'
+          text: 'データベース登録に失敗しました。\n管理者にお問い合わせください。'
         }
       })
     })
@@ -185,11 +163,9 @@ router.post('/sightings', (req, res, next) => {
 // 休日判定
 function holidayCheck(date) {
   return new Promise((resolve, reject) => {
-    axios
-      .get(`http://s-proj.com/utils/checkHoliday.php?kind=h&date=${date}`)
-      .then(response => {
-        resolve(response.data)
-      })
+    axios.get(`http://s-proj.com/utils/checkHoliday.php?kind=h&date=${date}`).then(response => {
+      resolve(response.data)
+    })
   })
 }
 
@@ -227,4 +203,4 @@ function generateIncludeObject(dayName, date) {
   ]
 }
 
-module.exports = router
+export default router

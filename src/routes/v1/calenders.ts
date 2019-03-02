@@ -1,4 +1,4 @@
-const express = require('express')
+import * as express from 'express'
 
 const router = express.Router()
 
@@ -35,16 +35,7 @@ router.get('/', (req, res, next) => {
           }
         }
       ],
-      order: [
-        ['start_date', 'DESC'],
-        ['calender_name', 'DESC'],
-        [
-          db.calender.associations.service,
-          db.service.associations.trip_classes,
-          'sequence',
-          'ASC'
-        ]
-      ]
+      order: [['start_date', 'DESC'], ['calender_name', 'DESC'], [db.calender.associations.service, db.service.associations.trip_classes, 'sequence', 'ASC']]
     })
     .then(result => {
       res.send(result)
@@ -78,4 +69,4 @@ router.get('/:id', (req, res, next) => {
     })
 })
 
-module.exports = router
+export default router

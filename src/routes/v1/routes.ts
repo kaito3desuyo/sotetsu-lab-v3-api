@@ -1,4 +1,4 @@
-const express = require('express')
+import * as express from 'express'
 
 const router = express.Router()
 
@@ -30,14 +30,11 @@ router.get('/', (req, res, next) => {
           }
         }
       ],
-      order: [
-        ['route_number', 'ASC'],
-        [db.route.associations.route_station_lists, 'station_sequence', 'ASC']
-      ]
+      order: [['route_number', 'ASC'], [db.route.associations.route_station_lists, 'station_sequence', 'ASC']]
     })
     .then(result => {
       res.send(result)
     })
 })
 
-module.exports = router
+export default router
