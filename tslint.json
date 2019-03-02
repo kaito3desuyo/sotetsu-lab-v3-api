@@ -1,0 +1,17 @@
+{
+  "rulesDirectory": ["tslint-plugin-prettier"],
+  "extends": ["tslint-config-standard", "tslint-config-prettier"],
+  "rules": {
+    // TSLintに任せる方法の場合、prettier設定もここに書くことになります。
+    // 設定内容はstandardだとsingleQuoteとsemiだけ気をつければ多分大丈夫です。
+    // また、完全に僕の好みですが行あたり80文字は短すぎるので長めにしてあります。
+    "prettier": [
+      true,
+      {
+        "singleQuote": true,
+        "semi": false,
+        "printWidth": 180 // defaultの80って短くないですか？
+      }
+    ]
+  }
+}
