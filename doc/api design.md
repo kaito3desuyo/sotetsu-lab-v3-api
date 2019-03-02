@@ -1,6 +1,6 @@
-#Sotetsu Lab. API 設計詳細
+# Sotetsu Lab. API 設計詳細
 
-##リクエスト全般
+## リクエスト全般
 
 成功時（返り値無し）
 
