@@ -2,7 +2,6 @@ import * as express from 'express'
 import * as cookieParser from 'cookie-parser'
 import * as cors from 'cors'
 import indexRouter from './routes/index'
-
 const app = express()
 const port = 3000
 

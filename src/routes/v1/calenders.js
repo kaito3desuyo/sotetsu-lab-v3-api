@@ -1,9 +1,9 @@
 import * as express from 'express'
+import db from './../../models'
 
 const router = express.Router()
 
 const Sequelize = require('sequelize')
-const db = require('../../models')
 
 const Op = Sequelize.Op
 
@@ -35,7 +35,16 @@ router.get('/', (req, res, next) => {
           }
         }
       ],
-      order: [['start_date', 'DESC'], ['calender_name', 'DESC'], [db.calender.associations.service, db.service.associations.trip_classes, 'sequence', 'ASC']]
+      order: [
+        ['start_date', 'DESC'],
+        ['calender_name', 'DESC'],
+        [
+          db.calender.associations.service,
+          db.service.associations.trip_classes,
+          'sequence',
+          'ASC'
+        ]
+      ]
     })
     .then(result => {
       res.send(result)

@@ -1,8 +1,8 @@
 import * as express from 'express'
 
-const router = express.Router()
+import db from './../../models'
 
-const db = require('../../models')
+const router = express.Router()
 
 /* GET users listing. */
 router.get('/', (req, res, next) => {
@@ -22,7 +22,10 @@ router.get('/', (req, res, next) => {
           required: false
         }
       ],
-      order: [[db.service.associations.routes, 'route_number', 'ASC'], [db.service.associations.calenders, 'start_date', 'ASC']]
+      order: [
+        [db.service.associations.routes, 'route_number', 'ASC'],
+        [db.service.associations.calenders, 'start_date', 'ASC']
+      ]
     })
     .then(result => {
       res.send(result)

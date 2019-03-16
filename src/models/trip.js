@@ -26,6 +26,7 @@ module.exports = (sequelize, DataTypes) => {
     trip.hasMany(models.time, { foreignKey: 'trip_id' })
     trip.belongsTo(models.operation, { foreignKey: 'operation_id' })
     trip.belongsTo(models.calender, { foreignKey: 'calender_id' })
+    trip.belongsTo(models.trip_class, { foreignKey: 'trip_class_id' })
   }
   return trip
 }

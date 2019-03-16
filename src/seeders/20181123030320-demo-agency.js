@@ -14,18 +14,31 @@ module.exports = {
       }], {});
     */
 
-    const agencyId = uuidv4()
+    const agencyId = [uuidv4(), uuidv4()]
     const sequelize = queryInterface.sequelize
 
     await queryInterface.bulkInsert(
       'agencies',
       [
         {
-          id: agencyId,
+          id: agencyId[0],
           agency_number: '5020001022615',
           parent_agency_number: null,
           agency_official_name: '相模鉄道株式会社',
           agency_name: '相鉄',
+          agency_type: 1,
+          agency_url: null,
+          agency_phone: null,
+          agency_fare_url: null,
+          created_at: '2018-11-23 12:00:00',
+          updated_at: '2018-11-23 12:00:00'
+        },
+        {
+          id: agencyId[1],
+          agency_number: '9011001029597',
+          parent_agency_number: null,
+          agency_official_name: '東日本旅客鉄道株式会社',
+          agency_name: 'JR東日本',
           agency_type: 1,
           agency_url: null,
           agency_phone: null,
@@ -37,13 +50,13 @@ module.exports = {
       {}
     )
 
-    const routeId = [uuidv4(), uuidv4(), uuidv4()]
+    const routeId = [uuidv4(), uuidv4(), uuidv4(), uuidv4(), uuidv4(), uuidv4()]
 
     await queryInterface.bulkInsert('routes', [
       {
         id: routeId[0],
-        agency_id: agencyId,
-        route_number: 1,
+        agency_id: agencyId[0],
+        route_number: 4,
         route_name: '本線',
         route_nickname: null,
         route_description: null,
@@ -56,8 +69,8 @@ module.exports = {
       },
       {
         id: routeId[1],
-        agency_id: agencyId,
-        route_number: 2,
+        agency_id: agencyId[0],
+        route_number: 5,
         route_name: 'いずみ野線',
         route_nickname: null,
         route_description: null,
@@ -70,9 +83,51 @@ module.exports = {
       },
       {
         id: routeId[2],
-        agency_id: agencyId,
-        route_number: 3,
+        agency_id: agencyId[0],
+        route_number: 6,
         route_name: '厚木線',
+        route_nickname: null,
+        route_description: null,
+        route_type: 2,
+        route_url: null,
+        route_color: null,
+        route_text_color: null,
+        created_at: '2018-11-23 12:00:00',
+        updated_at: '2018-11-23 12:00:00'
+      },
+      {
+        id: routeId[3],
+        agency_id: agencyId[0],
+        route_number: 3,
+        route_name: '新横浜線',
+        route_nickname: null,
+        route_description: null,
+        route_type: 2,
+        route_url: null,
+        route_color: null,
+        route_text_color: null,
+        created_at: '2018-11-23 12:00:00',
+        updated_at: '2018-11-23 12:00:00'
+      },
+      {
+        id: routeId[4],
+        agency_id: agencyId[1],
+        route_number: 2,
+        route_name: '埼京線',
+        route_nickname: null,
+        route_description: null,
+        route_type: 2,
+        route_url: null,
+        route_color: null,
+        route_text_color: null,
+        created_at: '2018-11-23 12:00:00',
+        updated_at: '2018-11-23 12:00:00'
+      },
+      {
+        id: routeId[5],
+        agency_id: agencyId[1],
+        route_number: 1,
+        route_name: '川越線',
         route_nickname: null,
         route_description: null,
         route_type: 2,
@@ -429,6 +484,369 @@ module.exports = {
             name: '2番線'
           }
         ]
+      },
+      {
+        id: uuidv4(),
+        name: '羽沢横浜国大',
+        stops: [
+          {
+            name: '1番線'
+          },
+          {
+            name: '2番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '武蔵小杉',
+        stops: [
+          {
+            name: '1番線'
+          },
+          {
+            name: '2番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '西大井',
+        stops: [
+          {
+            name: '1番線'
+          },
+          {
+            name: '2番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '大崎',
+        stops: [
+          {
+            name: '5番線'
+          },
+          {
+            name: '6番線'
+          },
+          {
+            name: '7番線'
+          },
+          {
+            name: '8番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '恵比寿',
+        stops: [
+          {
+            name: '3番線'
+          },
+          {
+            name: '4番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '渋谷',
+        stops: [
+          {
+            name: '3番線'
+          },
+          {
+            name: '4番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '新宿',
+        stops: [
+          {
+            name: '1番線'
+          },
+          {
+            name: '2番線'
+          },
+          {
+            name: '3番線'
+          },
+          {
+            name: '4番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '池袋',
+        stops: [
+          {
+            name: '1番線'
+          },
+          {
+            name: '2番線'
+          },
+          {
+            name: '3番線'
+          },
+          {
+            name: '4番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '板橋',
+        stops: [
+          {
+            name: '1番線'
+          },
+          {
+            name: '2番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '十条',
+        stops: [
+          {
+            name: '1番線'
+          },
+          {
+            name: '2番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '赤羽',
+        stops: [
+          {
+            name: '7番線'
+          },
+          {
+            name: '8番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '北赤羽',
+        stops: [
+          {
+            name: '1番線'
+          },
+          {
+            name: '2番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '浮間舟渡',
+        stops: [
+          {
+            name: '1番線'
+          },
+          {
+            name: '2番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '戸田公園',
+        stops: [
+          {
+            name: '1番線'
+          },
+          {
+            name: '2番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '戸田',
+        stops: [
+          {
+            name: '1番線'
+          },
+          {
+            name: '2番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '北戸田',
+        stops: [
+          {
+            name: '1番線'
+          },
+          {
+            name: '2番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '武蔵浦和',
+        stops: [
+          {
+            name: '3番線'
+          },
+          {
+            name: '4番線'
+          },
+          {
+            name: '5番線'
+          },
+          {
+            name: '6番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '中浦和',
+        stops: [
+          {
+            name: '1番線'
+          },
+          {
+            name: '2番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '南与野',
+        stops: [
+          {
+            name: '1番線'
+          },
+          {
+            name: '2番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '与野本町',
+        stops: [
+          {
+            name: '1番線'
+          },
+          {
+            name: '2番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '北与野',
+        stops: [
+          {
+            name: '1番線'
+          },
+          {
+            name: '2番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '大宮',
+        stops: [
+          {
+            name: '19番線'
+          },
+          {
+            name: '20番線'
+          },
+          {
+            name: '21番線'
+          },
+          {
+            name: '22番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '日進',
+        stops: [
+          {
+            name: '1番線'
+          },
+          {
+            name: '2番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '西大宮',
+        stops: [
+          {
+            name: '1番線'
+          },
+          {
+            name: '2番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '指扇',
+        stops: [
+          {
+            name: '1番線'
+          },
+          {
+            name: '2番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '南古谷',
+        stops: [
+          {
+            name: '1番線'
+          },
+          {
+            name: '2番線'
+          },
+          {
+            name: '3番線'
+          }
+        ]
+      },
+      {
+        id: uuidv4(),
+        name: '川越',
+        stops: [
+          {
+            name: '3番線'
+          },
+          {
+            name: '4番線'
+          },
+          {
+            name: '5番線'
+          },
+          {
+            name: '6番線'
+          }
+        ]
       }
     ]
 
@@ -499,6 +917,42 @@ module.exports = {
       { name: 'かしわ台', sequence: 0, numbering: 'SO17' },
       { name: '厚木', sequence: 1, numbering: '' }
     ]
+    const shinYokohama = [
+      { name: '西谷', sequence: 1, numbering: 'SO08' },
+      { name: '羽沢横浜国大', sequence: 0, numbering: 'SO51' }
+    ]
+    const saikyo = [
+      { name: '羽沢横浜国大', sequence: 21, numbering: 'SO51' },
+      { name: '武蔵小杉', sequence: 20, numbering: 'JO15/JS15' },
+      { name: '西大井', sequence: 19, numbering: 'JO16/JS16' },
+      { name: '大崎', sequence: 18, numbering: 'JS17/JA08' },
+      { name: '恵比寿', sequence: 17, numbering: 'JA09' },
+      { name: '渋谷', sequence: 16, numbering: 'JA10' },
+      { name: '新宿', sequence: 15, numbering: 'JA11' },
+      { name: '池袋', sequence: 14, numbering: 'JA12' },
+      { name: '板橋', sequence: 13, numbering: 'JA13' },
+      { name: '十条', sequence: 12, numbering: 'JA14' },
+      { name: '赤羽', sequence: 11, numbering: 'JA15' },
+      { name: '北赤羽', sequence: 10, numbering: 'JA16' },
+      { name: '浮間舟渡', sequence: 9, numbering: 'JA17' },
+      { name: '戸田公園', sequence: 8, numbering: 'JA18' },
+      { name: '戸田', sequence: 7, numbering: 'JA19' },
+      { name: '北戸田', sequence: 6, numbering: 'JA20' },
+      { name: '武蔵浦和', sequence: 5, numbering: 'JA21' },
+      { name: '中浦和', sequence: 4, numbering: 'JA22' },
+      { name: '南与野', sequence: 3, numbering: 'JA23' },
+      { name: '与野本町', sequence: 2, numbering: 'JA24' },
+      { name: '北与野', sequence: 1, numbering: 'JA25' },
+      { name: '大宮', sequence: 0, numbering: 'JA26' }
+    ]
+    const kawagoe = [
+      { name: '大宮', sequence: 5, numbering: 'JA26' },
+      { name: '日進', sequence: 4, numbering: '' },
+      { name: '西大宮', sequence: 3, numbering: '' },
+      { name: '指扇', sequence: 2, numbering: '' },
+      { name: '南古谷', sequence: 1, numbering: '' },
+      { name: '川越', sequence: 0, numbering: '' }
+    ]
 
     await Promise.all([
       sequelize.query('SELECT * FROM routes', {
@@ -548,6 +1002,55 @@ module.exports = {
             atsugi.some(item => item.name === station.station_name)
           ) {
             const data = atsugi.find(item => item.name === station.station_name)
+            routeStationLists.push({
+              id: uuidv4(),
+              route_id: route.id,
+              station_id: station.id,
+              station_sequence: data.sequence,
+              station_numbering: data.numbering,
+              created_at: '2018-11-23 12:00:00',
+              updated_at: '2018-11-23 12:00:00'
+            })
+          }
+          if (
+            route.route_name === '新横浜線' &&
+            shinYokohama.some(item => item.name === station.station_name)
+          ) {
+            const data = shinYokohama.find(
+              item => item.name === station.station_name
+            )
+            routeStationLists.push({
+              id: uuidv4(),
+              route_id: route.id,
+              station_id: station.id,
+              station_sequence: data.sequence,
+              station_numbering: data.numbering,
+              created_at: '2018-11-23 12:00:00',
+              updated_at: '2018-11-23 12:00:00'
+            })
+          }
+          if (
+            route.route_name === '埼京線' &&
+            saikyo.some(item => item.name === station.station_name)
+          ) {
+            const data = saikyo.find(item => item.name === station.station_name)
+            routeStationLists.push({
+              id: uuidv4(),
+              route_id: route.id,
+              station_id: station.id,
+              station_sequence: data.sequence,
+              station_numbering: data.numbering,
+              created_at: '2018-11-23 12:00:00',
+              updated_at: '2018-11-23 12:00:00'
+            })
+          }
+          if (
+            route.route_name === '川越線' &&
+            kawagoe.some(item => item.name === station.station_name)
+          ) {
+            const data = kawagoe.find(
+              item => item.name === station.station_name
+            )
             routeStationLists.push({
               id: uuidv4(),
               route_id: route.id,
@@ -736,7 +1239,7 @@ module.exports = {
       sequelize.query('SELECT id FROM services', {
         type: sequelize.QueryTypes.SELECT
       }),
-      sequelize.query('SELECT id FROM routes', {
+      sequelize.query('SELECT id FROM routes ORDER BY route_number ASC', {
         type: sequelize.QueryTypes.SELECT
       })
     ]).then(result => {
@@ -942,7 +1445,7 @@ module.exports = {
       const forId = uuidv4()
       formations.push({
         id: forId,
-        agency_id: agencyId,
+        agency_id: agencyId[0],
         vehicle_type: null,
         formation_number: formation.forNum,
         start_date: null,

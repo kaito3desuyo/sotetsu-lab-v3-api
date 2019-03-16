@@ -1,9 +1,7 @@
 import * as express from 'express'
+import db from './../../models'
 
 const router = express.Router()
-
-const db = require('../../models')
-
 /* GET users listing. */
 router.get('/', (req, res, next) => {
   db.formation

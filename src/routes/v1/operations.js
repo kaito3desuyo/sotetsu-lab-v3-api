@@ -1,10 +1,10 @@
 import * as express from 'express'
+import db from './../../models'
 
 const router = express.Router()
 
 const axios = require('axios')
 const Sequelize = require('sequelize')
-const db = require('../../models')
 
 const Op = Sequelize.Op
 
@@ -50,7 +50,10 @@ router.get('/date/:date', async (req, res, next) => {
           operation_number: '100'
         }
       },
-      order: [['operation_number', 'ASC'], [db.operation.associations.operation_sightings, 'sighting_time', 'DESC']]
+      order: [
+        ['operation_number', 'ASC'],
+        [db.operation.associations.operation_sightings, 'sighting_time', 'DESC']
+      ]
     })
     .then(result => {
       res.json(result)
@@ -127,12 +130,18 @@ router.get('/sightings/formation/:number', (req, res, next) => {
 })
 
 router.post('/sightings', (req, res, next) => {
-  if (!req.body || !req.body.formationId || !req.body.operationId || !req.body.sightingTime) {
+  if (
+    !req.body ||
+    !req.body.formationId ||
+    !req.body.operationId ||
+    !req.body.sightingTime
+  ) {
     res.status(400).json({
       status: 'error',
       message: {
         title: 'エラー',
-        text: '送信されたデータの形式が不正です。\n管理者にお問い合わせください。'
+        text:
+          '送信されたデータの形式が不正です。\n管理者にお問い合わせください。'
       }
     })
   }
@@ -154,7 +163,8 @@ router.post('/sightings', (req, res, next) => {
         status: 'error',
         message: {
           title: 'エラー',
-          text: 'データベース登録に失敗しました。\n管理者にお問い合わせください。'
+          text:
+            'データベース登録に失敗しました。\n管理者にお問い合わせください。'
         }
       })
     })
@@ -163,9 +173,11 @@ router.post('/sightings', (req, res, next) => {
 // 休日判定
 function holidayCheck(date) {
   return new Promise((resolve, reject) => {
-    axios.get(`http://s-proj.com/utils/checkHoliday.php?kind=h&date=${date}`).then(response => {
-      resolve(response.data)
-    })
+    axios
+      .get(`http://s-proj.com/utils/checkHoliday.php?kind=h&date=${date}`)
+      .then(response => {
+        resolve(response.data)
+      })
   })
 }
 

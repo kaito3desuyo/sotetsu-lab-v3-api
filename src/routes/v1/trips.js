@@ -3,9 +3,9 @@ import Sequelize from 'sequelize'
 import * as express from 'express'
 import * as moment from 'moment'
 
-const router = express.Router()
+import db from './../../models'
 
-const db = require('../../models')
+const router = express.Router()
 const Op = Sequelize.Op
 
 const timetableData = require('../../mock-data/operation_table_20181208.json')
@@ -25,8 +25,27 @@ router.get('/', (req, res, next) => {
         },
         {
           model: db.calender,
-          required: false
+          required: true,
+          where: {
+            id: req.query.calender_id
+          }
+        },
+        {
+          model: db.trip_class,
+          required: true
         }
+      ],
+      where: {
+        trip_direction:
+          req.query.direction === 'up'
+            ? 0
+            : req.query.direction === 'down'
+            ? 1
+            : null
+      },
+      order: [
+        [db.trip.associations.times, 'departure_days', 'ASC'],
+        [db.trip.associations.times, 'departure_time', 'ASC']
       ]
     })
     .then(result => {
@@ -116,28 +135,65 @@ router.get('/importer', async (req, res, next) => {
         operationIdTemp[obj.day][obj.operation_id] = operationId
 
         // console.log(operationIdTemp)
-        const tripClassId = classIdTemp[obj.class] ? await classIdTemp[obj.class] : await getClassId(serviceId.service_id, obj.class)
+        const tripClassId = classIdTemp[obj.class]
+          ? await classIdTemp[obj.class]
+          : await getClassId(serviceId.service_id, obj.class)
         classIdTemp[obj.class] = tripClassId
 
         const timeList = stationList
           .map(station => {
-            const stationId = _.find(stationIdTemp, obj => obj.name === station.name)['station_id']
+            const stationId = _.find(
+              stationIdTemp,
+              obj => obj.name === station.name
+            )['station_id']
             if (obj[station.numbering]) {
               return {
                 station_id: stationId,
                 stop_id: null,
-                arrival_days: Number(moment(obj[station.numbering], 'HH:mm:ss').format('H')) > 3 ? 1 : 2,
+                arrival_days:
+                  Number(
+                    moment(obj[station.numbering], 'HH:mm:ss').format('H')
+                  ) > 3
+                    ? 1
+                    : 2,
                 arrival_time: obj[station.numbering],
-                departure_days: Number(moment(obj[station.numbering], 'HH:mm:ss').format('H')) > 3 ? 1 : 2,
+                departure_days:
+                  Number(
+                    moment(obj[station.numbering], 'HH:mm:ss').format('H')
+                  ) > 3
+                    ? 1
+                    : 2,
                 departure_time: obj[station.numbering]
               }
-            } else if (station.numbering === 'SO10' && (obj[station.numbering + '_arr'] || obj[station.numbering + '_dep'])) {
+            } else if (
+              station.numbering === 'SO10' &&
+              (obj[station.numbering + '_arr'] ||
+                obj[station.numbering + '_dep'])
+            ) {
               return {
                 station_id: stationId,
                 stop_id: null,
-                arrival_days: obj[station.numbering + '_arr'] ? (Number(moment(obj[station.numbering + '_arr'], 'HH:mm:ss').format('H')) > 3 ? 1 : 2) : null,
+                arrival_days: obj[station.numbering + '_arr']
+                  ? Number(
+                      moment(
+                        obj[station.numbering + '_arr'],
+                        'HH:mm:ss'
+                      ).format('H')
+                    ) > 3
+                    ? 1
+                    : 2
+                  : null,
                 arrival_time: obj[station.numbering + '_arr'] || null,
-                departure_days: obj[station.numbering + '_dep'] ? (Number(moment(obj[station.numbering + '_dep'], 'HH:mm:ss').format('H')) > 3 ? 1 : 2) : null,
+                departure_days: obj[station.numbering + '_dep']
+                  ? Number(
+                      moment(
+                        obj[station.numbering + '_dep'],
+                        'HH:mm:ss'
+                      ).format('H')
+                    ) > 3
+                    ? 1
+                    : 2
+                  : null,
                 departure_time: obj[station.numbering + '_dep'] || null
               }
             } else {
@@ -148,13 +204,42 @@ router.get('/importer', async (req, res, next) => {
           .map((station, index, array) => {
             const returnTime = {
               ...station,
-              stop_sequence: obj.train_id % 2 === 0 ? array.length - index : index + 1,
+              stop_sequence:
+                obj.train_id % 2 === 0 ? array.length - index : index + 1,
               pickup_type: index === array.length - 1 ? 1 : 0,
               dropoff_type: index === 0 ? 1 : 0,
-              arrival_days: obj.train_id % 2 === 0 ? (index === array.length - 1 ? null : station.arrival_days) : index === 0 ? null : station.arrival_days,
-              arrival_time: obj.train_id % 2 === 0 ? (index === array.length - 1 ? null : station.arrival_time) : index === 0 ? null : station.arrival_time,
-              departure_days: obj.train_id % 2 === 0 ? (index === 0 ? null : station.departure_days) : index === array.length - 1 ? null : station.departure_days,
-              departure_time: obj.train_id % 2 === 0 ? (index === 0 ? null : station.departure_time) : index === array.length - 1 ? null : station.departure_time
+              arrival_days:
+                obj.train_id % 2 === 0
+                  ? index === array.length - 1
+                    ? null
+                    : station.arrival_days
+                  : index === 0
+                  ? null
+                  : station.arrival_days,
+              arrival_time:
+                obj.train_id % 2 === 0
+                  ? index === array.length - 1
+                    ? null
+                    : station.arrival_time
+                  : index === 0
+                  ? null
+                  : station.arrival_time,
+              departure_days:
+                obj.train_id % 2 === 0
+                  ? index === 0
+                    ? null
+                    : station.departure_days
+                  : index === array.length - 1
+                  ? null
+                  : station.departure_days,
+              departure_time:
+                obj.train_id % 2 === 0
+                  ? index === 0
+                    ? null
+                    : station.departure_time
+                  : index === array.length - 1
+                  ? null
+                  : station.departure_time
             }
             return returnTime
           })
@@ -191,7 +276,7 @@ router.get('/importer', async (req, res, next) => {
   })
 })
 
-function setTrip(data: any): Promise<any> {
+function setTrip(data) {
   return new Promise((resolve, reject) => {
     db.trip
       .create(data, {
@@ -207,7 +292,7 @@ function setTrip(data: any): Promise<any> {
   })
 }
 
-function getServiceId(serviceName: string): Promise<{ service_id: string }> {
+function getServiceId(serviceName) {
   return new Promise((resolve, reject) => {
     db.service
       .findOne({
@@ -223,7 +308,7 @@ function getServiceId(serviceName: string): Promise<{ service_id: string }> {
   })
 }
 
-function getCalenderId(serviceId: string, type: string): Promise<{ service_id: string; calender_id: string }> {
+function getCalenderId(serviceId, type) {
   return new Promise((resolve, reject) => {
     db.calender
       .findOne({
@@ -244,7 +329,7 @@ function getCalenderId(serviceId: string, type: string): Promise<{ service_id: s
   })
 }
 
-function getOperationId(calenderId: string, number: string): Promise<{ operation_id: string }> {
+function getOperationId(calenderId, number) {
   return new Promise((resolve, reject) => {
     db.operation
       .findOne({
@@ -261,7 +346,7 @@ function getOperationId(calenderId: string, number: string): Promise<{ operation
   })
 }
 
-function getClassId(serviceId: string, className: string): Promise<{ trip_class_id: string }> {
+function getClassId(serviceId, className) {
   return new Promise((resolve, reject) => {
     db.trip_class
       .findOne({
@@ -278,7 +363,7 @@ function getClassId(serviceId: string, className: string): Promise<{ trip_class_
   })
 }
 
-function getStationId(stationName: string): Promise<{ station_id: string }> {
+function getStationId(stationName) {
   return new Promise((resolve, reject) => {
     db.station
       .findOne({

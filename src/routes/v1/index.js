@@ -1,5 +1,4 @@
 import * as express from 'express'
-const router = express.Router()
 
 import agencies from './agencies'
 import routes from './routes'
@@ -10,6 +9,7 @@ import trips from './trips'
 import formations from './formations'
 import vehicles from './vehicles'
 import operations from './operations'
+const router = express.Router()
 
 router.use('/agencies', agencies)
 router.use('/routes', routes)

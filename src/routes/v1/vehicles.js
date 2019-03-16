@@ -1,9 +1,9 @@
 import * as express from 'express'
+import db from './../../models'
 
 const router = express.Router()
 
 const Sequelize = require('sequelize')
-const db = require('../../models')
 
 const Op = Sequelize.Op
 
