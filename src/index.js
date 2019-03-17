@@ -3,7 +3,7 @@ import * as cookieParser from 'cookie-parser'
 import * as cors from 'cors'
 import indexRouter from './routes/index'
 const app = express()
-const port = 3000
+const port = process.env.PORT || 3000
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
