@@ -49,7 +49,43 @@ router.get('/', (req, res, next) => {
       ]
     })
     .then(result => {
-      res.send(result)
+      const returnArray = []
+      console.log('カウント', req.query)
+      const offset = Number(req.query.offset)
+      const count = Number(req.query.count)
+      result.forEach((element, index) => {
+        if (index >= offset * count && index < (offset + 1) * count) {
+          returnArray.push(element)
+        }
+      })
+
+      res.json(returnArray)
+    })
+})
+
+router.get('/count', (req, res, next) => {
+  db.trip
+    .count({
+      include: [
+        {
+          model: db.calender,
+          required: true,
+          where: {
+            id: req.query.calender_id
+          }
+        }
+      ],
+      where: {
+        trip_direction:
+          req.query.direction === 'up'
+            ? 0
+            : req.query.direction === 'down'
+            ? 1
+            : null
+      }
+    })
+    .then(result => {
+      res.json(result)
     })
 })
 

@@ -77,44 +77,71 @@ router.get('/', async (req, res, next) => {
       let stations = []
       const connectStationId = []
       let nishiya = null
-      orders.forEach(order => {
-        const temp = result.filter(sta => {
+
+      const routeStations = orders.map(lineName => {
+        return result.filter(sta => {
           return _.some(
             sta.route_station_lists,
-            route => route.route.route_name === order
+            route => route.route.route_name === lineName
           )
         })
-        temp.forEach(sta => {
-          const honsenChecker = _.some(
-            sta.route_station_lists,
-            route => route.route.route_name === '本線'
-          )
+      })
 
-          if (sta.station_name === '西谷') {
-            nishiya = sta
-            return true
-          }
+      routeStations.forEach((elem, index) => {
+        switch (index) {
+          case 0:
+          case 1:
+          case 2:
+          case 5:
+            elem.forEach(element => {
+              if (
+                !_.some(connectStationId, id => id === element.id) &&
+                _.some(element.route_station_lists, routeStation =>
+                  _.includes(
+                    orders.filter(value => value !== orders[index]),
+                    routeStation.route.route_name
+                  )
+                )
+              ) {
+                connectStationId.push(element.id)
+                return true
+              }
+              stations.push(element)
+            })
+            break
+          case 3:
+            elem.forEach(element => {
+              if (element.station_name === '西谷') {
+                nishiya = element
+                return true
+              }
 
-          if (_.includes(connectStationId, sta.id)) {
-            return true
-          }
-          if (
-            _.some(sta.route_station_lists, routeStation =>
-              _.includes(
-                orders.filter(value => value !== order),
-                routeStation.route.route_name
-              )
-            )
-          ) {
-            connectStationId.push(sta.id)
-          }
+              stations.push(element)
 
-          stations.push(sta)
+              if (element.station_name === '上星川') {
+                stations.push(nishiya)
+              }
 
-          if (sta.station_name === '上星川') {
-            stations.push(nishiya)
-          }
-        })
+              if (element.station_name === '二俣川') {
+                routeStations[4].forEach(element => {
+                  if (
+                    !_.some(connectStationId, id => id === element.id) &&
+                    _.some(element.route_station_lists, routeStation =>
+                      _.includes(
+                        orders.filter(value => value !== orders[4]),
+                        routeStation.route.route_name
+                      )
+                    )
+                  ) {
+                    connectStationId.push(element.id)
+                    return true
+                  }
+
+                  stations.push(element)
+                })
+              }
+            })
+        }
       })
 
       if (req.query.direction === 'up') {
@@ -123,51 +150,6 @@ router.get('/', async (req, res, next) => {
 
       res.json(stations)
     })
-  /*
-  const arrays = order.map((name: string) => {
-    return new Promise((resolve, reject) => {
-      db.station
-        .findAll({
-          include: [
-            {
-              model: db.route_station_list,
-              required: true,
-              include: [
-                {
-                  model: db.route,
-                  required: true,
-                  where: {
-                    route_name: name
-                  }
-                }
-              ]
-            }
-          ],
-          order: [[db.station.associations.route_station_lists, 'station_sequence', 'ASC']]
-        })
-        .then(result => {
-          resolve(result)
-        })
-    })
-  })
-  
-  await Promise.all(arrays).then(result => {
-    const routeAndStations = result.map((obj: any) => {
-      // console.log(obj)
-      return obj
-    })
-
-    const stations = []
-    routeAndStations.forEach((stas: any, index: number) => {
-      console.log('Index', order[index])
-      stas.forEach(sta => {
-        stations.push(sta)
-      })
-    })
-
-    res.json(stations)
-  })
-  */
 })
 
 export default router

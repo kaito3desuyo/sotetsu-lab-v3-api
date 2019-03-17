@@ -1,5 +1,7 @@
 import * as express from 'express'
 import db from './../../models'
+import * as moment from 'moment'
+import axios from 'axios'
 
 const router = express.Router()
 
@@ -51,6 +53,34 @@ router.get('/', (req, res, next) => {
     })
 })
 
+router.get('/today', async (req, res, next) => {
+  let todaysDayName = moment()
+    .format('dddd')
+    .toLocaleLowerCase()
+
+  const checkDate = await holidayCheck(req.params.date)
+
+  // holiday判定のときはsundayに書き換える
+  if (checkDate === 'holiday') {
+    todaysDayName = 'sunday'
+  }
+
+  db.calender
+    .findOne({
+      where: {
+        [todaysDayName]: true,
+
+        end_date: null
+      }
+    })
+    .then(result => {
+      res.json(result)
+    })
+    .catch(err => {
+      res.json(err)
+    })
+})
+
 router.get('/:id', (req, res, next) => {
   db.calender
     .findOne({
@@ -77,5 +107,16 @@ router.get('/:id', (req, res, next) => {
       res.json(err)
     })
 })
+
+// 休日判定
+function holidayCheck(date) {
+  return new Promise((resolve, reject) => {
+    axios
+      .get(`http://s-proj.com/utils/checkHoliday.php?kind=h&date=${date}`)
+      .then(response => {
+        resolve(response.data)
+      })
+  })
+}
 
 export default router
