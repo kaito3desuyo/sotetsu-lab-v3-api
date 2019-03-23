@@ -90,6 +90,7 @@ router.get('/count', (req, res, next) => {
 })
 
 router.post('/', (req, res, next) => {
+  console.log('列車追加', req.body)
   db.trip
     .create(req.body.trip, {
       include: [

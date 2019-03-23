@@ -13,51 +13,72 @@ app.use(cookieParser())
 app.use(cors())
 
 app.use(async (req, res, next) => {
-  console.log('Interceot')
+  console.log('Intercept Token', req.header('Authorization'))
   // token取得
-  try {
-    const params = new URLSearchParams()
-    params.append('grant_type', 'client_credentials')
-    const token = await axios.post('http://localhost:3030/token', params, {
-      headers: {
-        Authorization: 'Basic ' + Buffer.from(`0:0`).toString('base64')
+
+  if (!req.header('Authorization')) {
+    next({
+      status: 401,
+      error: {
+        type: 'Invalid Request',
+        message: 'Please set Authorization header.'
       }
     })
-    console.log(token.data.access_token)
+  }
 
-    const params2 = new URLSearchParams()
-    params2.append('token', '')
+  const token = req.header('Authorization').split(' ')
+  console.log(token[1])
+
+  try {
+    const params = new URLSearchParams()
+    params.append('token', token[1])
     const introspection = await axios.post(
-      'http://localhost:3030/token/introspection',
-      params2,
+      'https://auth.sotetsu-lab.com/token/introspection',
+      params,
       {
         headers: {
-          Authorization: 'Basic ' + Buffer.from(`0:0`).toString('base64')
+          Authorization:
+            'Basic ' +
+            Buffer.from(
+              req.header('X-APP-CLIENT-ID') +
+                ':' +
+                req.header('X-APP-CLIENT-SECRET')
+            ).toString('base64')
         }
       }
     )
 
-    console.log(introspection)
+    console.log('チェッカー', introspection)
 
     if (!introspection.data.active) {
-      throw {
-        response: {
-          data: {
-            error: 'invalid_request',
-            error_description: 'token has expired'
-          }
+      next({
+        status: 401,
+        error: {
+          type: 'Invalid Request',
+          message: 'Token has expired.'
         }
-      }
+      })
     }
 
     next()
   } catch (err) {
-    console.log(err, 'エラー')
-    res.json(err.response.data)
+    next({
+      status: 500,
+      error: {
+        type: 'Internal Server Error',
+        message: 'Please tell administrator'
+      }
+    })
   }
 })
 
 app.use('/', indexRouter)
+
+app.use((err, req, res, next) => {
+  console.log(err)
+  console.error(err.stack)
+  res.status(err.status).json(err)
+})
 
 app.listen(port, () => {
   console.log('Server listening on port ' + port)
