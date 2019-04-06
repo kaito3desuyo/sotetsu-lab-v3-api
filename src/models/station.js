@@ -23,6 +23,7 @@ module.exports = (sequelize, DataTypes) => {
     // associations can be defined here
     station.hasMany(models.stop, { foreignKey: 'station_id' })
     station.hasMany(models.route_station_list, { foreignKey: 'station_id' })
+    station.hasMany(models.time, { foreignKey: 'station_id' })
     /* station.belongsToMany(models.route, {
       through: 'route_station_lists'
     }) */

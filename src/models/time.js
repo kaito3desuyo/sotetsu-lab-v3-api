@@ -24,6 +24,8 @@ module.exports = (sequelize, DataTypes) => {
   )
   time.associate = models => {
     // associations can be defined here
+    time.belongsTo(models.trip, { foreignKey: 'trip_id' })
+    time.belongsTo(models.station, { foreignKey: 'station_id' })
   }
   return time
 }

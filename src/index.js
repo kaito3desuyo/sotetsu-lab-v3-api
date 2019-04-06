@@ -11,7 +11,7 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 app.use(cookieParser())
 app.use(cors())
-
+/*
 app.use(async (req, res, next) => {
   console.log('Intercept Token', req.header('Authorization'))
   // token取得
@@ -71,6 +71,7 @@ app.use(async (req, res, next) => {
     })
   }
 })
+*/
 
 app.use('/', indexRouter)
 

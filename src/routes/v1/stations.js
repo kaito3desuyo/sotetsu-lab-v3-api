@@ -152,4 +152,81 @@ router.get('/', async (req, res, next) => {
     })
 })
 
+router.get('/:id/time', (req, res, next) => {
+  db.station
+    .findOne({
+      where: {
+        id: req.params.id
+      },
+      order: [
+        [db.station.associations.times, 'departure_days', 'ASC'],
+        [db.station.associations.times, 'departure_time', 'ASC'],
+        [
+          db.station.associations.times,
+          db.time.associations.trip,
+          db.trip.associations.times,
+          'departure_days',
+          'ASC'
+        ],
+        [
+          db.station.associations.times,
+          db.time.associations.trip,
+          db.trip.associations.times,
+          'departure_time',
+          'ASC'
+        ]
+      ],
+      include: [
+        {
+          model: db.time,
+          required: true,
+          include: [
+            {
+              model: db.trip,
+              required: true,
+              where: {
+                trip_direction:
+                  req.query.direction === 'up'
+                    ? 0
+                    : req.query.direction === 'down'
+                    ? 1
+                    : null
+              },
+              include: [
+                {
+                  model: db.time,
+                  required: true,
+                  include: [
+                    {
+                      model: db.station,
+                      required: true
+                    }
+                  ]
+                },
+                {
+                  model: db.calender,
+                  required: true,
+                  where: {
+                    id: req.query.dia
+                  }
+                },
+                {
+                  model: db.trip_class,
+                  required: true
+                },
+                {
+                  model: db.operation,
+                  required: true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    })
+    .then(result => {
+      res.json(result)
+    })
+})
+
 export default router

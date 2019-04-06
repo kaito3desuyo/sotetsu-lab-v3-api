@@ -51,8 +51,8 @@ router.get('/date/:date', async (req, res, next) => {
         }
       },
       order: [
-        ['operation_number', 'ASC'],
-        [db.operation.associations.operation_sightings, 'sighting_time', 'DESC']
+        ['operation_number', 'ASC']
+        // [db.operation.associations.operation_sightings, 'sighting_time', 'DESC']
       ]
     })
     .then(result => {
@@ -76,7 +76,7 @@ router.get('/date/:date/number/:number', async (req, res, next) => {
   }
 
   db.operation
-    .find({
+    .findOne({
       where: {
         operation_number: String(req.params.number)
       },
@@ -110,7 +110,7 @@ router.get('/sightings', (req, res, next) => {
 
 router.get('/sightings/formation/:number', (req, res, next) => {
   db.operation_sighting
-    .findAll({
+    .findAndCountAll({
       include: [
         {
           model: db.formation,
@@ -124,9 +124,59 @@ router.get('/sightings/formation/:number', (req, res, next) => {
           required: true
         }
       ],
-      order: [['sighting_time', 'DESC']]
+      order: [['sighting_time', 'DESC']],
+      limit: req.query.limit || 1,
+      offset: req.query.offset || 0
     })
     .then(result => res.json(result))
+})
+
+router.get('/sightings/operation/:number', (req, res, next) => {
+  db.operation_sighting
+    .findAndCountAll({
+      include: [
+        {
+          model: db.formation,
+          required: true
+        },
+        {
+          model: db.operation,
+          required: true,
+          where: {
+            operation_number: req.params.number
+          }
+        }
+      ],
+      order: [['sighting_time', 'DESC']],
+      limit: req.query.limit || 1,
+      offset: req.query.offset || 0
+    })
+    .then(result => res.json(result))
+})
+
+router.get('/sightings/latest', async (req, res, next) => {
+  db.sequelize
+    .query(
+      `
+      SELECT * FROM operation_sightings AS base 
+      INNER JOIN ( SELECT formation_id, MAX(sighting_time) AS latest_sighting 
+      FROM operation_sightings GROUP BY formation_id ) AS latest 
+      ON base.formation_id = latest.formation_id 
+      AND base.sighting_time = latest.latest_sighting 
+      INNER JOIN formations ON base.formation_id = formations.id 
+      INNER JOIN operations ON base.operation_id = operations.id
+      WHERE formations.end_date > '${moment().format(
+        'YYYY-MM-DD'
+      )}' or formations.end_date IS NULL
+      `,
+      {
+        model: db.operation_sighting,
+        mapToModel: true
+      }
+    )
+    .then(result => {
+      res.json(result)
+    })
 })
 
 router.post('/sightings', (req, res, next) => {
@@ -158,7 +208,7 @@ router.post('/sightings', (req, res, next) => {
         message: {}
       })
     })
-    .catch(err => {
+    .catch(() => {
       res.status(500).json({
         status: 'error',
         message: {
@@ -191,17 +241,18 @@ function generateIncludeObject(dayName, date) {
         [dayName]: true,
         [Op.and]: {
           start_date: {
-            [Op.lt]: moment(date, 'YYYYMMDD')
+            [Op.lt]: moment(date, 'YYYYMMDD').format('YYYY-MM-DD')
           },
           end_date: {
             [Op.or]: {
-              [Op.gt]: moment(date, 'YYYYMMDD'),
+              [Op.gt]: moment(date, 'YYYYMMDD').format('YYYY-MM-DD'),
               [Op.eq]: null
             }
           }
         }
       }
-    },
+    }
+    /*
     {
       model: db.operation_sighting,
       required: false,
@@ -209,9 +260,23 @@ function generateIncludeObject(dayName, date) {
         {
           model: db.formation,
           required: false
+         
+          where: {
+            start_date: {
+              [Op.lt]: moment(date, 'YYYYMMDD').format('YYYY-MM-DD')
+            },
+            end_date: {
+              [Op.or]: {
+                [Op.gt]: moment(date, 'YYYYMMDD').format('YYYY-MM-DD'),
+                [Op.eq]: null
+              }
+            }
+          }
+          
         }
       ]
     }
+    */
   ]
 }
 

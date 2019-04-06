@@ -89,6 +89,49 @@ router.get('/count', (req, res, next) => {
     })
 })
 
+router.get('/:id', (req, res, next) => {
+  db.trip
+    .findOne({
+      include: [
+        {
+          model: db.time,
+          required: false
+        },
+        {
+          model: db.operation,
+          required: false
+        },
+        {
+          model: db.calender,
+          required: true,
+          where: {
+            id: req.query.calender_id
+          }
+        },
+        {
+          model: db.trip_class,
+          required: true
+        }
+      ],
+      where: {
+        id: req.params.id,
+        trip_direction:
+          req.query.direction === 'up'
+            ? 0
+            : req.query.direction === 'down'
+            ? 1
+            : null
+      },
+      order: [
+        [db.trip.associations.times, 'departure_days', 'ASC'],
+        [db.trip.associations.times, 'departure_time', 'ASC']
+      ]
+    })
+    .then(result => {
+      res.json(result)
+    })
+})
+
 router.post('/', (req, res, next) => {
   console.log('列車追加', req.body)
   db.trip
@@ -103,6 +146,34 @@ router.post('/', (req, res, next) => {
     .then(result => {
       res.json(result)
     })
+})
+
+router.put('/:id', async (req, res, next) => {
+  console.log('編集します', req.params.id, req.body.trip)
+  const updatedTrip = await db.trip.update(req.body.trip, {
+    where: {
+      id: req.params.id
+    }
+  })
+
+  const deletedOldTimes = await db.time.destroy({
+    where: {
+      trip_id: req.params.id
+    }
+  })
+
+  const times = _.map(req.body.trip.times, obj => {
+    return {
+      ...obj,
+      trip_id: req.params.id
+    }
+  })
+
+  const createdNewTimes = await db.time.bulkCreate(times)
+
+  res.json({
+    status: 'success'
+  })
 })
 
 router.get('/importer', async (req, res, next) => {

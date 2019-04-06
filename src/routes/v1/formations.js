@@ -1,5 +1,9 @@
 import * as express from 'express'
 import db from './../../models'
+import * as moment from 'moment'
+
+const Sequelize = require('sequelize')
+const Op = Sequelize.Op
 
 const router = express.Router()
 /* GET users listing. */
@@ -16,7 +20,8 @@ router.get('/', (req, res, next) => {
               required: true
             }
           ]
-        },
+        }
+        /*
         {
           model: db.operation_sighting,
           required: false,
@@ -27,11 +32,33 @@ router.get('/', (req, res, next) => {
             }
           ]
         }
+        */
       ],
+      where: {
+        start_date: {
+          [Op.or]: {
+            [Op.lt]: moment().format('YYYY-MM-DD'),
+            [Op.eq]: null
+          }
+        },
+        end_date: {
+          [Op.or]: {
+            [Op.gt]: moment().format('YYYY-MM-DD'),
+            [Op.eq]: null
+          }
+        }
+      },
       order: [
-        ['formation_number', 'ASC'],
-        [db.formation.associations.vehicle_formations, 'car_number', 'ASC'],
-        [db.formation.associations.operation_sightings, 'sighting_time', 'DESC']
+        [
+          db.sequelize.fn(
+            'to_number',
+            db.sequelize.col('formation_number'),
+            '99999'
+          ),
+          'ASC'
+        ],
+        [db.formation.associations.vehicle_formations, 'car_number', 'ASC']
+        // [db.formation.associations.operation_sightings, 'sighting_time', 'DESC']
       ]
     })
     .then(result => {
