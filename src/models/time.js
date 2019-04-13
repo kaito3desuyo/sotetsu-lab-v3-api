@@ -16,7 +16,9 @@ module.exports = (sequelize, DataTypes) => {
       arrival_days: DataTypes.INTEGER,
       arrival_time: DataTypes.TIME,
       departure_days: DataTypes.INTEGER,
-      departure_time: DataTypes.TIME
+      departure_time: DataTypes.TIME,
+      depot_in: DataTypes.BOOLEAN,
+      depot_out: DataTypes.BOOLEAN
     },
     {
       underscored: true

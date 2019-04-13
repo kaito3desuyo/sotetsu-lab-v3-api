@@ -1,3 +1,5 @@
+import httpMiddleware from 'http'
+import socketMiddleware from 'socket.io'
 import * as express from 'express'
 import * as cookieParser from 'cookie-parser'
 import * as cors from 'cors'
@@ -5,6 +7,8 @@ import indexRouter from './routes/index'
 import axios from 'axios'
 
 const app = express()
+const http = httpMiddleware.Server(app)
+const io = socketMiddleware(http)
 const port = process.env.PORT || 3000
 
 app.use(express.json())
@@ -81,7 +85,20 @@ app.use((err, req, res, next) => {
   res.status(err.status).json(err)
 })
 
-app.listen(port, () => {
+/**
+ * socket.io
+ */
+io.on('connection', socket => {
+  console.log('socket.io connected')
+
+  socket.on('disconnect', () => {})
+
+  socket.on('operation_sighting_sent', data => {
+    socket.broadcast.emit('reload_operation_sighting', { data: data })
+  })
+})
+
+http.listen(port, () => {
   console.log('Server listening on port ' + port)
 })
 

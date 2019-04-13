@@ -60,6 +60,58 @@ router.get('/date/:date', async (req, res, next) => {
     })
 })
 
+/**
+ * CalenderIdを指定して運用ごとの列車を取得する
+ */
+router.get('/trips', async (req, res, next) => {
+  const whereObj = req.query.calender_id ? { id: req.query.calender_id } : {}
+  db.operation
+    .findAll({
+      include: [
+        {
+          model: db.calender,
+          required: true,
+          where: whereObj
+        },
+        {
+          model: db.trip,
+          required: true,
+          include: [
+            {
+              model: db.time,
+              required: true
+            },
+            {
+              model: db.trip_class,
+              required: true
+            }
+          ]
+        }
+      ],
+      where: {
+        [Op.not]: {
+          operation_number: '100'
+        }
+      },
+      order: [
+        ['operation_number', 'ASC'],
+        [
+          db.operation.associations.trips,
+          db.trip.associations.times,
+          'departure_days',
+          'ASC'
+        ],
+        [
+          db.operation.associations.trips,
+          db.trip.associations.times,
+          'departure_time',
+          'ASC'
+        ]
+      ]
+    })
+    .then(result => res.json(result))
+})
+
 /*
  * 日付+運用番号指定検索
  */

@@ -81,6 +81,46 @@ router.get('/today', async (req, res, next) => {
     })
 })
 
+/**
+ * 指定した日付に当てはまるカレンダーを取得する
+ */
+router.get('/date/:date', async (req, res, next) => {
+  const checkDate = await holidayCheck(req.params.date)
+
+  let dayName = moment(req.params.date, 'YYYYMMDD')
+    .format('dddd')
+    .toLowerCase()
+
+  // holiday判定のときはsundayに書き換える
+  if (checkDate === 'holiday') {
+    dayName = 'sunday'
+  }
+
+  db.calender
+    .findOne({
+      where: {
+        [dayName]: true,
+        [Op.and]: {
+          start_date: {
+            [Op.lt]: moment(req.params.date, 'YYYYMMDD').format('YYYY-MM-DD')
+          },
+          end_date: {
+            [Op.or]: {
+              [Op.gt]: moment(req.params.date, 'YYYYMMDD').format('YYYY-MM-DD'),
+              [Op.eq]: null
+            }
+          }
+        }
+      }
+    })
+    .then(result => {
+      res.json(result)
+    })
+    .catch(err => {
+      res.json(err)
+    })
+})
+
 router.get('/:id', (req, res, next) => {
   db.calender
     .findOne({

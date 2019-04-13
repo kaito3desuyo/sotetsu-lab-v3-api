@@ -176,7 +176,7 @@ router.put('/:id', async (req, res, next) => {
   })
 })
 
-router.get('/importer', async (req, res, next) => {
+router.get('/mock/importer', async (req, res, next) => {
   const serviceId = await getServiceId('相鉄本線・いずみ野線')
 
   const calenderIdTemp = {
@@ -347,7 +347,9 @@ router.get('/importer', async (req, res, next) => {
                     : station.departure_time
                   : index === array.length - 1
                   ? null
-                  : station.departure_time
+                  : station.departure_time,
+              depot_in: obj.depot_in,
+              depot_out: obj.depot_out
             }
             return returnTime
           })

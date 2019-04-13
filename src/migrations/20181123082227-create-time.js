@@ -36,6 +36,12 @@ module.exports = {
       departure_time: {
         type: Sequelize.TIME
       },
+      depot_in: {
+        type: Sequelize.BOOLEAN
+      },
+      depot_out: {
+        type: Sequelize.BOOLEAN
+      },
       created_at: {
         allowNull: false,
         type: Sequelize.DATE
