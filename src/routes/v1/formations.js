@@ -21,29 +21,17 @@ router.get('/', (req, res, next) => {
             }
           ]
         }
-        /*
-        {
-          model: db.operation_sighting,
-          required: false,
-          include: [
-            {
-              model: db.operation,
-              required: true
-            }
-          ]
-        }
-        */
       ],
       where: {
         start_date: {
           [Op.or]: {
-            [Op.lt]: moment().format('YYYY-MM-DD'),
+            [Op.lte]: moment().format('YYYY-MM-DD'),
             [Op.eq]: null
           }
         },
         end_date: {
           [Op.or]: {
-            [Op.gt]: moment().format('YYYY-MM-DD'),
+            [Op.gte]: moment().format('YYYY-MM-DD'),
             [Op.eq]: null
           }
         }
@@ -58,7 +46,45 @@ router.get('/', (req, res, next) => {
           'ASC'
         ],
         [db.formation.associations.vehicle_formations, 'car_number', 'ASC']
-        // [db.formation.associations.operation_sightings, 'sighting_time', 'DESC']
+      ]
+    })
+    .then(result => {
+      res.json(result)
+    })
+})
+
+router.get('/number/:number', (req, res, next) => {
+  db.formation
+    .findAll({
+      include: [
+        {
+          model: db.vehicle_formation,
+          required: true,
+          include: [
+            {
+              model: db.vehicle,
+              required: true
+            }
+          ]
+        }
+      ],
+      where: {
+        formation_number: req.params.number,
+        start_date: {
+          [Op.or]: {
+            [Op.lte]: moment().format('YYYY-MM-DD'),
+            [Op.eq]: null
+          }
+        },
+        end_date: {
+          [Op.or]: {
+            [Op.gte]: moment().format('YYYY-MM-DD'),
+            [Op.eq]: null
+          }
+        }
+      },
+      order: [
+        [db.formation.associations.vehicle_formations, 'car_number', 'ASC']
       ]
     })
     .then(result => {

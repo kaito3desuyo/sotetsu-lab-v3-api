@@ -22,9 +22,11 @@
     "lodash": "^4.17.11",
     "moment": "^2.24.0",
     "morgan": "~1.9.0",
+    "node-cron": "^2.0.3",
     "pg": "^7.9.0",
     "sequelize": "^5.2.12",
     "socket.io": "^2.2.0",
+    "sticky-session": "^1.1.2",
     "uuid": "^3.3.2"
   },
   "devDependencies": {

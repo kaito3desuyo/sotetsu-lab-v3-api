@@ -28,7 +28,7 @@ router.get('/', (req, res, next) => {
       ]
     })
     .then(result => {
-      res.send(result)
+      res.json(result)
     })
 })
 

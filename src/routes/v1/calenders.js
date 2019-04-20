@@ -102,11 +102,13 @@ router.get('/date/:date', async (req, res, next) => {
         [dayName]: true,
         [Op.and]: {
           start_date: {
-            [Op.lt]: moment(req.params.date, 'YYYYMMDD').format('YYYY-MM-DD')
+            [Op.lte]: moment(req.params.date, 'YYYYMMDD').format('YYYY-MM-DD')
           },
           end_date: {
             [Op.or]: {
-              [Op.gt]: moment(req.params.date, 'YYYYMMDD').format('YYYY-MM-DD'),
+              [Op.gte]: moment(req.params.date, 'YYYYMMDD').format(
+                'YYYY-MM-DD'
+              ),
               [Op.eq]: null
             }
           }

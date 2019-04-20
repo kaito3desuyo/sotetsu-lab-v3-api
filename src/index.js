@@ -1,15 +1,12 @@
-import httpMiddleware from 'http'
+import http from 'http'
+import sticky from 'sticky-session'
 import socketMiddleware from 'socket.io'
 import * as express from 'express'
 import * as cookieParser from 'cookie-parser'
 import * as cors from 'cors'
 import indexRouter from './routes/index'
-import axios from 'axios'
 
 const app = express()
-const http = httpMiddleware.Server(app)
-const io = socketMiddleware(http)
-const port = process.env.PORT || 3000
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
@@ -85,21 +82,31 @@ app.use((err, req, res, next) => {
   res.status(err.status).json(err)
 })
 
-/**
- * socket.io
- */
-io.on('connection', socket => {
-  console.log('socket.io connected')
+const server = http.createServer(app)
+const io = socketMiddleware()
+const port = process.env.PORT || 3000
 
-  socket.on('disconnect', () => {})
+io.attach(server)
+const isWorker = sticky.listen(server, port)
 
-  socket.on('operation_sighting_sent', data => {
-    socket.broadcast.emit('reload_operation_sighting', { data: data })
+if (isWorker) {
+  /**
+   * socket.io
+   */
+  io.on('connection', socket => {
+    console.log('socket.io connected')
+
+    socket.on('disconnect', () => {})
+
+    socket.on('operation_sighting_sent', data => {
+      socket.broadcast.emit('reload_operation_sighting', { data: data })
+    })
   })
-})
-
-http.listen(port, () => {
+}
+/*
+server.listen(port, () => {
+  console.log(`Worker ${process.pid} started`)
   console.log('Server listening on port ' + port)
 })
-
-export default app
+*/
+// export default app

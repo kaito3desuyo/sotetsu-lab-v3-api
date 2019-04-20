@@ -52,13 +52,13 @@ router.get('/number/:number', (req, res, next) => {
                 [Op.and]: {
                   start_date: {
                     [Op.or]: {
-                      [Op.lt]: today.format('YYYYMMDD'),
+                      [Op.lte]: today.format('YYYYMMDD'),
                       [Op.eq]: null
                     }
                   },
                   end_date: {
                     [Op.or]: {
-                      [Op.gt]: today.format('YYYYMMDD'),
+                      [Op.gte]: today.format('YYYYMMDD'),
                       [Op.eq]: null
                     }
                   }
