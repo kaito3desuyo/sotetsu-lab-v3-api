@@ -1,5 +1,7 @@
 const path = require('path')
 const nodeExternals = require('webpack-node-externals')
+const NodemonPlugin = require('nodemon-webpack-plugin')
+
 module.exports = {
   entry: {
     index: './src/index.js'
@@ -27,5 +29,15 @@ module.exports = {
         }
       }
     ]
+  },
+  plugins: [
+    new NodemonPlugin({
+      watch: path.resolve('./dist'),
+      script: './dist/index.js'
+      // ext: 'js'
+    })
+  ],
+  watchOptions: {
+    poll: 1000
   }
 }

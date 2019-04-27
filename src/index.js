@@ -3,6 +3,7 @@ import sticky from 'sticky-session'
 import socketMiddleware from 'socket.io'
 import * as express from 'express'
 import * as cookieParser from 'cookie-parser'
+import bodyParser from 'body-parser'
 import * as cors from 'cors'
 import indexRouter from './routes/index'
 
@@ -10,6 +11,7 @@ const app = express()
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
+app.use(bodyParser.json())
 app.use(cookieParser())
 app.use(cors())
 /*

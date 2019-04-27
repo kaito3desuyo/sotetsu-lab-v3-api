@@ -5,7 +5,7 @@
   "scripts": {
     "build": "rm -rf dist && webpack --mode production",
     "start": "node ./dist/index.js",
-    "dev": "webpack --mode development --config webpack.config.js --watch & nodemon ./dist/index.js",
+    "dev": "webpack --mode development --config webpack.config.js --watch",
     "heroku-postbuild": "npm run build"
   },
   "engines": {
@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "axios": "^0.18.0",
+    "body-parser": "^1.19.0",
     "cookie-parser": "^1.4.4",
     "cors": "^2.8.5",
     "debug": "~2.6.9",
@@ -44,7 +45,8 @@
     "eslint-plugin-prettier": "^3.0.1",
     "eslint-plugin-promise": "^4.0.1",
     "eslint-plugin-standard": "^4.0.0",
-    "nodemon": "^1.18.10",
+    "nodemon": "^1.18.11",
+    "nodemon-webpack-plugin": "^4.0.8",
     "prettier": "^1.16.4",
     "webpack": "^4.29.6",
     "webpack-cli": "^3.3.0",

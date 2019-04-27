@@ -415,6 +415,9 @@ function getServiceId(serviceName) {
           service_id: result ? result.id : null
         })
       })
+      .catch(err => {
+        console.log(err)
+      })
   })
 }
 
@@ -436,6 +439,9 @@ function getCalenderId(serviceId, type) {
           calender_id: result.id
         })
       })
+      .catch(err => {
+        console.log(err)
+      })
   })
 }
 
@@ -452,6 +458,9 @@ function getOperationId(calenderId, number) {
         resolve({
           operation_id: result ? result.id : null
         })
+      })
+      .catch(err => {
+        console.log(err)
       })
   })
 }
@@ -470,6 +479,9 @@ function getClassId(serviceId, className) {
           trip_class_id: result ? result.id : null
         })
       })
+      .catch(err => {
+        console.log(err)
+      })
   })
 }
 
@@ -485,6 +497,9 @@ function getStationId(stationName) {
         resolve({
           station_id: result ? result.id : null
         })
+      })
+      .catch(err => {
+        console.log(err)
       })
   })
 }
