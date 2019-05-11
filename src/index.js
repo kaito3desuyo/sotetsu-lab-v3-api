@@ -6,6 +6,7 @@ import * as cookieParser from 'cookie-parser'
 import bodyParser from 'body-parser'
 import * as cors from 'cors'
 import indexRouter from './routes/index'
+import axios from 'axios'
 
 const app = express()
 
@@ -14,7 +15,7 @@ app.use(express.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 app.use(cookieParser())
 app.use(cors())
-/*
+
 app.use(async (req, res, next) => {
   console.log('Intercept Token', req.header('Authorization'))
   // token取得
@@ -30,13 +31,23 @@ app.use(async (req, res, next) => {
   }
 
   const token = req.header('Authorization').split(' ')
-  console.log(token[1])
+  console.log(
+    'トークン',
+    token[1],
+    'Basic ' +
+      Buffer.from(
+        req.header('X-APP-CLIENT-ID') + ':' + req.header('X-APP-CLIENT-SECRET')
+      ).toString('base64')
+  )
+  console.log('NODE_ENV', process.env.NODE_ENV)
 
   try {
     const params = new URLSearchParams()
     params.append('token', token[1])
     const introspection = await axios.post(
-      'https://auth.sotetsu-lab.com/token/introspection',
+      process.env.NODE_ENV === 'production'
+        ? 'https://auth.sotetsu-lab.com/token/introspection'
+        : 'http://sotetsu-lab-v3-auth:3000/token/introspection',
       params,
       {
         headers: {
@@ -65,6 +76,7 @@ app.use(async (req, res, next) => {
 
     next()
   } catch (err) {
+    console.log('エラー', err)
     next({
       status: 500,
       error: {
@@ -74,7 +86,6 @@ app.use(async (req, res, next) => {
     })
   }
 })
-*/
 
 app.use('/', indexRouter)
 

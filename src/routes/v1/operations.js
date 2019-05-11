@@ -30,6 +30,110 @@ router.get('/', (req, res, next) => {
     })
 })
 
+/**
+ * 運用idを指定して取得
+ */
+router.get('/by-id/:id', (req, res, next) => {
+  db.operation
+    .findOne({
+      include: [
+        {
+          model: db.trip,
+          required: false,
+          include: [
+            {
+              model: db.time,
+              required: true
+            },
+            {
+              model: db.trip_class,
+              required: true
+            }
+          ]
+        }
+      ],
+      where: {
+        id: req.params.id,
+        [Op.not]: {
+          operation_number: '100'
+        }
+      },
+      order: [
+        ['operation_number', 'ASC'],
+        [
+          db.operation.associations.trips,
+          db.trip.associations.times,
+          'departure_days',
+          'ASC'
+        ],
+        [
+          db.operation.associations.trips,
+          db.trip.associations.times,
+          'departure_time',
+          'ASC'
+        ]
+      ]
+    })
+    .then(result => {
+      res.json(result)
+    })
+})
+
+/**
+ * カレンダーidを指定して、運用一覧を取得
+ */
+router.get('/by-calender/:id', (req, res, next) => {
+  db.operation
+    .findAll({
+      include: [
+        {
+          model: db.calender,
+          required: true,
+          where: {
+            id: req.params.id
+          }
+        },
+        {
+          model: db.trip,
+          required: false,
+          include: [
+            {
+              model: db.time,
+              required: true
+            },
+            {
+              model: db.trip_class,
+              required: true
+            }
+          ]
+        }
+      ],
+      where: {
+        [Op.not]: {
+          operation_number: '100'
+        }
+      },
+      order: [
+        ['operation_number', 'ASC'],
+        [
+          db.operation.associations.trips,
+          db.trip.associations.times,
+          'departure_days',
+          'ASC'
+        ],
+        [
+          db.operation.associations.trips,
+          db.trip.associations.times,
+          'departure_time',
+          'ASC'
+        ]
+      ]
+    })
+    .then(result => {
+      res.json(result)
+    })
+})
+
 /*
  * 日付指定検索
  */

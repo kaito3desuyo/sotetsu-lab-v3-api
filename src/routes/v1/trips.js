@@ -89,6 +89,35 @@ router.get('/count', (req, res, next) => {
     })
 })
 
+/**
+ * カレンダーidを指定して全列車を取得
+ */
+router.get('/by-calender/:id', (req, res, next) => {
+  db.trip
+    .findAll({
+      include: [
+        {
+          model: db.calender,
+          required: true,
+          where: {
+            id: req.params.id
+          }
+        },
+        {
+          model: db.time,
+          required: true
+        }
+      ],
+      order: [
+        [db.trip.associations.times, 'departure_days', 'ASC'],
+        [db.trip.associations.times, 'departure_time', 'ASC']
+      ]
+    })
+    .then(result => {
+      res.json(result)
+    })
+})
+
 router.get('/:id', (req, res, next) => {
   db.trip
     .findOne({
