@@ -1,0 +1,32 @@
+{
+  "development": {
+    "use_env_variable": "DATABASE_URL",
+    "dialect": "postgres",
+    "dialectOptions": {
+      "useUTC": false
+    },
+    "timezone": "+09:00",
+    "pool": {
+      "max": 30,
+      "min": 0,
+      "idle": 20000,
+      "acquire": 300000
+    }
+  },
+  "test": {
+    "use_env_variable": "DATABASE_URL",
+    "dialect": "postgres",
+    "dialectOptions": {
+      "useUTC": false
+    },
+    "timezone": "+09:00"
+  },
+  "production": {
+    "use_env_variable": "DATABASE_URL",
+    "dialect": "postgres",
+    "dialectOptions": {
+      "useUTC": false
+    },
+    "timezone": "+09:00"
+  }
+}
