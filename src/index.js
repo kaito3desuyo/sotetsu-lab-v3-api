@@ -17,7 +17,7 @@ app.use(cookieParser())
 app.use(cors())
 
 app.use(async (req, res, next) => {
-  // token取得
+  // token取得する
   if (!req.header('Authorization')) {
     next({
       status: 401,
