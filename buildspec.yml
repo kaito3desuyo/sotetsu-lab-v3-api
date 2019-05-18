@@ -1,7 +1,10 @@
 version: 0.2
 ### Defines the steps used by AWS CodeBuild
- 
+
 phases:
+  install:
+    runtime-versions:
+      docker: 18
   pre_build:
     commands:
       - echo Build started on `date`
