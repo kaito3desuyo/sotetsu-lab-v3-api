@@ -17,9 +17,7 @@ app.use(cookieParser())
 app.use(cors())
 
 app.use(async (req, res, next) => {
-  console.log('Intercept Token', req.header('Authorization'))
   // token取得
-
   if (!req.header('Authorization')) {
     next({
       status: 401,
@@ -31,15 +29,6 @@ app.use(async (req, res, next) => {
   }
 
   const token = req.header('Authorization').split(' ')
-  console.log(
-    'トークン',
-    token[1],
-    'Basic ' +
-      Buffer.from(
-        req.header('X-APP-CLIENT-ID') + ':' + req.header('X-APP-CLIENT-SECRET')
-      ).toString('base64')
-  )
-  console.log('NODE_ENV', process.env.NODE_ENV)
 
   try {
     const params = new URLSearchParams()
@@ -61,8 +50,6 @@ app.use(async (req, res, next) => {
         }
       }
     )
-
-    console.log('チェッカー', introspection)
 
     if (!introspection.data.active) {
       next({
@@ -90,8 +77,7 @@ app.use(async (req, res, next) => {
 app.use('/', indexRouter)
 
 app.use((err, req, res, next) => {
-  console.log(err)
-  console.error(err.stack)
+  console.error(err)
   res.status(err.status).json(err)
 })
 

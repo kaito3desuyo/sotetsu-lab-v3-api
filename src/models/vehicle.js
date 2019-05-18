@@ -8,7 +8,10 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: DataTypes.UUIDV4
       },
       formation_id: DataTypes.UUID,
-      vehicle_number: DataTypes.STRING,
+      vehicle_number: {
+        type: DataTypes.STRING,
+        unique: true
+      },
       belongs: DataTypes.STRING,
       production_date: DataTypes.DATEONLY,
       scrapped_date: DataTypes.DATEONLY

@@ -10,7 +10,8 @@ module.exports = {
         type: Sequelize.UUID
       },
       vehicle_number: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        unique: true
       },
       belongs: {
         type: Sequelize.STRING

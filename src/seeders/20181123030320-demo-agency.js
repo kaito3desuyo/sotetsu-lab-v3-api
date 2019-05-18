@@ -1,5 +1,6 @@
 const uuidv4 = require('uuid/v4')
 const _ = require('lodash')
+const moment = require('moment')
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
@@ -30,8 +31,8 @@ module.exports = {
           agency_url: null,
           agency_phone: null,
           agency_fare_url: null,
-          created_at: '2018-11-23 12:00:00',
-          updated_at: '2018-11-23 12:00:00'
+          created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+          updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
         },
         {
           id: agencyId[1],
@@ -43,8 +44,8 @@ module.exports = {
           agency_url: null,
           agency_phone: null,
           agency_fare_url: null,
-          created_at: '2018-11-23 12:00:00',
-          updated_at: '2018-11-23 12:00:00'
+          created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+          updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
         }
       ],
       {}
@@ -64,8 +65,8 @@ module.exports = {
         route_url: null,
         route_color: null,
         route_text_color: null,
-        created_at: '2018-11-23 12:00:00',
-        updated_at: '2018-11-23 12:00:00'
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+        updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
       },
       {
         id: routeId[1],
@@ -78,8 +79,8 @@ module.exports = {
         route_url: null,
         route_color: null,
         route_text_color: null,
-        created_at: '2018-11-23 12:00:00',
-        updated_at: '2018-11-23 12:00:00'
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+        updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
       },
       {
         id: routeId[2],
@@ -92,8 +93,8 @@ module.exports = {
         route_url: null,
         route_color: null,
         route_text_color: null,
-        created_at: '2018-11-23 12:00:00',
-        updated_at: '2018-11-23 12:00:00'
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+        updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
       },
       {
         id: routeId[3],
@@ -106,8 +107,8 @@ module.exports = {
         route_url: null,
         route_color: null,
         route_text_color: null,
-        created_at: '2018-11-23 12:00:00',
-        updated_at: '2018-11-23 12:00:00'
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+        updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
       },
       {
         id: routeId[4],
@@ -120,8 +121,8 @@ module.exports = {
         route_url: null,
         route_color: null,
         route_text_color: null,
-        created_at: '2018-11-23 12:00:00',
-        updated_at: '2018-11-23 12:00:00'
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+        updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
       },
       {
         id: routeId[5],
@@ -134,8 +135,8 @@ module.exports = {
         route_url: null,
         route_color: null,
         route_text_color: null,
-        created_at: '2018-11-23 12:00:00',
-        updated_at: '2018-11-23 12:00:00'
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+        updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
       }
     ])
 
@@ -863,8 +864,8 @@ module.exports = {
         station_latlng: null,
         station_url: null,
         wheelchair_boarding: true,
-        created_at: '2018-11-23 12:00:00',
-        updated_at: '2018-11-23 12:00:00'
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+        updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
       })
       station.stops.forEach(stop => {
         stops.push({
@@ -874,8 +875,8 @@ module.exports = {
           stop_description: null,
           stop_latlng: null,
           zone_id: null,
-          created_at: '2018-11-23 12:00:00',
-          updated_at: '2018-11-23 12:00:00'
+          created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+          updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
         })
       })
     })
@@ -976,8 +977,8 @@ module.exports = {
               station_id: station.id,
               station_sequence: data.sequence,
               station_numbering: data.numbering,
-              created_at: '2018-11-23 12:00:00',
-              updated_at: '2018-11-23 12:00:00'
+              created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+              updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
             })
           }
           if (
@@ -993,8 +994,8 @@ module.exports = {
               station_id: station.id,
               station_sequence: data.sequence,
               station_numbering: data.numbering,
-              created_at: '2018-11-23 12:00:00',
-              updated_at: '2018-11-23 12:00:00'
+              created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+              updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
             })
           }
           if (
@@ -1008,8 +1009,8 @@ module.exports = {
               station_id: station.id,
               station_sequence: data.sequence,
               station_numbering: data.numbering,
-              created_at: '2018-11-23 12:00:00',
-              updated_at: '2018-11-23 12:00:00'
+              created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+              updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
             })
           }
           if (
@@ -1025,8 +1026,8 @@ module.exports = {
               station_id: station.id,
               station_sequence: data.sequence,
               station_numbering: data.numbering,
-              created_at: '2018-11-23 12:00:00',
-              updated_at: '2018-11-23 12:00:00'
+              created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+              updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
             })
           }
           if (
@@ -1040,8 +1041,8 @@ module.exports = {
               station_id: station.id,
               station_sequence: data.sequence,
               station_numbering: data.numbering,
-              created_at: '2018-11-23 12:00:00',
-              updated_at: '2018-11-23 12:00:00'
+              created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+              updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
             })
           }
           if (
@@ -1057,8 +1058,8 @@ module.exports = {
               station_id: station.id,
               station_sequence: data.sequence,
               station_numbering: data.numbering,
-              created_at: '2018-11-23 12:00:00',
-              updated_at: '2018-11-23 12:00:00'
+              created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+              updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
             })
           }
         })
@@ -1078,8 +1079,8 @@ module.exports = {
           id: serviceId,
           service_name: '相鉄本線・いずみ野線',
           service_description: null,
-          created_at: '2018-11-23 12:00:00',
-          updated_at: '2018-11-23 12:00:00'
+          created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+          updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
         }
       ],
       {}
@@ -1218,16 +1219,16 @@ module.exports = {
         saturday: calender.name === '土休日ダイヤ',
         start_date: calender.startDate,
         end_date: calender.endDate,
-        created_at: '2018-11-23 12:00:00',
-        updated_at: '2018-11-23 12:00:00'
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+        updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
       })
       calender.operation.forEach(operationNumber => {
         operations.push({
           id: uuidv4(),
           calender_id: calenderId,
           operation_number: operationNumber,
-          created_at: '2018-11-23 12:00:00',
-          updated_at: '2018-11-23 12:00:00'
+          created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+          updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
         })
       })
     })
@@ -1252,8 +1253,8 @@ module.exports = {
             route_id: route.id,
             service_id: service.id,
             sequence: index,
-            created_at: '2018-11-23 12:00:00',
-            updated_at: '2018-11-23 12:00:00'
+            created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+            updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
           })
         })
       })
@@ -1267,8 +1268,8 @@ module.exports = {
         trip_class_name: '特急',
         trip_class_color: '#ff8000',
         sequence: 1,
-        created_at: '2018-11-23 12:00:00',
-        updated_at: '2018-11-23 12:00:00'
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+        updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
       },
       {
         id: uuidv4(),
@@ -1276,8 +1277,8 @@ module.exports = {
         trip_class_name: '急行',
         trip_class_color: '#ff0000',
         sequence: 2,
-        created_at: '2018-11-23 12:00:00',
-        updated_at: '2018-11-23 12:00:00'
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+        updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
       },
       {
         id: uuidv4(),
@@ -1285,8 +1286,8 @@ module.exports = {
         trip_class_name: '快速',
         trip_class_color: '#000080',
         sequence: 3,
-        created_at: '2018-11-23 12:00:00',
-        updated_at: '2018-11-23 12:00:00'
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+        updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
       },
       {
         id: uuidv4(),
@@ -1294,8 +1295,8 @@ module.exports = {
         trip_class_name: '各停',
         trip_class_color: '#000000',
         sequence: 4,
-        created_at: '2018-11-23 12:00:00',
-        updated_at: '2018-11-23 12:00:00'
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+        updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
       },
       {
         id: uuidv4(),
@@ -1303,8 +1304,8 @@ module.exports = {
         trip_class_name: '回送',
         trip_class_color: '#808080',
         sequence: 5,
-        created_at: '2018-11-23 12:00:00',
-        updated_at: '2018-11-23 12:00:00'
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+        updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
       }
     ])
 
@@ -1327,7 +1328,7 @@ module.exports = {
       {
         forNum: 7710,
         startDate: null,
-        endDate: null,
+        endDate: '2019-04-28',
         vehicles: [
           { vehNum: 7710 },
           { vehNum: 7125 },
@@ -1342,7 +1343,7 @@ module.exports = {
       {
         forNum: 7712,
         startDate: null,
-        endDate: null,
+        endDate: '2019-04-28',
         vehicles: [
           { vehNum: 7712 },
           { vehNum: 7129 },
@@ -1354,6 +1355,56 @@ module.exports = {
           { vehNum: 7511 }
         ]
       },
+
+      {
+        forNum: 7710,
+        startDate: '2019-04-29',
+        endDate: '2019-05-12',
+        vehicles: [
+          { vehNum: 7710 },
+          { vehNum: 7125 },
+          { vehNum: 7126 },
+          { vehNum: 7607 },
+          { vehNum: 7127 },
+          { vehNum: 7128 },
+          { vehNum: 7602 },
+          { vehNum: 7107 },
+          { vehNum: 7108 },
+          { vehNum: 7509 }
+        ],
+        recomposition: true
+      },
+      {
+        forNum: 7712,
+        startDate: '2019-04-29',
+        endDate: '2019-05-12',
+        vehicles: [
+          { vehNum: 7712 },
+          { vehNum: 7129 },
+          { vehNum: 7130 },
+          { vehNum: 7505 },
+          { vehNum: 7703 },
+          { vehNum: 7511 }
+        ],
+        recomposition: true
+      },
+      {
+        forNum: 7710,
+        startDate: '2019-05-13',
+        endDate: null,
+        vehicles: [
+          { vehNum: 7710 },
+          { vehNum: 7125 },
+          { vehNum: 7126 },
+          { vehNum: 7505 },
+          { vehNum: 7602 },
+          { vehNum: 7107 },
+          { vehNum: 7108 },
+          { vehNum: 7509 }
+        ],
+        recomposition: true
+      },
+
       {
         forNum: 7713,
         startDate: null,
@@ -2038,6 +2089,23 @@ module.exports = {
           { vehNum: 12901 },
           { vehNum: 12001 }
         ]
+      },
+      {
+        forNum: 12102,
+        startDate: '2019-05-11',
+        endDate: null,
+        vehicles: [
+          { vehNum: 12102 },
+          { vehNum: 12202 },
+          { vehNum: 12302 },
+          { vehNum: 12402 },
+          { vehNum: 12502 },
+          { vehNum: 12602 },
+          { vehNum: 12702 },
+          { vehNum: 12802 },
+          { vehNum: 12902 },
+          { vehNum: 12002 }
+        ]
       }
     ]
 
@@ -2053,10 +2121,13 @@ module.exports = {
         formation_number: formation.forNum,
         start_date: formation.startDate,
         end_date: formation.endDate,
-        created_at: '2018-11-23 12:00:00',
-        updated_at: '2018-11-23 12:00:00'
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+        updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
       })
       formation.vehicles.forEach(vehicle => {
+        if (formation.recomposition) {
+          return true
+        }
         vehicles.push({
           id: uuidv4(),
           formation_id: null,
@@ -2064,8 +2135,8 @@ module.exports = {
           belongs: '相模鉄道かしわ台車両センター',
           production_date: null,
           scrapped_date: null,
-          created_at: '2018-11-23 12:00:00',
-          updated_at: '2018-11-23 12:00:00'
+          created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+          updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
         })
       })
     })
@@ -2099,8 +2170,8 @@ module.exports = {
             formation_id: forArr.id,
             vehicle_id: vehArr.id,
             car_number: index + 1,
-            created_at: '2018-11-23 12:00:00',
-            updated_at: '2018-11-23 12:00:00'
+            created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+            updated_at: moment().format('YYYY-MM-DD HH:mm:ss')
           })
         })
       })
