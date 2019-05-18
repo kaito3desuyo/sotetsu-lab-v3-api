@@ -16,6 +16,14 @@ app.use(bodyParser.json())
 app.use(cookieParser())
 app.use(cors())
 
+app.get('/health-check', (req, res, next) => {
+  res.json({
+    status: 200,
+    data: {},
+    message: 'Sotetsu Lab v3 API.'
+  })
+})
+
 app.use(async (req, res, next) => {
   // token取得する
   if (!req.header('Authorization')) {
