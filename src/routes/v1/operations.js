@@ -12,6 +12,8 @@ const Sequelize = require('sequelize')
 const Op = Sequelize.Op
 
 const moment = require('moment')
+require('moment-timezone')
+moment.tz.setDefault('Asia/Tokyo')
 
 /* GET users listing. */
 router.get('/', (req, res, next) => {
@@ -426,37 +428,64 @@ router.post('/sightings', (req, res, next) => {
 /**
  * 順送り処理
  */
-cron.schedule('0 0 2 * * *', async () => {
-  if (!cluster.isMaster) {
-    return
-  }
-  console.log('順送り処理を行っています')
-
-  const latest = await getLatestSightings()
-  const todaysOperations = await getOperationsByDate(
-    moment().format('YYYYMMDD')
-  )
-
-  const increment = operationNumber => {
-    // console.log(operationNumber[1])
-    if (operationNumber === '100') {
-      return '100'
+cron.schedule(
+  '0 0 2 * * *',
+  // '*/10 * * * * *',
+  () => {
+    if (!cluster.isMaster) {
+      console.log('このプロセスは子プロセスです。終了します')
+      return
     }
-    operationNumber = _.replace(operationNumber, /9$/, '0')
-    return String(Number(operationNumber) + 1)
-  }
-  const incrementedData = JSON.parse(JSON.stringify(latest)).map(obj => {
-    return {
-      formation_id: obj.formation_id,
-      operation_id: _.find(todaysOperations, ope => {
-        return ope.operation_number === increment(obj.operation_number)
-      }).id,
-      sighting_time: obj.sighting_time
-    }
-  })
+    const random = Math.floor(Math.random() * 31)
+    console.log('順送り処理を行います')
+    setTimeout(async () => {
+      console.log(random + '秒遅延実行します')
 
-  await db.operation_sighting.bulkCreate(incrementedData)
-})
+      const latest = await getLatestSightings()
+      console.log('最後の目撃情報', JSON.parse(JSON.stringify(latest)))
+
+      const isDone = _.some(JSON.parse(JSON.stringify(latest)), obj => {
+        return (
+          moment(obj.latest_update).format('H') === '2' &&
+          moment(obj.latest_update).format('YYYY-MM-DD') ===
+            moment().format('YYYY-MM-DD')
+        )
+      })
+
+      if (isDone) {
+        console.log('すでに順送り実行済みのため終了します')
+        return
+      }
+
+      const todaysOperations = await getOperationsByDate(
+        moment().format('YYYYMMDD')
+      )
+
+      const increment = operationNumber => {
+        // console.log(operationNumber[1])
+        if (operationNumber === '100') {
+          return '100'
+        }
+        operationNumber = _.replace(operationNumber, /9$/, '0')
+        return String(Number(operationNumber) + 1)
+      }
+      const incrementedData = JSON.parse(JSON.stringify(latest)).map(obj => {
+        return {
+          formation_id: obj.formation_id,
+          operation_id: _.find(todaysOperations, ope => {
+            return ope.operation_number === increment(obj.operation_number)
+          }).id,
+          sighting_time: obj.sighting_time
+        }
+      })
+
+      await db.operation_sighting.bulkCreate(incrementedData)
+    }, 1000 * random)
+  },
+  {
+    timezone: 'Asia/Tokyo'
+  }
+)
 
 /**
  * 日付から運用を取得する

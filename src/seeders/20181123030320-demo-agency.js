@@ -2152,13 +2152,10 @@ module.exports = {
         type: sequelize.QueryTypes.SELECT
       })
     ]).then(result => {
-      console.log(result[0])
+      console.log('データ', formationDetails)
       const returnArray = []
-      formationDetails.forEach(formation => {
-        const forArr = _.find(result[0], [
-          'formation_number',
-          formation.forNum.toString()
-        ])
+      formationDetails.forEach((formation, index) => {
+        const forArr = result[0][index]
 
         formation.vehicles.forEach((vehicle, index) => {
           const vehArr = _.find(result[1], [
@@ -2176,7 +2173,7 @@ module.exports = {
         })
       })
 
-      console.log(returnArray)
+      //console.log(returnArray)
       return queryInterface.bulkInsert('vehicle_formations', returnArray, {})
     })
   },

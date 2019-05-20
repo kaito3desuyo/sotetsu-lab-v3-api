@@ -23,10 +23,13 @@ app.get('/health-check', (req, res, next) => {
     message: 'Sotetsu Lab v3 API.'
   })
 })
-
+/*
 app.use(async (req, res, next) => {
   // token取得する
-  if (!req.header('Authorization')) {
+  if (
+    !req.header('Authorization') ||
+    typeof req.header('Authorization') !== 'string'
+  ) {
     next({
       status: 401,
       error: {
@@ -34,6 +37,7 @@ app.use(async (req, res, next) => {
         message: 'Please set Authorization header.'
       }
     })
+    return
   }
 
   const token = req.header('Authorization').split(' ')
@@ -81,7 +85,7 @@ app.use(async (req, res, next) => {
     })
   }
 })
-
+*/
 app.use('/', indexRouter)
 
 app.use((err, req, res, next) => {

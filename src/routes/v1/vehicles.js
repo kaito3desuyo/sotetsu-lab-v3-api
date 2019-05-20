@@ -8,6 +8,8 @@ const Sequelize = require('sequelize')
 const Op = Sequelize.Op
 
 const moment = require('moment')
+require('moment-timezone')
+moment.tz.setDefault('Asia/Tokyo')
 
 /* GET users listing. */
 router.get('/', (req, res, next) => {
