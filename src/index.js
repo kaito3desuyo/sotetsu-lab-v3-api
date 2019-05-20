@@ -23,7 +23,7 @@ app.get('/health-check', (req, res, next) => {
     message: 'Sotetsu Lab v3 API.'
   })
 })
-/*
+
 app.use(async (req, res, next) => {
   // token取得する
   if (
@@ -85,7 +85,7 @@ app.use(async (req, res, next) => {
     })
   }
 })
-*/
+
 app.use('/', indexRouter)
 
 app.use((err, req, res, next) => {
