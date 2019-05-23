@@ -458,7 +458,8 @@ cron.schedule(
       }
 
       const todaysOperations = await getOperationsByDate(
-        moment().format('YYYYMMDD')
+        moment().format('YYYYMMDD'),
+        true
       )
 
       const increment = operationNumber => {
@@ -491,7 +492,7 @@ cron.schedule(
  * 日付から運用を取得する
  * @param {*} req
  */
-const getOperationsByDate = async date => {
+const getOperationsByDate = async (date, isIncludeStop = false) => {
   const checkDate = await holidayCheck(date)
 
   let dayName = moment(date, 'YYYYMMDD')
@@ -507,7 +508,7 @@ const getOperationsByDate = async date => {
     include: generateIncludeObject(dayName, date),
     where: {
       [Op.not]: {
-        operation_number: '100'
+        operation_number: isIncludeStop ? null : '100'
       }
     },
     order: [
