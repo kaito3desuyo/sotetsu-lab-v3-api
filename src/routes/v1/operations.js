@@ -258,7 +258,7 @@ router.get('/sightings/formation', (req, res, next) => {
         
           SELECT * FROM operation_sightings
         
-      ) AS onemore ON sightings.latest_sighting = onemore.sighting_time AND sightings.latest_update = onemore.updated_at
+      ) AS onemore ON formations.id = onemore.formation_id AND sightings.latest_sighting = onemore.sighting_time AND sightings.latest_update = onemore.updated_at
       LEFT JOIN (
         SELECT * FROM operations
       ) AS operations ON onemore.operation_id = operations.id
@@ -304,7 +304,7 @@ router.get('/sightings/operation', async (req, res, next) => {
         
           SELECT * FROM operation_sightings
         
-      ) AS onemore ON sightings.latest_sighting = onemore.sighting_time AND sightings.latest_update = onemore.updated_at
+      ) AS onemore ON operations.id = onemore.operation_id AND sightings.latest_sighting = onemore.sighting_time AND sightings.latest_update = onemore.updated_at
       LEFT JOIN (
         SELECT * FROM formations
         WHERE formations.end_date >= '${today.format(
@@ -429,8 +429,8 @@ router.post('/sightings', (req, res, next) => {
  * 順送り処理
  */
 cron.schedule(
-  // '0 0 2 * * *',
-  '10 * * * * *',
+  '0 0 2 * * *',
+  // '10 * * * * *',
   () => {
     if (!cluster.isMaster) {
       console.log('このプロセスは子プロセスです。終了します')
@@ -477,7 +477,7 @@ cron.schedule(
             operation_id: _.find(todaysOperations, ope => {
               return ope.operation_number === increment(obj.operation_number)
             }).id,
-            sighting_time: obj.sighting_time
+            sighting_time: moment() // obj.sighting_time
           }
         })
         .value()
@@ -531,7 +531,6 @@ const getLatestSightings = () => {
       FROM operation_sightings GROUP BY formation_id) AS latest 
       ON base.formation_id = latest.formation_id 
       AND base.sighting_time = latest.latest_sighting 
-      AND base.updated_at = latest.latest_update
       INNER JOIN formations ON base.formation_id = formations.id 
       INNER JOIN operations ON base.operation_id = operations.id
       WHERE formations.end_date >= '${moment().format(
@@ -543,6 +542,8 @@ const getLatestSightings = () => {
       mapToModel: true
     }
   )
+
+  // , sightings.latest_update AS updated_at
 }
 
 // 休日判定
