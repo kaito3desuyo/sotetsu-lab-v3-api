@@ -429,8 +429,8 @@ router.post('/sightings', (req, res, next) => {
  * 順送り処理
  */
 cron.schedule(
-  '0 0 2 * * *',
-  // '*/10 * * * * *',
+  // '0 0 2 * * *',
+  '10 * * * * *',
   () => {
     if (!cluster.isMaster) {
       console.log('このプロセスは子プロセスです。終了します')
@@ -458,8 +458,7 @@ cron.schedule(
       }
 
       const todaysOperations = await getOperationsByDate(
-        moment().format('YYYYMMDD'),
-        true
+        moment().format('YYYYMMDD')
       )
 
       const increment = operationNumber => {
@@ -470,15 +469,18 @@ cron.schedule(
         operationNumber = _.replace(operationNumber, /9$/, '0')
         return String(Number(operationNumber) + 1)
       }
-      const incrementedData = JSON.parse(JSON.stringify(latest)).map(obj => {
-        return {
-          formation_id: obj.formation_id,
-          operation_id: _.find(todaysOperations, ope => {
-            return ope.operation_number === increment(obj.operation_number)
-          }).id,
-          sighting_time: obj.sighting_time
-        }
-      })
+      const incrementedData = _(JSON.parse(JSON.stringify(latest)))
+        .filter(obj => obj.operation_number !== '100')
+        .map(obj => {
+          return {
+            formation_id: obj.formation_id,
+            operation_id: _.find(todaysOperations, ope => {
+              return ope.operation_number === increment(obj.operation_number)
+            }).id,
+            sighting_time: obj.sighting_time
+          }
+        })
+        .value()
 
       await db.operation_sighting.bulkCreate(incrementedData)
     }, 1000 * random)
