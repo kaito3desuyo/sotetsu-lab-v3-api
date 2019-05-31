@@ -429,6 +429,17 @@ router.post('/sightings', async (req, res, next) => {
      * 同運用の前編成が同一でない場合、前編成の運用IDをNULLにする
      */
     const preFetchDuplicateOperation = await db.operation_sighting.findOne({
+      include: [
+        {
+          model: db.operation,
+          required: true,
+          where: {
+            [Op.not]: {
+              operation_number: '100'
+            }
+          }
+        }
+      ],
       where: {
         operation_id: req.body.operationId
       },
