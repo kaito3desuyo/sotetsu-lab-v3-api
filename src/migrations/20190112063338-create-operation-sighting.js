@@ -7,15 +7,15 @@ module.exports = {
         type: Sequelize.UUID
       },
       formation_id: {
-        allowNull: false,
+        // allowNull: false,
         type: Sequelize.UUID
       },
       operation_id: {
-        allowNull: false,
+        // allowNull: false,
         type: Sequelize.UUID
       },
       sighting_time: {
-        //allowNull: false,
+        // allowNull: false,
         type: Sequelize.DATE
       },
       created_at: {

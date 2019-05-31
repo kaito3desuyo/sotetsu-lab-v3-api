@@ -314,8 +314,8 @@ router.get('/sightings/operation', async (req, res, next) => {
       INNER JOIN (
         SELECT * from calenders
       ) AS calenders ON operations.calender_id = calenders.id
-      WHERE calenders.${dayName} = true
-      AND operations.operation_number != '100'
+      WHERE calenders.${dayName} = true 
+      AND operation_number <> '100'
       AND calenders.start_date <= '${today.format('YYYY-MM-DD')}'
       AND (calenders.end_date >= '${today.format(
         'YYYY-MM-DD'
@@ -383,7 +383,7 @@ router.get('/sightings/latest', async (req, res, next) => {
   res.json(result)
 })
 
-router.post('/sightings', (req, res, next) => {
+router.post('/sightings', async (req, res, next) => {
   console.log(req.body)
   if (
     !req.body ||
@@ -400,29 +400,73 @@ router.post('/sightings', (req, res, next) => {
       }
     })
   }
+  const registrationSighing = []
 
-  db.operation_sighting
-    .create({
+  try {
+    /**
+     * 同編成の前運用が同一でない場合、前運用の編成IDをNULLにする
+     */
+    const preFetchDuplicateFormation = await db.operation_sighting.findOne({
+      where: {
+        formation_id: req.body.formationId
+      },
+      order: [['sighting_time', 'DESC'], ['updated_at', 'DESC']]
+    })
+
+    if (
+      preFetchDuplicateFormation &&
+      preFetchDuplicateFormation.operation_id !== req.body.operationId &&
+      preFetchDuplicateFormation.operation_id !== null
+    ) {
+      registrationSighing.push({
+        formation_id: null,
+        operation_id: preFetchDuplicateFormation.operation_id,
+        sighting_time: req.body.sightingTime
+      })
+    }
+
+    /**
+     * 同運用の前編成が同一でない場合、前編成の運用IDをNULLにする
+     */
+    const preFetchDuplicateOperation = await db.operation_sighting.findOne({
+      where: {
+        operation_id: req.body.operationId
+      },
+      order: [['sighting_time', 'DESC'], ['updated_at', 'DESC']]
+    })
+
+    if (
+      preFetchDuplicateOperation &&
+      preFetchDuplicateOperation.formation_id !== req.body.formationId &&
+      preFetchDuplicateOperation.formation_id !== null
+    ) {
+      registrationSighing.push({
+        formation_id: preFetchDuplicateOperation.formation_id,
+        operation_id: null,
+        sighting_time: req.body.sightingTime
+      })
+    }
+
+    registrationSighing.push({
       formation_id: req.body.formationId,
       operation_id: req.body.operationId,
       sighting_time: req.body.sightingTime
     })
-    .then(() => {
-      res.status(200).json({
-        status: 'success',
-        message: {}
-      })
+
+    const result = await db.operation_sighting.bulkCreate(registrationSighing)
+    res.status(200).json({
+      status: 'success',
+      message: {}
     })
-    .catch(() => {
-      res.status(500).json({
-        status: 'error',
-        message: {
-          title: 'エラー',
-          text:
-            'データベース登録に失敗しました。\n管理者にお問い合わせください。'
-        }
-      })
+  } catch (e) {
+    res.status(500).json({
+      status: 'error',
+      message: {
+        title: 'エラー',
+        text: 'データベース登録に失敗しました。\n管理者にお問い合わせください。'
+      }
     })
+  }
 })
 
 /**
