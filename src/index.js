@@ -3,10 +3,12 @@ import sticky from 'sticky-session'
 import socketMiddleware from 'socket.io'
 import * as express from 'express'
 import * as cookieParser from 'cookie-parser'
+import * as _ from 'lodash'
 import bodyParser from 'body-parser'
 import * as cors from 'cors'
 import indexRouter from './routes/index'
-import axios from 'axios'
+import jwt from 'jsonwebtoken'
+import jwkToPem from 'jwk-to-pem'
 
 const app = express()
 
@@ -25,46 +27,81 @@ app.get('/health-check', (req, res, next) => {
 })
 
 if (process.env.NODE_ENV !== 'development') {
-  app.use(async (req, res, next) => {
-    // token取得する
-    if (
-      !req.header('Authorization') ||
-      typeof req.header('Authorization') !== 'string'
-    ) {
-      next({
-        status: 401,
-        error: {
-          type: 'Invalid Request',
-          message: 'Please set Authorization header.'
-        }
-      })
-      return
-    }
-
-    const token = req.header('Authorization').split(' ')
-
+  app.use((req, res, next) => {
     try {
-      const params = new URLSearchParams()
-      params.append('token', token[1])
-      const introspection = await axios.post(
-        process.env.NODE_ENV === 'production'
-          ? 'https://auth.sotetsu-lab.com/token/introspection'
-          : 'http://sotetsu-lab-v3-auth:3000/token/introspection',
-        params,
-        {
-          headers: {
-            Authorization:
-              'Basic ' +
-              Buffer.from(
-                req.header('X-APP-CLIENT-ID') +
-                  ':' +
-                  req.header('X-APP-CLIENT-SECRET')
-              ).toString('base64')
+      if (
+        !req.header('Authorization') ||
+        typeof req.header('Authorization') !== 'string'
+      ) {
+        next({
+          status: 401,
+          error: {
+            type: 'Invalid Request',
+            message: 'Please set Authorization header.'
           }
-        }
-      )
+        })
+        return
+      }
 
-      if (!introspection.data.active) {
+      if (
+        !req.header('X-APP-CLIENT-ID') ||
+        typeof req.header('X-APP-CLIENT-ID') !== 'string'
+      ) {
+        next({
+          status: 401,
+          error: {
+            type: 'Invalid Request',
+            message: 'Please set X-APP-CLIENT-ID header.'
+          }
+        })
+        return
+      }
+
+      const token = req.header('Authorization').split(' ')
+
+      const decoded = jwt.decode(token[1], { complete: true })
+
+      const jwkKeys = require('./secrets/jwks.json')
+      const jwk = _.find(jwkKeys.keys, obj => obj.kid === decoded.header.kid)
+      const pem = jwkToPem(jwk)
+
+      const verify = jwt.verify(token[1], pem, {
+        algorithms: ['RS256']
+      })
+
+      // subがCLIENT_IDと一致していること
+      if (verify.sub !== req.header('X-APP-CLIENT-ID')) {
+        throw new jwt.JsonWebTokenError('verify.sub not equal X-APP-CLIENT-ID')
+      }
+
+      // issがAWS CognitoのユーザープールIDと一致していること
+      if (
+        verify.iss !==
+        'https://cognito-idp.ap-northeast-1.amazonaws.com/' +
+          process.env.COGNITO_USERPOOL_ID
+      ) {
+        throw new jwt.JsonWebTokenError(
+          'verify.iss not equal AWS Cognito userpoolID'
+        )
+      }
+
+      // token_useがaccessになっていること
+      if (verify.token_use !== 'access') {
+        throw new jwt.JsonWebTokenError('verify.token_use not equal "access"')
+      }
+
+      next()
+    } catch (err) {
+      console.log('エラー', err)
+      if (err instanceof jwt.NotBeforeError) {
+        next({
+          status: 401,
+          error: {
+            type: 'Invalid Request',
+            message: 'Token has not active.'
+          }
+        })
+      } else if (err instanceof jwt.TokenExpiredError) {
         next({
           status: 401,
           error: {
@@ -72,18 +109,23 @@ if (process.env.NODE_ENV !== 'development') {
             message: 'Token has expired.'
           }
         })
+      } else if (err instanceof jwt.JsonWebTokenError) {
+        next({
+          status: 401,
+          error: {
+            type: 'Invalid Request',
+            message: 'Invalid Token.'
+          }
+        })
+      } else {
+        next({
+          status: 500,
+          error: {
+            type: 'Internal Server Error',
+            message: 'Please tell administrator'
+          }
+        })
       }
-
-      next()
-    } catch (err) {
-      console.log('エラー', err)
-      next({
-        status: 500,
-        error: {
-          type: 'Internal Server Error',
-          message: 'Please tell administrator'
-        }
-      })
     }
   })
 }
