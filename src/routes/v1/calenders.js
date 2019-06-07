@@ -55,6 +55,7 @@ router.get('/', (req, res, next) => {
 
 router.get('/today', async (req, res, next) => {
   let todaysDayName = moment()
+    .subtract(moment().format('H') < '3' ? 1 : 0, 'days')
     .format('dddd')
     .toLocaleLowerCase()
 

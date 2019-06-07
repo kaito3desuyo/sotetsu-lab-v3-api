@@ -24,67 +24,69 @@ app.get('/health-check', (req, res, next) => {
   })
 })
 
-app.use(async (req, res, next) => {
-  // token取得する
-  if (
-    !req.header('Authorization') ||
-    typeof req.header('Authorization') !== 'string'
-  ) {
-    next({
-      status: 401,
-      error: {
-        type: 'Invalid Request',
-        message: 'Please set Authorization header.'
-      }
-    })
-    return
-  }
-
-  const token = req.header('Authorization').split(' ')
-
-  try {
-    const params = new URLSearchParams()
-    params.append('token', token[1])
-    const introspection = await axios.post(
-      process.env.NODE_ENV === 'production'
-        ? 'https://auth.sotetsu-lab.com/token/introspection'
-        : 'http://sotetsu-lab-v3-auth:3000/token/introspection',
-      params,
-      {
-        headers: {
-          Authorization:
-            'Basic ' +
-            Buffer.from(
-              req.header('X-APP-CLIENT-ID') +
-                ':' +
-                req.header('X-APP-CLIENT-SECRET')
-            ).toString('base64')
-        }
-      }
-    )
-
-    if (!introspection.data.active) {
+if (process.env.NODE_ENV !== 'development') {
+  app.use(async (req, res, next) => {
+    // token取得する
+    if (
+      !req.header('Authorization') ||
+      typeof req.header('Authorization') !== 'string'
+    ) {
       next({
         status: 401,
         error: {
           type: 'Invalid Request',
-          message: 'Token has expired.'
+          message: 'Please set Authorization header.'
+        }
+      })
+      return
+    }
+
+    const token = req.header('Authorization').split(' ')
+
+    try {
+      const params = new URLSearchParams()
+      params.append('token', token[1])
+      const introspection = await axios.post(
+        process.env.NODE_ENV === 'production'
+          ? 'https://auth.sotetsu-lab.com/token/introspection'
+          : 'http://sotetsu-lab-v3-auth:3000/token/introspection',
+        params,
+        {
+          headers: {
+            Authorization:
+              'Basic ' +
+              Buffer.from(
+                req.header('X-APP-CLIENT-ID') +
+                  ':' +
+                  req.header('X-APP-CLIENT-SECRET')
+              ).toString('base64')
+          }
+        }
+      )
+
+      if (!introspection.data.active) {
+        next({
+          status: 401,
+          error: {
+            type: 'Invalid Request',
+            message: 'Token has expired.'
+          }
+        })
+      }
+
+      next()
+    } catch (err) {
+      console.log('エラー', err)
+      next({
+        status: 500,
+        error: {
+          type: 'Internal Server Error',
+          message: 'Please tell administrator'
         }
       })
     }
-
-    next()
-  } catch (err) {
-    console.log('エラー', err)
-    next({
-      status: 500,
-      error: {
-        type: 'Internal Server Error',
-        message: 'Please tell administrator'
-      }
-    })
-  }
-})
+  })
+}
 
 app.use('/', indexRouter)
 
