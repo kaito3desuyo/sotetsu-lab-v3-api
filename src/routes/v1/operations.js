@@ -262,9 +262,13 @@ router.get('/sightings/formation', (req, res, next) => {
       LEFT JOIN (
         SELECT * FROM operations
       ) AS operations ON onemore.operation_id = operations.id
-      WHERE formations.end_date >= '${moment().format(
-        'YYYY-MM-DD'
-      )}' or formations.end_date IS NULL
+      WHERE (formations.start_date <= '${moment()
+        .subtract(Number(moment().format('H')) < 3 ? 1 : 0)
+        .format(
+          'YYYY-MM-DD'
+        )}' or formations.start_date IS NULL) and (formations.end_date >= '${moment()
+        .subtract(Number(moment().format('H')) < 3 ? 1 : 0)
+        .format('YYYY-MM-DD')}' or formations.end_date IS NULL)
       ORDER BY to_number(formations.formation_number, '99999') ASC
       `,
       {
