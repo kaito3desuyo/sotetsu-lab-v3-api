@@ -1,4 +1,5 @@
 {
+  "executionRoleArn": "arn:aws:iam::442730633672:role/sotetsu-lab-v3-ecs-task-execution",
   "containerDefinitions": [
     {
       "logConfiguration": {
