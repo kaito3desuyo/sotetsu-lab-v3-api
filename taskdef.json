@@ -1,0 +1,65 @@
+{
+  "containerDefinitions": [
+    {
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/sotetsu-lab-v3-api",
+          "awslogs-region": "ap-northeast-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "portMappings": [
+        {
+          "hostPort": 0,
+          "protocol": "tcp",
+          "containerPort": 3000
+        }
+      ],
+      "cpu": 0,
+      "environment": [
+        {
+          "name": "NODE_ENV",
+          "value": "production"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "DATABASE_URL",
+          "valueFrom": "sotetsu-lab-v3-api-database-url"
+        },
+        {
+          "name": "COGNITO_USERPOOL_ID",
+          "valueFrom": "sotetsu-lab-v3-auth-cognito-userpool-id"
+        }
+      ],
+      "memory": 300,
+      "memoryReservation": null,
+      "image": "<IMAGE1_NAME>",
+      "name": "sotetsu-lab-v3-api"
+    }
+  ],
+  "compatibilities": ["EC2"],
+  "family": "sotetsu-lab-v3-api",
+  "requiresAttributes": [
+    {
+      "targetId": null,
+      "targetType": null,
+      "value": null,
+      "name": "com.amazonaws.ecs.capability.ecr-auth"
+    },
+    {
+      "targetId": null,
+      "targetType": null,
+      "value": null,
+      "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+    },
+    {
+      "targetId": null,
+      "targetType": null,
+      "value": null,
+      "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+    }
+  ],
+  "requiresCompatibilities": ["EC2"]
+}
