@@ -12,12 +12,10 @@ export class CalenderService {
 
   findAll(): Promise<Calender[]> {
     return this.calenderRepository.find({
-      relations: [],
-      where: [
-        {
-          start_date: MoreThan('2018-01-01'),
-        },
-      ],
+      order: {
+        start_date: 'DESC',
+        sunday: 'ASC',
+      },
     });
   }
 }
