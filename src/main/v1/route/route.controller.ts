@@ -11,4 +11,12 @@ export class RouteController {
     const routes = await this.routeService.findAll();
     return routes;
   }
+
+  @Get('/all/stations')
+  async getRoutesAllStations(): Promise<Route[]> {
+    const routes = await this.routeService.findAll({
+      relations: ['route_to_stations', 'route_to_stations.station'],
+    });
+    return routes;
+  }
 }
