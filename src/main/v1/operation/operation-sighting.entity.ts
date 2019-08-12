@@ -1,0 +1,37 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { Operation } from './operation.entity';
+/* tslint:disable: variable-name */
+@Entity({
+  name: 'operation_sightings',
+})
+export class OperationSighting {
+  @PrimaryGeneratedColumn()
+  id: string;
+
+  @Column()
+  formation_id: string;
+
+  @Column()
+  operation_id: string;
+
+  @Column()
+  sighting_time: Date;
+
+  @CreateDateColumn()
+  created_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
+
+  @ManyToOne(type => Operation, operation => operation.operation_sightings)
+  @JoinColumn({ name: 'operation_id' })
+  operation: Operation;
+}

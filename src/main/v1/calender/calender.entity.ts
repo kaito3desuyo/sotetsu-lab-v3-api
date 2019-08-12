@@ -4,7 +4,9 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { Operation } from '../operation/operation.entity';
 
 // tslint:disable: variable-name
 
@@ -54,4 +56,7 @@ export class Calender {
 
   @UpdateDateColumn()
   updated_at: Date;
+
+  @OneToMany(type => Operation, operation => operation.calender)
+  operations?: Operation[];
 }

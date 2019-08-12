@@ -4,6 +4,7 @@ import { AgencyModule } from './agency/agency.module';
 import { CalenderModule } from './calender/calender.module';
 import { RouterModule, Route } from 'nest-router';
 import { StationModule } from './station/station.module';
+import { OperationModule } from './operation/operation.module';
 
 const routes: Route[] = [
   {
@@ -25,6 +26,10 @@ const routes: Route[] = [
         path: '/stations',
         module: StationModule,
       },
+      {
+        path: '/operations',
+        module: OperationModule,
+      },
     ],
   },
 ];
@@ -36,6 +41,7 @@ const routes: Route[] = [
     RouteModule,
     CalenderModule,
     StationModule,
+    OperationModule,
   ],
 })
 export class ApiV1Module {}
