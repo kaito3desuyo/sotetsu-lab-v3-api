@@ -8,6 +8,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Operation } from './operation.entity';
+import { Formation } from '../formation/formation.entity';
 /* tslint:disable: variable-name */
 @Entity({
   name: 'operation_sightings',
@@ -34,4 +35,8 @@ export class OperationSighting {
   @ManyToOne(type => Operation, operation => operation.operation_sightings)
   @JoinColumn({ name: 'operation_id' })
   operation: Operation;
+
+  @ManyToOne(type => Formation, formation => formation.operation_sightings)
+  @JoinColumn({ name: 'formation_id' })
+  formation: Formation;
 }

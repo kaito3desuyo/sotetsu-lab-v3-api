@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan } from 'typeorm';
+import { Repository, MoreThan, FindManyOptions } from 'typeorm';
 import { Operation } from './operation.entity';
 import { OperationSighting } from './operation-sighting.entity';
 
@@ -11,9 +11,7 @@ export class OperationSightingService {
     private readonly operationSightingRepository: Repository<OperationSighting>,
   ) {}
 
-  findAll(): Promise<OperationSighting[]> {
-    return this.operationSightingRepository.find({
-      relations: ['operation', 'operation.calender'],
-    });
+  findAll(options?: FindManyOptions): Promise<OperationSighting[]> {
+    return this.operationSightingRepository.find(options);
   }
 }

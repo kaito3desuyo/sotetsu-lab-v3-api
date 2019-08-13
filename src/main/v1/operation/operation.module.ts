@@ -5,10 +5,12 @@ import { Operation } from './operation.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { OperationSighting } from './operation-sighting.entity';
 import { OperationSightingService } from './operation-sightings.service';
+import { Calender } from '../calender/calender.entity';
+import { CalenderService } from '../calender/calender.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Operation, OperationSighting])],
+  imports: [TypeOrmModule.forFeature([Calender, Operation, OperationSighting])],
   controllers: [OperationController],
-  providers: [OperationService, OperationSightingService],
+  providers: [CalenderService, OperationService, OperationSightingService],
 })
 export class OperationModule {}

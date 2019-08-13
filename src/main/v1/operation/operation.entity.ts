@@ -20,6 +20,9 @@ export class Operation {
   id: string;
 
   @Column()
+  calender_id: string;
+
+  @Column()
   operation_number: string;
 
   @CreateDateColumn()
