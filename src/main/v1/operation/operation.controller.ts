@@ -3,21 +3,12 @@ import { Operation } from './operation.entity';
 import { OperationService } from './operation.service';
 import { OperationSighting } from './operation-sighting.entity';
 import { OperationSightingService } from './operation-sightings.service';
-import {
-  Connection,
-  In,
-  Not,
-  MoreThan,
-  MoreThanOrEqual,
-  LessThanOrEqual,
-} from 'typeorm';
+import { In, Not, LessThanOrEqual } from 'typeorm';
 import { CalenderService } from '../calender/calender.service';
-import { Calender } from '../calender/calender.entity';
 
 @Controller()
 export class OperationController {
   constructor(
-    private connection: Connection,
     private calenderService: CalenderService,
     private operationService: OperationService,
     private operationSightingService: OperationSightingService,
@@ -27,6 +18,60 @@ export class OperationController {
   async getOperations(): Promise<Operation[]> {
     const operations = await this.operationService.findAll();
     return operations;
+  }
+
+  @Get('/all/numbers')
+  async getOperationsGroupByOperationNumber(): Promise<Operation[]> {
+    const operations = await this.operationService
+      .createQueryBuilder()
+      .select('operation_number')
+      .groupBy('operation_number')
+      .where({
+        operation_number: Not('100'),
+      })
+      .orderBy('operation_number', 'ASC')
+      .getRawMany();
+
+    return operations;
+  }
+
+  @Get('/all/sightings')
+  async getOperationsAllLatestSightings(): Promise<any[]> {
+    const subQuery = await this.operationSightingService
+      .createQueryBuilder('t_sightings')
+      .select('"t_sightings".operation_id')
+      .addSelect('MAX("t_sightings".sighting_time)', 'latest_sighting')
+      .groupBy('operation_id');
+
+    const latestSightings = await this.operationSightingService
+      .createQueryBuilder('t_updates')
+      .select('"t_updates".operation_id')
+      .addSelect('jointable.latest_sighting')
+      .addSelect('MAX("t_updates".updated_at)', 'latest_update')
+      .innerJoin(
+        '(' + subQuery.getQuery() + ')',
+        'jointable',
+        '"t_updates".operation_id = jointable.operation_id',
+      )
+      .groupBy('"t_updates".operation_id')
+      .addGroupBy('"jointable".latest_sighting')
+      .getRawMany();
+
+    const latestSightingsDetail = await this.operationSightingService.findAll({
+      where: latestSightings.map(data => {
+        return {
+          operation_id: data.operation_id,
+          sighting_time: data.latest_sighting,
+          updated_at: data.latest_update,
+        };
+      }),
+      relations: ['operation', 'formation'],
+      order: {
+        sighting_time: 'DESC',
+      },
+    });
+
+    return latestSightingsDetail;
   }
 
   @Get('/by-calender/:calenderId/sightings')

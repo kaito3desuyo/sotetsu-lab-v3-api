@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan, FindManyOptions } from 'typeorm';
+import { Repository, MoreThan, FindManyOptions, QueryRunner } from 'typeorm';
 import { Operation } from './operation.entity';
 import { OperationSighting } from './operation-sighting.entity';
 
@@ -10,6 +10,13 @@ export class OperationSightingService {
     @InjectRepository(OperationSighting)
     private readonly operationSightingRepository: Repository<OperationSighting>,
   ) {}
+
+  createQueryBuilder(alias?: string, queryRunner?: QueryRunner) {
+    return this.operationSightingRepository.createQueryBuilder(
+      alias,
+      queryRunner,
+    );
+  }
 
   findAll(options?: FindManyOptions): Promise<OperationSighting[]> {
     return this.operationSightingRepository.find(options);
