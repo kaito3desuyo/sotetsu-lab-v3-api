@@ -35,7 +35,7 @@ export class OperationController {
     return operations;
   }
 
-  @Get('/all/sightings')
+  @Get('/all/latest-sightings/')
   async getOperationsAllLatestSightings(): Promise<any[]> {
     const subQuery = await this.operationSightingService
       .createQueryBuilder('t_sightings')
@@ -51,7 +51,7 @@ export class OperationController {
       .innerJoin(
         '(' + subQuery.getQuery() + ')',
         'jointable',
-        '"t_updates".operation_id = jointable.operation_id',
+        '"t_updates".operation_id = jointable.operation_id AND "t_updates".sighting_time = jointable.latest_sighting',
       )
       .groupBy('"t_updates".operation_id')
       .addGroupBy('"jointable".latest_sighting')

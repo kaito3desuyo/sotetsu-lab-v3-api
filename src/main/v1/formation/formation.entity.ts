@@ -7,6 +7,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { OperationSighting } from '../operation/operation-sighting.entity';
+import { FormationToVehicle } from '../formationToVehicle/formation-to-vehicle.entity';
 
 /* tslint:disable: variable-name */
 @Entity({
@@ -49,4 +50,10 @@ export class Formation {
     operationSighting => operationSighting.formation,
   )
   operation_sightings?: OperationSighting[];
+
+  @OneToMany(
+    type => FormationToVehicle,
+    formationToVehicle => formationToVehicle.formation,
+  )
+  formation_to_vehicles?: FormationToVehicle[];
 }
