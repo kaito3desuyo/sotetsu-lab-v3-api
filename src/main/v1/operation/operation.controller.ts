@@ -1,9 +1,18 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  HttpException,
+  HttpStatus,
+  Post,
+  Body,
+} from '@nestjs/common';
 import { Operation } from './operation.entity';
 import { OperationService } from './operation.service';
 import { OperationSighting } from './operation-sighting.entity';
 import { OperationSightingService } from './operation-sightings.service';
-import { In, Not, LessThanOrEqual } from 'typeorm';
+import { In, Not, LessThanOrEqual, InsertResult } from 'typeorm';
 import { CalenderService } from '../calender/calender.service';
 
 @Controller()
@@ -18,6 +27,23 @@ export class OperationController {
   async getOperations(): Promise<Operation[]> {
     const operations = await this.operationService.findAll();
     return operations;
+  }
+
+  @Get('/search')
+  async searchOperations(@Query()
+  query: {
+    calender_id: string;
+    operation_number: string;
+  }): Promise<Operation[]> {
+    try {
+      const operations = await this.operationService.findAll({
+        where: query,
+      });
+
+      return operations;
+    } catch (e) {
+      throw new HttpException(e.message, HttpStatus.UNPROCESSABLE_ENTITY);
+    }
   }
 
   @Get('/all/numbers')
@@ -131,5 +157,16 @@ export class OperationController {
   async getOperationSightings(): Promise<OperationSighting[]> {
     const sightings = await this.operationSightingService.findAll();
     return sightings;
+  }
+
+  @Post('/sightings')
+  async addOperationSightings(@Body()
+  body: {
+    formation_id: string;
+    operation_id: string;
+    sighting_time: string;
+  }): Promise<OperationSighting> {
+    const sighting = await this.operationSightingService.save(body);
+    return sighting;
   }
 }
