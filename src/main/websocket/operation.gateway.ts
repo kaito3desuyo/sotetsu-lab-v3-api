@@ -3,20 +3,35 @@ import {
   WebSocketGateway,
   WebSocketServer,
   WsResponse,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
 } from '@nestjs/websockets';
-import { Server, Client } from 'socket.io';
-import { Observable, of, from } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Server, Client, Socket } from 'socket.io';
 
 @WebSocketGateway({ namespace: '/operation/real-time' })
-export class OperationRealTimeGateway {
+export class OperationRealTimeGateway
+  implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
+  handleConnection(client: Client) {
+    console.log('client connected');
+  }
+
+  handleDisconnect(client: Client) {
+    console.log('client disconnected');
+  }
+
   @SubscribeMessage('sendSighting')
-  sightingReload(client: Client, data: any): Observable<WsResponse<any>> {
+  emitSendSightingEvent(
+    socket: Socket,
+    data: any,
+  ): WsResponse<{ eventType: 'send' | 'receive'; data: any }> {
     const event = 'sightingReload';
-    const response = data;
-    return of(response).pipe(map(() => ({ event, data })));
+    socket.broadcast.emit(event, { eventType: 'receive', data });
+    return {
+      event,
+      data: { eventType: 'send', data },
+    };
   }
 }
