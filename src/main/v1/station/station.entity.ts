@@ -29,7 +29,11 @@ export class Station {
   @Column()
   station_description: string;
 
-  @Column()
+  @Column({
+    type: "geometry",
+    spatialFeatureType: "Point",
+    srid: 4326
+  })
   station_latlng: string;
 
   @Column()

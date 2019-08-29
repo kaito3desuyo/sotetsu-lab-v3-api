@@ -7,6 +7,7 @@ import { StationModule } from './station/station.module';
 import { OperationModule } from './operation/operation.module';
 import { FormationModule } from './formation/formation.module';
 import { VehicleModule } from './vehicle/vehicle.module';
+import { TripModule } from './trip/trip.module';
 
 const routes: Route[] = [
   {
@@ -40,6 +41,10 @@ const routes: Route[] = [
         path: '/vehicles',
         module: VehicleModule,
       },
+      {
+        path: '/trips',
+        module: TripModule
+      }
     ],
   },
 ];
@@ -54,6 +59,7 @@ const routes: Route[] = [
     OperationModule,
     FormationModule,
     VehicleModule,
+    TripModule
   ],
 })
 export class ApiV1Module {}

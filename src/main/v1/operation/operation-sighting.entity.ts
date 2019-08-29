@@ -27,17 +27,10 @@ export class OperationSighting {
   @Column()
   sighting_time: Date;
 
-  @CreateDateColumn({
-    type: 'timestamptz',
-    default: 'LOCALTIMESTAMP',
-  })
+  @CreateDateColumn()
   created_at: Date;
 
-  @Column({
-    type: 'timestamptz',
-    default: 'LOCALTIMESTAMP',
-    onUpdate: 'LOCALTIMESTAMP',
-  })
+  @UpdateDateColumn()
   updated_at: Date;
 
   @ManyToOne(type => Operation, operation => operation.operation_sightings)
