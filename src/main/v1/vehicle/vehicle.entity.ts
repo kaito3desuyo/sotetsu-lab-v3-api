@@ -13,29 +13,27 @@ import { FormationToVehicle } from '../formationToVehicle/formation-to-vehicle.e
   name: 'vehicles',
 })
 export class Vehicle {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column('varchar', {
+    unique: true
+  })
   vehicle_number: string;
 
-  @Column()
+  @Column('varchar')
   belongs: string;
 
-  @Column({
-    type: 'date',
-  })
+  @Column('date', {nullable: true})
   production_date: Date;
 
-  @Column({
-    type: 'date',
-  })
+  @Column('date', {nullable: true})
   scrapped_date: Date;
 
-  @CreateDateColumn()
+  @CreateDateColumn({type: 'timestamptz'})
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({type: 'timestamptz'})
   updated_at: Date;
 
   @OneToMany(

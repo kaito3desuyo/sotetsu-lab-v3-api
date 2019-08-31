@@ -14,35 +14,31 @@ import { FormationToVehicle } from '../formationToVehicle/formation-to-vehicle.e
   name: 'formations',
 })
 export class Formation {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column('uuid')
   agency_id: string;
 
-  @Column()
+  @Column('varchar')
   vehicle_type: string;
 
-  @Column()
+  @Column('varchar')
   formation_number: string;
 
-  @Column()
+  @Column('text', {nullable: true})
   formation_description: string;
 
-  @Column({
-    type: 'date',
-  })
+  @Column('date', {nullable: true})
   start_date: Date;
 
-  @Column({
-    type: 'date',
-  })
+  @Column('date', {nullable: true})
   end_date: Date;
 
-  @CreateDateColumn()
+  @CreateDateColumn({type: 'timestamptz'})
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({type: 'timestamptz'})
   updated_at: Date;
 
   @OneToMany(

@@ -14,49 +14,48 @@ import { Operation } from '../operation/operation.entity';
   name: 'calenders',
 })
 export class Calender {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column('uuid')
+  service_id: string;
+
+  @Column('varchar')
   calender_name: string;
 
-  @Column()
+  @Column('boolean')
   sunday: boolean;
 
-  @Column()
+  @Column('boolean')
   monday: boolean;
 
-  @Column()
+  @Column('boolean')
   tuesday: boolean;
 
-  @Column()
+  @Column('boolean')
   wednesday: boolean;
 
-  @Column()
+  @Column('boolean')
   thursday: boolean;
 
-  @Column()
+  @Column('boolean')
   friday: boolean;
 
-  @Column()
+  @Column('boolean')
   saturday: boolean;
 
-  @Column({
-    type: 'date',
-  })
+  @Column('date')
   start_date: Date;
 
-  @Column({
-    type: 'date',
-  })
+  @Column('date', {nullable: true})
   end_date: Date;
 
-  @CreateDateColumn()
+  @CreateDateColumn({type: 'timestamptz'})
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({type: 'timestamptz'})
   updated_at: Date;
 
   @OneToMany(type => Operation, operation => operation.calender)
-  operations?: Operation[];
+  readonly operations?: Operation[];
 }

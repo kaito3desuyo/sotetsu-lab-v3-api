@@ -12,42 +12,46 @@ import {
 } from 'typeorm';
 import { Agency } from '../agency/agency.entity';
 import { RouteToStation } from '../routeToStation/route-to-station.entity';
+import { ServiceToRoute } from '../serviceToRoute/service-to-route.entity';
 
 @Entity({
   name: 'routes',
 })
 export class Route {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
-  route_number: number;
+  @Column('uuid')
+  agency_id: string;
 
-  @Column()
+  @Column('varchar', {nullable: true})
+  route_number: string;
+
+  @Column('varchar')
   route_name: string;
 
-  @Column()
+  @Column('varchar', {nullable: true})
   route_nickname: string;
 
-  @Column()
+  @Column('text', {nullable: true})
   route_description: string;
 
-  @Column()
+  @Column('smallint')
   route_type: number;
 
-  @Column()
+  @Column('varchar', {nullable: true})
   route_url: string;
 
-  @Column()
+  @Column('varchar', {nullable: true})
   route_color: string;
 
-  @Column()
+  @Column('varchar', {nullable: true})
   route_text_color: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({type: 'timestamptz'})
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({type: 'timestamptz'})
   updated_at: Date;
 
   @ManyToOne(type => Agency, agency => agency.routes)
@@ -55,5 +59,8 @@ export class Route {
   readonly agency?: Agency;
 
   @OneToMany(type => RouteToStation, routeToStation => routeToStation.route)
-  route_to_stations: RouteToStation[];
+  readonly route_to_stations?: RouteToStation[];
+
+  @OneToMany(type => ServiceToRoute, serviceToRoute => serviceToRoute.route)
+  readonly route_to_services?: ServiceToRoute[];
 }

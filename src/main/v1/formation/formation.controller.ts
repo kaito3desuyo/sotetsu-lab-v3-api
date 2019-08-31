@@ -19,6 +19,14 @@ export class FormationController {
     private operationSightingService: OperationSightingService,
   ) {}
 
+  @Get()
+  async getFormations(): Promise<Formation[]> {
+    const formations = await this.formationService.findAll({
+      relations: ['formation_to_vehicles', 'formation_to_vehicles.vehicle']
+    });
+    return formations
+  }
+
   @Get('/search')
   async getFormationSearch(
     @Query('date') date: string,

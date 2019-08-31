@@ -15,29 +15,29 @@ import { Vehicle } from '../vehicle/vehicle.entity';
   name: 'vehicle_formations',
 })
 export class FormationToVehicle {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column('uuid')
   formation_id: string;
 
-  @Column()
+  @Column('uuid')
   vehicle_id: string;
 
-  @Column()
+  @Column('smallint')
   car_number: number;
 
-  @CreateDateColumn()
+  @CreateDateColumn({type: 'timestamptz'})
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({type: 'timestamptz'})
   updated_at: Date;
 
   @ManyToOne(type => Formation, formation => formation.formation_to_vehicles)
   @JoinColumn({ name: 'formation_id' })
-  formation?: Formation;
+  readonly formation?: Formation;
 
   @ManyToOne(type => Vehicle, vehicle => vehicle.vehicle_to_formations)
   @JoinColumn({ name: 'vehicle_id' })
-  vehicle?: Vehicle;
+  readonly vehicle?: Vehicle;
 }

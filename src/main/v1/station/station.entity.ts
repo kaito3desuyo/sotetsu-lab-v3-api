@@ -9,45 +9,54 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { RouteToStation } from '../routeToStation/route-to-station.entity';
+import { Stop } from '../stop/stop.entity';
+import { Time } from '../time/time.entity';
 
 @Entity({
   name: 'stations',
 })
 export class Station {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column('varchar')
   station_name: string;
 
-  @Column()
+  @Column('varchar', {nullable: true})
   station_subname: string;
 
-  @Column()
+  @Column('smallint')
   station_type: number;
 
-  @Column()
+  @Column('text', {nullable: true})
   station_description: string;
 
   @Column({
     type: "geometry",
     spatialFeatureType: "Point",
-    srid: 4326
+    srid: 4326,
+    nullable: true
   })
   station_latlng: string;
 
-  @Column()
+  @Column('varchar', {nullable: true})
   station_url: string;
 
-  @Column()
+  @Column('boolean')
   wheelchair_boarding: boolean;
 
-  @CreateDateColumn()
+  @CreateDateColumn({type: 'timestamptz'})
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({type: 'timestamptz'})
   updated_at: Date;
 
   @OneToMany(type => RouteToStation, routeToStation => routeToStation.station)
-  station_to_routes: RouteToStation[];
+  readonly station_to_routes?: RouteToStation[];
+  
+  @OneToMany(type => Time, time => time.station)
+  readonly times?: Time[]
+
+  @OneToMany(type => Stop, stop => stop.station)
+  readonly stops?: Stop[];
 }

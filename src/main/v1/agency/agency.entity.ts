@@ -14,37 +14,37 @@ import { Route } from '../route/route.entity';
   name: 'agencies',
 })
 export class Agency {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column('varchar')
   agency_number: string;
 
-  @Column()
+  @Column('varchar', {nullable: true})
   parent_agency_number: string;
 
-  @Column()
+  @Column('varchar')
   agency_official_name: string;
 
-  @Column()
+  @Column('varchar', {nullable: true})
   agency_name: string;
 
-  @Column()
+  @Column('smallint')
   agency_type: number;
 
-  @Column()
+  @Column('varchar', {nullable: true})
   agency_url: string;
 
-  @Column()
+  @Column('varchar', {nullable: true})
   agency_phone: string;
 
-  @Column()
+  @Column('varchar', {nullable: true})
   agency_fare_url: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({type: 'timestamptz'})
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({type: 'timestamptz'})
   updated_at: Date;
 
   @OneToMany(type => Route, route => route.agency)

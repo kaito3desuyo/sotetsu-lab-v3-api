@@ -10,30 +10,34 @@ import {
 } from 'typeorm';
 import { Calender } from '../calender/calender.entity';
 import { OperationSighting } from './operation-sighting.entity';
+import { Trip } from '../trip/trip.entity';
 /* tslint:disable: variable-name */
 
 @Entity({
   name: 'operations',
 })
 export class Operation {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column('uuid')
   calender_id: string;
 
-  @Column()
+  @Column('varchar')
   operation_number: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({type: 'timestamptz'})
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({type: 'timestamptz'})
   updated_at: Date;
 
   @ManyToOne(type => Calender, calender => calender.operations)
   @JoinColumn({ name: 'calender_id' })
   readonly calender?: Calender;
+
+  @OneToMany(type => Trip, trip => trip.operation)
+  readonly trips?: Trip[]
 
   @OneToMany(
     type => OperationSighting,

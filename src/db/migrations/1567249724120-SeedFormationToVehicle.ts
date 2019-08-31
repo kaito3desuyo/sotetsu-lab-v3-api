@@ -1,0 +1,833 @@
+import { MigrationInterface, QueryRunner, getRepository } from "typeorm";
+import { Formation } from "../../main/v1/formation/formation.entity";
+import { Vehicle } from "../../main/v1/vehicle/vehicle.entity";
+import { find } from 'lodash';
+import { FormationToVehicle } from "../../main/v1/formationToVehicle/formation-to-vehicle.entity";
+
+export class SeedFormationToVehicle1567249724120 implements MigrationInterface {
+
+    public async up(queryRunner: QueryRunner): Promise<any> {
+        const formations = await getRepository(Formation).find() as any;
+        const vehicles = await getRepository(Vehicle).find();
+
+        const vehicleFormations = []
+        vehicleFormationsSeed.forEach(seed => {
+            const temp = seed.vehicles.map((vehicle, index) => {
+                return {
+                    formation_id: find(formations, (formation) => formation.formation_number === String(seed.formation_number) && formation.start_date === seed.start_date && formation.end_date === seed.end_date).id,
+                    vehicle_id: find(vehicles, (baseVehicle) => baseVehicle.vehicle_number === String(vehicle.vehicle_number)).id,
+                    car_number: index + 1
+                }
+            })
+
+            temp.forEach(temp => vehicleFormations.push(temp))
+        })
+
+        await getRepository(FormationToVehicle).save(vehicleFormations)
+    }
+
+    public async down(queryRunner: QueryRunner): Promise<any> {
+    }
+
+}
+
+
+const vehicleFormationsSeed = [
+    {
+        formation_number: 7707,
+        start_date: null,
+        end_date: '2019-03-06',
+        vehicles: [
+            { vehicle_number: 7707 },
+            { vehicle_number: 7131 },
+            { vehicle_number: 7132 },
+            { vehicle_number: 7513 },
+            { vehicle_number: 7605 },
+            { vehicle_number: 7123 },
+            { vehicle_number: 7124 },
+            { vehicle_number: 7508 }
+        ]
+    },
+    {
+        formation_number: 7710,
+        start_date: null,
+        end_date: '2019-04-28',
+        vehicles: [
+            { vehicle_number: 7710 },
+            { vehicle_number: 7125 },
+            { vehicle_number: 7126 },
+            { vehicle_number: 7505 },
+            { vehicle_number: 7602 },
+            { vehicle_number: 7107 },
+            { vehicle_number: 7108 },
+            { vehicle_number: 7509 }
+        ]
+    },
+    {
+        formation_number: 7712,
+        start_date: null,
+        end_date: '2019-04-28',
+        vehicles: [
+            { vehicle_number: 7712 },
+            { vehicle_number: 7129 },
+            { vehicle_number: 7130 },
+            { vehicle_number: 7607 },
+            { vehicle_number: 7703 },
+            { vehicle_number: 7127 },
+            { vehicle_number: 7128 },
+            { vehicle_number: 7511 }
+        ]
+    },
+
+    {
+        formation_number: 7710,
+        start_date: '2019-04-29',
+        end_date: '2019-05-12',
+        vehicles: [
+            { vehicle_number: 7710 },
+            { vehicle_number: 7125 },
+            { vehicle_number: 7126 },
+            { vehicle_number: 7607 },
+            { vehicle_number: 7127 },
+            { vehicle_number: 7128 },
+            { vehicle_number: 7602 },
+            { vehicle_number: 7107 },
+            { vehicle_number: 7108 },
+            { vehicle_number: 7509 }
+        ],
+        recomposition: true
+    },
+    {
+        formation_number: 7712,
+        start_date: '2019-04-29',
+        end_date: '2019-05-12',
+        vehicles: [
+            { vehicle_number: 7712 },
+            { vehicle_number: 7129 },
+            { vehicle_number: 7130 },
+            { vehicle_number: 7505 },
+            { vehicle_number: 7703 },
+            { vehicle_number: 7511 }
+        ],
+        recomposition: true
+    },
+    {
+        formation_number: 7710,
+        start_date: '2019-05-13',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 7710 },
+            { vehicle_number: 7125 },
+            { vehicle_number: 7126 },
+            { vehicle_number: 7505 },
+            { vehicle_number: 7602 },
+            { vehicle_number: 7107 },
+            { vehicle_number: 7108 },
+            { vehicle_number: 7509 }
+        ],
+        recomposition: true
+    },
+
+    {
+        formation_number: 7713,
+        start_date: null,
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 7713 },
+            { vehicle_number: 7149 },
+            { vehicle_number: 7150 },
+            { vehicle_number: 7151 },
+            { vehicle_number: 7152 },
+            { vehicle_number: 7514 },
+            { vehicle_number: 7714 },
+            { vehicle_number: 7153 },
+            { vehicle_number: 7154 },
+            { vehicle_number: 7515 }
+        ]
+    },
+    {
+        formation_number: 7715,
+        start_date: null,
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 7715 },
+            { vehicle_number: 7155 },
+            { vehicle_number: 7158 },
+            { vehicle_number: 7516 },
+            { vehicle_number: 7716 },
+            { vehicle_number: 7159 },
+            { vehicle_number: 7160 },
+            { vehicle_number: 7517 }
+        ]
+    },
+    {
+        formation_number: 7751,
+        start_date: null,
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 7751 },
+            { vehicle_number: 7351 },
+            { vehicle_number: 7651 },
+            { vehicle_number: 7352 },
+            { vehicle_number: 7551 },
+            { vehicle_number: 7752 },
+            { vehicle_number: 7353 },
+            { vehicle_number: 7652 },
+            { vehicle_number: 7354 },
+            { vehicle_number: 7552 }
+        ]
+    },
+    {
+        formation_number: 7753,
+        start_date: null,
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 7753 },
+            { vehicle_number: 7355 },
+            { vehicle_number: 7653 },
+            { vehicle_number: 7356 },
+            { vehicle_number: 7654 },
+            { vehicle_number: 7655 },
+            { vehicle_number: 7357 },
+            { vehicle_number: 7656 },
+            { vehicle_number: 7358 },
+            { vehicle_number: 7553 }
+        ]
+    },
+    {
+        formation_number: 7754,
+        start_date: null,
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 7754 },
+            { vehicle_number: 7359 },
+            { vehicle_number: 7657 },
+            { vehicle_number: 7360 },
+            { vehicle_number: 7658 },
+            { vehicle_number: 7659 },
+            { vehicle_number: 7361 },
+            { vehicle_number: 7660 },
+            { vehicle_number: 7362 },
+            { vehicle_number: 7554 }
+        ]
+    },
+    {
+        formation_number: 7755,
+        start_date: null,
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 7755 },
+            { vehicle_number: 7363 },
+            { vehicle_number: 7661 },
+            { vehicle_number: 7364 },
+            { vehicle_number: 7662 },
+            { vehicle_number: 7663 },
+            { vehicle_number: 7365 },
+            { vehicle_number: 7664 },
+            { vehicle_number: 7366 },
+            { vehicle_number: 7555 }
+        ]
+    },
+    {
+        formation_number: 8701,
+        start_date: '1990-12-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 8701 },
+            { vehicle_number: 8101 },
+            { vehicle_number: 8201 },
+            { vehicle_number: 8601 },
+            { vehicle_number: 8102 },
+            { vehicle_number: 8202 },
+            { vehicle_number: 8602 },
+            { vehicle_number: 8103 },
+            { vehicle_number: 8203 },
+            { vehicle_number: 8501 }
+        ]
+    },
+    {
+        formation_number: 8702,
+        start_date: '1991-03-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 8702 },
+            { vehicle_number: 8104 },
+            { vehicle_number: 8204 },
+            { vehicle_number: 8603 },
+            { vehicle_number: 8105 },
+            { vehicle_number: 8205 },
+            { vehicle_number: 8604 },
+            { vehicle_number: 8106 },
+            { vehicle_number: 8206 },
+            { vehicle_number: 8502 }
+        ]
+    },
+    {
+        formation_number: 8703,
+        start_date: '1991-03-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 8703 },
+            { vehicle_number: 8107 },
+            { vehicle_number: 8207 },
+            { vehicle_number: 8605 },
+            { vehicle_number: 8108 },
+            { vehicle_number: 8208 },
+            { vehicle_number: 8606 },
+            { vehicle_number: 8109 },
+            { vehicle_number: 8209 },
+            { vehicle_number: 8503 }
+        ]
+    },
+    {
+        formation_number: 8704,
+        start_date: '1992-01-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 8704 },
+            { vehicle_number: 8110 },
+            { vehicle_number: 8210 },
+            { vehicle_number: 8607 },
+            { vehicle_number: 8111 },
+            { vehicle_number: 8211 },
+            { vehicle_number: 8608 },
+            { vehicle_number: 8112 },
+            { vehicle_number: 8212 },
+            { vehicle_number: 8504 }
+        ]
+    },
+    {
+        formation_number: 8705,
+        start_date: '1992-03-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 8705 },
+            { vehicle_number: 8113 },
+            { vehicle_number: 8213 },
+            { vehicle_number: 8609 },
+            { vehicle_number: 8114 },
+            { vehicle_number: 8214 },
+            { vehicle_number: 8610 },
+            { vehicle_number: 8115 },
+            { vehicle_number: 8215 },
+            { vehicle_number: 8505 }
+        ]
+    },
+    {
+        formation_number: 8706,
+        start_date: '1992-03-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 8706 },
+            { vehicle_number: 8116 },
+            { vehicle_number: 8216 },
+            { vehicle_number: 8611 },
+            { vehicle_number: 8117 },
+            { vehicle_number: 8217 },
+            { vehicle_number: 8612 },
+            { vehicle_number: 8118 },
+            { vehicle_number: 8218 },
+            { vehicle_number: 8506 }
+        ]
+    },
+    {
+        formation_number: 8707,
+        start_date: '1993-02-01',
+        end_date: '2006-03-31',
+        vehicles: [
+            { vehicle_number: 8707 },
+            { vehicle_number: 8119 },
+            { vehicle_number: 8219 },
+            { vehicle_number: 8613 },
+            { vehicle_number: 8120 },
+            { vehicle_number: 8220 },
+            { vehicle_number: 8614 },
+            { vehicle_number: 8121 },
+            { vehicle_number: 8221 },
+            { vehicle_number: 8507 }
+        ]
+    },
+    {
+        formation_number: 8708,
+        start_date: '1994-03-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 8708 },
+            { vehicle_number: 8122 },
+            { vehicle_number: 8222 },
+            { vehicle_number: 8615 },
+            { vehicle_number: 8123 },
+            { vehicle_number: 8223 },
+            { vehicle_number: 8616 },
+            { vehicle_number: 8124 },
+            { vehicle_number: 8224 },
+            { vehicle_number: 8508 }
+        ]
+    },
+    {
+        formation_number: 8709,
+        start_date: '1995-04-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 8709 },
+            { vehicle_number: 8125 },
+            { vehicle_number: 8225 },
+            { vehicle_number: 8617 },
+            { vehicle_number: 8126 },
+            { vehicle_number: 8226 },
+            { vehicle_number: 8618 },
+            { vehicle_number: 8127 },
+            { vehicle_number: 8227 },
+            { vehicle_number: 8509 }
+        ]
+    },
+    {
+        formation_number: 8710,
+        start_date: '1996-03-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 8710 },
+            { vehicle_number: 8128 },
+            { vehicle_number: 8228 },
+            { vehicle_number: 8619 },
+            { vehicle_number: 8129 },
+            { vehicle_number: 8229 },
+            { vehicle_number: 8620 },
+            { vehicle_number: 8130 },
+            { vehicle_number: 8230 },
+            { vehicle_number: 8510 }
+        ]
+    },
+    {
+        formation_number: 8711,
+        start_date: '1997-03-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 8711 },
+            { vehicle_number: 8131 },
+            { vehicle_number: 8231 },
+            { vehicle_number: 8621 },
+            { vehicle_number: 8132 },
+            { vehicle_number: 8232 },
+            { vehicle_number: 8622 },
+            { vehicle_number: 8133 },
+            { vehicle_number: 8233 },
+            { vehicle_number: 8511 }
+        ]
+    },
+    {
+        formation_number: 8712,
+        start_date: '1998-03-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 8712 },
+            { vehicle_number: 8134 },
+            { vehicle_number: 8234 },
+            { vehicle_number: 8623 },
+            { vehicle_number: 8135 },
+            { vehicle_number: 8235 },
+            { vehicle_number: 8624 },
+            { vehicle_number: 8136 },
+            { vehicle_number: 8236 },
+            { vehicle_number: 8512 }
+        ]
+    },
+    {
+        formation_number: 8713,
+        start_date: '1999-09-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 8713 },
+            { vehicle_number: 8137 },
+            { vehicle_number: 8237 },
+            { vehicle_number: 8625 },
+            { vehicle_number: 8138 },
+            { vehicle_number: 8238 },
+            { vehicle_number: 8626 },
+            { vehicle_number: 8139 },
+            { vehicle_number: 8239 },
+            { vehicle_number: 8513 }
+        ]
+    },
+    {
+        formation_number: 9701,
+        start_date: '1993-01-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 9701 },
+            { vehicle_number: 9101 },
+            { vehicle_number: 9201 },
+            { vehicle_number: 9601 },
+            { vehicle_number: 9102 },
+            { vehicle_number: 9202 },
+            { vehicle_number: 9602 },
+            { vehicle_number: 9103 },
+            { vehicle_number: 9203 },
+            { vehicle_number: 9501 }
+        ]
+    },
+    {
+        formation_number: 9702,
+        start_date: '1993-03-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 9702 },
+            { vehicle_number: 9104 },
+            { vehicle_number: 9204 },
+            { vehicle_number: 9603 },
+            { vehicle_number: 9105 },
+            { vehicle_number: 9205 },
+            { vehicle_number: 9604 },
+            { vehicle_number: 9106 },
+            { vehicle_number: 9206 },
+            { vehicle_number: 9502 }
+        ]
+    },
+    {
+        formation_number: 9703,
+        start_date: '1995-03-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 9703 },
+            { vehicle_number: 9107 },
+            { vehicle_number: 9207 },
+            { vehicle_number: 9605 },
+            { vehicle_number: 9108 },
+            { vehicle_number: 9208 },
+            { vehicle_number: 9606 },
+            { vehicle_number: 9109 },
+            { vehicle_number: 9209 },
+            { vehicle_number: 9503 }
+        ]
+    },
+    {
+        formation_number: 9704,
+        start_date: '1996-01-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 9704 },
+            { vehicle_number: 9110 },
+            { vehicle_number: 9210 },
+            { vehicle_number: 9607 },
+            { vehicle_number: 9111 },
+            { vehicle_number: 9211 },
+            { vehicle_number: 9608 },
+            { vehicle_number: 9112 },
+            { vehicle_number: 9212 },
+            { vehicle_number: 9504 }
+        ]
+    },
+    {
+        formation_number: 9705,
+        start_date: '1996-05-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 9705 },
+            { vehicle_number: 9113 },
+            { vehicle_number: 9213 },
+            { vehicle_number: 9609 },
+            { vehicle_number: 9114 },
+            { vehicle_number: 9214 },
+            { vehicle_number: 9610 },
+            { vehicle_number: 9115 },
+            { vehicle_number: 9215 },
+            { vehicle_number: 9505 }
+        ]
+    },
+    {
+        formation_number: 9706,
+        start_date: '1999-02-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 9706 },
+            { vehicle_number: 9116 },
+            { vehicle_number: 9216 },
+            { vehicle_number: 9611 },
+            { vehicle_number: 9117 },
+            { vehicle_number: 9217 },
+            { vehicle_number: 9612 },
+            { vehicle_number: 9118 },
+            { vehicle_number: 9218 },
+            { vehicle_number: 9506 }
+        ]
+    },
+    {
+        formation_number: 9707,
+        start_date: '2001-03-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 9707 },
+            { vehicle_number: 9119 },
+            { vehicle_number: 9219 },
+            { vehicle_number: 9613 },
+            { vehicle_number: 9120 },
+            { vehicle_number: 9220 },
+            { vehicle_number: 9614 },
+            { vehicle_number: 9121 },
+            { vehicle_number: 9221 },
+            { vehicle_number: 9507 }
+        ]
+    },
+    {
+        formation_number: 10701,
+        start_date: '2002-01-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 10701 },
+            { vehicle_number: 10201 },
+            { vehicle_number: 10101 },
+            { vehicle_number: 10601 },
+            { vehicle_number: 10301 },
+            { vehicle_number: 10602 },
+            { vehicle_number: 10603 },
+            { vehicle_number: 10202 },
+            { vehicle_number: 10102 },
+            { vehicle_number: 10501 }
+        ]
+    },
+    {
+        formation_number: 10702,
+        start_date: '2002-03-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 10702 },
+            { vehicle_number: 10203 },
+            { vehicle_number: 10103 },
+            { vehicle_number: 10604 },
+            { vehicle_number: 10302 },
+            { vehicle_number: 10605 },
+            { vehicle_number: 10606 },
+            { vehicle_number: 10204 },
+            { vehicle_number: 10104 },
+            { vehicle_number: 10502 }
+        ]
+    },
+    {
+        formation_number: 10703,
+        start_date: '2003-03-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 10703 },
+            { vehicle_number: 10205 },
+            { vehicle_number: 10105 },
+            { vehicle_number: 10607 },
+            { vehicle_number: 10608 },
+            { vehicle_number: 10206 },
+            { vehicle_number: 10106 },
+            { vehicle_number: 10503 }
+        ]
+    },
+    {
+        formation_number: 10704,
+        start_date: '2004-03-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 10704 },
+            { vehicle_number: 10207 },
+            { vehicle_number: 10107 },
+            { vehicle_number: 10609 },
+            { vehicle_number: 10610 },
+            { vehicle_number: 10208 },
+            { vehicle_number: 10108 },
+            { vehicle_number: 10504 }
+        ]
+    },
+    {
+        formation_number: 10705,
+        start_date: '2005-01-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 10705 },
+            { vehicle_number: 10209 },
+            { vehicle_number: 10109 },
+            { vehicle_number: 10611 },
+            { vehicle_number: 10612 },
+            { vehicle_number: 10210 },
+            { vehicle_number: 10110 },
+            { vehicle_number: 10505 }
+        ]
+    },
+    {
+        formation_number: 10706,
+        start_date: '2005-02-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 10706 },
+            { vehicle_number: 10211 },
+            { vehicle_number: 10111 },
+            { vehicle_number: 10613 },
+            { vehicle_number: 10614 },
+            { vehicle_number: 10212 },
+            { vehicle_number: 10112 },
+            { vehicle_number: 10506 }
+        ]
+    },
+    {
+        formation_number: 10707,
+        start_date: '2005-02-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 10707 },
+            { vehicle_number: 10213 },
+            { vehicle_number: 10113 },
+            { vehicle_number: 10615 },
+            { vehicle_number: 10616 },
+            { vehicle_number: 10214 },
+            { vehicle_number: 10114 },
+            { vehicle_number: 10507 }
+        ]
+    },
+    {
+        formation_number: 10708,
+        start_date: '2007-03-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 10708 },
+            { vehicle_number: 10215 },
+            { vehicle_number: 10115 },
+            { vehicle_number: 10617 },
+            { vehicle_number: 10303 },
+            { vehicle_number: 10618 },
+            { vehicle_number: 10619 },
+            { vehicle_number: 10216 },
+            { vehicle_number: 10116 },
+            { vehicle_number: 10508 }
+        ]
+    },
+    {
+        formation_number: 11001,
+        start_date: '2009-06-15',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 11001 },
+            { vehicle_number: 11101 },
+            { vehicle_number: 11201 },
+            { vehicle_number: 11301 },
+            { vehicle_number: 11401 },
+            { vehicle_number: 11501 },
+            { vehicle_number: 11601 },
+            { vehicle_number: 11701 },
+            { vehicle_number: 11801 },
+            { vehicle_number: 11901 }
+        ]
+    },
+    {
+        formation_number: 11002,
+        start_date: '2009-06-15',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 11002 },
+            { vehicle_number: 11102 },
+            { vehicle_number: 11202 },
+            { vehicle_number: 11302 },
+            { vehicle_number: 11402 },
+            { vehicle_number: 11502 },
+            { vehicle_number: 11602 },
+            { vehicle_number: 11702 },
+            { vehicle_number: 11802 },
+            { vehicle_number: 11902 }
+        ]
+    },
+    {
+        formation_number: 11003,
+        start_date: '2010-03-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 11003 },
+            { vehicle_number: 11103 },
+            { vehicle_number: 11203 },
+            { vehicle_number: 11303 },
+            { vehicle_number: 11403 },
+            { vehicle_number: 11503 },
+            { vehicle_number: 11603 },
+            { vehicle_number: 11703 },
+            { vehicle_number: 11803 },
+            { vehicle_number: 11903 }
+        ]
+    },
+    {
+        formation_number: 11004,
+        start_date: '2011-05-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 11004 },
+            { vehicle_number: 11104 },
+            { vehicle_number: 11204 },
+            { vehicle_number: 11304 },
+            { vehicle_number: 11404 },
+            { vehicle_number: 11504 },
+            { vehicle_number: 11604 },
+            { vehicle_number: 11704 },
+            { vehicle_number: 11804 },
+            { vehicle_number: 11904 }
+        ]
+    },
+    {
+        formation_number: 11005,
+        start_date: '2013-03-01',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 11005 },
+            { vehicle_number: 11105 },
+            { vehicle_number: 11205 },
+            { vehicle_number: 11305 },
+            { vehicle_number: 11405 },
+            { vehicle_number: 11505 },
+            { vehicle_number: 11605 },
+            { vehicle_number: 11705 },
+            { vehicle_number: 11805 },
+            { vehicle_number: 11905 }
+        ]
+    },
+    {
+        formation_number: 20101,
+        start_date: '2018-02-11',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 20101 },
+            { vehicle_number: 20201 },
+            { vehicle_number: 20301 },
+            { vehicle_number: 20401 },
+            { vehicle_number: 20501 },
+            { vehicle_number: 20601 },
+            { vehicle_number: 20701 },
+            { vehicle_number: 20801 },
+            { vehicle_number: 20901 },
+            { vehicle_number: 20001 }
+        ]
+    },
+    {
+        formation_number: 12101,
+        start_date: '2019-04-20',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 12101 },
+            { vehicle_number: 12201 },
+            { vehicle_number: 12301 },
+            { vehicle_number: 12401 },
+            { vehicle_number: 12501 },
+            { vehicle_number: 12601 },
+            { vehicle_number: 12701 },
+            { vehicle_number: 12801 },
+            { vehicle_number: 12901 },
+            { vehicle_number: 12001 }
+        ]
+    },
+    {
+        formation_number: 12102,
+        start_date: '2019-05-11',
+        end_date: null,
+        vehicles: [
+            { vehicle_number: 12102 },
+            { vehicle_number: 12202 },
+            { vehicle_number: 12302 },
+            { vehicle_number: 12402 },
+            { vehicle_number: 12502 },
+            { vehicle_number: 12602 },
+            { vehicle_number: 12702 },
+            { vehicle_number: 12802 },
+            { vehicle_number: 12902 },
+            { vehicle_number: 12002 }
+        ]
+    }
+]

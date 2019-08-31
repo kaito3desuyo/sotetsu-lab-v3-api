@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, FindManyOptions } from 'typeorm';
 import { Trip } from './trip.entity';
 
 @Injectable()
@@ -10,7 +10,7 @@ export class TripService {
     private readonly stationRepository: Repository<Trip>,
   ) {}
 
-  findAll(options?: { relations?: string[] }): Promise<Trip[]> {
+  findAll(options?: FindManyOptions): Promise<Trip[]> {
     return this.stationRepository.find(options);
   }
 }

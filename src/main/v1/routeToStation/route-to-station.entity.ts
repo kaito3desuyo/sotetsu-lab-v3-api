@@ -16,8 +16,26 @@ import { Station } from '../station/station.entity';
   name: 'route_station_lists',
 })
 export class RouteToStation {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column('uuid')
+  route_id: string
+
+  @Column('uuid')
+  station_id: string
+
+  @Column('smallint')
+  station_sequence: number;
+
+  @Column('varchar', {nullable: true})
+  station_numbering: string;
+
+  @CreateDateColumn({type: "timestamptz"})
+  created_at: string;
+
+  @UpdateDateColumn({type: 'timestamptz'})
+  updated_at: string;
 
   @ManyToOne(type => Route, route => route.route_to_stations)
   @JoinColumn({ name: 'route_id' })
@@ -26,16 +44,4 @@ export class RouteToStation {
   @ManyToOne(type => Station, station => station.station_to_routes)
   @JoinColumn({ name: 'station_id' })
   station: Station;
-
-  @Column()
-  station_sequence: number;
-
-  @Column()
-  station_numbering: string;
-
-  @CreateDateColumn()
-  created_at: string;
-
-  @UpdateDateColumn()
-  updated_at: string;
 }

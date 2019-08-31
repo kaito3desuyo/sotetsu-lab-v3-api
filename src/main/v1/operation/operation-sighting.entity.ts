@@ -18,26 +18,26 @@ export class OperationSighting {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column('uuid')
   formation_id: string;
 
-  @Column()
+  @Column('uuid')
   operation_id: string;
 
-  @Column()
+  @Column('timestamptz')
   sighting_time: Date;
 
-  @CreateDateColumn()
+  @CreateDateColumn({type: 'timestamptz'})
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({type: 'timestamptz'})
   updated_at: Date;
 
   @ManyToOne(type => Operation, operation => operation.operation_sightings)
   @JoinColumn({ name: 'operation_id' })
-  operation?: Operation;
+  readonly operation?: Operation;
 
   @ManyToOne(type => Formation, formation => formation.operation_sightings)
   @JoinColumn({ name: 'formation_id' })
-  formation?: Formation;
+  readonly formation?: Formation;
 }
