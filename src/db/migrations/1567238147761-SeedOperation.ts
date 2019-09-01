@@ -2,11 +2,13 @@ import {MigrationInterface, QueryRunner, getRepository} from "typeorm";
 import { Calender } from "../../main/v1/calender/calender.entity";
 import {find} from 'lodash'
 import { Operation } from "../../main/v1/operation/operation.entity";
+
+// tslint:disable: max-line-length
 export class SeedOperation1567238147761 implements MigrationInterface {
 
     public async up(queryRunner: QueryRunner): Promise<any> {
         const calenders = await getRepository(Calender).find() as any;
-
+        console.log(calenders)
         const operations = [];
         operationsSeed.forEach(seed => {
             const temp = seed.operations.map(operation => {

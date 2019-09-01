@@ -26,19 +26,19 @@ export class Formation {
   @Column('varchar')
   formation_number: string;
 
-  @Column('text', {nullable: true})
+  @Column('text', { nullable: true })
   formation_description: string;
 
-  @Column('date', {nullable: true})
+  @Column('date', { nullable: true })
   start_date: Date;
 
-  @Column('date', {nullable: true})
+  @Column('date', { nullable: true })
   end_date: Date;
 
-  @CreateDateColumn({type: 'timestamptz'})
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
-  @UpdateDateColumn({type: 'timestamptz'})
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 
   @OneToMany(

@@ -47,13 +47,13 @@ export class Calender {
   @Column('date')
   start_date: Date;
 
-  @Column('date', {nullable: true})
+  @Column('date', { nullable: true })
   end_date: Date;
 
-  @CreateDateColumn({type: 'timestamptz'})
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
-  @UpdateDateColumn({type: 'timestamptz'})
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 
   @OneToMany(type => Operation, operation => operation.calender)

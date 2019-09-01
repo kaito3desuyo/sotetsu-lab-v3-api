@@ -22,40 +22,40 @@ export class Station {
   @Column('varchar')
   station_name: string;
 
-  @Column('varchar', {nullable: true})
+  @Column('varchar', { nullable: true })
   station_subname: string;
 
   @Column('smallint')
   station_type: number;
 
-  @Column('text', {nullable: true})
+  @Column('text', { nullable: true })
   station_description: string;
 
   @Column({
-    type: "geometry",
-    spatialFeatureType: "Point",
+    type: 'geometry',
+    spatialFeatureType: 'Point',
     srid: 4326,
-    nullable: true
+    nullable: true,
   })
   station_latlng: string;
 
-  @Column('varchar', {nullable: true})
+  @Column('varchar', { nullable: true })
   station_url: string;
 
   @Column('boolean')
   wheelchair_boarding: boolean;
 
-  @CreateDateColumn({type: 'timestamptz'})
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
-  @UpdateDateColumn({type: 'timestamptz'})
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 
   @OneToMany(type => RouteToStation, routeToStation => routeToStation.station)
   readonly station_to_routes?: RouteToStation[];
-  
+
   @OneToMany(type => Time, time => time.station)
-  readonly times?: Time[]
+  readonly times?: Time[];
 
   @OneToMany(type => Stop, stop => stop.station)
   readonly stops?: Stop[];

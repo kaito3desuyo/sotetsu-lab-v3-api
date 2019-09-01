@@ -44,12 +44,12 @@ const routes: Route[] = [
       },
       {
         path: '/trips',
-        module: TripModule
+        module: TripModule,
       },
       {
         path: '/services',
-        module: ServiceModule
-      }
+        module: ServiceModule,
+      },
     ],
   },
 ];
@@ -65,7 +65,7 @@ const routes: Route[] = [
     FormationModule,
     VehicleModule,
     TripModule,
-    ServiceModule
+    ServiceModule,
   ],
 })
 export class ApiV1Module {}

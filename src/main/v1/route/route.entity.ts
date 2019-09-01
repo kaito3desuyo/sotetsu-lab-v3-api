@@ -24,34 +24,34 @@ export class Route {
   @Column('uuid')
   agency_id: string;
 
-  @Column('varchar', {nullable: true})
+  @Column('varchar', { nullable: true })
   route_number: string;
 
   @Column('varchar')
   route_name: string;
 
-  @Column('varchar', {nullable: true})
+  @Column('varchar', { nullable: true })
   route_nickname: string;
 
-  @Column('text', {nullable: true})
+  @Column('text', { nullable: true })
   route_description: string;
 
   @Column('smallint')
   route_type: number;
 
-  @Column('varchar', {nullable: true})
+  @Column('varchar', { nullable: true })
   route_url: string;
 
-  @Column('varchar', {nullable: true})
+  @Column('varchar', { nullable: true })
   route_color: string;
 
-  @Column('varchar', {nullable: true})
+  @Column('varchar', { nullable: true })
   route_text_color: string;
 
-  @CreateDateColumn({type: 'timestamptz'})
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
-  @UpdateDateColumn({type: 'timestamptz'})
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 
   @ManyToOne(type => Agency, agency => agency.routes)

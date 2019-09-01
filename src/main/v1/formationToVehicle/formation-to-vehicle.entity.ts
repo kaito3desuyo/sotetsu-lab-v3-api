@@ -27,10 +27,10 @@ export class FormationToVehicle {
   @Column('smallint')
   car_number: number;
 
-  @CreateDateColumn({type: 'timestamptz'})
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
-  @UpdateDateColumn({type: 'timestamptz'})
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 
   @ManyToOne(type => Formation, formation => formation.formation_to_vehicles)

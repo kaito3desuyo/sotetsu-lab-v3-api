@@ -1,5 +1,5 @@
 export const TripClassSeed = [
-    /*
+  /*
     {
         service_id: '',
         trip_class_name: '特急',
@@ -49,4 +49,4 @@ export const TripClassSeed = [
         sequence: 8
     }
     */
-]
+];

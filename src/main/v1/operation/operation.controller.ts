@@ -12,7 +12,13 @@ import { Operation } from './operation.entity';
 import { OperationService } from './operation.service';
 import { OperationSighting } from './operation-sighting.entity';
 import { OperationSightingService } from './operation-sightings.service';
-import { In, Not, LessThanOrEqual, InsertResult } from 'typeorm';
+import {
+  In,
+  Not,
+  LessThanOrEqual,
+  InsertResult,
+  SelectQueryBuilder,
+} from 'typeorm';
 import { CalenderService } from '../calender/calender.service';
 
 @Controller()
@@ -59,6 +65,25 @@ export class OperationController {
       .getRawMany();
 
     return operations;
+  }
+
+  @Get('/search/numbers')
+  async searchOperationNumbers(@Query()
+  query: {
+    calender_id: string;
+  }): Promise<{ operation_number: string }[]> {
+    const qb = await this.operationService.createQueryBuilder();
+    let searchQuery = qb;
+    if (query.calender_id !== undefined) {
+      searchQuery = searchCalenderId(query.calender_id, searchQuery);
+    }
+    const operationNumbers = await searchQuery
+      .select('operation_number')
+      .andWhere('operation_number != :number', { number: '100' })
+      .orderBy('operation_number', 'ASC')
+      .getRawMany();
+
+    return operationNumbers;
   }
 
   @Get('/all/latest-sightings/')
@@ -170,3 +195,7 @@ export class OperationController {
     return sighting;
   }
 }
+
+const searchCalenderId = (calenderId: string, qb: SelectQueryBuilder<any>) => {
+  return qb.andWhere('calender_id = :calenderId', { calenderId });
+};

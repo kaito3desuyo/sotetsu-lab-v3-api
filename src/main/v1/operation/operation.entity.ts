@@ -26,10 +26,10 @@ export class Operation {
   @Column('varchar')
   operation_number: string;
 
-  @CreateDateColumn({type: 'timestamptz'})
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
-  @UpdateDateColumn({type: 'timestamptz'})
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 
   @ManyToOne(type => Calender, calender => calender.operations)
@@ -37,7 +37,7 @@ export class Operation {
   readonly calender?: Calender;
 
   @OneToMany(type => Trip, trip => trip.operation)
-  readonly trips?: Trip[]
+  readonly trips?: Trip[];
 
   @OneToMany(
     type => OperationSighting,

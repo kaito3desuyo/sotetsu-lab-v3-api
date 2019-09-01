@@ -20,21 +20,21 @@ export class RouteToStation {
   id: string;
 
   @Column('uuid')
-  route_id: string
+  route_id: string;
 
   @Column('uuid')
-  station_id: string
+  station_id: string;
 
   @Column('smallint')
   station_sequence: number;
 
-  @Column('varchar', {nullable: true})
+  @Column('varchar', { nullable: true })
   station_numbering: string;
 
-  @CreateDateColumn({type: "timestamptz"})
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: string;
 
-  @UpdateDateColumn({type: 'timestamptz'})
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: string;
 
   @ManyToOne(type => Route, route => route.route_to_stations)

@@ -1,36 +1,46 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany } from "typeorm";
-import { Service } from "../service/service.entity";
-import { Trip } from "./trip.entity";
-
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToOne,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
+import { Service } from '../service/service.entity';
+import { Trip } from './trip.entity';
+// tslint:disable: variable-name
 @Entity({
-    name: 'trip_classes'
+  name: 'trip_classes',
 })
 export class TripClass {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-    @Column('uuid')
-    service_id: string;
+  @Column('uuid')
+  service_id: string;
 
-    @Column('varchar')
-    trip_class_name: string;
+  @Column('varchar')
+  trip_class_name: string;
 
-    @Column('varchar')
-    trip_class_color: string;
+  @Column('varchar')
+  trip_class_color: string;
 
-    @Column('smallint')
-    sequence: number;
+  @Column('smallint')
+  sequence: number;
 
-    @CreateDateColumn({type: 'timestamptz'})
-    created_at: string
+  @CreateDateColumn({ type: 'timestamptz' })
+  created_at: string;
 
-    @UpdateDateColumn({type: 'timestamptz'})
-    updated_at: string
+  @UpdateDateColumn({ type: 'timestamptz' })
+  updated_at: string;
 
-    @OneToMany(type => Trip, trip => trip.trip_class)
-    readonly trips?: Trip[]
+  @OneToMany(type => Trip, trip => trip.trip_class)
+  readonly trips?: Trip[];
 
-    @ManyToOne(type => Service, service => service.trip_classes)
-    @JoinColumn({name: 'service_id'})
-    readonly service?: Service
+  @ManyToOne(type => Service, service => service.trip_classes)
+  @JoinColumn({ name: 'service_id' })
+  readonly service?: Service;
 }

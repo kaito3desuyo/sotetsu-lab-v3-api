@@ -22,9 +22,9 @@ export class FormationController {
   @Get()
   async getFormations(): Promise<Formation[]> {
     const formations = await this.formationService.findAll({
-      relations: ['formation_to_vehicles', 'formation_to_vehicles.vehicle']
+      relations: ['formation_to_vehicles', 'formation_to_vehicles.vehicle'],
     });
-    return formations
+    return formations;
   }
 
   @Get('/search')
@@ -90,6 +90,36 @@ export class FormationController {
     } catch (e) {
       throw new HttpException(e.message, HttpStatus.UNPROCESSABLE_ENTITY);
     }
+  }
+
+  @Get('/search/Numbers')
+  async searchFormationNumbers(@Query() query: { date: string }): Promise<
+    { formation_number: string }[]
+  > {
+    if (!query.date) {
+      throw new HttpException(
+        'Please set date query. example: 2019-01-01',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+    if (!/\d{4}-\d{2}-\d{2}/.test(query.date)) {
+      throw new HttpException(
+        'Date query has invalid format. example: 2019-01-01',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    const numbers = await this.formationService.query(
+      `
+      SELECT formation_number
+      FROM formations
+      WHERE (start_date <= $1 OR start_date IS NULL) AND ($1 <= end_date OR end_date IS NULL)
+      ORDER BY to_number("formation_number", '99999') ASC
+      `,
+      [query.date],
+    );
+
+    return numbers;
   }
 
   @Get('/all/numbers')
