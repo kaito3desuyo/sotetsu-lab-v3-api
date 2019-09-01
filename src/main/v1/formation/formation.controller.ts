@@ -94,7 +94,7 @@ export class FormationController {
 
   @Get('/search/Numbers')
   async searchFormationNumbers(@Query() query: { date: string }): Promise<
-    { formation_number: string }[]
+    Array<{ formation_number: string }>
   > {
     if (!query.date) {
       throw new HttpException(

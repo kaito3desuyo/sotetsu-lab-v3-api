@@ -17,10 +17,11 @@ export class SeedFormation1567243072799 implements MigrationInterface {
     await getRepository(Formation).save(formations);
   }
 
+  // tslint:disable-next-line: no-empty
   public async down(queryRunner: QueryRunner): Promise<any> {}
 }
 
-const formationsSeed: Partial<Formation>[] = [
+const formationsSeed: Array<Partial<Formation>> = [
   {
     vehicle_type: '7000',
     formation_number: '7707',

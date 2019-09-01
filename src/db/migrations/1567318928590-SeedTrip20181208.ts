@@ -13,5 +13,6 @@ export class SeedTrip201812081567318928590 implements MigrationInterface {
     await Promise.all(promises);
   }
 
+  // tslint:disable-next-line: no-empty
   public async down(queryRunner: QueryRunner): Promise<any> {}
 }

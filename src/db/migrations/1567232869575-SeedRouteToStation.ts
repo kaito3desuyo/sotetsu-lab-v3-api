@@ -10,31 +10,35 @@ export class SeedRouteToStation1567232869575 implements MigrationInterface {
     const stations = await getRepository(Station).find();
 
     const routeStations = routeStationListsSeed.map(routeStation => {
-      routeStation['route_id'] = find(
-        routes,
-        route => route.route_name === routeStation.route_name,
-      ).id;
-      routeStation['station_id'] = find(
-        stations,
-        station => station.station_name === routeStation.station_name,
-      ).id;
-      delete routeStation.route_name;
-      delete routeStation.station_name;
-      return routeStation;
+      const temp = {
+        ...routeStation,
+        route_id: find(
+          routes,
+          route => route.route_name === routeStation.route_name,
+        ).id,
+        station_id: find(
+          stations,
+          station => station.station_name === routeStation.station_name,
+        ).id,
+      };
+      delete temp.route_name;
+      delete temp.station_name;
+      return temp;
     });
 
     await getRepository(RouteToStation).save(routeStations);
   }
 
+  // tslint:disable-next-line: no-empty
   public async down(queryRunner: QueryRunner): Promise<any> {}
 }
 
-const routeStationListsSeed: {
+const routeStationListsSeed: Array<{
   route_name: string;
   station_name: string;
   station_sequence: number;
   station_numbering: string;
-}[] = [
+}> = [
   {
     route_name: '本線',
     station_name: '横浜',

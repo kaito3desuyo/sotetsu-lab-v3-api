@@ -6,10 +6,11 @@ export class SeedAgency1567227105344 implements MigrationInterface {
     await getRepository(Agency).save(agenciesSeed);
   }
 
+  // tslint:disable-next-line: no-empty
   public async down(queryRunner: QueryRunner): Promise<any> {}
 }
 
-const agenciesSeed: Partial<Agency>[] = [
+const agenciesSeed: Array<Partial<Agency>> = [
   {
     agency_number: '5020001022615',
     agency_official_name: '相模鉄道株式会社',

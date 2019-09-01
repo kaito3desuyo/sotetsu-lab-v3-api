@@ -71,7 +71,7 @@ export class OperationController {
   async searchOperationNumbers(@Query()
   query: {
     calender_id: string;
-  }): Promise<{ operation_number: string }[]> {
+  }): Promise<Array<{ operation_number: string }>> {
     const qb = await this.operationService.createQueryBuilder();
     let searchQuery = qb;
     if (query.calender_id !== undefined) {
@@ -140,8 +140,6 @@ export class OperationController {
     });
 
     const calendersId = calenders.map(obj => obj.id);
-
-    console.log(calenders);
 
     const operations = await this.operationService.findAll({
       where: {

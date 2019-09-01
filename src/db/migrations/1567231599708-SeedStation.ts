@@ -6,10 +6,11 @@ export class SeedStation1567231599708 implements MigrationInterface {
     await getRepository(Station).save(stationsSeed);
   }
 
+  // tslint:disable-next-line: no-empty
   public async down(queryRunner: QueryRunner): Promise<any> {}
 }
 
-const stationsSeed: Partial<Station>[] = [
+const stationsSeed: Array<Partial<Station>> = [
   {
     station_name: '横浜',
     station_type: 1,

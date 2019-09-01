@@ -6,10 +6,11 @@ export class SeedService1567225468258 implements MigrationInterface {
     await getRepository(Service).save(servicesSeed);
   }
 
+  // tslint:disable-next-line: no-empty
   public async down(queryRunner: QueryRunner): Promise<any> {}
 }
 
-const servicesSeed: Partial<Service>[] = [
+const servicesSeed: Array<Partial<Service>> = [
   {
     service_name: '相鉄本線・いずみ野線・厚木線・新横浜線／JR埼京線・川越線',
     service_description: null,

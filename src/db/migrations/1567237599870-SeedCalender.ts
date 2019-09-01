@@ -8,22 +8,27 @@ export class SeedCalender1567237599870 implements MigrationInterface {
     const services = await getRepository(Service).find();
 
     const calenders = calendersSeed.map(calender => {
-      calender['service_id'] = find(
-        services,
-        service =>
-          service.service_name ===
-          '相鉄本線・いずみ野線・厚木線・新横浜線／JR埼京線・川越線',
-      ).id;
-      return calender;
+      const temp = {
+        ...services,
+        service_id: find(
+          services,
+          service =>
+            service.service_name ===
+            '相鉄本線・いずみ野線・厚木線・新横浜線／JR埼京線・川越線',
+        ).id,
+      };
+
+      return temp;
     });
 
     await getRepository(Calender).save(calenders);
   }
 
+  // tslint:disable-next-line: no-empty
   public async down(queryRunner: QueryRunner): Promise<any> {}
 }
 
-const calendersSeed: Partial<Calender>[] = [
+const calendersSeed: Array<Partial<Calender>> = [
   {
     calender_name: '平日ダイヤ',
     sunday: false,

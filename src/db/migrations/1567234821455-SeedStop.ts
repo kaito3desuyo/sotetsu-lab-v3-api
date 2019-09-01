@@ -25,10 +25,14 @@ export class SeedStop1567234821455 implements MigrationInterface {
     await getRepository(Stop).save(stops);
   }
 
+  // tslint:disable-next-line: no-empty
   public async down(queryRunner: QueryRunner): Promise<any> {}
 }
 
-const stopsSeed: { station_name: string; stops: Partial<Stop>[] }[] = [
+const stopsSeed: Array<{
+  station_name: string;
+  stops: Array<Partial<Stop>>;
+}> = [
   {
     station_name: '横浜',
     stops: [

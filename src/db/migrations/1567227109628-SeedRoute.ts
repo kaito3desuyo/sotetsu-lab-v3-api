@@ -6,7 +6,6 @@ import { find, filter, flattenDeep, concat } from 'lodash';
 export class SeedRoute1567227109628 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<any> {
     const agencies = await getRepository(Agency).find();
-    console.log(agencies);
 
     const routes = [];
     agencies.forEach(agency => {
@@ -14,19 +13,22 @@ export class SeedRoute1567227109628 implements MigrationInterface {
         routesSeed,
         route => route.agency_name === agency.agency_name,
       ).map(route => {
-        delete route.agency_name;
-        route['agency_id'] = agency.id;
+        const temp = {
+          ...route,
+          agency_id: agency.id,
+        };
+        delete temp.agency_name;
 
-        return route;
+        return temp;
       });
 
       hasRoutes.forEach(route => routes.push(route));
     });
 
-    console.log(routes);
     await getRepository(Route).save(routes);
   }
 
+  // tslint:disable-next-line: no-empty
   public async down(queryRunner: QueryRunner): Promise<any> {}
 }
 const routesSeed = [

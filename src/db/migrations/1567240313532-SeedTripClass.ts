@@ -22,10 +22,11 @@ export class SeedTripClass1567240313532 implements MigrationInterface {
     await getRepository(TripClass).save(classes);
   }
 
+  // tslint:disable-next-line: no-empty
   public async down(queryRunner: QueryRunner): Promise<any> {}
 }
 
-const tripClassesSeed: Partial<TripClass>[] = [
+const tripClassesSeed: Array<Partial<TripClass>> = [
   {
     trip_class_name: '特急',
     trip_class_color: '#ff9800',

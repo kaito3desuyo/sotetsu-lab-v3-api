@@ -6,6 +6,7 @@ export class SeedVehicle1567246970603 implements MigrationInterface {
     await getRepository(Vehicle).save(vehiclesSeed);
   }
 
+  // tslint:disable-next-line: no-empty
   public async down(queryRunner: QueryRunner): Promise<any> {}
 }
 

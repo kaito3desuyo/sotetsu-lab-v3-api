@@ -29,12 +29,13 @@ export class SeedFormationToVehicle1567249724120 implements MigrationInterface {
         };
       });
 
-      temp.forEach(temp => vehicleFormations.push(temp));
+      temp.forEach(tmp => vehicleFormations.push(tmp));
     });
 
     await getRepository(FormationToVehicle).save(vehicleFormations);
   }
 
+  // tslint:disable-next-line: no-empty
   public async down(queryRunner: QueryRunner): Promise<any> {}
 }
 

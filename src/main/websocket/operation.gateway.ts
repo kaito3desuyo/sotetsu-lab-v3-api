@@ -15,10 +15,12 @@ export class OperationRealTimeGateway
   server: Server;
 
   handleConnection(client: Client) {
+    // tslint:disable-next-line: no-console
     console.log('client connected');
   }
 
   handleDisconnect(client: Client) {
+    // tslint:disable-next-line: no-console
     console.log('client disconnected');
   }
 

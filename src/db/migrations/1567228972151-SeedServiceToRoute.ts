@@ -10,22 +10,26 @@ export class SeedServiceToRoute1567228972151 implements MigrationInterface {
     const routes = await getRepository(Route).find();
 
     const routeSystems = routeSystemsSeed.map(routeSystem => {
-      routeSystem['service_id'] = find(
-        services,
-        service => service.service_name === routeSystem.service_name,
-      ).id;
-      routeSystem['route_id'] = find(
-        routes,
-        route => route.route_name === routeSystem.route_name,
-      ).id;
-      delete routeSystem.service_name;
-      delete routeSystem.route_name;
-      return routeSystem;
+      const temp = {
+        ...routeSystem,
+        service_id: find(
+          services,
+          service => service.service_name === routeSystem.service_name,
+        ).id,
+        route_id: find(
+          routes,
+          route => route.route_name === routeSystem.route_name,
+        ).id,
+      };
+      delete temp.service_name;
+      delete temp.route_name;
+      return temp;
     });
 
     await getRepository(ServiceToRoute).save(routeSystems);
   }
 
+  // tslint:disable-next-line: no-empty
   public async down(queryRunner: QueryRunner): Promise<any> {}
 }
 
