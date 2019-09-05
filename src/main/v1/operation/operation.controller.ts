@@ -67,15 +67,44 @@ export class OperationController {
     return operations;
   }
 
+  @Get('/all/trips')
+  async getOperationsAllTrips(@Query() query: { calender_id: string }): Promise<
+    Operation[]
+  > {
+    const qb = await this.operationService.createQueryBuilder('operation');
+    let searchQuery = qb;
+    if (query.calender_id !== undefined) {
+      searchQuery = searchCalenderId(
+        'operation',
+        query.calender_id,
+        searchQuery,
+      );
+    }
+    const operationTrips = await searchQuery
+      .leftJoinAndSelect('operation.trips', 'trips')
+      .leftJoinAndSelect('trips.times', 'times')
+      .andWhere('operation.operation_number != :number', { number: '100' })
+      .orderBy('operation.operation_number', 'ASC')
+      .addOrderBy('times.departure_days', 'ASC')
+      .addOrderBy('times.departure_time', 'ASC')
+      .getMany();
+
+    return operationTrips;
+  }
+
   @Get('/search/numbers')
   async searchOperationNumbers(@Query()
   query: {
     calender_id: string;
   }): Promise<Array<{ operation_number: string }>> {
-    const qb = await this.operationService.createQueryBuilder();
+    const qb = await this.operationService.createQueryBuilder('operation');
     let searchQuery = qb;
     if (query.calender_id !== undefined) {
-      searchQuery = searchCalenderId(query.calender_id, searchQuery);
+      searchQuery = searchCalenderId(
+        'operation',
+        query.calender_id,
+        searchQuery,
+      );
     }
     const operationNumbers = await searchQuery
       .select('operation_number')
@@ -194,6 +223,10 @@ export class OperationController {
   }
 }
 
-const searchCalenderId = (calenderId: string, qb: SelectQueryBuilder<any>) => {
-  return qb.andWhere('calender_id = :calenderId', { calenderId });
+const searchCalenderId = (
+  tableName: string,
+  calenderId: string,
+  qb: SelectQueryBuilder<any>,
+) => {
+  return qb.andWhere(`${tableName}.calender_id = :calenderId`, { calenderId });
 };
