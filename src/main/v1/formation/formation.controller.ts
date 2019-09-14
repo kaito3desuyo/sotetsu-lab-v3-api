@@ -28,71 +28,40 @@ export class FormationController {
   }
 
   @Get('/search')
-  async getFormationSearch(
-    @Query('date') date: string,
-    @Query('number') formationNumber: string,
-  ): Promise<Formation[]> {
-    if (!date && !formationNumber) {
-      throw new HttpException(
-        'Please set search query.',
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      );
-    }
-
-    const formationQueryBuilder = this.formationService.createQueryBuilder();
+  async searchFormations(@Query()
+  query: {
+    agency_id?: string;
+    formation_number?: string;
+    vehicle_number?: string;
+    date?: string;
+  }): Promise<{ formations: Formation[] }> {
+    const formationQueryBuilder = this.formationService.createQueryBuilder(
+      'formations',
+    );
     let searchQuery: SelectQueryBuilder<Formation> = formationQueryBuilder;
-    if (formationNumber) {
-      searchQuery = searchFormationNumber(formationNumber, searchQuery);
-    }
-    if (date) {
-      searchQuery = searchDate(date, searchQuery);
+
+    if (query.agency_id) {
+      searchQuery = searchAgencyId(query.agency_id, searchQuery);
     }
 
-    const result = await searchQuery.getMany();
+    if (query.formation_number) {
+      searchQuery = searchFormationNumber(query.formation_number, searchQuery);
+    }
 
-    return result;
+    if (query.vehicle_number) {
+      searchQuery = searchVehicleNumber(query.vehicle_number, searchQuery);
+    }
+
+    if (query.date) {
+      searchQuery = searchDate(query.date, searchQuery);
+    }
+
+    const formations = await searchQuery.getMany();
+
+    return { formations };
   }
 
-  @Get('/search/by-vehicle')
-  async searchFormationByVehicleNumber(
-    @Query('agency_id') agencyId: string,
-    @Query('number') vehicleNumber: string,
-    @Query('date') date: string,
-  ): Promise<Formation[]> {
-    try {
-      if (!vehicleNumber) {
-        throw new Error('Please set `number` query.');
-      }
-      const formationQueryBuilder = this.formationService.createQueryBuilder(
-        'formation',
-      );
-
-      let searchQuery: SelectQueryBuilder<Formation> = formationQueryBuilder;
-
-      if (agencyId) {
-        searchQuery = searchAgencyId(agencyId, searchQuery);
-      }
-      if (date) {
-        searchQuery = searchDate(date, searchQuery);
-      }
-
-      const formation = await searchQuery
-        .innerJoinAndSelect('formation.formation_to_vehicles', 'vehicles')
-        .innerJoinAndSelect(
-          'vehicles.vehicle',
-          'vehicle',
-          'vehicle.vehicle_number = :vehicleNumber',
-          { vehicleNumber },
-        )
-        .getMany();
-
-      return formation;
-    } catch (e) {
-      throw new HttpException(e.message, HttpStatus.UNPROCESSABLE_ENTITY);
-    }
-  }
-
-  @Get('/search/Numbers')
+  @Get('/search/numbers')
   async searchFormationNumbers(@Query() query: { date: string }): Promise<
     Array<{ formation_number: string }>
   > {
@@ -152,7 +121,7 @@ export class FormationController {
 
   @Get('/all/latest-sightings')
   async getFormationsAllLatestSightings(): Promise<any[]> {
-    const subQuery = await this.operationSightingService
+    const subQuery = this.operationSightingService
       .createQueryBuilder('t_sightings')
       .select('"t_sightings".formation_id')
       .addSelect('MAX("t_sightings".sighting_time)', 'latest_sighting')
@@ -201,6 +170,23 @@ const searchFormationNumber = (
   return qb.andWhere('formation_number = :formationNumber', {
     formationNumber,
   });
+};
+
+const searchVehicleNumber = (
+  vehicleNumber: string,
+  qb: SelectQueryBuilder<Formation>,
+) => {
+  return qb
+    .innerJoinAndSelect(
+      'formations.formation_to_vehicles',
+      'formation_to_vehicles',
+    )
+    .innerJoinAndSelect(
+      'formation_to_vehicles.vehicle',
+      'vehicle',
+      'vehicle.vehicle_number = :vehicleNumber',
+      { vehicleNumber },
+    );
 };
 
 const searchDate = (date: string, qb: SelectQueryBuilder<Formation>) => {

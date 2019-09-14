@@ -24,13 +24,13 @@ export class OperationSighting {
   @Column('uuid')
   operation_id: string;
 
-  @Column('timestamptz')
+  @Column({ type: 'timestamptz', precision: 3 })
   sighting_time: Date;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', precision: 3 })
   created_at: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
   updated_at: Date;
 
   @ManyToOne(type => Operation, operation => operation.operation_sightings)

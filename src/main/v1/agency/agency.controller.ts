@@ -7,8 +7,10 @@ export class AgencyController {
   constructor(private agencyService: AgencyService) {}
 
   @Get()
-  async getAgencies(): Promise<Agency[]> {
+  async getAgencies(): Promise<{
+    agencies: Agency[];
+  }> {
     const agencies = await this.agencyService.findAll();
-    return agencies;
+    return { agencies };
   }
 }

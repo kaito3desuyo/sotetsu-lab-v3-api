@@ -92,6 +92,46 @@ const vehiclesSeed = [
     belongs: '相模鉄道かしわ台車両センター',
   },
   {
+    vehicle_number: '12105',
+    belongs: '相模鉄道かしわ台車両センター',
+  },
+  {
+    vehicle_number: '12205',
+    belongs: '相模鉄道かしわ台車両センター',
+  },
+  {
+    vehicle_number: '12305',
+    belongs: '相模鉄道かしわ台車両センター',
+  },
+  {
+    vehicle_number: '12405',
+    belongs: '相模鉄道かしわ台車両センター',
+  },
+  {
+    vehicle_number: '12505',
+    belongs: '相模鉄道かしわ台車両センター',
+  },
+  {
+    vehicle_number: '12605',
+    belongs: '相模鉄道かしわ台車両センター',
+  },
+  {
+    vehicle_number: '12705',
+    belongs: '相模鉄道かしわ台車両センター',
+  },
+  {
+    vehicle_number: '12805',
+    belongs: '相模鉄道かしわ台車両センター',
+  },
+  {
+    vehicle_number: '12905',
+    belongs: '相模鉄道かしわ台車両センター',
+  },
+  {
+    vehicle_number: '12005',
+    belongs: '相模鉄道かしわ台車両センター',
+  },
+  {
     vehicle_number: '7707',
     belongs: '相模鉄道かしわ台車両センター',
   },

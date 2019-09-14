@@ -3,14 +3,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Trip } from './trip.entity';
 import { TripController } from './trip.controller';
 import { TripService } from './trip.service';
-import { TimeService } from '../time/time.service';
-import { Time } from '../time/time.entity';
 import { TripBlock } from './trip_block.entity';
 import { TripBlockService } from './trip_block.service';
+import { TripClassService } from './trip_class.service';
+import { TripClass } from './trip_class.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Trip, TripBlock, Time])],
+  imports: [TypeOrmModule.forFeature([Trip, TripBlock, TripClass])],
   controllers: [TripController],
-  providers: [TripService, TripBlockService, TimeService],
+  providers: [TripService, TripBlockService, TripClassService],
 })
 export class TripModule {}

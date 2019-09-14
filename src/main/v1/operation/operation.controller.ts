@@ -38,15 +38,25 @@ export class OperationController {
   @Get('/search')
   async searchOperations(@Query()
   query: {
-    calender_id: string;
-    operation_number: string;
-  }): Promise<Operation[]> {
+    calender_id?: string;
+    operation_number?: string;
+  }): Promise<{ operations: Operation[] }> {
     try {
+      const whereObj = {};
+      if (query.calender_id) {
+        // tslint:disable-next-line: no-string-literal
+        whereObj['calender_id'] = query.calender_id;
+      }
+      if (query.operation_number) {
+        // tslint:disable-next-line: no-string-literal
+        whereObj['operation_number'] = query.operation_number;
+      }
+
       const operations = await this.operationService.findAll({
-        where: query,
+        where: whereObj,
       });
 
-      return operations;
+      return { operations };
     } catch (e) {
       throw new HttpException(e.message, HttpStatus.UNPROCESSABLE_ENTITY);
     }
@@ -67,11 +77,18 @@ export class OperationController {
     return operations;
   }
 
-  @Get('/all/trips')
-  async getOperationsAllTrips(@Query() query: { calender_id: string }): Promise<
-    Operation[]
-  > {
-    const qb = await this.operationService.createQueryBuilder('operation');
+  @Get('/trips')
+  async getOperationsTrips(@Query() query: { calender_id: string }): Promise<{
+    operations: Operation[];
+  }> {
+    if (!query.calender_id) {
+      throw new HttpException(
+        'Please set `calender_id` query.',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    const qb = this.operationService.createQueryBuilder('operation');
     let searchQuery = qb;
     if (query.calender_id !== undefined) {
       searchQuery = searchCalenderId(
@@ -89,7 +106,7 @@ export class OperationController {
       .addOrderBy('times.departure_time', 'ASC')
       .getMany();
 
-    return operationTrips;
+    return { operations: operationTrips };
   }
 
   @Get('/search/numbers')
@@ -217,9 +234,9 @@ export class OperationController {
     formation_id: string;
     operation_id: string;
     sighting_time: string;
-  }): Promise<OperationSighting> {
+  }): Promise<{ operation_sighting: OperationSighting }> {
     const sighting = await this.operationSightingService.save(body);
-    return sighting;
+    return { operation_sighting: sighting };
   }
 }
 

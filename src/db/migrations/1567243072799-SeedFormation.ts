@@ -322,4 +322,10 @@ const formationsSeed: Array<Partial<Formation>> = [
     start_date: new Date('2019-07-05'),
     end_date: null,
   },
+  {
+    vehicle_type: '12000',
+    formation_number: '12105',
+    start_date: new Date('2019-09-13'),
+    end_date: null,
+  },
 ];

@@ -22,13 +22,15 @@ export class CalenderController {
   ) {}
 
   @Get()
-  async getCalenders(): Promise<Calender[]> {
+  async getCalenders(): Promise<{ calenders: Calender[] }> {
     const calenders = await this.calenderService.findAll();
-    return calenders;
+    return { calenders };
   }
 
   @Get('/search')
-  async searchCalenders(@Query() query: { date: string }): Promise<Calender[]> {
+  async searchCalenders(@Query() query: { date: string }): Promise<{
+    calenders: Calender[];
+  }> {
     const qbFunctions = new QueryBuilderFunctions<Calender>();
     const calenderQueryBuilder = this.calenderService.createQueryBuilder();
     let searchQuery: SelectQueryBuilder<Calender> = calenderQueryBuilder;
@@ -42,9 +44,9 @@ export class CalenderController {
       searchQuery = searchQuery.andWhere(`${dayOfWeek} = true`);
     }
 
-    const calender = await searchQuery.getMany();
+    const calenders = await searchQuery.getMany();
 
-    return calender;
+    return { calenders };
   }
 
   private fetchWeekdayOrHoliday(date: string): Observable<string> {

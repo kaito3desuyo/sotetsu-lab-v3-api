@@ -3,12 +3,15 @@ import { TripService } from './trip.service';
 import { SelectQueryBuilder } from 'typeorm';
 import { filter } from 'lodash';
 import { TripBlockService } from './trip_block.service';
+import { TripClass } from './trip_class.entity';
+import { TripClassService } from './trip_class.service';
 
 @Controller()
 export class TripController {
   constructor(
     private tripService: TripService,
     private tripBlockService: TripBlockService,
+    private tripClassService: TripClassService,
   ) {}
 
   @Get()
@@ -67,6 +70,28 @@ export class TripController {
     return filter(tripBlocks, (o, i) => {
       return 0 <= i && i < tripBlocks.length;
     });
+  }
+
+  /**
+   * 種別
+   */
+  @Get('/classes')
+  async getTripClasses(@Query() query: { service_id: string }): Promise<
+    TripClass[]
+  > {
+    const whereObj = {};
+    if (query.service_id) {
+      // tslint:disable-next-line: no-string-literal
+      whereObj['service_id'] = query.service_id;
+    }
+
+    const tripClasses = await this.tripClassService.findAll({
+      where: whereObj,
+      order: {
+        sequence: 'ASC',
+      },
+    });
+    return tripClasses;
   }
 }
 
