@@ -76,9 +76,9 @@ export class TripController {
    * 種別
    */
   @Get('/classes')
-  async getTripClasses(@Query() query: { service_id: string }): Promise<
-    TripClass[]
-  > {
+  async getTripClasses(@Query() query: { service_id: string }): Promise<{
+    trip_classes: TripClass[];
+  }> {
     const whereObj = {};
     if (query.service_id) {
       // tslint:disable-next-line: no-string-literal
@@ -91,7 +91,7 @@ export class TripController {
         sequence: 'ASC',
       },
     });
-    return tripClasses;
+    return { trip_classes: tripClasses };
   }
 }
 

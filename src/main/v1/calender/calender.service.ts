@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan, FindManyOptions, QueryRunner } from 'typeorm';
+import {
+  Repository,
+  MoreThan,
+  FindManyOptions,
+  QueryRunner,
+  FindOneOptions,
+} from 'typeorm';
 import { Calender } from './calender.entity';
 
 @Injectable()
@@ -20,5 +26,9 @@ export class CalenderService {
 
   findAll(options?: FindManyOptions): Promise<Calender[]> {
     return this.calenderRepository.find(options);
+  }
+
+  findOne(options?: FindOneOptions): Promise<Calender> {
+    return this.calenderRepository.findOne(options);
   }
 }

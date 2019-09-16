@@ -4,6 +4,7 @@ import {
   Query,
   HttpException,
   HttpService,
+  Param,
 } from '@nestjs/common';
 import { Calender } from './calender.entity';
 import { CalenderService } from './calender.service';
@@ -47,6 +48,18 @@ export class CalenderController {
     const calenders = await searchQuery.getMany();
 
     return { calenders };
+  }
+
+  @Get('/:id')
+  async getCalenderById(
+    @Param('id') id: string,
+  ): Promise<{ calender: Calender }> {
+    const calender = await this.calenderService.findOne({
+      where: {
+        id,
+      },
+    });
+    return { calender };
   }
 
   private fetchWeekdayOrHoliday(date: string): Observable<string> {

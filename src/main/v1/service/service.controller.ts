@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { Service } from './service.entity';
 import { ServiceService } from './service.service';
-import { Route } from '../route/route.entity';
 
 @Controller()
 export class ServiceController {
@@ -22,9 +21,9 @@ export class ServiceController {
   }
 
   @Get('/search')
-  async searchServices(@Query() query: { service_name?: string }): Promise<
-    Service[]
-  > {
+  async searchServices(@Query() query: { service_name?: string }): Promise<{
+    services: Service[];
+  }> {
     const whereObj = {};
     if (query.service_name) {
       // tslint:disable-next-line: no-string-literal
@@ -32,10 +31,10 @@ export class ServiceController {
     }
 
     try {
-      const service = await this.serviceService.findAll({
+      const services = await this.serviceService.findAll({
         where: whereObj,
       });
-      return service;
+      return { services };
     } catch (e) {
       throw new HttpException(e.message, HttpStatus.UNPROCESSABLE_ENTITY);
     }
