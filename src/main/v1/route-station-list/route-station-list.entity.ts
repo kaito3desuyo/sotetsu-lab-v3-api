@@ -8,14 +8,17 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToOne,
+  OneToMany,
 } from 'typeorm';
 import { Route } from '../route/route.entity';
 import { Station } from '../station/station.entity';
+import { OperatingSystem } from '../operating-system/operating-system.entity';
 
 @Entity({
   name: 'route_station_lists',
 })
-export class RouteToStation {
+export class RouteStationList {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -37,11 +40,23 @@ export class RouteToStation {
   @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: string;
 
-  @ManyToOne(type => Route, route => route.route_to_stations)
+  @ManyToOne(type => Route, route => route.route_station_lists)
   @JoinColumn({ name: 'route_id' })
   route: Route;
 
-  @ManyToOne(type => Station, station => station.station_to_routes)
+  @ManyToOne(type => Station, station => station.route_station_lists)
   @JoinColumn({ name: 'station_id' })
   station: Station;
+
+  @OneToMany(
+    type => OperatingSystem,
+    operatingSystem => operatingSystem.start_route_station_list,
+  )
+  start_operating_systems?: OperatingSystem;
+
+  @OneToMany(
+    type => OperatingSystem,
+    operatingSystem => operatingSystem.end_route_station_list,
+  )
+  end_operating_systems?: OperatingSystem;
 }

@@ -5,9 +5,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { OperationSighting } from '../operation/operation-sighting.entity';
 import { FormationToVehicle } from '../formationToVehicle/formation-to-vehicle.entity';
+import { Agency } from '../agency/agency.entity';
 
 /* tslint:disable: variable-name */
 @Entity({
@@ -40,6 +43,10 @@ export class Formation {
 
   @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
+
+  @ManyToOne(type => Agency, agency => agency.formations)
+  @JoinColumn({ name: 'agency_id' })
+  agency?: Agency;
 
   @OneToMany(
     type => OperationSighting,

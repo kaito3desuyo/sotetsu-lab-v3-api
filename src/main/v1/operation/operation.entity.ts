@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { Calender } from '../calender/calender.entity';
 import { OperationSighting } from './operation-sighting.entity';
-import { Trip } from '../trip/trip.entity';
+import { TripOperationList } from '../trip-operation-list/trip_station_list.entity';
 /* tslint:disable: variable-name */
 
 @Entity({
@@ -36,8 +36,11 @@ export class Operation {
   @JoinColumn({ name: 'calender_id' })
   readonly calender?: Calender;
 
-  @OneToMany(type => Trip, trip => trip.operation)
-  readonly trips?: Trip[];
+  @OneToMany(
+    type => TripOperationList,
+    tripOperationList => tripOperationList.operation,
+  )
+  readonly trip_operation_lists?: TripOperationList[];
 
   @OneToMany(
     type => OperationSighting,

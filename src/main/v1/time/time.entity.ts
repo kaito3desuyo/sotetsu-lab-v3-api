@@ -6,10 +6,12 @@ import {
   ManyToOne,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
 import { Trip } from '../trip/trip.entity';
 import { Station } from '../station/station.entity';
 import { Stop } from '../stop/stop.entity';
+import { TripOperationList } from '../trip-operation-list/trip_station_list.entity';
 // tslint:disable: variable-name
 @Entity({
   name: 'times',
@@ -60,6 +62,18 @@ export class Time {
 
   @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
+
+  @OneToMany(
+    type => TripOperationList,
+    tripOperationList => tripOperationList.start_time,
+  )
+  readonly start_trip_operation_lists?: TripOperationList[];
+
+  @OneToMany(
+    type => TripOperationList,
+    tripOperationList => tripOperationList.end_time,
+  )
+  readonly end_trip_operation_lists?: TripOperationList[];
 
   @ManyToOne(type => Station, station => station)
   @JoinColumn({ name: 'station_id' })

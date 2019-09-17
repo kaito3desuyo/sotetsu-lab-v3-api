@@ -11,8 +11,8 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Agency } from '../agency/agency.entity';
-import { RouteToStation } from '../routeToStation/route-to-station.entity';
-import { ServiceToRoute } from '../serviceToRoute/service-to-route.entity';
+import { OperatingSystem } from '../operating-system/operating-system.entity';
+import { RouteStationList } from '../route-station-list/route-station-list.entity';
 
 @Entity({
   name: 'routes',
@@ -58,9 +58,12 @@ export class Route {
   @JoinColumn({ name: 'agency_id' })
   readonly agency?: Agency;
 
-  @OneToMany(type => RouteToStation, routeToStation => routeToStation.route)
-  readonly route_to_stations?: RouteToStation[];
+  @OneToMany(
+    type => RouteStationList,
+    routeStationList => routeStationList.route,
+  )
+  readonly route_station_lists?: RouteStationList[];
 
-  @OneToMany(type => ServiceToRoute, serviceToRoute => serviceToRoute.route)
-  readonly route_to_services?: ServiceToRoute[];
+  @OneToMany(type => OperatingSystem, operatingSystem => operatingSystem.route)
+  readonly operating_systems?: OperatingSystem[];
 }

@@ -8,9 +8,9 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { RouteToStation } from '../routeToStation/route-to-station.entity';
 import { Stop } from '../stop/stop.entity';
 import { Time } from '../time/time.entity';
+import { RouteStationList } from '../route-station-list/route-station-list.entity';
 
 @Entity({
   name: 'stations',
@@ -51,8 +51,11 @@ export class Station {
   @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 
-  @OneToMany(type => RouteToStation, routeToStation => routeToStation.station)
-  readonly station_to_routes?: RouteToStation[];
+  @OneToMany(
+    type => RouteStationList,
+    routeStationList => routeStationList.station,
+  )
+  readonly route_station_lists?: RouteStationList[];
 
   @OneToMany(type => Time, time => time.station)
   readonly times?: Time[];

@@ -2,9 +2,9 @@ import { MigrationInterface, QueryRunner, getRepository } from 'typeorm';
 import { Route } from '../../main/v1/route/route.entity';
 import { Station } from '../../main/v1/station/station.entity';
 import { find } from 'lodash';
-import { RouteToStation } from '../../main/v1/routeToStation/route-to-station.entity';
-// tslint:disable: max-line-length
-export class SeedRouteToStation1567232869575 implements MigrationInterface {
+import { RouteStationList } from '../../main/v1/route-station-list/route-station-list.entity';
+
+export class SeedRouteStationList1568721277906 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<any> {
     const routes = await getRepository(Route).find();
     const stations = await getRepository(Station).find();
@@ -26,7 +26,7 @@ export class SeedRouteToStation1567232869575 implements MigrationInterface {
       return temp;
     });
 
-    await getRepository(RouteToStation).save(routeStations);
+    await getRepository(RouteStationList).save(routeStations);
   }
 
   // tslint:disable-next-line: no-empty

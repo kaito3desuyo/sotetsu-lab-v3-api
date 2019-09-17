@@ -4,13 +4,11 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  ManyToMany,
-  JoinTable,
   OneToMany,
 } from 'typeorm';
-import { ServiceToRoute } from '../serviceToRoute/service-to-route.entity';
 import { TripClass } from '../trip/trip_class.entity';
 import { Trip } from '../trip/trip.entity';
+import { OperatingSystem } from '../operating-system/operating-system.entity';
 // tslint:disable: variable-name
 @Entity({
   name: 'services',
@@ -31,8 +29,11 @@ export class Service {
   @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: string;
 
-  @OneToMany(type => ServiceToRoute, serviceToRoute => serviceToRoute.service)
-  readonly service_to_routes?: ServiceToRoute[];
+  @OneToMany(
+    type => OperatingSystem,
+    operatingSystem => operatingSystem.service,
+  )
+  readonly operating_systems?: OperatingSystem[];
 
   @OneToMany(type => Trip, trip => trip.service)
   readonly trips?: Trip[];

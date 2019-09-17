@@ -14,6 +14,7 @@ import { Time } from '../time/time.entity';
 import { Service } from '../service/service.entity';
 import { Operation } from '../operation/operation.entity';
 import { TripBlock } from './trip_block.entity';
+import { TripOperationList } from '../trip-operation-list/trip_station_list.entity';
 // tslint:disable: variable-name
 @Entity({
   name: 'trips',
@@ -24,9 +25,6 @@ export class Trip {
 
   @Column('uuid')
   service_id: string;
-
-  @Column('uuid')
-  operation_id: string;
 
   @Column('varchar')
   trip_number: string;
@@ -64,13 +62,15 @@ export class Trip {
   @OneToMany(type => Time, time => time.trip, { cascade: true })
   readonly times?: Time[];
 
+  @OneToMany(
+    type => TripOperationList,
+    tripOperationList => tripOperationList.trip,
+  )
+  readonly trip_operation_lists?: TripOperationList[];
+
   @ManyToOne(type => Service, service => service.trips)
   @JoinColumn({ name: 'service_id' })
   readonly service?: Service;
-
-  @ManyToOne(type => Operation, operation => operation.trips)
-  @JoinColumn({ name: 'operation_id' })
-  readonly operation?: Operation;
 
   @ManyToOne(type => TripClass, tripClass => tripClass.trips)
   @JoinColumn({ name: 'trip_class_id' })

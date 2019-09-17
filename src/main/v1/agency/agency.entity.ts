@@ -9,6 +9,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Route } from '../route/route.entity';
+import { Formation } from '../formation/formation.entity';
 
 @Entity({
   name: 'agencies',
@@ -49,4 +50,7 @@ export class Agency {
 
   @OneToMany(type => Route, route => route.agency)
   routes?: Route[];
+
+  @OneToMany(type => Formation, formation => formation.agency)
+  formations?: Formation[];
 }

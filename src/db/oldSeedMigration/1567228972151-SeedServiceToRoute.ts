@@ -2,8 +2,9 @@ import { MigrationInterface, QueryRunner, getRepository } from 'typeorm';
 import { Service } from '../../main/v1/service/service.entity';
 import { Route } from '../../main/v1/route/route.entity';
 import { find } from 'lodash';
-import { ServiceToRoute } from '../../main/v1/serviceToRoute/service-to-route.entity';
+// import { ServiceToRoute } from '../../main/v1/serviceToRoute/service-to-route.entity';
 // tslint:disable: max-line-length
+/*
 export class SeedServiceToRoute1567228972151 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<any> {
     const services = await getRepository(Service).find();
@@ -32,7 +33,7 @@ export class SeedServiceToRoute1567228972151 implements MigrationInterface {
   // tslint:disable-next-line: no-empty
   public async down(queryRunner: QueryRunner): Promise<any> {}
 }
-
+*/
 const routeSystemsSeed = [
   {
     service_name: '相鉄本線・いずみ野線・厚木線・新横浜線／JR埼京線・川越線',
