@@ -9,7 +9,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { OperationSighting } from '../operation/operation-sighting.entity';
-import { FormationToVehicle } from '../formationToVehicle/formation-to-vehicle.entity';
+import { VehicleFormation } from '../vehicle-formation/vehicle-formation.entity';
 import { Agency } from '../agency/agency.entity';
 
 /* tslint:disable: variable-name */
@@ -33,10 +33,10 @@ export class Formation {
   formation_description: string;
 
   @Column('date', { nullable: true })
-  start_date: Date;
+  start_date: string;
 
   @Column('date', { nullable: true })
-  end_date: Date;
+  end_date: string;
 
   @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
@@ -55,8 +55,8 @@ export class Formation {
   operation_sightings?: OperationSighting[];
 
   @OneToMany(
-    type => FormationToVehicle,
-    formationToVehicle => formationToVehicle.formation,
+    type => VehicleFormation,
+    vehicleFormation => vehicleFormation.formation,
   )
-  formation_to_vehicles?: FormationToVehicle[];
+  vehicle_formations?: VehicleFormation[];
 }

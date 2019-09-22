@@ -1,15 +1,15 @@
 import { MigrationInterface, QueryRunner, getRepository } from 'typeorm';
-import { Calendar } from '../../main/v1/calendar/calendar.entity';
 import { Service } from '../../main/v1/service/service.entity';
 import { find } from 'lodash';
-// tslint:disable: max-line-length
-export class SeedCalendar1567237599870 implements MigrationInterface {
+import { Calendar } from '../../main/v1/calendar/calendar.entity';
+
+export class SeedCalendar1569130509694 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<any> {
     const services = await getRepository(Service).find();
 
-    const calendars = calendarsSeed.map(calendar => {
+    const calendars = calendarsSeed.map(calender => {
       const temp = {
-        ...services,
+        ...calender,
         service_id: find(
           services,
           service =>
@@ -17,7 +17,6 @@ export class SeedCalendar1567237599870 implements MigrationInterface {
             '相鉄本線・いずみ野線・厚木線・新横浜線／JR埼京線・川越線',
         ).id,
       };
-
       return temp;
     });
 

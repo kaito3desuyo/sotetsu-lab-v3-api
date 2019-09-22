@@ -12,13 +12,7 @@ import { Operation } from './operation.entity';
 import { OperationService } from './operation.service';
 import { OperationSighting } from './operation-sighting.entity';
 import { OperationSightingService } from './operation-sightings.service';
-import {
-  In,
-  Not,
-  LessThanOrEqual,
-  InsertResult,
-  SelectQueryBuilder,
-} from 'typeorm';
+import { In, Not, LessThanOrEqual, SelectQueryBuilder } from 'typeorm';
 import { CalendarService } from '../calendar/calendar.service';
 
 @Controller()
@@ -30,9 +24,9 @@ export class OperationController {
   ) {}
 
   @Get()
-  async getOperations(): Promise<Operation[]> {
+  async getOperations(): Promise<{ operations: Operation[] }> {
     const operations = await this.operationService.findAll();
-    return operations;
+    return { operations };
   }
 
   @Get('/search')

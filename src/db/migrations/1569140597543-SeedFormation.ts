@@ -1,9 +1,9 @@
 import { MigrationInterface, QueryRunner, getRepository } from 'typeorm';
-import { Formation } from '../../main/v1/formation/formation.entity';
 import { Agency } from '../../main/v1/agency/agency.entity';
 import { find } from 'lodash';
-// tslint:disable: max-line-length
-export class SeedFormation1567243072799 implements MigrationInterface {
+import { Formation } from '../../main/v1/formation/formation.entity';
+
+export class SeedFormation1569140597543 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<any> {
     const agencies = await getRepository(Agency).find();
 

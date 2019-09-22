@@ -20,11 +20,11 @@ export class FormationController {
   ) {}
 
   @Get()
-  async getFormations(): Promise<Formation[]> {
+  async getFormations(): Promise<{ formations: Formation[] }> {
     const formations = await this.formationService.findAll({
-      relations: ['formation_to_vehicles', 'formation_to_vehicles.vehicle'],
+      relations: ['vehicle_formations', 'vehicle_formations.vehicle'],
     });
-    return formations;
+    return { formations };
   }
 
   @Get('/search')

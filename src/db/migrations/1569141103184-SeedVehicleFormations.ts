@@ -3,10 +3,10 @@ import { Formation } from '../../main/v1/formation/formation.entity';
 import { Vehicle } from '../../main/v1/vehicle/vehicle.entity';
 import { find } from 'lodash';
 import { VehicleFormation } from '../../main/v1/vehicle-formation/vehicle-formation.entity';
-// tslint:disable: max-line-length
-export class SeedFormationToVehicle1567249724120 implements MigrationInterface {
+
+export class SeedVehicleFormations1569141103184 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<any> {
-    const formations = (await getRepository(Formation).find()) as any;
+    const formations = await getRepository(Formation).find();
     const vehicles = await getRepository(Vehicle).find();
 
     const vehicleFormations = [];

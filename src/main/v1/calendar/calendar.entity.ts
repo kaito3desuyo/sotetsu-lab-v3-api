@@ -45,10 +45,10 @@ export class Calendar {
   saturday: boolean;
 
   @Column('date')
-  start_date: Date;
+  start_date: string;
 
   @Column('date', { nullable: true })
-  end_date: Date;
+  end_date: string;
 
   @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;

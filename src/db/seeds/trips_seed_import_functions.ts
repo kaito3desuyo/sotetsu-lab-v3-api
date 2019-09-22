@@ -13,13 +13,18 @@ import moment from 'moment';
 export async function tripsSeedToSaveData(
   seedData: any[],
   startDate: string,
-): Promise<Array<DeepPartial<Trip>>> {
+): Promise<
+  Array<{
+    trip: DeepPartial<Trip>;
+    trip_operation_list: { operation_id: string };
+  }>
+> {
   const services = await getRepository(Service).find();
   const operations = await getRepository(Operation).find();
   const calendars = await getRepository(Calendar).find();
   const tripClasses = await getRepository(TripClass).find();
   const stations = await getRepository(Station).find({
-    relations: ['station_to_routes'],
+    relations: ['route_station_lists'],
   });
   const stops = await getRepository(Stop).find();
 
@@ -27,7 +32,10 @@ export async function tripsSeedToSaveData(
     seedData,
     trip => trip.operation_id && trip.train_id,
   ) as any;
-  const trips: Array<DeepPartial<Trip>> = map(filteredTripsSeed, seed => {
+  const trips: Array<{
+    trip: DeepPartial<Trip>;
+    trip_operation_list: { operation_id: string };
+  }> = map(filteredTripsSeed, seed => {
     const calendarId = getCalendarId(
       seed.day as 'weekday' | 'holiday',
       startDate,
@@ -151,21 +159,26 @@ export async function tripsSeedToSaveData(
       });
 
     return {
-      service_id: find(
-        services,
-        service =>
-          service.service_name ===
-          '相鉄本線・いずみ野線・厚木線・新横浜線／JR埼京線・川越線',
-      ).id,
-      operation_id: operationId,
-      calendar_id: calendarId,
-      trip_number: seed.train_id,
-      trip_class_id: tripClassId,
-      trip_direction: Number(seed.train_id) % 2 === 0 ? 0 : 1,
-      // trip_block_id: uuidv4(),
-      depot_in: seed.depot_in,
-      depot_out: seed.depot_out,
-      times,
+      trip: {
+        service_id: find(
+          services,
+          service =>
+            service.service_name ===
+            '相鉄本線・いずみ野線・厚木線・新横浜線／JR埼京線・川越線',
+        ).id,
+        // operation_id: operationId,
+        calendar_id: calendarId,
+        trip_number: seed.train_id,
+        trip_class_id: tripClassId,
+        trip_direction: Number(seed.train_id) % 2 === 0 ? 0 : 1,
+        // trip_block_id: uuidv4(),
+        depot_in: seed.depot_in,
+        depot_out: seed.depot_out,
+        times,
+      },
+      trip_operation_list: {
+        operation_id: operationId,
+      },
     };
   });
 

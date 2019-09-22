@@ -65,6 +65,7 @@ export class Trip {
   @OneToMany(
     type => TripOperationList,
     tripOperationList => tripOperationList.trip,
+    { cascade: true },
   )
   readonly trip_operation_lists?: TripOperationList[];
 

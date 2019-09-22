@@ -6,7 +6,7 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from 'typeorm';
-import { FormationToVehicle } from '../formationToVehicle/formation-to-vehicle.entity';
+import { VehicleFormation } from '../vehicle-formation/vehicle-formation.entity';
 
 /* tslint:disable: variable-name */
 @Entity({
@@ -17,28 +17,28 @@ export class Vehicle {
   id: string;
 
   @Column('varchar', {
-    unique: true
+    unique: true,
   })
   vehicle_number: string;
 
   @Column('varchar')
   belongs: string;
 
-  @Column('date', {nullable: true})
+  @Column('date', { nullable: true })
   production_date: Date;
 
-  @Column('date', {nullable: true})
+  @Column('date', { nullable: true })
   scrapped_date: Date;
 
-  @CreateDateColumn({type: 'timestamptz'})
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
-  @UpdateDateColumn({type: 'timestamptz'})
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 
   @OneToMany(
-    type => FormationToVehicle,
-    formationToVehicle => formationToVehicle.vehicle,
+    type => VehicleFormation,
+    vehicleFormation => vehicleFormation.vehicle,
   )
-  vehicle_to_formations?: FormationToVehicle[];
+  vehicle_formations?: VehicleFormation[];
 }
