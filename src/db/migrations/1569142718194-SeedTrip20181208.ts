@@ -21,7 +21,9 @@ export class SeedTrip201812081569142718194 implements MigrationInterface {
 
         const operationId = find(
           data,
-          seed => seed.trip.trip_number === trip.trip_number,
+          seed =>
+            seed.trip.trip_number === trip.trip_number &&
+            seed.trip.calendar_id === trip.calendar_id,
         ).trip_operation_list.operation_id;
 
         const startTimeId = find(

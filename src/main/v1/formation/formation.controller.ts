@@ -177,12 +177,9 @@ const searchVehicleNumber = (
   qb: SelectQueryBuilder<Formation>,
 ) => {
   return qb
+    .innerJoinAndSelect('formations.vehicle_formations', 'vehicle_formations')
     .innerJoinAndSelect(
-      'formations.formation_to_vehicles',
-      'formation_to_vehicles',
-    )
-    .innerJoinAndSelect(
-      'formation_to_vehicles.vehicle',
+      'vehicle_formations.vehicle',
       'vehicle',
       'vehicle.vehicle_number = :vehicleNumber',
       { vehicleNumber },

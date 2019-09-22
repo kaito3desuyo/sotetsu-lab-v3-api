@@ -12,8 +12,15 @@ import { Operation } from './operation.entity';
 import { OperationService } from './operation.service';
 import { OperationSighting } from './operation-sighting.entity';
 import { OperationSightingService } from './operation-sightings.service';
-import { In, Not, LessThanOrEqual, SelectQueryBuilder } from 'typeorm';
+import {
+  In,
+  Not,
+  LessThanOrEqual,
+  SelectQueryBuilder,
+  getRepository,
+} from 'typeorm';
 import { CalendarService } from '../calendar/calendar.service';
+import { TripOperationList } from '../trip-operation-list/trip_station_list.entity';
 
 @Controller()
 export class OperationController {
@@ -92,8 +99,9 @@ export class OperationController {
       );
     }
     const operationTrips = await searchQuery
-      .leftJoinAndSelect('operation.trips', 'trips')
-      .leftJoinAndSelect('trips.times', 'times')
+      .leftJoinAndSelect('operation.trip_operation_lists', 'tripOperationList')
+      .leftJoinAndSelect('tripOperationList.trip', 'trip')
+      .leftJoinAndSelect('trip.times', 'times')
       .andWhere('operation.operation_number != :number', { number: '100' })
       .orderBy('operation.operation_number', 'ASC')
       .addOrderBy('times.departure_days', 'ASC')
@@ -101,6 +109,22 @@ export class OperationController {
       .getMany();
 
     return { operations: operationTrips };
+  }
+
+  @Get('/:id/trips')
+  async getOperationByIdTrips(@Param('id') operationId: string): Promise<any> {
+    const qb = this.operationService.createQueryBuilder('operation');
+    const operationTrips = await qb
+      .leftJoinAndSelect('operation.trip_operation_lists', 'tripOperationList')
+      .leftJoinAndSelect('tripOperationList.trip', 'trip')
+      .leftJoinAndSelect('trip.times', 'times')
+      .andWhere('operation.id = :id', { id: operationId })
+      .orderBy('operation.operation_number', 'ASC')
+      .addOrderBy('times.departure_days', 'ASC')
+      .addOrderBy('times.departure_time', 'ASC')
+      .getOne();
+
+    return { operation: operationTrips };
   }
 
   @Get('/search/numbers')
