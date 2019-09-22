@@ -19,12 +19,12 @@ import {
   InsertResult,
   SelectQueryBuilder,
 } from 'typeorm';
-import { CalenderService } from '../calender/calender.service';
+import { CalendarService } from '../calendar/calendar.service';
 
 @Controller()
 export class OperationController {
   constructor(
-    private calenderService: CalenderService,
+    private calendarService: CalendarService,
     private operationService: OperationService,
     private operationSightingService: OperationSightingService,
   ) {}
@@ -38,14 +38,14 @@ export class OperationController {
   @Get('/search')
   async searchOperations(@Query()
   query: {
-    calender_id?: string;
+    calendar_id?: string;
     operation_number?: string;
   }): Promise<{ operations: Operation[] }> {
     try {
       const whereObj = {};
-      if (query.calender_id) {
+      if (query.calendar_id) {
         // tslint:disable-next-line: no-string-literal
-        whereObj['calender_id'] = query.calender_id;
+        whereObj['calendar_id'] = query.calendar_id;
       }
       if (query.operation_number) {
         // tslint:disable-next-line: no-string-literal
@@ -78,22 +78,22 @@ export class OperationController {
   }
 
   @Get('/trips')
-  async getOperationsTrips(@Query() query: { calender_id: string }): Promise<{
+  async getOperationsTrips(@Query() query: { calendar_id: string }): Promise<{
     operations: Operation[];
   }> {
-    if (!query.calender_id) {
+    if (!query.calendar_id) {
       throw new HttpException(
-        'Please set `calender_id` query.',
+        'Please set `calendar_id` query.',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
 
     const qb = this.operationService.createQueryBuilder('operation');
     let searchQuery = qb;
-    if (query.calender_id !== undefined) {
-      searchQuery = searchCalenderId(
+    if (query.calendar_id !== undefined) {
+      searchQuery = searchCalendarId(
         'operation',
-        query.calender_id,
+        query.calendar_id,
         searchQuery,
       );
     }
@@ -112,14 +112,14 @@ export class OperationController {
   @Get('/search/numbers')
   async searchOperationNumbers(@Query()
   query: {
-    calender_id: string;
+    calendar_id: string;
   }): Promise<Array<{ operation_number: string }>> {
     const qb = await this.operationService.createQueryBuilder('operation');
     let searchQuery = qb;
-    if (query.calender_id !== undefined) {
-      searchQuery = searchCalenderId(
+    if (query.calendar_id !== undefined) {
+      searchQuery = searchCalendarId(
         'operation',
-        query.calender_id,
+        query.calendar_id,
         searchQuery,
       );
     }
@@ -171,11 +171,11 @@ export class OperationController {
     return latestSightingsDetail;
   }
 
-  @Get('/by-calender/:calenderId/sightings')
-  async getOperationsByCalenderIdSightings(
-    @Param('calenderId') calenderId: string,
+  @Get('/by-calendar/:calendarId/sightings')
+  async getOperationsByCalendarIdSightings(
+    @Param('calendarId') calendarId: string,
   ): Promise<Operation[]> {
-    const calenders = await this.calenderService.findAll({
+    const calendars = await this.calendarService.findAll({
       where: {
         start_date: LessThanOrEqual('2019-08-13'),
         end_date: null,
@@ -185,11 +185,11 @@ export class OperationController {
       },
     });
 
-    const calendersId = calenders.map(obj => obj.id);
+    const calendarsId = calendars.map(obj => obj.id);
 
     const operations = await this.operationService.findAll({
       where: {
-        calender_id: In(calendersId),
+        calendar_id: In(calendarsId),
         operation_number: Not('100'),
       },
       order: {
@@ -240,10 +240,10 @@ export class OperationController {
   }
 }
 
-const searchCalenderId = (
+const searchCalendarId = (
   tableName: string,
-  calenderId: string,
+  calendarId: string,
   qb: SelectQueryBuilder<any>,
 ) => {
-  return qb.andWhere(`${tableName}.calender_id = :calenderId`, { calenderId });
+  return qb.andWhere(`${tableName}.calendar_id = :calendarId`, { calendarId });
 };

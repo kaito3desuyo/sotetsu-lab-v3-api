@@ -6,8 +6,8 @@ import {
   HttpService,
   Param,
 } from '@nestjs/common';
-import { Calender } from './calender.entity';
-import { CalenderService } from './calender.service';
+import { Calendar } from './calendar.entity';
+import { CalendarService } from './calendar.service';
 import { SelectQueryBuilder, Brackets } from 'typeorm';
 import { QueryBuilderFunctions } from '../../../shared/classes/query-builder-functions';
 import moment from 'moment';
@@ -16,25 +16,25 @@ import { map } from 'rxjs/operators';
 import { AxiosResponse } from 'axios';
 
 @Controller()
-export class CalenderController {
+export class CalendarController {
   constructor(
-    private calenderService: CalenderService,
+    private calendarService: CalendarService,
     private http: HttpService,
   ) {}
 
   @Get()
-  async getCalenders(): Promise<{ calenders: Calender[] }> {
-    const calenders = await this.calenderService.findAll();
-    return { calenders };
+  async getCalendars(): Promise<{ calendars: Calendar[] }> {
+    const calendars = await this.calendarService.findAll();
+    return { calendars };
   }
 
   @Get('/search')
-  async searchCalenders(@Query() query: { date: string }): Promise<{
-    calenders: Calender[];
+  async searchCalendars(@Query() query: { date: string }): Promise<{
+    calendars: Calendar[];
   }> {
-    const qbFunctions = new QueryBuilderFunctions<Calender>();
-    const calenderQueryBuilder = this.calenderService.createQueryBuilder();
-    let searchQuery: SelectQueryBuilder<Calender> = calenderQueryBuilder;
+    const qbFunctions = new QueryBuilderFunctions<Calendar>();
+    const calendarQueryBuilder = this.calendarService.createQueryBuilder();
+    let searchQuery: SelectQueryBuilder<Calendar> = calendarQueryBuilder;
 
     if (query.date) {
       searchQuery = qbFunctions.searchDate(query.date, searchQuery);
@@ -45,21 +45,21 @@ export class CalenderController {
       searchQuery = searchQuery.andWhere(`${dayOfWeek} = true`);
     }
 
-    const calenders = await searchQuery.getMany();
+    const calendars = await searchQuery.getMany();
 
-    return { calenders };
+    return { calendars };
   }
 
   @Get('/:id')
-  async getCalenderById(
+  async getCalendarById(
     @Param('id') id: string,
-  ): Promise<{ calender: Calender }> {
-    const calender = await this.calenderService.findOne({
+  ): Promise<{ calendar: Calendar }> {
+    const calendar = await this.calendarService.findOne({
       where: {
         id,
       },
     });
-    return { calender };
+    return { calendar };
   }
 
   private fetchWeekdayOrHoliday(date: string): Observable<string> {

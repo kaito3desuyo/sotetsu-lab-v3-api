@@ -1,21 +1,21 @@
 import { MigrationInterface, QueryRunner, getRepository } from 'typeorm';
-import { Calender } from '../../main/v1/calender/calender.entity';
+import { Calendar } from '../../main/v1/calendar/calendar.entity';
 import { find } from 'lodash';
 import { Operation } from '../../main/v1/operation/operation.entity';
 
 // tslint:disable: max-line-length
 export class SeedOperation1567238147761 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<any> {
-    const calenders = (await getRepository(Calender).find()) as any;
+    const calendars = (await getRepository(Calendar).find()) as any;
     const operations = [];
     operationsSeed.forEach(seed => {
       const temp = seed.operations.map(operation => {
         return {
-          calender_id: find(
-            calenders,
-            calender =>
-              calender.calender_name === seed.calender_name &&
-              calender.start_date === seed.start_date,
+          calendar_id: find(
+            calendars,
+            calendar =>
+              calendar.calendar_name === seed.calendar_name &&
+              calendar.start_date === seed.start_date,
           ).id,
           operation_number: operation.operation_number,
         };
@@ -32,12 +32,12 @@ export class SeedOperation1567238147761 implements MigrationInterface {
 }
 
 const operationsSeed: Array<{
-  calender_name: string;
+  calendar_name: string;
   start_date: string;
   operations: Array<{ operation_number: string }>;
 }> = [
   {
-    calender_name: '平日ダイヤ',
+    calendar_name: '平日ダイヤ',
     start_date: '2009-11-01',
     operations: [
       {
@@ -154,7 +154,7 @@ const operationsSeed: Array<{
     ],
   },
   {
-    calender_name: '土休日ダイヤ',
+    calendar_name: '土休日ダイヤ',
     start_date: '2009-11-01',
     operations: [
       {
@@ -271,7 +271,7 @@ const operationsSeed: Array<{
     ],
   },
   {
-    calender_name: '平日ダイヤ',
+    calendar_name: '平日ダイヤ',
     start_date: '2012-04-29',
     operations: [
       {
@@ -388,7 +388,7 @@ const operationsSeed: Array<{
     ],
   },
   {
-    calender_name: '土休日ダイヤ',
+    calendar_name: '土休日ダイヤ',
     start_date: '2012-04-29',
     operations: [
       {
@@ -505,7 +505,7 @@ const operationsSeed: Array<{
     ],
   },
   {
-    calender_name: '平日ダイヤ',
+    calendar_name: '平日ダイヤ',
     start_date: '2014-04-27',
     operations: [
       {
@@ -622,7 +622,7 @@ const operationsSeed: Array<{
     ],
   },
   {
-    calender_name: '土休日ダイヤ',
+    calendar_name: '土休日ダイヤ',
     start_date: '2014-04-27',
     operations: [
       {
@@ -739,7 +739,7 @@ const operationsSeed: Array<{
     ],
   },
   {
-    calender_name: '平日ダイヤ',
+    calendar_name: '平日ダイヤ',
     start_date: '2015-05-31',
     operations: [
       {
@@ -856,7 +856,7 @@ const operationsSeed: Array<{
     ],
   },
   {
-    calender_name: '土休日ダイヤ',
+    calendar_name: '土休日ダイヤ',
     start_date: '2015-05-31',
     operations: [
       {
@@ -973,7 +973,7 @@ const operationsSeed: Array<{
     ],
   },
   {
-    calender_name: '平日ダイヤ',
+    calendar_name: '平日ダイヤ',
     start_date: '2017-03-18',
     operations: [
       {
@@ -1090,7 +1090,7 @@ const operationsSeed: Array<{
     ],
   },
   {
-    calender_name: '土休日ダイヤ',
+    calendar_name: '土休日ダイヤ',
     start_date: '2017-03-18',
     operations: [
       {
@@ -1207,7 +1207,7 @@ const operationsSeed: Array<{
     ],
   },
   {
-    calender_name: '平日ダイヤ',
+    calendar_name: '平日ダイヤ',
     start_date: '2018-12-08',
     operations: [
       {
@@ -1324,7 +1324,7 @@ const operationsSeed: Array<{
     ],
   },
   {
-    calender_name: '土休日ダイヤ',
+    calendar_name: '土休日ダイヤ',
     start_date: '2018-12-08',
     operations: [
       {

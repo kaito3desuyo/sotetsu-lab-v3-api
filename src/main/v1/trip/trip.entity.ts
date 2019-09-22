@@ -48,10 +48,10 @@ export class Trip {
   depot_out: boolean;
 
   @Column('uuid', { nullable: true })
-  calender_id: string;
+  calendar_id: string;
 
   @Column('uuid', { nullable: true })
-  extra_calender_id: string;
+  extra_calendar_id: string;
 
   @CreateDateColumn({ type: 'timestamptz' })
   created_at: string;

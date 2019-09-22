@@ -2,7 +2,7 @@ import { find, filter, map } from 'lodash';
 import { Station } from '../../main/v1/station/station.entity';
 import { Stop } from '../../main/v1/stop/stop.entity';
 import { TripClass } from '../../main/v1/trip/trip_class.entity';
-import { Calender } from '../../main/v1/calender/calender.entity';
+import { Calendar } from '../../main/v1/calendar/calendar.entity';
 import { Operation } from '../../main/v1/operation/operation.entity';
 import { getRepository, DeepPartial } from 'typeorm';
 import { Service } from '../../main/v1/service/service.entity';
@@ -16,7 +16,7 @@ export async function tripsSeedToSaveData(
 ): Promise<Array<DeepPartial<Trip>>> {
   const services = await getRepository(Service).find();
   const operations = await getRepository(Operation).find();
-  const calenders = await getRepository(Calender).find();
+  const calendars = await getRepository(Calendar).find();
   const tripClasses = await getRepository(TripClass).find();
   const stations = await getRepository(Station).find({
     relations: ['station_to_routes'],
@@ -28,14 +28,14 @@ export async function tripsSeedToSaveData(
     trip => trip.operation_id && trip.train_id,
   ) as any;
   const trips: Array<DeepPartial<Trip>> = map(filteredTripsSeed, seed => {
-    const calenderId = getCalenderId(
+    const calendarId = getCalendarId(
       seed.day as 'weekday' | 'holiday',
       startDate,
-      calenders,
+      calendars,
     );
     const operationId = getOperationId(
       seed.operation_id,
-      calenderId,
+      calendarId,
       operations,
     );
     const tripClassId = getTripClassId(seed.class, tripClasses);
@@ -158,7 +158,7 @@ export async function tripsSeedToSaveData(
           '相鉄本線・いずみ野線・厚木線・新横浜線／JR埼京線・川越線',
       ).id,
       operation_id: operationId,
-      calender_id: calenderId,
+      calendar_id: calendarId,
       trip_number: seed.train_id,
       trip_class_id: tripClassId,
       trip_direction: Number(seed.train_id) % 2 === 0 ? 0 : 1,
@@ -202,40 +202,40 @@ const stationNumberingMap = new Map([
   ['羽沢横浜国大', 'SO51'],
 ]);
 
-function getCalenderId(
+function getCalendarId(
   day: 'weekday' | 'holiday',
   startDate: string,
-  calenders: Calender[],
+  calendars: Calendar[],
 ): string {
   switch (day) {
     case 'weekday':
       return find(
-        calenders as any,
-        calender =>
-          calender.calender_name === '平日ダイヤ' &&
-          calender.start_date === startDate,
+        calendars as any,
+        calendar =>
+          calendar.calendar_name === '平日ダイヤ' &&
+          calendar.start_date === startDate,
       ).id;
 
     case 'holiday':
       return find(
-        calenders as any,
-        calender =>
-          calender.calender_name === '土休日ダイヤ' &&
-          calender.start_date === startDate,
+        calendars as any,
+        calendar =>
+          calendar.calendar_name === '土休日ダイヤ' &&
+          calendar.start_date === startDate,
       ).id;
   }
 }
 
 function getOperationId(
   operationNumber: string,
-  calenderId: string,
+  calendarId: string,
   operations: Operation[],
 ): string {
   return find(
     operations,
     operation =>
       operation.operation_number === operationNumber &&
-      operation.calender_id === calenderId,
+      operation.calendar_id === calendarId,
   ).id;
 }
 

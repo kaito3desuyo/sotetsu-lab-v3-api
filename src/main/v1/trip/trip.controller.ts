@@ -22,14 +22,14 @@ export class TripController {
   @Get('/search')
   async searchTrips(@Query()
   query: {
-    calender_id: string;
+    calendar_id: string;
     trip_direction: 0 | 1;
   }): Promise<any> {
     const qb = this.tripService.createQueryBuilder('trip');
     let searchQuery = qb;
 
-    if (query.calender_id !== undefined) {
-      searchQuery = searchCalenderId(query.calender_id, searchQuery);
+    if (query.calendar_id !== undefined) {
+      searchQuery = searchCalendarId(query.calendar_id, searchQuery);
     }
     if (query.trip_direction !== undefined) {
       searchQuery = searchTripDirection(query.trip_direction, searchQuery);
@@ -45,7 +45,7 @@ export class TripController {
   }
 
   @Get('/search/by-blocks')
-  async searchTripsByBlocks(@Query() query: { calender_id: string }): Promise<
+  async searchTripsByBlocks(@Query() query: { calendar_id: string }): Promise<
     any
   > {
     const tripBlocks = await this.tripBlockService
@@ -58,8 +58,8 @@ export class TripController {
                     .orWhere("trips.trip_number = :number2", { number2: '9414' })
             }))
             */
-      .andWhere('trips.calender_id = :calenderId', {
-        calenderId: query.calender_id,
+      .andWhere('trips.calendar_id = :calendarId', {
+        calendarId: query.calendar_id,
       })
 
       .orderBy('times.departure_days', 'ASC')
@@ -99,6 +99,6 @@ const searchTripDirection = (direction: 0 | 1, qb: SelectQueryBuilder<any>) => {
   return qb.andWhere('trip_direction = :direction', { direction });
 };
 
-const searchCalenderId = (calenderId: string, qb: SelectQueryBuilder<any>) => {
-  return qb.andWhere('calender_id = :calenderId', { calenderId });
+const searchCalendarId = (calendarId: string, qb: SelectQueryBuilder<any>) => {
+  return qb.andWhere('calendar_id = :calendarId', { calendarId });
 };

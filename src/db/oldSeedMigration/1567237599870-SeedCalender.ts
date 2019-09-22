@@ -1,13 +1,13 @@
 import { MigrationInterface, QueryRunner, getRepository } from 'typeorm';
-import { Calender } from '../../main/v1/calender/calender.entity';
+import { Calendar } from '../../main/v1/calendar/calendar.entity';
 import { Service } from '../../main/v1/service/service.entity';
 import { find } from 'lodash';
 // tslint:disable: max-line-length
-export class SeedCalender1567237599870 implements MigrationInterface {
+export class SeedCalendar1567237599870 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<any> {
     const services = await getRepository(Service).find();
 
-    const calenders = calendersSeed.map(calender => {
+    const calendars = calendarsSeed.map(calendar => {
       const temp = {
         ...services,
         service_id: find(
@@ -21,16 +21,16 @@ export class SeedCalender1567237599870 implements MigrationInterface {
       return temp;
     });
 
-    await getRepository(Calender).save(calenders);
+    await getRepository(Calendar).save(calendars);
   }
 
   // tslint:disable-next-line: no-empty
   public async down(queryRunner: QueryRunner): Promise<any> {}
 }
 
-const calendersSeed: Array<Partial<Calender>> = [
+const calendarsSeed: Array<Partial<Calendar>> = [
   {
-    calender_name: '平日ダイヤ',
+    calendar_name: '平日ダイヤ',
     sunday: false,
     monday: true,
     tuesday: true,
@@ -42,7 +42,7 @@ const calendersSeed: Array<Partial<Calender>> = [
     end_date: new Date('2012-04-28'),
   },
   {
-    calender_name: '土休日ダイヤ',
+    calendar_name: '土休日ダイヤ',
     sunday: true,
     monday: false,
     tuesday: false,
@@ -54,7 +54,7 @@ const calendersSeed: Array<Partial<Calender>> = [
     end_date: new Date('2012-04-28'),
   },
   {
-    calender_name: '平日ダイヤ',
+    calendar_name: '平日ダイヤ',
     sunday: false,
     monday: true,
     tuesday: true,
@@ -66,7 +66,7 @@ const calendersSeed: Array<Partial<Calender>> = [
     end_date: new Date('2014-04-26'),
   },
   {
-    calender_name: '土休日ダイヤ',
+    calendar_name: '土休日ダイヤ',
     sunday: true,
     monday: false,
     tuesday: false,
@@ -78,7 +78,7 @@ const calendersSeed: Array<Partial<Calender>> = [
     end_date: new Date('2014-04-26'),
   },
   {
-    calender_name: '平日ダイヤ',
+    calendar_name: '平日ダイヤ',
     sunday: false,
     monday: true,
     tuesday: true,
@@ -90,7 +90,7 @@ const calendersSeed: Array<Partial<Calender>> = [
     end_date: new Date('2015-05-30'),
   },
   {
-    calender_name: '土休日ダイヤ',
+    calendar_name: '土休日ダイヤ',
     sunday: true,
     monday: false,
     tuesday: false,
@@ -102,7 +102,7 @@ const calendersSeed: Array<Partial<Calender>> = [
     end_date: new Date('2015-05-30'),
   },
   {
-    calender_name: '平日ダイヤ',
+    calendar_name: '平日ダイヤ',
     sunday: false,
     monday: true,
     tuesday: true,
@@ -114,7 +114,7 @@ const calendersSeed: Array<Partial<Calender>> = [
     end_date: new Date('2017-03-17'),
   },
   {
-    calender_name: '土休日ダイヤ',
+    calendar_name: '土休日ダイヤ',
     sunday: true,
     monday: false,
     tuesday: false,
@@ -126,7 +126,7 @@ const calendersSeed: Array<Partial<Calender>> = [
     end_date: new Date('2017-03-17'),
   },
   {
-    calender_name: '平日ダイヤ',
+    calendar_name: '平日ダイヤ',
     sunday: false,
     monday: true,
     tuesday: true,
@@ -138,7 +138,7 @@ const calendersSeed: Array<Partial<Calender>> = [
     end_date: new Date('2018-12-07'),
   },
   {
-    calender_name: '土休日ダイヤ',
+    calendar_name: '土休日ダイヤ',
     sunday: true,
     monday: false,
     tuesday: false,
@@ -150,7 +150,7 @@ const calendersSeed: Array<Partial<Calender>> = [
     end_date: new Date('2018-12-07'),
   },
   {
-    calender_name: '平日ダイヤ',
+    calendar_name: '平日ダイヤ',
     sunday: false,
     monday: true,
     tuesday: true,
@@ -162,7 +162,7 @@ const calendersSeed: Array<Partial<Calender>> = [
     end_date: null,
   },
   {
-    calender_name: '土休日ダイヤ',
+    calendar_name: '土休日ダイヤ',
     sunday: true,
     monday: false,
     tuesday: false,

@@ -8,7 +8,7 @@ import {
   JoinColumn,
   OneToMany,
 } from 'typeorm';
-import { Calender } from '../calender/calender.entity';
+import { Calendar } from '../calendar/calendar.entity';
 import { OperationSighting } from './operation-sighting.entity';
 import { TripOperationList } from '../trip-operation-list/trip_station_list.entity';
 /* tslint:disable: variable-name */
@@ -21,7 +21,7 @@ export class Operation {
   id: string;
 
   @Column('uuid')
-  calender_id: string;
+  calendar_id: string;
 
   @Column('varchar')
   operation_number: string;
@@ -32,9 +32,9 @@ export class Operation {
   @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 
-  @ManyToOne(type => Calender, calender => calender.operations)
-  @JoinColumn({ name: 'calender_id' })
-  readonly calender?: Calender;
+  @ManyToOne(type => Calendar, calendar => calendar.operations)
+  @JoinColumn({ name: 'calendar_id' })
+  readonly calendar?: Calendar;
 
   @OneToMany(
     type => TripOperationList,

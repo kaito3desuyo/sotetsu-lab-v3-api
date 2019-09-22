@@ -11,9 +11,9 @@ import { Operation } from '../operation/operation.entity';
 // tslint:disable: variable-name
 
 @Entity({
-  name: 'calenders',
+  name: 'calendars',
 })
-export class Calender {
+export class Calendar {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -21,7 +21,7 @@ export class Calender {
   service_id: string;
 
   @Column('varchar')
-  calender_name: string;
+  calendar_name: string;
 
   @Column('boolean')
   sunday: boolean;
@@ -56,6 +56,6 @@ export class Calender {
   @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 
-  @OneToMany(type => Operation, operation => operation.calender)
+  @OneToMany(type => Operation, operation => operation.calendar)
   readonly operations?: Operation[];
 }
