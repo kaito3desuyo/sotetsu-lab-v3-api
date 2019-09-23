@@ -9,6 +9,7 @@ import { FormationModule } from './formation/formation.module';
 import { VehicleModule } from './vehicle/vehicle.module';
 import { TripModule } from './trip/trip.module';
 import { ServiceModule } from './service/service.module';
+import { TripOperationListModule } from './trip-operation-list/trip_operation_list.module';
 
 const routes: Route[] = [
   {
@@ -47,6 +48,10 @@ const routes: Route[] = [
         module: TripModule,
       },
       {
+        path: '/trip-operation-lists',
+        module: TripOperationListModule,
+      },
+      {
         path: '/services',
         module: ServiceModule,
       },
@@ -65,6 +70,7 @@ const routes: Route[] = [
     FormationModule,
     VehicleModule,
     TripModule,
+    TripOperationListModule,
     ServiceModule,
   ],
 })

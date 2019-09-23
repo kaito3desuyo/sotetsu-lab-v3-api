@@ -12,15 +12,8 @@ import { Operation } from './operation.entity';
 import { OperationService } from './operation.service';
 import { OperationSighting } from './operation-sighting.entity';
 import { OperationSightingService } from './operation-sightings.service';
-import {
-  In,
-  Not,
-  LessThanOrEqual,
-  SelectQueryBuilder,
-  getRepository,
-} from 'typeorm';
+import { In, Not, LessThanOrEqual, SelectQueryBuilder } from 'typeorm';
 import { CalendarService } from '../calendar/calendar.service';
-import { TripOperationList } from '../trip-operation-list/trip_station_list.entity';
 
 @Controller()
 export class OperationController {
@@ -109,6 +102,17 @@ export class OperationController {
       .getMany();
 
     return { operations: operationTrips };
+  }
+
+  @Get('/:id')
+  async getOperationById(
+    @Param('id') operationId: string,
+  ): Promise<{ operation: Operation }> {
+    const operation = await this.operationService.findOne({
+      where: { id: operationId },
+    });
+
+    return { operation };
   }
 
   @Get('/:id/trips')

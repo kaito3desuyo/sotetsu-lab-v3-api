@@ -3,7 +3,6 @@ import {
   PrimaryGeneratedColumn,
   Column,
   OneToMany,
-  OneToOne,
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
@@ -12,9 +11,8 @@ import {
 import { TripClass } from './trip_class.entity';
 import { Time } from '../time/time.entity';
 import { Service } from '../service/service.entity';
-import { Operation } from '../operation/operation.entity';
 import { TripBlock } from './trip_block.entity';
-import { TripOperationList } from '../trip-operation-list/trip_station_list.entity';
+import { TripOperationList } from '../trip-operation-list/trip_operation_list.entity';
 // tslint:disable: variable-name
 @Entity({
   name: 'trips',

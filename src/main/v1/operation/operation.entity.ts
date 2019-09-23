@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { Calendar } from '../calendar/calendar.entity';
 import { OperationSighting } from './operation-sighting.entity';
-import { TripOperationList } from '../trip-operation-list/trip_station_list.entity';
+import { TripOperationList } from '../trip-operation-list/trip_operation_list.entity';
 /* tslint:disable: variable-name */
 
 @Entity({
