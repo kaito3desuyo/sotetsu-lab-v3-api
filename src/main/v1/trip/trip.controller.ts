@@ -5,6 +5,7 @@ import { filter } from 'lodash';
 import { TripBlockService } from './trip_block.service';
 import { TripClass } from './trip_class.entity';
 import { TripClassService } from './trip_class.service';
+import { TripBlock } from './trip_block.entity';
 
 @Controller()
 export class TripController {
@@ -45,13 +46,20 @@ export class TripController {
   }
 
   @Get('/search/by-blocks')
-  async searchTripsByBlocks(@Query() query: { calendar_id: string }): Promise<
-    any
-  > {
+  async searchTripsByBlocks(@Query()
+  query: {
+    calendar_id: string;
+    trip_direction: '0' | '1';
+  }): Promise<{
+    trip_blocks: TripBlock[];
+  }> {
     const tripBlocks = await this.tripBlockService
       .createQueryBuilder('trip_blocks')
       .leftJoinAndSelect('trip_blocks.trips', 'trips')
       .leftJoinAndSelect('trips.times', 'times')
+      .leftJoinAndSelect('trips.trip_operation_lists', 'trip_operation_lists')
+      .leftJoinAndSelect('trip_operation_lists.operation', 'operation')
+      .leftJoinAndSelect('trips.trip_class', 'trip_class')
       /*
             .where(new Brackets(qb => {
                 qb.where("trips.trip_number = :number", { number: '6006' })
@@ -61,15 +69,16 @@ export class TripController {
       .andWhere('trips.calendar_id = :calendarId', {
         calendarId: query.calendar_id,
       })
+      .andWhere('trips.trip_direction = :tripDirection', {
+        tripDirection: query.trip_direction,
+      })
 
       .orderBy('times.departure_days', 'ASC')
       .addOrderBy('times.departure_time', 'ASC')
 
       .getMany();
 
-    return filter(tripBlocks, (o, i) => {
-      return 0 <= i && i < tripBlocks.length;
-    });
+    return { trip_blocks: tripBlocks };
   }
 
   /**
