@@ -64,6 +64,7 @@ export class ServiceController {
         'operating_systems.route',
         'operating_systems.route.route_station_lists',
         'operating_systems.route.route_station_lists.station',
+        'operating_systems.route.route_station_lists.station.stops',
         'operating_systems.start_route_station_list',
         'operating_systems.start_route_station_list.station',
         'operating_systems.end_route_station_list',
