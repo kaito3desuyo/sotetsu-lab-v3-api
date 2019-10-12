@@ -1,7 +1,8 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, Patch, Body, Param } from '@nestjs/common';
 import { TripOperationListService } from './trip_operation_list.service';
 import { TripOperationList } from './trip_operation_list.entity';
 import { SelectQueryBuilder } from 'typeorm';
+import { UpdateTripOperationListDto } from './trip_operation_list.dto';
 
 @Controller()
 export class TripOperationListController {
@@ -42,6 +43,15 @@ export class TripOperationListController {
       .getMany();
 
     return { trip_operation_lists: tripOperationList };
+  }
+
+  @Patch('/:id')
+  async patchTripOperationListById(
+    @Param('id') id: string,
+    @Body() body: Partial<UpdateTripOperationListDto>,
+  ): Promise<any> {
+    const result = await this.tripOperationListService.update(id, body);
+    return { trip_operation_list: result };
   }
 }
 

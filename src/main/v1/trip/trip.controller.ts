@@ -1,11 +1,14 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, Post, Body, Param, Put } from '@nestjs/common';
 import { TripService } from './trip.service';
-import { SelectQueryBuilder } from 'typeorm';
-import { filter } from 'lodash';
+import { SelectQueryBuilder, DeepPartial } from 'typeorm';
+import { filter, isArray, sortBy, find } from 'lodash';
 import { TripBlockService } from './trip_block.service';
 import { TripClass } from './trip_class.entity';
 import { TripClassService } from './trip_class.service';
 import { TripBlock } from './trip_block.entity';
+import { CreateTripBlockDto } from './trip_block.dto';
+import { Trip } from './trip.entity';
+import { TripOperationListService } from '../trip-operation-list/trip_operation_list.service';
 
 @Controller()
 export class TripController {
@@ -13,6 +16,7 @@ export class TripController {
     private tripService: TripService,
     private tripBlockService: TripBlockService,
     private tripClassService: TripClassService,
+    private tripOperationListService: TripOperationListService,
   ) {}
 
   @Get()
@@ -79,6 +83,111 @@ export class TripController {
       .getMany();
 
     return { trip_blocks: tripBlocks };
+  }
+
+  @Get('/blocks/:id')
+  async getTripBlockById(@Param('id') blockId: string) {
+    const tripBlock = await this.tripBlockService.findOne({
+      where: {
+        id: blockId,
+      },
+      relations: ['trips', 'trips.times', 'trips.trip_operation_lists'],
+    });
+
+    return { trip_block: tripBlock };
+  }
+
+  @Post('/blocks')
+  async addTripBlocks(
+    @Body() body: CreateTripBlockDto[],
+  ): Promise<{ trip_blocks: Array<DeepPartial<TripBlock>> }> {
+    const result = await this.tripBlockService.save(body);
+
+    const trips: Array<DeepPartial<Trip>> = [];
+    (result as Array<DeepPartial<TripBlock>>).forEach(tripBlock => {
+      tripBlock.trips.forEach(trip => {
+        trips.push(trip);
+      });
+    });
+
+    const observer = [];
+    trips.forEach(trip => {
+      const times = sortBy(trip.times, o => o.stop_sequence);
+      trip.trip_operation_lists.forEach(tripOperationList => {
+        observer.push(
+          this.tripOperationListService.update(tripOperationList.id, {
+            start_time_id: find(
+              times,
+              o => o.station_id === tripOperationList.start_station_id,
+            )
+              ? find(
+                  times,
+                  o => o.station_id === tripOperationList.start_station_id,
+                ).id
+              : null,
+            end_time_id: find(
+              times,
+              o => o.station_id === tripOperationList.end_station_id,
+            )
+              ? find(
+                  times,
+                  o => o.station_id === tripOperationList.end_station_id,
+                ).id
+              : null,
+          }),
+        );
+      });
+    });
+
+    await Promise.all(observer);
+
+    return { trip_blocks: !isArray(result) ? [result] : result };
+  }
+
+  @Put('/blocks/:id')
+  async updateTripBlockById(@Param('id') id: string, @Body() body: any) {
+    const result = await this.tripBlockService.save({
+      id,
+      ...body,
+    });
+
+    const trips: Array<DeepPartial<Trip>> = [];
+    (result as DeepPartial<TripBlock>).trips.forEach(trip => {
+      trips.push(trip);
+    });
+
+    const observer = [];
+    trips.forEach(trip => {
+      const times = sortBy(trip.times, o => o.stop_sequence);
+      trip.trip_operation_lists.forEach(tripOperationList => {
+        observer.push(
+          this.tripOperationListService.update(tripOperationList.id, {
+            start_time_id: find(
+              times,
+              o => o.station_id === tripOperationList.start_station_id,
+            )
+              ? find(
+                  times,
+                  o => o.station_id === tripOperationList.start_station_id,
+                ).id
+              : null,
+            end_time_id: find(
+              times,
+              o => o.station_id === tripOperationList.end_station_id,
+            )
+              ? find(
+                  times,
+                  o => o.station_id === tripOperationList.end_station_id,
+                ).id
+              : null,
+          }),
+        );
+      });
+    });
+
+    await Promise.all(observer);
+
+    return { trip_block: result };
   }
 
   /**

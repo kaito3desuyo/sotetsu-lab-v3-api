@@ -12,6 +12,7 @@ import {
 import { Trip } from '../trip/trip.entity';
 import { Operation } from '../operation/operation.entity';
 import { Time } from '../time/time.entity';
+import { Station } from '../station/station.entity';
 
 @Entity({
   name: 'trip_operation_lists',
@@ -26,11 +27,17 @@ export class TripOperationList {
   @Column('uuid')
   operation_id: string;
 
-  @Column('uuid')
+  @Column('uuid', { nullable: true })
   start_time_id: string;
 
-  @Column('uuid')
+  @Column('uuid', { nullable: true })
   end_time_id: string;
+
+  @Column('uuid', { nullable: true })
+  start_station_id: string;
+
+  @Column('uuid', { nullable: true })
+  end_station_id: string;
 
   @CreateDateColumn({ type: 'timestamptz', precision: 3 })
   created_at: Date;
@@ -53,4 +60,12 @@ export class TripOperationList {
   @ManyToOne(type => Time, time => time)
   @JoinColumn({ name: 'end_time_id' })
   end_time?: Time;
+
+  @ManyToOne(type => Station, station => station)
+  @JoinColumn({ name: 'start_station_id' })
+  start_station?: Station;
+
+  @ManyToOne(type => Station, station => station)
+  @JoinColumn({ name: 'end_station_id' })
+  end_station?: Station;
 }
