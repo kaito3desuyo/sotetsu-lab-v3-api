@@ -10,6 +10,11 @@ export class AuthService {
     const token = authHeader.split(' ');
     const decoded = jwt.decode(token[1], { complete: true }) as any;
 
+    if (!decoded) {
+      Logger.error('Authorization Header is invalid');
+      return false;
+    }
+
     // 公開鍵
     const jwkKeys = require('./../../secrets/jwks.json');
     const jwk = find(jwkKeys.keys, obj => obj.kid === decoded.header.kid);
