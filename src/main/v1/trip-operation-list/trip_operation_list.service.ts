@@ -6,6 +6,7 @@ import {
   QueryRunner,
   ObjectID,
   FindConditions,
+  DeleteResult,
 } from 'typeorm';
 import { TripOperationList } from './trip_operation_list.entity';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
@@ -42,5 +43,9 @@ export class TripOperationListService {
     partialEntity: QueryDeepPartialEntity<TripOperationList>,
   ) {
     return this.tripOperationListRepository.update(criteria, partialEntity);
+  }
+
+  delete(id: string): Promise<DeleteResult> {
+    return this.tripOperationListRepository.delete(id);
   }
 }

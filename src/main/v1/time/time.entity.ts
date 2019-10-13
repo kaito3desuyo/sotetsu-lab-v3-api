@@ -83,7 +83,7 @@ export class Time {
   @JoinColumn({ name: 'stop_id' })
   readonly stop?: Stop;
 
-  @ManyToOne(type => Trip, trip => trip.times)
+  @ManyToOne(type => Trip, trip => trip.times, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'trip_id' })
   readonly trip?: Trip;
 }

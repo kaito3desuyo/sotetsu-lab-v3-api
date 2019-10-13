@@ -7,6 +7,7 @@ import {
   Param,
   Put,
   Patch,
+  Delete,
 } from '@nestjs/common';
 import { TripService } from './trip.service';
 import { SelectQueryBuilder, DeepPartial } from 'typeorm';
@@ -59,6 +60,42 @@ export class TripController {
       .getMany();
 
     return trips;
+  }
+
+  @Get('/search/by-blocks')
+  async searchTripsByBlocks(@Query()
+  query: {
+    calendar_id: string;
+    trip_direction: '0' | '1';
+  }): Promise<{
+    trip_blocks: TripBlock[];
+  }> {
+    const tripBlocks = await this.tripBlockService
+      .createQueryBuilder('trip_blocks')
+      .leftJoinAndSelect('trip_blocks.trips', 'trips')
+      .leftJoinAndSelect('trips.times', 'times')
+      .leftJoinAndSelect('trips.trip_operation_lists', 'trip_operation_lists')
+      .leftJoinAndSelect('trip_operation_lists.operation', 'operation')
+      .leftJoinAndSelect('trips.trip_class', 'trip_class')
+      /*
+            .where(new Brackets(qb => {
+                qb.where("trips.trip_number = :number", { number: '6006' })
+                    .orWhere("trips.trip_number = :number2", { number2: '9414' })
+            }))
+            */
+      .andWhere('trips.calendar_id = :calendarId', {
+        calendarId: query.calendar_id,
+      })
+      .andWhere('trips.trip_direction = :tripDirection', {
+        tripDirection: query.trip_direction,
+      })
+
+      .orderBy('times.departure_days', 'ASC')
+      .addOrderBy('times.departure_time', 'ASC')
+
+      .getMany();
+
+    return { trip_blocks: tripBlocks };
   }
 
   @Patch('/:id/add-to-block/:targetTripBlockId')
@@ -116,40 +153,11 @@ export class TripController {
     return tripUpdateResult;
   }
 
-  @Get('/search/by-blocks')
-  async searchTripsByBlocks(@Query()
-  query: {
-    calendar_id: string;
-    trip_direction: '0' | '1';
-  }): Promise<{
-    trip_blocks: TripBlock[];
-  }> {
-    const tripBlocks = await this.tripBlockService
-      .createQueryBuilder('trip_blocks')
-      .leftJoinAndSelect('trip_blocks.trips', 'trips')
-      .leftJoinAndSelect('trips.times', 'times')
-      .leftJoinAndSelect('trips.trip_operation_lists', 'trip_operation_lists')
-      .leftJoinAndSelect('trip_operation_lists.operation', 'operation')
-      .leftJoinAndSelect('trips.trip_class', 'trip_class')
-      /*
-            .where(new Brackets(qb => {
-                qb.where("trips.trip_number = :number", { number: '6006' })
-                    .orWhere("trips.trip_number = :number2", { number2: '9414' })
-            }))
-            */
-      .andWhere('trips.calendar_id = :calendarId', {
-        calendarId: query.calendar_id,
-      })
-      .andWhere('trips.trip_direction = :tripDirection', {
-        tripDirection: query.trip_direction,
-      })
+  @Delete('/:id')
+  async deleteTripById(@Param('id') tripId: string) {
+    const result = await this.tripService.delete(tripId);
 
-      .orderBy('times.departure_days', 'ASC')
-      .addOrderBy('times.departure_time', 'ASC')
-
-      .getMany();
-
-    return { trip_blocks: tripBlocks };
+    return result;
   }
 
   @Get('/blocks/:id')

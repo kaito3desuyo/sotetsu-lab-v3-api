@@ -57,7 +57,9 @@ export class Trip {
   @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: string;
 
-  @OneToMany(type => Time, time => time.trip, { cascade: true })
+  @OneToMany(type => Time, time => time.trip, {
+    cascade: true,
+  })
   readonly times?: Time[];
 
   @OneToMany(

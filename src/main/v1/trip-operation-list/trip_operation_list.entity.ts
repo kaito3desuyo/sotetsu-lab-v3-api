@@ -45,7 +45,7 @@ export class TripOperationList {
   @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
   updated_at: Date;
 
-  @ManyToOne(type => Trip, trip => trip)
+  @ManyToOne(type => Trip, trip => trip, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'trip_id' })
   trip?: Trip;
 

@@ -7,6 +7,7 @@ import {
   FindOneOptions,
   UpdateManyOptions,
   UpdateResult,
+  DeleteResult,
 } from 'typeorm';
 import { Trip } from './trip.entity';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
@@ -35,6 +36,10 @@ export class TripService {
     entity?: QueryDeepPartialEntity<Trip>,
   ): Promise<UpdateResult> {
     return this.tripRepository.update(id, entity);
+  }
+
+  delete(id: string): Promise<DeleteResult> {
+    return this.tripRepository.delete(id);
   }
 
   createQueryBuilder(alias?: string, queryRunner?: QueryRunner) {
