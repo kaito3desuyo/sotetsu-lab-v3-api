@@ -7,10 +7,16 @@ import { OperationSighting } from './operation-sighting.entity';
 import { OperationSightingService } from './operation-sightings.service';
 import { Calendar } from '../calendar/calendar.entity';
 import { CalendarService } from '../calendar/calendar.service';
+import { AuthService } from './../../../shared/services/auth.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Calendar, Operation, OperationSighting])],
   controllers: [OperationController],
-  providers: [CalendarService, OperationService, OperationSightingService],
+  providers: [
+    CalendarService,
+    OperationService,
+    OperationSightingService,
+    AuthService,
+  ],
 })
 export class OperationModule {}

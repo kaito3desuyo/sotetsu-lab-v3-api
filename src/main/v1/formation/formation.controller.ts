@@ -5,14 +5,17 @@ import {
   HttpException,
   HttpStatus,
   Param,
+  UseGuards,
 } from '@nestjs/common';
 import { OperationSightingService } from '../operation/operation-sightings.service';
 import { FormationService } from './formation.service';
 import { Brackets, SelectQueryBuilder } from 'typeorm';
 import moment from 'moment';
 import { Formation } from './formation.entity';
+import { AuthGuard } from './../../../shared/guards/auth.guard';
 
 @Controller()
+@UseGuards(AuthGuard)
 export class FormationController {
   constructor(
     private formationService: FormationService,

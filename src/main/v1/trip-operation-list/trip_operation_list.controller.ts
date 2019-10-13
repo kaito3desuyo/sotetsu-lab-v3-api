@@ -1,10 +1,20 @@
-import { Controller, Get, Query, Patch, Body, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  Patch,
+  Body,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
 import { TripOperationListService } from './trip_operation_list.service';
 import { TripOperationList } from './trip_operation_list.entity';
 import { SelectQueryBuilder } from 'typeorm';
 import { UpdateTripOperationListDto } from './trip_operation_list.dto';
+import { AuthGuard } from './../../../shared/guards/auth.guard';
 
 @Controller()
+@UseGuards(AuthGuard)
 export class TripOperationListController {
   constructor(private tripOperationListService: TripOperationListService) {}
 
