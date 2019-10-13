@@ -6,12 +6,15 @@ import {
   HttpException,
   Post,
   Body,
+  UseGuards,
 } from '@nestjs/common';
 import { Vehicle } from './vehicle.entity';
 import { VehicleService } from './vehicle.service';
 import { SelectQueryBuilder } from 'typeorm';
+import { AuthGuard } from './../../../shared/guards/auth.guard';
 
 @Controller()
+@UseGuards(AuthGuard)
 export class VehicleController {
   constructor(private vehicleService: VehicleService) {}
 

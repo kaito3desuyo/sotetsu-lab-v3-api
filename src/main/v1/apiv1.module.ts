@@ -10,6 +10,7 @@ import { VehicleModule } from './vehicle/vehicle.module';
 import { TripModule } from './trip/trip.module';
 import { ServiceModule } from './service/service.module';
 import { TripOperationListModule } from './trip-operation-list/trip_operation_list.module';
+import { AuthService } from './../../shared/services/auth.service';
 
 const routes: Route[] = [
   {
@@ -73,5 +74,6 @@ const routes: Route[] = [
     TripOperationListModule,
     ServiceModule,
   ],
+  providers: [AuthService],
 })
 export class ApiV1Module {}

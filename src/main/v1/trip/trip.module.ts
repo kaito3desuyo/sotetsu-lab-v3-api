@@ -9,6 +9,7 @@ import { TripClassService } from './trip_class.service';
 import { TripClass } from './trip_class.entity';
 import { TripOperationListService } from '../trip-operation-list/trip_operation_list.service';
 import { TripOperationList } from '../trip-operation-list/trip_operation_list.entity';
+import { AuthService } from './../../../shared/services/auth.service';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { TripOperationList } from '../trip-operation-list/trip_operation_list.en
     TripBlockService,
     TripClassService,
     TripOperationListService,
+    AuthService,
   ],
 })
 export class TripModule {}

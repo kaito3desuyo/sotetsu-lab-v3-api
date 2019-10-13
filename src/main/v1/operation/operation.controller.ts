@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Post,
   Body,
+  UseGuards,
 } from '@nestjs/common';
 import { Operation } from './operation.entity';
 import { OperationService } from './operation.service';
@@ -14,8 +15,10 @@ import { OperationSighting } from './operation-sighting.entity';
 import { OperationSightingService } from './operation-sightings.service';
 import { In, Not, LessThanOrEqual, SelectQueryBuilder } from 'typeorm';
 import { CalendarService } from '../calendar/calendar.service';
+import { AuthGuard } from './../../../shared/guards/auth.guard';
 
 @Controller()
+@UseGuards(AuthGuard)
 export class OperationController {
   constructor(
     private calendarService: CalendarService,

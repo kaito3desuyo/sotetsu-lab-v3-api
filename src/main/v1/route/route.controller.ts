@@ -1,8 +1,10 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { RouteService } from './route.service';
 import { Route } from './route.entity';
+import { AuthGuard } from './../../../shared/guards/auth.guard';
 
 @Controller()
+@UseGuards(AuthGuard)
 export class RouteController {
   constructor(private routeService: RouteService) {}
 

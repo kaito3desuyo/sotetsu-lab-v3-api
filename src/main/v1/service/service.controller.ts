@@ -4,13 +4,16 @@ import {
   Query,
   HttpException,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { Service } from './service.entity';
 import { ServiceService } from './service.service';
 import { sortBy, findIndex, some } from 'lodash';
 import { RouteStationList } from '../route-station-list/route-station-list.entity';
+import { AuthGuard } from './../../../shared/guards/auth.guard';
 
 @Controller()
+@UseGuards(AuthGuard)
 export class ServiceController {
   constructor(private serviceService: ServiceService) {}
 
