@@ -1,4 +1,13 @@
-import { Controller, Get, Query, Post, Body, Param, Put } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  Post,
+  Body,
+  Param,
+  Put,
+  Patch,
+} from '@nestjs/common';
 import { TripService } from './trip.service';
 import { SelectQueryBuilder, DeepPartial } from 'typeorm';
 import { filter, isArray, sortBy, find } from 'lodash';
@@ -19,6 +28,9 @@ export class TripController {
     private tripOperationListService: TripOperationListService,
   ) {}
 
+  /**
+   * 列車
+   */
   @Get()
   async getTrips(): Promise<any> {
     return 'Welcome to Trip API!';
@@ -47,6 +59,61 @@ export class TripController {
       .getMany();
 
     return trips;
+  }
+
+  @Patch('/:id/add-to-block/:targetTripBlockId')
+  async addTripToTripBlockById(
+    @Param('id') tripId: string,
+    @Param('targetTripBlockId') targetTripBlockId: string,
+  ) {
+    const beforeTargetTrip = await this.tripService.findOne({
+      where: {
+        id: tripId,
+      },
+    });
+
+    const tripUpdateResult = await this.tripService.update(tripId, {
+      trip_block_id: targetTripBlockId,
+    });
+
+    const tripCountInTripBlockWhenBeforeUpdate = await this.tripService.count({
+      where: {
+        trip_block_id: beforeTargetTrip.trip_block_id,
+      },
+    });
+
+    if (tripCountInTripBlockWhenBeforeUpdate === 0) {
+      await this.tripBlockService.delete(beforeTargetTrip.trip_block_id);
+    }
+
+    return tripUpdateResult;
+  }
+
+  @Patch('/:id/remove-from-block')
+  async removeTripFromTripBlockById(@Param('id') tripId: string) {
+    const beforeTargetTrip = await this.tripService.findOne({
+      where: {
+        id: tripId,
+      },
+    });
+
+    const createdBlankTripBlock = await this.tripBlockService.insert({});
+
+    const tripUpdateResult = await this.tripService.update(tripId, {
+      trip_block_id: createdBlankTripBlock.identifiers[0].id,
+    });
+
+    const tripCountInTripBlockWhenBeforeUpdate = await this.tripService.count({
+      where: {
+        trip_block_id: beforeTargetTrip.trip_block_id,
+      },
+    });
+
+    if (tripCountInTripBlockWhenBeforeUpdate === 0) {
+      await this.tripBlockService.delete(beforeTargetTrip.trip_block_id);
+    }
+
+    return tripUpdateResult;
   }
 
   @Get('/search/by-blocks')

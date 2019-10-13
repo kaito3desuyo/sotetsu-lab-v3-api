@@ -10,6 +10,7 @@ import {
   FindOneOptions,
 } from 'typeorm';
 import { isArray } from 'lodash';
+import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
 @Injectable()
 export class TripBlockService {
@@ -30,6 +31,14 @@ export class TripBlockService {
     return this.tripBlockRepository.createQueryBuilder(alias, queryRunner);
   }
 
+  insert(
+    entity:
+      | QueryDeepPartialEntity<TripBlock>
+      | Array<QueryDeepPartialEntity<TripBlock>>,
+  ) {
+    return this.tripBlockRepository.insert(entity);
+  }
+
   save(
     entity: DeepPartial<TripBlock> | Array<DeepPartial<TripBlock>>,
     options?: SaveOptions & { reload: false },
@@ -39,5 +48,9 @@ export class TripBlockService {
     } else {
       return this.tripBlockRepository.save(entity, options);
     }
+  }
+
+  delete(id: string) {
+    return this.tripBlockRepository.delete(id);
   }
 }
