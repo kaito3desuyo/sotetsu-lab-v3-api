@@ -138,7 +138,7 @@ const vehicleFormationsSeed = [
   {
     formation_number: 7713,
     start_date: null,
-    end_date: null,
+    end_date: '2019-07-30',
     vehicles: [
       { vehicle_number: 7713 },
       { vehicle_number: 7149 },

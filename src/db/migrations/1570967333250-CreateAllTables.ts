@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateTables1568720642776 implements MigrationInterface {
+export class CreateAllTables1570967333250 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<any> {
     await queryRunner.query(
       `CREATE TABLE "stops" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "station_id" uuid NOT NULL, "stop_name" character varying NOT NULL, "stop_description" text, "stop_latlng" geometry(Point,4326), "zone_id" uuid, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_ed1be877403ad3c921b07f62ca5" PRIMARY KEY ("id"))`,
@@ -12,7 +12,7 @@ export class CreateTables1568720642776 implements MigrationInterface {
       `CREATE TABLE "stations" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "station_name" character varying NOT NULL, "station_subname" character varying, "station_type" smallint NOT NULL, "station_description" text, "station_latlng" geometry(Point,4326), "station_url" character varying, "wheelchair_boarding" boolean NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_f047974bd453c85b08bab349367" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
-      `CREATE TABLE "calenders" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "service_id" uuid NOT NULL, "calender_name" character varying NOT NULL, "sunday" boolean NOT NULL, "monday" boolean NOT NULL, "tuesday" boolean NOT NULL, "wednesday" boolean NOT NULL, "thursday" boolean NOT NULL, "friday" boolean NOT NULL, "saturday" boolean NOT NULL, "start_date" date NOT NULL, "end_date" date, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_5982bfd67e80c36271e647be082" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "calendars" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "service_id" uuid NOT NULL, "calendar_name" character varying NOT NULL, "sunday" boolean NOT NULL, "monday" boolean NOT NULL, "tuesday" boolean NOT NULL, "wednesday" boolean NOT NULL, "thursday" boolean NOT NULL, "friday" boolean NOT NULL, "saturday" boolean NOT NULL, "start_date" date NOT NULL, "end_date" date, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_90dc0330e8ec9028e23c290dee8" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
       `CREATE TABLE "vehicles" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "vehicle_number" character varying NOT NULL, "belongs" character varying NOT NULL, "production_date" date, "scrapped_date" date, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "UQ_97a57b7389989efc352bef8af3a" UNIQUE ("vehicle_number"), CONSTRAINT "PK_18d8646b59304dce4af3a9e35b6" PRIMARY KEY ("id"))`,
@@ -27,10 +27,10 @@ export class CreateTables1568720642776 implements MigrationInterface {
       `CREATE TABLE "operation_sightings" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "formation_id" uuid NOT NULL, "operation_id" uuid NOT NULL, "sighting_time" TIMESTAMP(3) WITH TIME ZONE NOT NULL, "created_at" TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_adb9904d9ab5500d5eb529857b5" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
-      `CREATE TABLE "operations" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "calender_id" uuid NOT NULL, "operation_number" character varying NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_7b62d84d6f9912b975987165856" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "operations" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "calendar_id" uuid NOT NULL, "operation_number" character varying NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_7b62d84d6f9912b975987165856" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
-      `CREATE TABLE "trip_operation_lists" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "trip_id" uuid NOT NULL, "operation_id" uuid NOT NULL, "start_time_id" uuid NOT NULL, "end_time_id" uuid NOT NULL, "created_at" TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_5b8f8ded7f190e6405d4f9e732c" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "trip_operation_lists" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "trip_id" uuid NOT NULL, "operation_id" uuid NOT NULL, "start_time_id" uuid, "end_time_id" uuid, "start_station_id" uuid, "end_station_id" uuid, "created_at" TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_5b8f8ded7f190e6405d4f9e732c" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
       `CREATE TABLE "times" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "trip_id" uuid NOT NULL, "station_id" uuid NOT NULL, "stop_id" uuid NOT NULL, "stop_sequence" integer NOT NULL, "pickup_type" smallint NOT NULL, "dropoff_type" smallint NOT NULL, "arrival_days" smallint, "arrival_time" TIME, "departure_days" smallint, "departure_time" TIME, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_21a9ce7a877cba720e30089638e" PRIMARY KEY ("id"))`,
@@ -39,7 +39,7 @@ export class CreateTables1568720642776 implements MigrationInterface {
       `CREATE TABLE "trip_blocks" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_3b72e3959ee5b124be1452acb61" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
-      `CREATE TABLE "trips" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "service_id" uuid NOT NULL, "trip_number" character varying NOT NULL, "trip_class_id" uuid NOT NULL, "trip_name" character varying, "trip_direction" smallint NOT NULL, "trip_block_id" uuid NOT NULL, "depot_in" boolean NOT NULL, "depot_out" boolean NOT NULL, "calender_id" uuid, "extra_calender_id" uuid, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_f71c231dee9c05a9522f9e840f5" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "trips" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "service_id" uuid NOT NULL, "trip_number" character varying NOT NULL, "trip_class_id" uuid NOT NULL, "trip_name" character varying, "trip_direction" smallint NOT NULL, "trip_block_id" uuid NOT NULL, "depot_in" boolean NOT NULL, "depot_out" boolean NOT NULL, "calendar_id" uuid, "extra_calendar_id" uuid, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_f71c231dee9c05a9522f9e840f5" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
       `CREATE TABLE "trip_classes" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "service_id" uuid NOT NULL, "trip_class_name" character varying NOT NULL, "trip_class_color" character varying NOT NULL, "sequence" smallint NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_4eff511b2ab0b3dfbfe61de616d" PRIMARY KEY ("id"))`,
@@ -81,10 +81,10 @@ export class CreateTables1568720642776 implements MigrationInterface {
       `ALTER TABLE "operation_sightings" ADD CONSTRAINT "FK_8c6951686b6a2d4b3dd83e1d44e" FOREIGN KEY ("formation_id") REFERENCES "formations"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
-      `ALTER TABLE "operations" ADD CONSTRAINT "FK_85e2213c49a3e4eb013024c53b2" FOREIGN KEY ("calender_id") REFERENCES "calenders"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
+      `ALTER TABLE "operations" ADD CONSTRAINT "FK_5c0fdb93db21cbe1a0a0e49059e" FOREIGN KEY ("calendar_id") REFERENCES "calendars"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
-      `ALTER TABLE "trip_operation_lists" ADD CONSTRAINT "FK_7811b6af1aa77ad8926a29f4cfc" FOREIGN KEY ("trip_id") REFERENCES "trips"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
+      `ALTER TABLE "trip_operation_lists" ADD CONSTRAINT "FK_7811b6af1aa77ad8926a29f4cfc" FOREIGN KEY ("trip_id") REFERENCES "trips"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
       `ALTER TABLE "trip_operation_lists" ADD CONSTRAINT "FK_c9fa678531b742cdab7796a0393" FOREIGN KEY ("operation_id") REFERENCES "operations"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
@@ -96,13 +96,19 @@ export class CreateTables1568720642776 implements MigrationInterface {
       `ALTER TABLE "trip_operation_lists" ADD CONSTRAINT "FK_41e910bec03771297cebcffe5e9" FOREIGN KEY ("end_time_id") REFERENCES "times"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
+      `ALTER TABLE "trip_operation_lists" ADD CONSTRAINT "FK_4286fd47f0fdda800d09291143b" FOREIGN KEY ("start_station_id") REFERENCES "stations"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "trip_operation_lists" ADD CONSTRAINT "FK_9dcef4c6deac388e0b9297d1e6d" FOREIGN KEY ("end_station_id") REFERENCES "stations"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
       `ALTER TABLE "times" ADD CONSTRAINT "FK_0208c8a537a53bb1380d411140c" FOREIGN KEY ("station_id") REFERENCES "stations"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
       `ALTER TABLE "times" ADD CONSTRAINT "FK_87c3207234df1cae634490f0d49" FOREIGN KEY ("stop_id") REFERENCES "stops"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
-      `ALTER TABLE "times" ADD CONSTRAINT "FK_879c2fa6284e7118a501ed9eaf0" FOREIGN KEY ("trip_id") REFERENCES "trips"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
+      `ALTER TABLE "times" ADD CONSTRAINT "FK_879c2fa6284e7118a501ed9eaf0" FOREIGN KEY ("trip_id") REFERENCES "trips"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
       `ALTER TABLE "trips" ADD CONSTRAINT "FK_50697e60adb4e1ded1237376645" FOREIGN KEY ("service_id") REFERENCES "services"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
@@ -171,6 +177,12 @@ export class CreateTables1568720642776 implements MigrationInterface {
       `ALTER TABLE "times" DROP CONSTRAINT "FK_0208c8a537a53bb1380d411140c"`,
     );
     await queryRunner.query(
+      `ALTER TABLE "trip_operation_lists" DROP CONSTRAINT "FK_9dcef4c6deac388e0b9297d1e6d"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "trip_operation_lists" DROP CONSTRAINT "FK_4286fd47f0fdda800d09291143b"`,
+    );
+    await queryRunner.query(
       `ALTER TABLE "trip_operation_lists" DROP CONSTRAINT "FK_41e910bec03771297cebcffe5e9"`,
     );
     await queryRunner.query(
@@ -183,7 +195,7 @@ export class CreateTables1568720642776 implements MigrationInterface {
       `ALTER TABLE "trip_operation_lists" DROP CONSTRAINT "FK_7811b6af1aa77ad8926a29f4cfc"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "operations" DROP CONSTRAINT "FK_85e2213c49a3e4eb013024c53b2"`,
+      `ALTER TABLE "operations" DROP CONSTRAINT "FK_5c0fdb93db21cbe1a0a0e49059e"`,
     );
     await queryRunner.query(
       `ALTER TABLE "operation_sightings" DROP CONSTRAINT "FK_8c6951686b6a2d4b3dd83e1d44e"`,
@@ -223,7 +235,7 @@ export class CreateTables1568720642776 implements MigrationInterface {
     await queryRunner.query(`DROP TABLE "formations"`);
     await queryRunner.query(`DROP TABLE "vehicle_formations"`);
     await queryRunner.query(`DROP TABLE "vehicles"`);
-    await queryRunner.query(`DROP TABLE "calenders"`);
+    await queryRunner.query(`DROP TABLE "calendars"`);
     await queryRunner.query(`DROP TABLE "stations"`);
     await queryRunner.query(`DROP TABLE "route_station_lists"`);
     await queryRunner.query(`DROP TABLE "stops"`);
