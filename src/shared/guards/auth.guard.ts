@@ -12,6 +12,11 @@ export class AuthGuard implements CanActivate {
       return true;
     }
     const request = context.switchToHttp().getRequest();
+
+    if (!request.headers.authorization || !request.headers['x-app-client-id']) {
+      return false;
+    }
+
     const valid = this.authService.checkToken(
       request.headers.authorization,
       request.headers['x-app-client-id'],

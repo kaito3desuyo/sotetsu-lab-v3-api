@@ -5,6 +5,7 @@ import {
   HttpException,
   HttpService,
   Param,
+  UseGuards,
 } from '@nestjs/common';
 import { Calendar } from './calendar.entity';
 import { CalendarService } from './calendar.service';
@@ -14,8 +15,10 @@ import moment from 'moment';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AxiosResponse } from 'axios';
+import { AuthGuard } from './../../../shared/guards/auth.guard';
 
 @Controller()
+@UseGuards(AuthGuard)
 export class CalendarController {
   constructor(
     private calendarService: CalendarService,

@@ -8,6 +8,7 @@ import {
   Put,
   Patch,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
 import { TripService } from './trip.service';
 import { SelectQueryBuilder, DeepPartial } from 'typeorm';
@@ -19,8 +20,10 @@ import { TripBlock } from './trip_block.entity';
 import { CreateTripBlockDto } from './trip_block.dto';
 import { Trip } from './trip.entity';
 import { TripOperationListService } from '../trip-operation-list/trip_operation_list.service';
+import { AuthGuard } from './../../../shared/guards/auth.guard';
 
 @Controller()
+@UseGuards(AuthGuard)
 export class TripController {
   constructor(
     private tripService: TripService,
