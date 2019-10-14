@@ -66,6 +66,7 @@ export class ServiceController {
         'operating_systems',
         'operating_systems.route',
         'operating_systems.route.route_station_lists',
+        'operating_systems.route.route_station_lists.route',
         'operating_systems.route.route_station_lists.station',
         'operating_systems.route.route_station_lists.station.stops',
         'operating_systems.start_route_station_list',
@@ -133,12 +134,17 @@ export class ServiceController {
         }
 
         if (flg) {
-          pickedRouteStationLists.splice(
-            position + 1,
-            0,
-            sortedRouteStationList,
-          );
-          position++;
+          if (sortedRouteStationList.route.route_name === '厚木線') {
+            pickedRouteStationLists.push(sortedRouteStationList);
+            position = pickedRouteStationLists.length;
+          } else {
+            pickedRouteStationLists.splice(
+              position + 1,
+              0,
+              sortedRouteStationList,
+            );
+            position++;
+          }
         }
 
         if (sortedRouteStationList.station_id === endStationId) {
@@ -149,6 +155,14 @@ export class ServiceController {
 
     const stations: any[] = [];
     pickedRouteStationLists.forEach((picked, index, array) => {
+      // 優先度設定を行う？
+      if (
+        picked.route.route_name === '厚木線' &&
+        some(array, (o, i) => o.station_id === picked.station_id && i !== index)
+      ) {
+        return true;
+      }
+
       if (
         array[index + 1] &&
         array[index + 1].station_id === picked.station_id
@@ -168,7 +182,12 @@ export class ServiceController {
         });
 
         if (
-          some(afterCurrentIndexArray, o => o.station_id === picked.station_id)
+          some(
+            afterCurrentIndexArray,
+            o =>
+              o.station_id === picked.station_id &&
+              o.route.route_name !== '厚木線',
+          )
         ) {
           return true;
         }
