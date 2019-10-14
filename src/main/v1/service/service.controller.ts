@@ -136,7 +136,7 @@ export class ServiceController {
         if (flg) {
           if (sortedRouteStationList.route.route_name === '厚木線') {
             pickedRouteStationLists.push(sortedRouteStationList);
-            position = pickedRouteStationLists.length;
+            position = pickedRouteStationLists.length - 1;
           } else {
             pickedRouteStationLists.splice(
               position + 1,
