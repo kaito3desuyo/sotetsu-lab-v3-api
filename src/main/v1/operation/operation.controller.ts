@@ -247,11 +247,13 @@ export class OperationController {
     });
   }
 
+  /*
   @Get('/sightings')
   async getOperationSightings(): Promise<OperationSighting[]> {
     const sightings = await this.operationSightingService.findAll();
     return sightings;
   }
+  */
 
   @Post('/sightings')
   async addOperationSightings(@Body()
