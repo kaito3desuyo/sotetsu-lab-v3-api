@@ -24,6 +24,8 @@ export class OperationSighting {
   @Column('uuid')
   operation_id: string;
 
+  circulated_operation_id?: string;
+
   @Column({ type: 'timestamptz', precision: 3 })
   sighting_time: Date;
 
@@ -36,6 +38,8 @@ export class OperationSighting {
   @ManyToOne(type => Operation, operation => operation.operation_sightings)
   @JoinColumn({ name: 'operation_id' })
   readonly operation?: Operation;
+
+  readonly circulated_operation?: Operation;
 
   @ManyToOne(type => Formation, formation => formation.operation_sightings)
   @JoinColumn({ name: 'formation_id' })
