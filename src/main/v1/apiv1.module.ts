@@ -11,6 +11,7 @@ import { TripModule } from './trip/trip.module';
 import { ServiceModule } from './service/service.module';
 import { TripOperationListModule } from './trip-operation-list/trip_operation_list.module';
 import { AuthService } from './../../shared/services/auth.service';
+import { OperationSightingModule } from './operation-sighting/operation-sighting.module';
 
 const routes: Route[] = [
   {
@@ -35,6 +36,10 @@ const routes: Route[] = [
       {
         path: '/operations',
         module: OperationModule,
+      },
+      {
+        path: '/operation-sightings',
+        module: OperationSightingModule,
       },
       {
         path: '/formations',
@@ -68,6 +73,7 @@ const routes: Route[] = [
     CalendarModule,
     StationModule,
     OperationModule,
+    OperationSightingModule,
     FormationModule,
     VehicleModule,
     TripModule,
