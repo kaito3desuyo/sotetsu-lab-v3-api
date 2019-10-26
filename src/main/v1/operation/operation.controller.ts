@@ -118,6 +118,7 @@ export class OperationController {
           operation.trip_operation_lists[0].start_time.departure_time,
           'HH:mm:ss',
         )
+          .add(1, 'days')
           .subtract(now.hour() < 4 ? 1 : 0, 'days')
           .add(
             operation.trip_operation_lists[0].start_time.departure_days - 1,
@@ -125,6 +126,7 @@ export class OperationController {
           )
       ) {
         base.current_position.next = operation.trip_operation_lists[0];
+        return base;
       }
 
       // n番目の列車の到着時刻 < 現時刻 <= n + 1番目の列車の出発時刻
@@ -136,10 +138,12 @@ export class OperationController {
           }
           return (
             moment(array[index].end_time.arrival_time, 'HH:mm:ss')
+              .add(1, 'days')
               .subtract(now.hour() < 4 ? 1 : 0, 'days')
               .add(array[index].end_time.arrival_days - 1, 'days') <= now &&
             now <
               moment(array[index + 1].start_time.departure_time, 'HH:mm:ss')
+                .add(1, 'days')
                 .subtract(now.hour() < 4 ? 1 : 0, 'days')
                 .add(array[index + 1].start_time.departure_days - 1, 'days')
           );
@@ -155,10 +159,12 @@ export class OperationController {
           }
           return (
             moment(array[index - 1].end_time.arrival_time, 'HH:mm:ss')
+              .add(1, 'days')
               .subtract(now.hour() < 4 ? 1 : 0, 'days')
               .add(array[index - 1].end_time.arrival_days - 1, 'days') <= now &&
             now <
               moment(array[index].start_time.departure_time, 'HH:mm:ss')
+                .add(1, 'days')
                 .subtract(now.hour() < 4 ? 1 : 0, 'days')
                 .add(array[index].start_time.departure_days - 1, 'days')
           );
@@ -171,6 +177,7 @@ export class OperationController {
       if (nArrToNowToNPlus1Dep && nMinus1ToNowToNDep) {
         base.current_position.prev = nArrToNowToNPlus1Dep;
         base.current_position.next = nMinus1ToNowToNDep;
+        return base;
       }
 
       /**
@@ -181,11 +188,13 @@ export class OperationController {
         (tripOperationList, index, array) => {
           return (
             moment(tripOperationList.start_time.departure_time, 'HH:mm:ss')
+              .add(1, 'days')
               .subtract(now.hour() < 4 ? 1 : 0, 'days')
               .add(tripOperationList.start_time.departure_days - 1, 'days') <=
               now &&
             now <
               moment(tripOperationList.end_time.arrival_time, 'HH:mm:ss')
+                .add(1, 'days')
                 .subtract(now.hour() < 4 ? 1 : 0, 'days')
                 .add(tripOperationList.end_time.arrival_days - 1, 'days')
           );
@@ -194,6 +203,7 @@ export class OperationController {
 
       if (currentRunning) {
         base.current_position.current = currentRunning;
+        return base;
       }
 
       /**
@@ -206,6 +216,7 @@ export class OperationController {
           ].end_time.arrival_time,
           'HH:mm:ss',
         )
+          .add(1, 'days')
           .subtract(now.hour() < 4 ? 1 : 0, 'days')
           .add(
             operation.trip_operation_lists[
@@ -218,6 +229,7 @@ export class OperationController {
           operation.trip_operation_lists[
             operation.trip_operation_lists.length - 1
           ];
+        return base;
       }
 
       return base;
