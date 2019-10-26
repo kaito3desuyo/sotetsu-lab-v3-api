@@ -43,8 +43,8 @@ export class TripController {
   @Get('/search')
   async searchTrips(@Query()
   query: {
-    calendar_id: string;
-    trip_direction: 0 | 1;
+    calendar_id?: string;
+    trip_direction?: 0 | 1;
   }): Promise<any> {
     const qb = this.tripService.createQueryBuilder('trip');
     let searchQuery = qb;

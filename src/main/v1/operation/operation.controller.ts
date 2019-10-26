@@ -16,6 +16,9 @@ import { OperationSightingService } from './operation-sightings.service';
 import { In, Not, LessThanOrEqual, SelectQueryBuilder } from 'typeorm';
 import { CalendarService } from '../calendar/calendar.service';
 import { AuthGuard } from './../../../shared/guards/auth.guard';
+import moment from 'moment';
+import { find } from 'lodash';
+import { TripOperationList } from '../trip-operation-list/trip_operation_list.entity';
 
 @Controller()
 @UseGuards(AuthGuard)
@@ -57,6 +60,170 @@ export class OperationController {
     } catch (e) {
       throw new HttpException(e.message, HttpStatus.UNPROCESSABLE_ENTITY);
     }
+  }
+
+  @Get('/search/current-position')
+  async searchOperationsCurrentPosition(@Query()
+  query: {
+    calendar_id: string;
+  }): Promise<{
+    operations: Array<
+      Pick<Operation, 'id' | 'operation_number'> & {
+        current_position: {
+          prev: TripOperationList;
+          current: TripOperationList;
+          next: TripOperationList;
+        };
+      }
+    >;
+  }> {
+    const operations = await this.operationService
+      .createQueryBuilder('operations')
+      .andWhere('operations.operation_number != :number', { number: '100' })
+      .andWhere('operations.calendar_id = :calendarId', {
+        calendarId: query.calendar_id,
+      })
+      .leftJoinAndSelect(
+        'operations.trip_operation_lists',
+        'trip_operation_lists',
+      )
+      .leftJoinAndSelect('trip_operation_lists.start_time', 'start_time')
+      .leftJoinAndSelect('trip_operation_lists.end_time', 'end_time')
+      .leftJoinAndSelect('trip_operation_lists.trip', 'trip')
+      .addOrderBy('operations.operation_number', 'ASC')
+      .addOrderBy('start_time.departure_days', 'ASC')
+      .addOrderBy('start_time.departure_time', 'ASC')
+      .getMany();
+
+    const now = moment();
+
+    const currentPosition = operations.map(operation => {
+      const base = {
+        // ...operation,
+        id: operation.id,
+        operation_number: operation.operation_number,
+        current_position: {
+          prev: null,
+          current: null,
+          next: null,
+        },
+      };
+
+      /**
+       * 0番目の列車の発車時刻よりも前の場合
+       */
+      if (
+        now <
+        moment(
+          operation.trip_operation_lists[0].start_time.departure_time,
+          'HH:mm:ss',
+        )
+          .subtract(now.hour() < 4 ? 1 : 0, 'days')
+          .add(
+            operation.trip_operation_lists[0].start_time.departure_days - 1,
+            'days',
+          )
+      ) {
+        base.current_position.next = operation.trip_operation_lists[0];
+      }
+
+      // n番目の列車の到着時刻 < 現時刻 <= n + 1番目の列車の出発時刻
+      const nArrToNowToNPlus1Dep = find(
+        operation.trip_operation_lists,
+        (trip, index, array) => {
+          if (!array[index + 1]) {
+            return undefined;
+          }
+          return (
+            moment(array[index].end_time.arrival_time, 'HH:mm:ss')
+              .subtract(now.hour() < 4 ? 1 : 0, 'days')
+              .add(array[index].end_time.arrival_days - 1, 'days') <= now &&
+            now <
+              moment(array[index + 1].start_time.departure_time, 'HH:mm:ss')
+                .subtract(now.hour() < 4 ? 1 : 0, 'days')
+                .add(array[index + 1].start_time.departure_days - 1, 'days')
+          );
+        },
+      );
+
+      // n - 1番目の列車の到着時刻 < 現時刻 <= n番目の列車の出発時刻
+      const nMinus1ToNowToNDep = find(
+        operation.trip_operation_lists,
+        (trip, index, array) => {
+          if (!array[index - 1]) {
+            return undefined;
+          }
+          return (
+            moment(array[index - 1].end_time.arrival_time, 'HH:mm:ss')
+              .subtract(now.hour() < 4 ? 1 : 0, 'days')
+              .add(array[index - 1].end_time.arrival_days - 1, 'days') <= now &&
+            now <
+              moment(array[index].start_time.departure_time, 'HH:mm:ss')
+                .subtract(now.hour() < 4 ? 1 : 0, 'days')
+                .add(array[index].start_time.departure_days - 1, 'days')
+          );
+        },
+      );
+
+      /**
+       * 現在位置が列車間の場合
+       */
+      if (nArrToNowToNPlus1Dep && nMinus1ToNowToNDep) {
+        base.current_position.prev = nArrToNowToNPlus1Dep;
+        base.current_position.next = nMinus1ToNowToNDep;
+      }
+
+      /**
+       * 現在走行中の列車
+       */
+      const currentRunning = find(
+        operation.trip_operation_lists,
+        (tripOperationList, index, array) => {
+          return (
+            moment(tripOperationList.start_time.departure_time, 'HH:mm:ss')
+              .subtract(now.hour() < 4 ? 1 : 0, 'days')
+              .add(tripOperationList.start_time.departure_days - 1, 'days') <=
+              now &&
+            now <
+              moment(tripOperationList.end_time.arrival_time, 'HH:mm:ss')
+                .subtract(now.hour() < 4 ? 1 : 0, 'days')
+                .add(tripOperationList.end_time.arrival_days - 1, 'days')
+          );
+        },
+      );
+
+      if (currentRunning) {
+        base.current_position.current = currentRunning;
+      }
+
+      /**
+       * 最後の列車の到着時刻よりも現時刻が大きい場合
+       */
+      if (
+        moment(
+          operation.trip_operation_lists[
+            operation.trip_operation_lists.length - 1
+          ].end_time.arrival_time,
+          'HH:mm:ss',
+        )
+          .subtract(now.hour() < 4 ? 1 : 0, 'days')
+          .add(
+            operation.trip_operation_lists[
+              operation.trip_operation_lists.length - 1
+            ].end_time.arrival_days - 1,
+            'days',
+          ) <= now
+      ) {
+        base.current_position.prev =
+          operation.trip_operation_lists[
+            operation.trip_operation_lists.length - 1
+          ];
+      }
+
+      return base;
+    });
+
+    return { operations: currentPosition };
   }
 
   @Get('/all/numbers')
