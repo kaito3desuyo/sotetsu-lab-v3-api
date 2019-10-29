@@ -81,7 +81,7 @@ export class OperationSightingController {
 
     const merged = [].concat(groupByOperation, groupByFormation);
     const uniq = uniqBy(merged, data => data.id);
-    const sorted = sortBy(uniq, data => data.sighting_time);
+    const sorted = sortBy(uniq, [(data1) => data1.sighting_time, (data2) => data2.updated_at]);
     const reversed = reverse(sorted);
 
     const formationGrouped = groupBy(
