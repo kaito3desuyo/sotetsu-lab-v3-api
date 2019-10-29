@@ -42,7 +42,7 @@ export class OperationSightingController {
       return some(all, data => {
         return (
           get(target, path) === get(data, path) &&
-          moment(target.sighting_time) < moment(data.sighting_time)
+          (moment(target.sighting_time) < moment(data.sighting_time) || (moment(target.sighting_time) === moment(data.sighting_time) && moment(target.updated_at) < moment(data.updated_at)))
         );
       });
     };
