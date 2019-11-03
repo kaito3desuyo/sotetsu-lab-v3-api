@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Param } from '@nestjs/common';
 import { StationService } from './station.service';
 import { Station } from './station.entity';
 import { AuthGuard } from './../../../shared/guards/auth.guard';
@@ -12,5 +12,11 @@ export class StationController {
   async getStations(): Promise<{ stations: Station[] }> {
     const stations = await this.stationService.findAll();
     return { stations };
+  }
+
+  @Get('/:id')
+  async getStationById(@Param('id') id: string): Promise<{ station: Station }> {
+    const station = await this.stationService.findOne({ where: { id } });
+    return { station };
   }
 }

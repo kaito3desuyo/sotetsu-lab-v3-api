@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, FindOneOptions } from 'typeorm';
 import { Station } from './station.entity';
 
 @Injectable()
@@ -12,5 +12,9 @@ export class StationService {
 
   findAll(options?: { relations?: string[] }): Promise<Station[]> {
     return this.stationRepository.find(options);
+  }
+
+  findOne(options?: FindOneOptions): Promise<Station> {
+    return this.stationRepository.findOne(options);
   }
 }
