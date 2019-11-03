@@ -26,7 +26,7 @@ export class Time {
   @Column('uuid')
   station_id: string;
 
-  @Column('uuid')
+  @Column('uuid', { nullable: true })
   stop_id: string;
 
   @Column('int')
