@@ -42,7 +42,9 @@ export class OperationSightingController {
       return some(all, data => {
         return (
           get(target, path) === get(data, path) &&
-          (moment(target.sighting_time) < moment(data.sighting_time) || (moment(target.sighting_time).isSame(data.sighting_time) && moment(target.updated_at) < moment(data.updated_at)))
+          (moment(target.sighting_time) < moment(data.sighting_time) ||
+            (moment(target.sighting_time).isSame(data.sighting_time) &&
+              moment(target.updated_at) < moment(data.updated_at)))
         );
       });
     };
@@ -81,7 +83,10 @@ export class OperationSightingController {
 
     const merged = [].concat(groupByOperation, groupByFormation);
     const uniq = uniqBy(merged, data => data.id);
-    const sorted = sortBy(uniq, [(data1) => data1.sighting_time, (data2) => data2.updated_at]);
+    const sorted = sortBy(uniq, [
+      data1 => data1.sighting_time,
+      data2 => data2.updated_at,
+    ]);
     const reversed = reverse(sorted);
 
     const formationGrouped = groupBy(
