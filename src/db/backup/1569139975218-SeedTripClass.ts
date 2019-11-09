@@ -28,38 +28,63 @@ export class SeedTripClass1569139975218 implements MigrationInterface {
 
 const tripClassesSeed: Array<Partial<TripClass>> = [
   {
+    trip_class_name: '直通特急',
+    trip_class_color: '#4caf50',
+    sequence: 1,
+  },
+  {
     trip_class_name: '特急',
     trip_class_color: '#ff9800',
-    sequence: 1,
+    sequence: 2,
   },
   {
     trip_class_name: '通勤特急',
     trip_class_color: '#ffb74d',
-    sequence: 2,
+    sequence: 3,
   },
   {
     trip_class_name: '急行',
     trip_class_color: '#d50000',
-    sequence: 3,
+    sequence: 4,
   },
   {
     trip_class_name: '通勤急行',
     trip_class_color: '#ff1744',
-    sequence: 4,
+    sequence: 5,
   },
   {
     trip_class_name: '快速',
     trip_class_color: '#3f51b5',
-    sequence: 5,
+    sequence: 6,
+  },
+  {
+    trip_class_name: '直通各停',
+    trip_class_color: '#4caf50',
+    sequence: 7,
   },
   {
     trip_class_name: '各停',
     trip_class_color: '#212121',
-    sequence: 6,
+    sequence: 8,
   },
   {
     trip_class_name: '回送',
     trip_class_color: '#9e9e9e',
-    sequence: 7,
+    sequence: 9,
+  },
+  {
+    trip_class_name: '通勤快速',
+    trip_class_color: '#e81e62',
+    sequence: 10,
+  },
+  {
+    trip_class_name: '快速',
+    trip_class_color: '#0026ca',
+    sequence: 11,
+  },
+  {
+    trip_class_name: '各駅停車',
+    trip_class_color: '#00796b',
+    sequence: 12,
   },
 ];
