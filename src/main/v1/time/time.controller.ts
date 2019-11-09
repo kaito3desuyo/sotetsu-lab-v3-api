@@ -2,6 +2,7 @@ import { Controller, UseGuards, Get, Query } from '@nestjs/common';
 import { AuthGuard } from '../../../shared/guards/auth.guard';
 import { TimeService } from './time.service';
 import { SelectQueryBuilder } from 'typeorm/query-builder/SelectQueryBuilder';
+import { Brackets } from 'typeorm';
 
 @Controller()
 @UseGuards(AuthGuard)
@@ -53,6 +54,28 @@ export class TimeController {
       .leftJoinAndSelect('trip.trip_class', 'trip_class')
       .leftJoinAndSelect('trip.trip_operation_lists', 'trip_operation_lists')
       .leftJoinAndSelect('trip_operation_lists.operation', 'operation')
+
+      .andWhere(
+        new Brackets(sub => {
+          sub
+            .where('times.pickup_type = 0')
+            .orWhere('times.dropoff_type = 0')
+            .orWhere(
+              new Brackets(sub2 => {
+                sub2
+                  .where('times.pickup_type = 1')
+                  .andWhere('times.pickup_type = 1')
+                  .andWhere(
+                    new Brackets(sub3 => {
+                      sub3
+                        .where('times.departure_time IS NOT NULL')
+                        .orWhere('times.arrival_time IS NOT NULL');
+                    }),
+                  );
+              }),
+            );
+        }),
+      )
 
       .addOrderBy('times.departure_days', 'ASC')
       .addOrderBy('times.departure_time', 'ASC')
