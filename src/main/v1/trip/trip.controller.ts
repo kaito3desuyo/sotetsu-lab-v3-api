@@ -70,11 +70,20 @@ export class TripController {
   query: {
     calendar_id: string;
     trip_direction: '0' | '1';
+    trip_block_id?: string;
   }): Promise<{
     trip_blocks: TripBlock[];
   }> {
-    const tripBlocks = await this.tripBlockService
-      .createQueryBuilder('trip_blocks')
+    const qb = this.tripBlockService.createQueryBuilder('trip_blocks');
+    let searchQuery = qb;
+
+    if (query.trip_block_id) {
+      searchQuery = qb.andWhere('trip_blocks.id = :id', {
+        id: query.trip_block_id,
+      });
+    }
+
+    const tripBlocks = await searchQuery
       .leftJoinAndSelect('trip_blocks.trips', 'trips')
       .leftJoinAndSelect('trips.times', 'times')
       .leftJoinAndSelect('trips.trip_operation_lists', 'trip_operation_lists')
