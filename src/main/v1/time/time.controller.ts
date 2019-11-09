@@ -39,7 +39,11 @@ export class TimeController {
       .leftJoinAndSelect('times.trip', 'trip')
       .leftJoinAndSelect('trip.times', 'trip_times')
       .leftJoinAndSelect('trip.trip_block', 'trip_block')
-      .leftJoinAndSelect('trip_block.trips', 'same_block_trips')
+      .leftJoinAndSelect(
+        'trip_block.trips',
+        'same_block_trips',
+        'same_block_trips.id != trip.id',
+      )
       .leftJoinAndSelect('same_block_trips.trip_class', 'same_block_trip_class')
       .leftJoinAndSelect('same_block_trips.times', 'same_block_trip_times')
       .leftJoinAndSelect(
@@ -49,9 +53,8 @@ export class TimeController {
       .leftJoinAndSelect('trip.trip_class', 'trip_class')
       .leftJoinAndSelect('trip.trip_operation_lists', 'trip_operation_lists')
       .leftJoinAndSelect('trip_operation_lists.operation', 'operation')
-      .andWhere('times.pickup_type != :type', { type: 1 })
-      .andWhere('times.dropoff_type != :type', { type: 1 })
-      .orderBy('times.departure_days', 'ASC')
+
+      .addOrderBy('times.departure_days', 'ASC')
       .addOrderBy('times.departure_time', 'ASC')
       .addOrderBy('trip_times.stop_sequence', 'ASC')
       .addOrderBy('same_block_trip_times.departure_days', 'ASC')
