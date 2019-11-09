@@ -37,28 +37,26 @@ export class TimeController {
 
     const times = await searchQuery
       .leftJoinAndSelect('times.trip', 'trip')
+      .leftJoinAndSelect('trip.times', 'trip_times')
       .leftJoinAndSelect('trip.trip_block', 'trip_block')
       .leftJoinAndSelect('trip_block.trips', 'same_block_trips')
       .leftJoinAndSelect('same_block_trips.trip_class', 'same_block_trip_class')
+      .leftJoinAndSelect('same_block_trips.times', 'same_block_trip_times')
       .leftJoinAndSelect(
         'same_block_trips.trip_operation_lists',
         'same_block_trip_operation_lists',
       )
-      .leftJoinAndSelect(
-        'same_block_trip_operation_lists.start_station',
-        'same_block_trip_start_station',
-      )
-      .leftJoinAndSelect(
-        'same_block_trip_operation_lists.end_station',
-        'same_block_trip_end_station',
-      )
       .leftJoinAndSelect('trip.trip_class', 'trip_class')
       .leftJoinAndSelect('trip.trip_operation_lists', 'trip_operation_lists')
       .leftJoinAndSelect('trip_operation_lists.operation', 'operation')
-      .leftJoinAndSelect('trip_operation_lists.start_station', 'start_station')
-      .leftJoinAndSelect('trip_operation_lists.end_station', 'end_station')
+      .andWhere('times.pickup_type != :type', { type: 1 })
+      .andWhere('times.dropoff_type != :type', { type: 1 })
       .orderBy('times.departure_days', 'ASC')
       .addOrderBy('times.departure_time', 'ASC')
+      .addOrderBy('trip_times.stop_sequence', 'ASC')
+      .addOrderBy('same_block_trip_times.departure_days', 'ASC')
+      .addOrderBy('same_block_trip_times.departure_time', 'ASC')
+      .addOrderBy('same_block_trip_times.stop_sequence', 'ASC')
       .getMany();
 
     return { times };
