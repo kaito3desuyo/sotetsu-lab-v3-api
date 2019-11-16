@@ -33,11 +33,17 @@ export class VehicleFormation {
   @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 
-  @ManyToOne(type => Formation, formation => formation.vehicle_formations)
+  @ManyToOne(type => Formation, formation => formation.vehicle_formations, {
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'formation_id' })
   readonly formation?: Formation;
 
-  @ManyToOne(type => Vehicle, vehicle => vehicle.vehicle_formations)
+  @ManyToOne(type => Vehicle, vehicle => vehicle.vehicle_formations, {
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'vehicle_id' })
   readonly vehicle?: Vehicle;
 }
