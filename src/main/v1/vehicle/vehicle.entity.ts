@@ -39,6 +39,9 @@ export class Vehicle {
   @OneToMany(
     type => VehicleFormation,
     vehicleFormation => vehicleFormation.vehicle,
+    {
+      cascade: true,
+    },
   )
   vehicle_formations?: VehicleFormation[];
 }

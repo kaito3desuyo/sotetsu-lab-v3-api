@@ -83,10 +83,11 @@ export class FormationController {
 
     const numbers = await this.formationService.query(
       `
-      SELECT formation_number
+      SELECT vehicle_type, formation_number, agencies.agency_name
       FROM formations
+      LEFT JOIN agencies ON formations.agency_id = agencies.id
       WHERE (start_date <= $1 OR start_date IS NULL) AND ($1 <= end_date OR end_date IS NULL)
-      ORDER BY to_number("formation_number", '99999') ASC
+      ORDER BY to_number("vehicle_type", '999999999999') ASC, to_number("formation_number", '99999') ASC
       `,
       [query.date],
     );
