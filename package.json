@@ -1,8 +1,8 @@
 {
   "name": "sotetsu-lab-v3-api",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "",
-  "author": "",
+  "author": "kaito3desuyo",
   "license": "MIT",
   "scripts": {
     "build": "rimraf dist && npm run copy-secrets && tsc -p tsconfig.build.json",
