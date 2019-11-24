@@ -273,6 +273,7 @@ export class OperationController {
       .orderBy('operation.operation_number', 'ASC')
       .addOrderBy('times.departure_days', 'ASC')
       .addOrderBy('times.departure_time', 'ASC')
+      .addOrderBy('times.stop_sequence', 'ASC')
       .getMany();
 
     return { operations: operationTrips };
@@ -300,6 +301,7 @@ export class OperationController {
       .orderBy('operation.operation_number', 'ASC')
       .addOrderBy('times.departure_days', 'ASC')
       .addOrderBy('times.departure_time', 'ASC')
+      .addOrderBy('times.stop_sequence', 'ASC')
       .getOne();
 
     return { operation: operationTrips };
