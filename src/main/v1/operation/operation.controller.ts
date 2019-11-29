@@ -109,6 +109,10 @@ export class OperationController {
         },
       };
 
+      if (!operation.trip_operation_lists.length) {
+        return base;
+      }
+
       /**
        * 0番目の列車の発車時刻よりも前の場合
        */
