@@ -5,10 +5,11 @@ import {
   WsResponse,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  MessageBody,
 } from '@nestjs/websockets';
 import { Server, Client, Socket } from 'socket.io';
 
-@WebSocketGateway({ namespace: '/operation/real-time' })
+@WebSocketGateway()
 export class OperationRealTimeGateway
   implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -25,15 +26,8 @@ export class OperationRealTimeGateway
   }
 
   @SubscribeMessage('sendSighting')
-  emitSendSightingEvent(
-    socket: Socket,
-    data: any,
-  ): WsResponse<{ eventType: 'send' | 'receive'; data: any }> {
-    const event = 'sightingReload';
-    socket.broadcast.emit(event, { eventType: 'receive', data });
-    return {
-      event,
-      data: { eventType: 'send', data },
-    };
+  async emitSendSightingEvent(socket: Socket, data: any): Promise<void> {
+    const event = 'sendSighting';
+    socket.broadcast.emit(event, data);
   }
 }
