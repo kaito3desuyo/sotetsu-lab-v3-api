@@ -52,7 +52,7 @@ export class OperationSightingController {
     const circulateOperationNumber = (target: string, days: number) => {
       const operationNumber = Number(target);
       let added = operationNumber;
-      for (let i = 1; i <= days; i++) {
+      for (let i = 0; i <= days; i++) {
         added = added + 1;
         if (String(added).slice(-1) === '0') {
           added = added - 9;
