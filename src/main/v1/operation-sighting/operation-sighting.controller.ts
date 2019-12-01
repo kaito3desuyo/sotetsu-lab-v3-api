@@ -52,24 +52,46 @@ export class OperationSightingController {
     const circulateOperationNumber = (target: string, days: number) => {
       const operationNumber = Number(target);
       let added = operationNumber;
-      for (let i = 0; i <= days; i++) {
+      for (let i = 0; i < days; i++) {
         added = added + 1;
-        if (String(added).slice(-1) === '0') {
-          added = added - 9;
+
+        switch (String(added).slice(0, 1)) {
+          case '7':
+            if (String(added).slice(-1) === '5') {
+              added = added - 4;
+            }
+            break;
+          case '8':
+          case '9':
+            if (String(added).slice(-1) === '7') {
+              added = added - 6;
+            }
+            break;
+          default:
+            if (String(added).slice(-1) === '0') {
+              added = added - 9;
+            }
         }
       }
       return String(added);
     };
 
     const calcDayDifference = (timestamp: Date | string) => {
-      return (
-        moment()
-          .subtract(moment().hour() < 4 ? 1 : 0)
-          .day() -
-        moment(timestamp)
-          .subtract(moment(timestamp).hour() < 4 ? 1 : 0, 'days')
-          .day()
-      );
+      return moment()
+        .subtract(moment().hour() < 4 ? 1 : 0, 'days')
+        .hour(0)
+        .minute(0)
+        .second(0)
+        .millisecond(0)
+        .diff(
+          moment(timestamp)
+            .subtract(moment(timestamp).hour() < 4 ? 1 : 0, 'days')
+            .hour(0)
+            .minute(0)
+            .second(0)
+            .millisecond(0),
+          'days',
+        );
     };
 
     const todaysOperations = await this.operationService.findAll({
