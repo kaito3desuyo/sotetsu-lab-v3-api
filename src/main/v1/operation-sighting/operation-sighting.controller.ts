@@ -27,7 +27,72 @@ export class OperationSightingController {
 
   @Get()
   async getOperationSightings(): Promise<any> {
-    return 'OperationSightings';
+    return await this.operationSightingService.paginate({
+      page: 0,
+      limit: 10,
+    });
+  }
+
+  @Get('/search')
+  async searchOperationSightings(@Query()
+  query?: {
+    formation_id?: string;
+    operation_id?: string;
+    sighting_time_start?: string;
+    sighting_time_end?: string;
+    page?: string;
+    per?: string;
+    sort_by?: string;
+    sort_direction?: 'ASC' | 'DESC';
+  }): Promise<any> {
+    const qb = this.operationSightingService.createQueryBuilder(
+      'operation_sightings',
+    );
+    let searchQuery = qb;
+
+    if (query.formation_id) {
+      searchQuery = qb.andWhere('formation_id = :formationId', {
+        formationId: query.formation_id,
+      });
+    }
+
+    if (query.operation_id) {
+      searchQuery = qb.andWhere('operation_id = :operationId', {
+        operationId: query.operation_id,
+      });
+    }
+
+    if (query.sighting_time_start) {
+      searchQuery = qb.andWhere(':startDate <= sighting_time', {
+        startDate: query.sighting_time_start,
+      });
+    }
+
+    if (query.sighting_time_end) {
+      searchQuery = qb.andWhere('sighting_time <= :endDate', {
+        endDate: query.sighting_time_end,
+      });
+    }
+
+    if (query.page && query.per) {
+      searchQuery = qb.take(Number(query.per));
+      searchQuery = qb.skip(Number(query.page) * Number(query.per));
+    }
+
+    if (
+      query.sort_by &&
+      query.sort_direction &&
+      (query.sort_direction === 'ASC' || query.sort_direction === 'DESC')
+    ) {
+      searchQuery = qb.addOrderBy(query.sort_by, query.sort_direction);
+    }
+
+    const operationSightings = await searchQuery.getMany();
+
+    return {
+      operation_sightings: operationSightings,
+      date: moment().toISOString(),
+    };
   }
 
   @Get('/latest')
