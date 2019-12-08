@@ -53,21 +53,41 @@ export class OperationSightingController {
       const operationNumber = Number(target);
       let added = operationNumber;
       for (let i = 0; i < days; i++) {
-        added = added + 1;
-
         switch (String(added).slice(0, 1)) {
+          case '1':
+            added = added + 1;
+            if (String(added).slice(-1) === '6') {
+              added = added - 5;
+            }
+            break;
           case '7':
+            added = added + 1;
             if (String(added).slice(-1) === '5') {
               added = added - 4;
             }
             break;
           case '8':
           case '9':
-            if (String(added).slice(-1) === '7') {
-              added = added - 6;
+            return null;
+          /*
+            switch (added) {
+              case 91:
+                return '86';
+              case 92:
+                return '84';
+              case 93:
+                return '82';
+              case 94:
+                return '83';
+              case 95:
+                return '81';
+              case 96:
+                return '85';
             }
             break;
+            */
           default:
+            added = added + 1;
             if (String(added).slice(-1) === '0') {
               added = added - 9;
             }
