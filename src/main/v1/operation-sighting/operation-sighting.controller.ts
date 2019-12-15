@@ -1,6 +1,5 @@
 import { Controller, UseGuards, Get, Query } from '@nestjs/common';
 import { AuthGuard } from '../../../shared/guards/auth.guard';
-import { OperationSightingService } from '../operation/operation-sightings.service';
 import { NewOperationSightingService } from './operation-sighting.service';
 import {
   uniqBy,
@@ -16,6 +15,13 @@ import {
 import { OperationSighting } from '../operation/operation-sighting.entity';
 import moment from 'moment';
 import { OperationService } from '../operation/operation.service';
+import {
+  Equal,
+  Between,
+  MoreThanOrEqual,
+  LessThanOrEqual,
+  FindOperator,
+} from 'typeorm';
 
 @Controller()
 @UseGuards(AuthGuard)
@@ -26,72 +32,72 @@ export class OperationSightingController {
   ) {}
 
   @Get()
-  async getOperationSightings(): Promise<any> {
-    return await this.operationSightingService.paginate({
-      page: 0,
-      limit: 10,
-    });
-  }
-
-  @Get('/search')
-  async searchOperationSightings(@Query()
+  async getOperationSightings(@Query()
   query?: {
     formation_id?: string;
     operation_id?: string;
-    sighting_time_start?: string;
-    sighting_time_end?: string;
-    page?: string;
-    per?: string;
-    sort_by?: string;
-    sort_direction?: 'ASC' | 'DESC';
+    start_sighting_time?: string;
+    end_sighting_time?: string;
+    page?: number;
+    per?: number;
+    order?: string;
   }): Promise<any> {
-    const qb = this.operationSightingService.createQueryBuilder(
-      'operation_sightings',
-    );
-    let searchQuery = qb;
+    const whereObject: {
+      [K in keyof Partial<OperationSighting>]: FindOperator<
+        OperationSighting[K]
+      >
+    } = {};
 
     if (query.formation_id) {
-      searchQuery = qb.andWhere('formation_id = :formationId', {
-        formationId: query.formation_id,
-      });
+      whereObject.formation_id = Equal(query.formation_id);
     }
-
     if (query.operation_id) {
-      searchQuery = qb.andWhere('operation_id = :operationId', {
-        operationId: query.operation_id,
+      whereObject.operation_id = Equal(query.operation_id);
+    }
+    if (query.start_sighting_time && query.end_sighting_time) {
+      whereObject.sighting_time = Between(
+        query.start_sighting_time,
+        query.end_sighting_time,
+      );
+    } else if (query.start_sighting_time) {
+      whereObject.sighting_time = MoreThanOrEqual(
+        new Date(query.start_sighting_time),
+      );
+    } else if (query.end_sighting_time) {
+      whereObject.sighting_time = LessThanOrEqual(
+        new Date(query.end_sighting_time),
+      );
+    }
+
+    const orderObject: {
+      [K in keyof Partial<OperationSighting>]: 'ASC' | 'DESC'
+    } = {};
+
+    if (query.order) {
+      const order = query.order.split(',');
+      order.forEach(prop => {
+        if (prop[0] === '-') {
+          orderObject[prop.slice(1)] = 'DESC';
+        } else {
+          orderObject[prop] = 'ASC';
+        }
       });
     }
 
-    if (query.sighting_time_start) {
-      searchQuery = qb.andWhere(':startDate <= sighting_time', {
-        startDate: query.sighting_time_start,
-      });
-    }
-
-    if (query.sighting_time_end) {
-      searchQuery = qb.andWhere('sighting_time <= :endDate', {
-        endDate: query.sighting_time_end,
-      });
-    }
-
-    if (query.page && query.per) {
-      searchQuery = qb.take(Number(query.per));
-      searchQuery = qb.skip(Number(query.page) * Number(query.per));
-    }
-
-    if (
-      query.sort_by &&
-      query.sort_direction &&
-      (query.sort_direction === 'ASC' || query.sort_direction === 'DESC')
-    ) {
-      searchQuery = qb.addOrderBy(query.sort_by, query.sort_direction);
-    }
-
-    const operationSightings = await searchQuery.getMany();
+    const result = await this.operationSightingService.findMany({
+      where: whereObject,
+      orderBy: orderObject,
+      pageIndex: query.page,
+      pageSize: query.per,
+      relations: ['formation', 'operation'],
+    });
 
     return {
-      operation_sightings: operationSightings,
-      date: moment().toISOString(),
+      operation_sightings: result.items,
+      pagination: {
+        total_items: result.totalItems,
+        total_pages: result.pageCount,
+      },
     };
   }
 
