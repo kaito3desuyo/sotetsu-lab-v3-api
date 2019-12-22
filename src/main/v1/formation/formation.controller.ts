@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { OperationSightingService } from '../operation/operation-sightings.service';
 import { FormationService } from './formation.service';
-import { Brackets, SelectQueryBuilder } from 'typeorm';
+import { Brackets, SelectQueryBuilder, Raw, In, getRepository } from 'typeorm';
 import moment from 'moment';
 import { Formation } from './formation.entity';
 import { AuthGuard } from './../../../shared/guards/auth.guard';
@@ -37,11 +37,14 @@ export class FormationController {
     formation_number?: string;
     vehicle_number?: string;
     date?: string;
+    start_date?: string;
+    end_date?: string;
   }): Promise<{ formations: Formation[] }> {
     const formationQueryBuilder = this.formationService.createQueryBuilder(
       'formations',
     );
     let searchQuery: SelectQueryBuilder<Formation> = formationQueryBuilder;
+    searchQuery = searchQuery.select('formations.id');
 
     if (query.agency_id) {
       searchQuery = searchAgencyId(query.agency_id, searchQuery);
@@ -59,9 +62,33 @@ export class FormationController {
       searchQuery = searchDate(query.date, searchQuery);
     }
 
-    const formations = await searchQuery.getMany();
+    if (query.start_date) {
+      searchQuery = searchStartDate(query.start_date, searchQuery);
+    }
 
-    return { formations };
+    if (query.end_date) {
+      searchQuery = searchEndDate(query.end_date, searchQuery);
+    }
+
+    const rawQuery = searchQuery.getQueryAndParameters();
+
+    const formationIds = await this.formationService.query(
+      rawQuery[0] +
+        ' ORDER BY to_number("formations"."vehicle_type", \'999999999999\') ASC, to_number("formation_number", \'99999\') ASC',
+      rawQuery[1],
+    );
+
+    const formations = await this.formationService.findAll({
+      where: {
+        id: In(formationIds.map(o => o.formations_id)),
+      },
+    });
+
+    return {
+      formations: formationIds.map(o =>
+        formations.find(formation => formation.id === o.formations_id),
+      ),
+    };
   }
 
   @Get('/search/numbers')
@@ -220,4 +247,48 @@ const searchDate = (date: string, qb: SelectQueryBuilder<Formation>) => {
           .orWhere('end_date IS NULL');
       }),
     );
+};
+
+const searchStartDate = (date: string, qb: SelectQueryBuilder<Formation>) => {
+  if (
+    !/\d{4}-\d{2}-\d{2}/.test(date) ||
+    !moment(date, 'YYYY-MM-DD').isValid()
+  ) {
+    throw new HttpException(
+      'query `date` has invalid value. example: 2019-01-01',
+      HttpStatus.UNPROCESSABLE_ENTITY,
+    );
+  }
+
+  return qb.andWhere(
+    new Brackets(subqb => {
+      return subqb
+        .where('start_date <= :date', {
+          date,
+        })
+        .orWhere('start_date IS NULL');
+    }),
+  );
+};
+
+const searchEndDate = (date: string, qb: SelectQueryBuilder<Formation>) => {
+  if (
+    !/\d{4}-\d{2}-\d{2}/.test(date) ||
+    !moment(date, 'YYYY-MM-DD').isValid()
+  ) {
+    throw new HttpException(
+      'query `date` has invalid value. example: 2019-01-01',
+      HttpStatus.UNPROCESSABLE_ENTITY,
+    );
+  }
+
+  return qb.andWhere(
+    new Brackets(subqb => {
+      return subqb
+        .where(':date <= end_date', {
+          date,
+        })
+        .orWhere('end_date IS NULL');
+    }),
+  );
 };
