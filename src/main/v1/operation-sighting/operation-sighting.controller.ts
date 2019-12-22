@@ -1,6 +1,5 @@
 import { Controller, UseGuards, Get, Query } from '@nestjs/common';
 import { AuthGuard } from '../../../shared/guards/auth.guard';
-import { OperationSightingService } from '../operation/operation-sightings.service';
 import { NewOperationSightingService } from './operation-sighting.service';
 import {
   uniqBy,
@@ -16,6 +15,13 @@ import {
 import { OperationSighting } from '../operation/operation-sighting.entity';
 import moment from 'moment';
 import { OperationService } from '../operation/operation.service';
+import {
+  Equal,
+  Between,
+  MoreThanOrEqual,
+  LessThanOrEqual,
+  FindOperator,
+} from 'typeorm';
 
 @Controller()
 @UseGuards(AuthGuard)
@@ -26,8 +32,73 @@ export class OperationSightingController {
   ) {}
 
   @Get()
-  async getOperationSightings(): Promise<any> {
-    return 'OperationSightings';
+  async getOperationSightings(@Query()
+  query?: {
+    formation_id?: string;
+    operation_id?: string;
+    start_sighting_time?: string;
+    end_sighting_time?: string;
+    page?: number;
+    per?: number;
+    order?: string;
+  }): Promise<any> {
+    const whereObject: {
+      [K in keyof Partial<OperationSighting>]: FindOperator<
+        OperationSighting[K]
+      >
+    } = {};
+
+    if (query.formation_id) {
+      whereObject.formation_id = Equal(query.formation_id);
+    }
+    if (query.operation_id) {
+      whereObject.operation_id = Equal(query.operation_id);
+    }
+    if (query.start_sighting_time && query.end_sighting_time) {
+      whereObject.sighting_time = Between(
+        query.start_sighting_time,
+        query.end_sighting_time,
+      );
+    } else if (query.start_sighting_time) {
+      whereObject.sighting_time = MoreThanOrEqual(
+        new Date(query.start_sighting_time),
+      );
+    } else if (query.end_sighting_time) {
+      whereObject.sighting_time = LessThanOrEqual(
+        new Date(query.end_sighting_time),
+      );
+    }
+
+    const orderObject: {
+      [K in keyof Partial<OperationSighting>]: 'ASC' | 'DESC'
+    } = {};
+
+    if (query.order) {
+      const order = query.order.split(',');
+      order.forEach(prop => {
+        if (prop[0] === '-') {
+          orderObject[prop.slice(1)] = 'DESC';
+        } else {
+          orderObject[prop] = 'ASC';
+        }
+      });
+    }
+
+    const result = await this.operationSightingService.findMany({
+      where: whereObject,
+      orderBy: orderObject,
+      pageIndex: query.page,
+      pageSize: query.per,
+      relations: ['formation', 'operation'],
+    });
+
+    return {
+      operation_sightings: result.items,
+      pagination: {
+        total_items: result.totalItems,
+        total_pages: result.pageCount,
+      },
+    };
   }
 
   @Get('/latest')

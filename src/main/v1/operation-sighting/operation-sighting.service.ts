@@ -1,7 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { OperationSighting } from '../operation/operation-sighting.entity';
-import { Repository, QueryRunner, FindManyOptions } from 'typeorm';
+import {
+  Repository,
+  QueryRunner,
+  FindManyOptions,
+  LessThanOrEqual,
+  Between,
+  Equal,
+  MoreThanOrEqual,
+  FindOperator,
+} from 'typeorm';
+import {
+  paginate,
+  IPaginationOptions,
+  Pagination,
+} from 'nestjs-typeorm-paginate';
+import { forIn } from 'lodash';
 
 @Injectable()
 export class NewOperationSightingService {
@@ -19,6 +34,39 @@ export class NewOperationSightingService {
 
   findAll(options?: FindManyOptions): Promise<OperationSighting[]> {
     return this.operationSightingRepository.find(options);
+  }
+
+  async findMany(params?: {
+    where?: {
+      [K in keyof Partial<OperationSighting>]: FindOperator<
+        OperationSighting[K]
+      >
+    };
+    orderBy?: { [K in keyof Partial<OperationSighting>]: 'ASC' | 'DESC' };
+    relations?: string[];
+    pageIndex?: number;
+    pageSize?: number;
+  }): Promise<Pagination<OperationSighting>> {
+    return paginate(
+      this.operationSightingRepository,
+      {
+        page: params.pageIndex,
+        limit: params.pageSize,
+      },
+      {
+        where: params.where,
+        order: params.orderBy,
+        relations: params.relations,
+      },
+    );
+  }
+
+  async paginate(options: IPaginationOptions): Promise<any> {
+    const queryBuilder = this.operationSightingRepository.createQueryBuilder(
+      'c',
+    );
+    const result = await paginate<OperationSighting>(queryBuilder, options);
+    return result;
   }
 
   async getOperationSightingsLatestGroupByOperations(): Promise<
