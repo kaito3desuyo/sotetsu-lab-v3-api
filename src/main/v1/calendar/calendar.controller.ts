@@ -12,7 +12,7 @@ import { CalendarService } from './calendar.service';
 import { SelectQueryBuilder, Brackets } from 'typeorm';
 import { QueryBuilderFunctions } from '../../../shared/classes/query-builder-functions';
 import moment from 'moment';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AxiosResponse } from 'axios';
 import { AuthGuard } from './../../../shared/guards/auth.guard';
@@ -69,6 +69,17 @@ export class CalendarController {
     const dayOfWeek = moment(date, 'YYYY-MM-DD')
       .format('dddd')
       .toLowerCase();
+
+    if (
+      // 2019-2020年設定
+      moment(date, 'YYYY-MM-DD').format('MM-DD') === '12-30' ||
+      moment(date, 'YYYY-MM-DD').format('MM-DD') === '12-31' ||
+      moment(date, 'YYYY-MM-DD').format('MM-DD') === '01-01' ||
+      moment(date, 'YYYY-MM-DD').format('MM-DD') === '01-02' ||
+      moment(date, 'YYYY-MM-DD').format('MM-DD') === '01-03'
+    ) {
+      return of('sunday');
+    }
 
     return this.http
       .get(
