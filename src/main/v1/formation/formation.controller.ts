@@ -78,6 +78,12 @@ export class FormationController {
       rawQuery[1],
     );
 
+    if (!formationIds.length) {
+      return {
+        formations: [],
+      };
+    }
+
     const formations = await this.formationService.findAll({
       where: {
         id: In(formationIds.map(o => o.formations_id)),
