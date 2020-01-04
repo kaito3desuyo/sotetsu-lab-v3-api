@@ -11,6 +11,7 @@ import {
   get,
   find,
   flatMap,
+  filter,
 } from 'lodash';
 import { OperationSighting } from '../operation/operation-sighting.entity';
 import moment from 'moment';
@@ -202,194 +203,100 @@ export class OperationSightingController {
     ]);
     const reversed = reverse(sorted);
 
-    const formationGrouped = groupBy(
-      reversed,
+    const operationSightingsCirculated = reversed.map(operationSighting => {
+      const currentOperationNumber = operationSighting.operation
+        ? operationSighting.operation.operation_number
+        : null;
+      const circulatedOperationNumber =
+        currentOperationNumber !== '100' && currentOperationNumber !== null
+          ? circulateOperationNumber(
+              currentOperationNumber,
+              calcDayDifference(operationSighting.sighting_time),
+            )
+          : currentOperationNumber;
+
+      const circulatedOperation = circulatedOperationNumber
+        ? find(
+            todaysOperations,
+            o => o.operation_number === circulatedOperationNumber,
+          ) || null
+        : null;
+
+      return {
+        ...operationSighting,
+        circulated_operation_id: circulatedOperation
+          ? circulatedOperation.id
+          : null,
+        circulated_operation: circulatedOperation,
+      };
+    });
+
+    const operationSightingsFiltered = operationSightingsCirculated.map(
+      (target, index, array) => {
+        return {
+          ...target,
+          circulated_operation_id:
+            target.operation &&
+            target.operation.operation_number !== '100' &&
+            (isExistNewerSighting(
+              target,
+              array,
+              'formation.formation_number',
+            ) ||
+              isExistNewerSighting(
+                target,
+                array,
+                'circulated_operation.operation_number',
+              ))
+              ? null
+              : target.circulated_operation_id,
+          circulated_operation:
+            target.operation &&
+            target.operation.operation_number !== '100' &&
+            (isExistNewerSighting(
+              target,
+              array,
+              'formation.formation_number',
+            ) ||
+              isExistNewerSighting(
+                target,
+                array,
+                'circulated_operation.operation_number',
+              ))
+              ? null
+              : target.circulated_operation,
+        };
+      },
+    );
+
+    // 編成別
+    const formationGroupedAgain = groupBy(
+      operationSightingsFiltered,
       data => data.formation.formation_number,
     );
-    const operationGrouped = groupBy(
-      reversed,
-      data => data.operation.operation_number,
-    );
-
-    const formationDuplicateChecked: OperationSighting[] = map(
-      formationGrouped,
+    const formationFlattedAgain: OperationSighting[] = flatMap(
+      formationGroupedAgain,
       (value, key) => {
         return value[0];
       },
     );
-    const operationDuplicateChecked: OperationSighting[] = flatMap(
-      operationGrouped,
+
+    // 運用別
+    const operationGroupedAgain = groupBy(operationSightingsFiltered, data =>
+      data.circulated_operation
+        ? data.circulated_operation.operation_number
+        : null,
+    );
+    const operationFlattedAgain: OperationSighting[] = flatMap(
+      operationGroupedAgain,
       (value, key) => {
-        if (key === '100') {
-          return value;
-        }
         return value[0];
-      },
-    );
-
-    const formationNewestSightings = formationDuplicateChecked.map(target => {
-      const checker =
-        target.operation.operation_number !== '100' &&
-        isExistNewerSighting(
-          target,
-          formationDuplicateChecked,
-          'operation.operation_number',
-        );
-      const checker2 =
-        target.operation.operation_number !== '100' &&
-        isExistNewerSighting(
-          target,
-          operationDuplicateChecked,
-          'operation.operation_number',
-        );
-      return {
-        ...target,
-        operation_id: checker || checker2 ? null : target.operation_id,
-        operation: checker || checker2 ? null : target.operation,
-      };
-    });
-    const operationNewestSightings = operationDuplicateChecked.map(target => {
-      const checker =
-        target.operation.operation_number !== '100' &&
-        isExistNewerSighting(
-          target,
-          formationDuplicateChecked,
-          'formation.formation_number',
-        );
-      const checker2 =
-        target.operation.operation_number !== '100' &&
-        isExistNewerSighting(
-          target,
-          operationDuplicateChecked,
-          'formation.formation_number',
-        );
-
-      return {
-        ...target,
-        formation_id: checker || checker2 ? null : target.formation_id,
-        formation: checker || checker2 ? null : target.formation,
-      };
-    });
-
-    const formationSightingsCirculated = formationNewestSightings.map(
-      formationSighting => {
-        const currentOperationNumber = formationSighting.operation
-          ? formationSighting.operation.operation_number
-          : null;
-        const circulatedOperationNumber =
-          currentOperationNumber !== '100' && currentOperationNumber !== null
-            ? circulateOperationNumber(
-                currentOperationNumber,
-                calcDayDifference(formationSighting.sighting_time),
-              )
-            : currentOperationNumber;
-
-        const circulatedOperation = circulatedOperationNumber
-          ? find(
-              todaysOperations,
-              o => o.operation_number === circulatedOperationNumber,
-            ) || null
-          : null;
-
-        return {
-          ...formationSighting,
-          circulated_operation_id: circulatedOperation
-            ? circulatedOperation.id
-            : null,
-          circulated_operation: circulatedOperation,
-        };
-      },
-    );
-
-    const operationSightingsCirculated = operationNewestSightings.map(
-      operationSighting => {
-        const currentOperationNumber = operationSighting.operation
-          ? operationSighting.operation.operation_number
-          : null;
-        const circulatedOperationNumber =
-          currentOperationNumber !== '100' && currentOperationNumber !== null
-            ? circulateOperationNumber(
-                currentOperationNumber,
-                calcDayDifference(operationSighting.sighting_time),
-              )
-            : currentOperationNumber;
-
-        const circulatedOperation = circulatedOperationNumber
-          ? find(
-              todaysOperations,
-              o => o.operation_number === circulatedOperationNumber,
-            ) || null
-          : null;
-
-        return {
-          ...operationSighting,
-          circulated_operation_id: circulatedOperation
-            ? circulatedOperation.id
-            : null,
-          circulated_operation: circulatedOperation,
-        };
-      },
-    );
-
-    const formationNewestSightingsAgain = formationSightingsCirculated.map(
-      (target, index, array) => {
-        return {
-          ...target,
-          circulated_operation_id:
-            target.operation &&
-            target.operation.operation_number !== '100' &&
-            isExistNewerSighting(
-              target,
-              array,
-              'circulated_operation.operation_number',
-            )
-              ? null
-              : target.circulated_operation_id,
-          circulated_operation:
-            target.operation &&
-            target.operation.operation_number !== '100' &&
-            isExistNewerSighting(
-              target,
-              array,
-              'circulated_operation.operation_number',
-            )
-              ? null
-              : target.circulated_operation,
-        };
-      },
-    );
-
-    const operationNewestSightingsAgain = operationSightingsCirculated.map(
-      (target, index, array) => {
-        return {
-          ...target,
-          circulated_operation_id:
-            target.operation &&
-            target.operation.operation_number !== '100' &&
-            isExistNewerSighting(
-              target,
-              array,
-              'circulated_operation.operation_number',
-            )
-              ? null
-              : target.circulated_operation_id,
-          circulated_operation:
-            target.operation &&
-            target.operation.operation_number !== '100' &&
-            isExistNewerSighting(
-              target,
-              array,
-              'circulated_operation.operation_number',
-            )
-              ? null
-              : target.circulated_operation,
-        };
       },
     );
 
     return {
-      group_by_formations: formationNewestSightingsAgain,
-      group_by_operations: operationNewestSightingsAgain,
+      group_by_formations: formationFlattedAgain,
+      group_by_operations: operationFlattedAgain,
     };
   }
 }
