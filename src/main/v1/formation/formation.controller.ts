@@ -62,12 +62,12 @@ export class FormationController {
       searchQuery = searchDate(query.date, searchQuery);
     }
 
-    if (query.start_date) {
-      searchQuery = searchStartDate(query.start_date, searchQuery);
-    }
-
-    if (query.end_date) {
-      searchQuery = searchEndDate(query.end_date, searchQuery);
+    if (query.start_date && query.end_date) {
+      searchQuery = searchBetweenDate(
+        query.start_date,
+        query.end_date,
+        searchQuery,
+      );
     }
 
     const rawQuery = searchQuery.getQueryAndParameters();
@@ -266,11 +266,11 @@ const searchStartDate = (date: string, qb: SelectQueryBuilder<Formation>) => {
     );
   }
 
-  return qb.andWhere(
+  return qb.orWhere(
     new Brackets(subqb => {
       return subqb
-        .where('start_date <= :date', {
-          date,
+        .where('start_date <= :startDate', {
+          startDate: date,
         })
         .orWhere('start_date IS NULL');
     }),
@@ -288,13 +288,51 @@ const searchEndDate = (date: string, qb: SelectQueryBuilder<Formation>) => {
     );
   }
 
-  return qb.andWhere(
+  return qb.orWhere(
     new Brackets(subqb => {
       return subqb
-        .where(':date <= end_date', {
-          date,
+        .where(':endDate <= end_date', {
+          endDate: date,
         })
         .orWhere('end_date IS NULL');
     }),
   );
+};
+
+const searchBetweenDate = (
+  startDate: string,
+  endDate: string,
+  qb: SelectQueryBuilder<Formation>,
+) => {
+  if (
+    !/\d{4}-\d{2}-\d{2}/.test(startDate) ||
+    !moment(startDate, 'YYYY-MM-DD').isValid() ||
+    !/\d{4}-\d{2}-\d{2}/.test(endDate) ||
+    !moment(endDate, 'YYYY-MM-DD').isValid()
+  ) {
+    throw new HttpException(
+      'query `start_date` or `end_date` has invalid value. example: 2019-01-01',
+      HttpStatus.UNPROCESSABLE_ENTITY,
+    );
+  }
+
+  return qb
+    .andWhere(
+      new Brackets(subqb => {
+        return subqb
+          .where('start_date <= :startDate', {
+            startDate: endDate,
+          })
+          .orWhere('start_date IS NULL');
+      }),
+    )
+    .andWhere(
+      new Brackets(subqb => {
+        return subqb
+          .where(':endDate <= end_date', {
+            endDate: startDate,
+          })
+          .orWhere('end_date IS NULL');
+      }),
+    );
 };
