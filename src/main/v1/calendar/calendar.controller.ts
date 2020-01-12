@@ -81,6 +81,8 @@ export class CalendarController {
       return of('sunday');
     }
 
+    // return of(dayOfWeek);
+
     return this.http
       .get(
         `http://s-proj.com/utils/checkHoliday.php?kind=h&date=${moment(
