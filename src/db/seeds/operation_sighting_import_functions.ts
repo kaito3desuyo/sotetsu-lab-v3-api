@@ -93,50 +93,52 @@ async function fetchWeekdayOrHoliday(date: string): Promise<string> {
     return 'sunday';
   }
 
-  if (
-    moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD') === '2019-01-01' ||
-    moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD') === '2019-01-14' ||
-    moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD') === '2019-02-11' ||
-    moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD') === '2019-03-21' ||
-    moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD') === '2019-04-29' ||
-    moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD') === '2019-04-30' ||
-    moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD') === '2019-05-01' ||
-    moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD') === '2019-05-02' ||
-    moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD') === '2019-05-03' ||
-    moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD') === '2019-05-04' ||
-    moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD') === '2019-05-05' ||
-    moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD') === '2019-05-06' ||
-    moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD') === '2019-07-15' ||
-    moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD') === '2019-08-11' ||
-    moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD') === '2019-08-12' ||
-    moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD') === '2019-09-16' ||
-    moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD') === '2019-09-23' ||
-    moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD') === '2019-10-14' ||
-    moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD') === '2019-10-22' ||
-    moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD') === '2019-11-03' ||
-    moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD') === '2019-11-04' ||
-    moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD') === '2019-11-23'
-  ) {
+  if (holidays.some(o => moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD'))) {
     return 'sunday';
   }
 
   return dayOfWeek;
-
-  /*
-  const result = await axios.get(
-    `http://s-proj.com/utils/checkHoliday.php?kind=h&date=${moment(
-      date,
-      'YYYY-MM-DD',
-    ).format('YYYYMMDD')}`,
-  );
-
-  switch (result.data) {
-    case 'else':
-      return dayOfWeek;
-    case 'holiday':
-      return dayOfWeek === 'saturday' ? 'saturday' : 'sunday';
-    default:
-      return null;
-  }
-  */
 }
+
+const holidays = [
+  '2019-01-01',
+  '2019-01-14',
+  '2019-02-11',
+  '2019-03-21',
+  '2019-04-29',
+  '2019-04-30',
+  '2019-05-01',
+  '2019-05-02',
+  '2019-05-03',
+  '2019-05-04',
+  '2019-05-05',
+  '2019-05-06',
+  '2019-07-15',
+  '2019-08-11',
+  '2019-08-12',
+  '2019-09-16',
+  '2019-09-23',
+  '2019-10-14',
+  '2019-10-22',
+  '2019-11-03',
+  '2019-11-04',
+  '2019-11-23',
+  '2020-01-01',
+  '2020-01-13',
+  '2020-02-11',
+  '2020-02-23',
+  '2020-02-24',
+  '2020-03-20',
+  '2020-04-29',
+  '2020-05-03',
+  '2020-05-04',
+  '2020-05-05',
+  '2020-05-06',
+  '2020-07-23',
+  '2020-07-24',
+  '2020-08-10',
+  '2020-09-21',
+  '2020-09-22',
+  '2020-11-03',
+  '2020-11-23',
+];
