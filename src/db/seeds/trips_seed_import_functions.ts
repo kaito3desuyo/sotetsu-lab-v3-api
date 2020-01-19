@@ -244,17 +244,21 @@ function getOperationId(
   calendarId: string,
   operations: Operation[],
 ): string {
-  return find(
+  const result = find(
     operations,
     operation =>
       operation.operation_number === operationNumber &&
       operation.calendar_id === calendarId,
-  ).id;
+  );
+  return result ? result.id : null;
 }
 
 function getTripClassId(className: string, tripClasses: TripClass[]): string {
-  return find(tripClasses, tripClass => tripClass.trip_class_name === className)
-    .id;
+  const result = find(
+    tripClasses,
+    tripClass => tripClass.trip_class_name === className,
+  );
+  return result ? result.id : null;
 }
 
 function getStationId(stationName: string, stations: Station[]): string {

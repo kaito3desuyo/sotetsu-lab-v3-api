@@ -30,10 +30,10 @@ export class Vehicle {
   @Column('date', { nullable: true })
   scrapped_date: Date;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', precision: 3 })
   created_at: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
   updated_at: Date;
 
   @OneToMany(
