@@ -45,10 +45,10 @@ export class Station {
   @Column('boolean')
   wheelchair_boarding: boolean;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', precision: 3 })
   created_at: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
   updated_at: Date;
 
   @OneToMany(
