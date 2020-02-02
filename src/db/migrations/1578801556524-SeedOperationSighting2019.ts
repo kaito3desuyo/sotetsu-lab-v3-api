@@ -23,5 +23,6 @@ export class SeedOperationSighting20191578801556524
     );
   }
 
+  // tslint:disable-next-line: no-empty
   public async down(queryRunner: QueryRunner): Promise<any> {}
 }
