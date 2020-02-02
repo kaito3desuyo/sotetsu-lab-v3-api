@@ -1,9 +1,9 @@
 import { getRepository } from 'typeorm';
 import { Formation } from '../../main/v1/formation/formation.entity';
 import { Operation } from '../../main/v1/operation/operation.entity';
-import moment from 'moment';
-import axios from 'axios';
+import moment from 'moment-timezone';
 import { find } from 'lodash';
+moment.tz.setDefault('Asia/Tokyo');
 
 export async function operationSightingsSeedToSaveData(seedData: any[]) {
   const formations = await getRepository(Formation).find();
@@ -13,12 +13,20 @@ export async function operationSightingsSeedToSaveData(seedData: any[]) {
 
   const data = seedData
     .filter(row => {
-      return row.operation_id && moment(row.last_update_timestamp).hour() !== 2;
+      return (
+        row.operation_id &&
+        moment.tz(row.last_update_timestamp, 'Asia/Tokyo').format('HHmm') !==
+          '0200'
+      );
     })
     .map(async row => {
       const weekdayOrHoliday = await fetchWeekdayOrHoliday(
-        moment(row.witness_timestamp)
-          .subtract(moment(row.witness_timestamp).hour() < 4 ? 1 : 0, 'days')
+        moment
+          .tz(row.witness_timestamp, 'Asia/Tokyo')
+          .subtract(
+            moment.tz(row.witness_timestamp, 'Asia/Tokyo').hour() < 4 ? 1 : 0,
+            'days',
+          )
           .format('YYYY-MM-DD'),
       );
 
@@ -27,19 +35,28 @@ export async function operationSightingsSeedToSaveData(seedData: any[]) {
         o =>
           o.formation_number === row.vehicle_id &&
           (o.start_date === null ||
-            moment(o.start_date, 'YYYY-MM-DD') <=
-              moment(row.witness_timestamp).subtract(
-                moment(row.witness_timestamp).hour() < 4 ? 1 : 0,
-                'days',
-              )) &&
+            moment.tz(o.start_date, 'YYYY-MM-DD', 'Asia/Tokyo') <=
+              moment
+                .tz(row.witness_timestamp, 'Asia/Tokyo')
+                .subtract(
+                  moment.tz(row.witness_timestamp, 'Asia/Tokyo').hour() < 4
+                    ? 1
+                    : 0,
+                  'days',
+                )) &&
           (o.end_date === null ||
-            moment(o.end_date, 'YYYY-MM-DD')
+            moment
+              .tz(o.end_date, 'YYYY-MM-DD', 'Asia/Tokyo')
               .add(1, 'days')
               .subtract(1, 'millisecond') >=
-              moment(row.witness_timestamp).subtract(
-                moment(row.witness_timestamp).hour() < 4 ? 1 : 0,
-                'days',
-              )),
+              moment
+                .tz(row.witness_timestamp, 'Asia/Tokyo')
+                .subtract(
+                  moment.tz(row.witness_timestamp, 'Asia/Tokyo').hour() < 4
+                    ? 1
+                    : 0,
+                  'days',
+                )),
       );
 
       const operation = find(
@@ -48,27 +65,42 @@ export async function operationSightingsSeedToSaveData(seedData: any[]) {
           o.operation_number === row.operation_id &&
           o.calendar[weekdayOrHoliday] === true &&
           (o.calendar.start_date === null ||
-            moment(o.calendar.start_date, 'YYYY-MM-DD') <=
-              moment(row.witness_timestamp).subtract(
-                moment(row.witness_timestamp).hour() < 4 ? 1 : 0,
-                'days',
-              )) &&
+            moment.tz(o.calendar.start_date, 'YYYY-MM-DD', 'Asia/Tokyo') <=
+              moment
+                .tz(row.witness_timestamp, 'Asia/Tokyo')
+                .subtract(
+                  moment.tz(row.witness_timestamp, 'Asia/Tokyo').hour() < 4
+                    ? 1
+                    : 0,
+                  'days',
+                )) &&
           (o.calendar.end_date === null ||
-            moment(o.calendar.end_date, 'YYYY-MM-DD')
+            moment
+              .tz(o.calendar.end_date, 'YYYY-MM-DD', 'Asia/Tokyo')
               .add(1, 'days')
               .subtract(1, 'millisecond') >=
-              moment(row.witness_timestamp).subtract(
-                moment(row.witness_timestamp).hour() < 4 ? 1 : 0,
-                'days',
-              )),
+              moment
+                .tz(row.witness_timestamp, 'Asia/Tokyo')
+                .subtract(
+                  moment.tz(row.witness_timestamp, 'Asia/Tokyo').hour() < 4
+                    ? 1
+                    : 0,
+                  'days',
+                )),
       );
 
       return {
         formation_id: formation ? formation.id : undefined,
         operation_id: operation ? operation.id : undefined,
-        sighting_time: row.witness_timestamp,
-        created_at: row.last_update_timestamp,
-        updated_at: row.last_update_timestamp,
+        sighting_time: moment
+          .tz(row.witness_timestamp, 'Asia/Tokyo')
+          .toISOString(true),
+        created_at: moment
+          .tz(row.witness_timestamp, 'Asia/Tokyo')
+          .toISOString(true),
+        updated_at: moment
+          .tz(row.witness_timestamp, 'Asia/Tokyo')
+          .toISOString(true),
       };
     });
 
@@ -101,6 +133,26 @@ async function fetchWeekdayOrHoliday(date: string): Promise<string> {
 }
 
 const holidays = [
+  '2018-01-01',
+  '2018-01-08',
+  '2018-02-11',
+  '2018-02-12',
+  '2018-03-21',
+  '2018-04-29',
+  '2018-04-30',
+  '2018-05-03',
+  '2018-05-04',
+  '2018-05-05',
+  '2018-07-16',
+  '2018-08-11',
+  '2018-09-17',
+  '2018-09-23',
+  '2018-09-24',
+  '2018-10-08',
+  '2018-11-03',
+  '2018-11-23',
+  '2018-12-23',
+  '2018-12-24',
   '2019-01-01',
   '2019-01-14',
   '2019-02-11',
