@@ -2,7 +2,7 @@ import { getRepository } from 'typeorm';
 import { Formation } from '../../main/v1/formation/formation.entity';
 import { Operation } from '../../main/v1/operation/operation.entity';
 import moment from 'moment-timezone';
-import { find } from 'lodash';
+import { find, some } from 'lodash';
 moment.tz.setDefault('Asia/Tokyo');
 
 export async function operationSightingsSeedToSaveData(seedData: any[]) {
@@ -16,7 +16,9 @@ export async function operationSightingsSeedToSaveData(seedData: any[]) {
       return (
         row.operation_id &&
         moment.tz(row.last_update_timestamp, 'Asia/Tokyo').format('HHmm') !==
-          '0200'
+          '0200' &&
+        moment.tz(row.witness_timestamp, 'Asia/Tokyo') <=
+          moment.tz(row.last_update_timestamp, 'Asia/Tokyo')
       );
     })
     .map(async row => {
@@ -29,6 +31,8 @@ export async function operationSightingsSeedToSaveData(seedData: any[]) {
           )
           .format('YYYY-MM-DD'),
       );
+
+      console.log('day:', weekdayOrHoliday);
 
       const formation = find(
         formations,
@@ -96,10 +100,10 @@ export async function operationSightingsSeedToSaveData(seedData: any[]) {
           .tz(row.witness_timestamp, 'Asia/Tokyo')
           .toISOString(true),
         created_at: moment
-          .tz(row.witness_timestamp, 'Asia/Tokyo')
+          .tz(row.last_update_timestamp, 'Asia/Tokyo')
           .toISOString(true),
         updated_at: moment
-          .tz(row.witness_timestamp, 'Asia/Tokyo')
+          .tz(row.last_update_timestamp, 'Asia/Tokyo')
           .toISOString(true),
       };
     });
@@ -110,22 +114,29 @@ export async function operationSightingsSeedToSaveData(seedData: any[]) {
 }
 
 async function fetchWeekdayOrHoliday(date: string): Promise<string> {
-  const dayOfWeek = moment(date, 'YYYY-MM-DD')
+  console.log('date:', date);
+  const dayOfWeek = moment
+    .tz(date, 'YYYY-MM-DD', 'Asia/Tokyo')
     .format('dddd')
     .toLowerCase();
 
   if (
     // 2019-2020年設定
-    moment(date, 'YYYY-MM-DD').format('MM-DD') === '12-30' ||
-    moment(date, 'YYYY-MM-DD').format('MM-DD') === '12-31' ||
-    moment(date, 'YYYY-MM-DD').format('MM-DD') === '01-01' ||
-    moment(date, 'YYYY-MM-DD').format('MM-DD') === '01-02' ||
-    moment(date, 'YYYY-MM-DD').format('MM-DD') === '01-03'
+    moment.tz(date, 'YYYY-MM-DD', 'Asia/Tokyo').format('MM-DD') === '12-30' ||
+    moment.tz(date, 'YYYY-MM-DD', 'Asia/Tokyo').format('MM-DD') === '12-31' ||
+    moment.tz(date, 'YYYY-MM-DD', 'Asia/Tokyo').format('MM-DD') === '01-01' ||
+    moment.tz(date, 'YYYY-MM-DD', 'Asia/Tokyo').format('MM-DD') === '01-02' ||
+    moment.tz(date, 'YYYY-MM-DD', 'Asia/Tokyo').format('MM-DD') === '01-03'
   ) {
     return 'sunday';
   }
 
-  if (holidays.some(o => moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD'))) {
+  if (
+    holidays.some(
+      o =>
+        o === moment.tz(date, 'YYYY-MM-DD', 'Asia/Tokyo').format('YYYY-MM-DD'),
+    )
+  ) {
     return 'sunday';
   }
 
@@ -133,6 +144,40 @@ async function fetchWeekdayOrHoliday(date: string): Promise<string> {
 }
 
 const holidays = [
+  '2016-01-01',
+  '2016-01-11',
+  '2016-02-11',
+  '2016-03-20',
+  '2016-03-21',
+  '2016-04-29',
+  '2016-05-03',
+  '2016-05-04',
+  '2016-05-05',
+  '2016-07-18',
+  '2016-08-11',
+  '2016-09-19',
+  '2016-09-22',
+  '2016-10-10',
+  '2016-11-03',
+  '2016-11-23',
+  '2016-12-23',
+  '2017-01-01',
+  '2017-01-02',
+  '2017-01-09',
+  '2017-02-11',
+  '2017-03-20',
+  '2017-04-29',
+  '2017-05-03',
+  '2017-05-04',
+  '2017-05-05',
+  '2017-07-17',
+  '2017-08-11',
+  '2017-09-18',
+  '2017-09-23',
+  '2017-10-09',
+  '2017-11-03',
+  '2017-11-23',
+  '2017-12-23',
   '2018-01-01',
   '2018-01-08',
   '2018-02-11',
