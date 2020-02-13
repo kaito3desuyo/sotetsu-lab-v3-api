@@ -22,7 +22,11 @@
         {
           "name": "NODE_ENV",
           "value": "production"
-        }
+        },
+		{
+		  "name": "CORS_HEADER_ORIGIN",
+		  "value": "https://v3.sotetsu-lab.com/"
+		}
       ],
       "secrets": [
         {
