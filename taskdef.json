@@ -25,7 +25,7 @@
         },
 		{
 		  "name": "CORS_HEADER_ORIGIN",
-		  "value": "https://v3.sotetsu-lab.com/"
+		  "value": "https://v3.sotetsu-lab.com"
 		}
       ],
       "secrets": [
