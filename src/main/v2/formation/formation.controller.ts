@@ -1,35 +1,37 @@
 import {
-  Crud,
-  CrudController,
-  Override,
-  ParsedRequest,
-  CrudRequest,
+    Crud,
+    CrudController,
+    Override,
+    ParsedRequest,
+    CrudRequest,
 } from '@nestjsx/crud';
 import { Formation } from '../../../main/v1/formation/formation.entity';
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { FormationService } from './formation.service';
+import { AuthGuard } from '../../../shared/guards/auth.guard';
 
 @Crud({
-  model: {
-    type: Formation,
-  },
+    model: {
+        type: Formation,
+    },
 })
 @Controller()
+@UseGuards(AuthGuard)
 export class FormationController {
-  constructor(public service: FormationService) {}
+    constructor(public service: FormationService) {}
 
-  get base(): CrudController<Formation> {
-    return this;
-  }
+    get base(): CrudController<Formation> {
+        return this;
+    }
 
-  @Override()
-  getMany(@ParsedRequest() req: CrudRequest) {
-    // console.log(req);
-    return this.base.getManyBase(req);
-  }
+    @Override()
+    getMany(@ParsedRequest() req: CrudRequest) {
+        // console.log(req);
+        return this.base.getManyBase(req);
+    }
 
-  @Get('hoge')
-  hoge() {
-    return 'hoge';
-  }
+    @Get('hoge')
+    hoge() {
+        return 'hoge';
+    }
 }

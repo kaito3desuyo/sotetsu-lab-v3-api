@@ -34,10 +34,10 @@ export class OperatingSystem {
   @Column('smallint')
   sequence: number;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', precision: 3 })
   created_at: string;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
   updated_at: string;
 
   @ManyToOne(type => Service, service => service.operating_systems)

@@ -50,10 +50,10 @@ export class Calendar {
   @Column('date', { nullable: true })
   end_date: string;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', precision: 3 })
   created_at: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
   updated_at: Date;
 
   @OneToMany(type => Operation, operation => operation.calendar)

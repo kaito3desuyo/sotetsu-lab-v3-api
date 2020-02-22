@@ -6,12 +6,12 @@ import moment from 'moment-timezone';
 moment.tz.setDefault('Asia/Tokyo');
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.enableCors({
-	  origin: process.env.CORS_HEADER_ORIGIN || '*'
-  });
-  app.useGlobalFilters(new ErrorFilter());
-  app.useGlobalFilters(new HttpExceptionFilter());
-  await app.listen(3000);
+    const app = await NestFactory.create(AppModule);
+    app.enableCors({
+        origin: process.env.CORS_HEADER_ORIGIN || '*',
+    });
+    app.useGlobalFilters(new ErrorFilter());
+    app.useGlobalFilters(new HttpExceptionFilter());
+    await app.listen(3000);
 }
 bootstrap();

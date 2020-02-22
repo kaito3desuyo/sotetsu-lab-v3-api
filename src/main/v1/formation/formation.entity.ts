@@ -38,10 +38,10 @@ export class Formation {
   @Column('date', { nullable: true })
   end_date: string;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', precision: 3 })
   created_at: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
   updated_at: Date;
 
   @ManyToOne(type => Agency, agency => agency.formations)

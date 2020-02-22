@@ -73,18 +73,23 @@ const tripClassesSeed: Array<Partial<TripClass>> = [
     sequence: 9,
   },
   {
+    trip_class_name: '試運転',
+    trip_class_color: '#9e9e9e',
+    sequence: 10,
+  },
+  {
     trip_class_name: '通勤快速',
     trip_class_color: '#e81e62',
-    sequence: 10,
+    sequence: 11,
   },
   {
     trip_class_name: '快速',
     trip_class_color: '#0026ca',
-    sequence: 11,
+    sequence: 12,
   },
   {
     trip_class_name: '各駅停車',
     trip_class_color: '#00796b',
-    sequence: 12,
+    sequence: 13,
   },
 ];
