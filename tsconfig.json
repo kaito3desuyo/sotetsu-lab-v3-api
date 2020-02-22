@@ -1,17 +1,18 @@
 {
-  "compilerOptions": {
-    "module": "commonjs",
-    "declaration": true,
-    "removeComments": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "target": "es2017",
-    "sourceMap": true,
-    "outDir": "./dist",
-    "baseUrl": "./",
-    "incremental": true,
-    "resolveJsonModule": true,
-    "esModuleInterop": true
-  },
-  "exclude": ["node_modules", "dist"]
+    "compilerOptions": {
+        "module": "commonjs",
+        "declaration": true,
+        "removeComments": true,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "target": "es2017",
+        "sourceMap": true,
+        "outDir": "./dist",
+        "baseUrl": "./",
+        "incremental": true,
+        "resolveJsonModule": true,
+        "esModuleInterop": true
+    },
+    "files": ["./src/main.ts"],
+    "exclude": ["node_modules", "dist"]
 }
