@@ -13,6 +13,6 @@
         "resolveJsonModule": true,
         "esModuleInterop": true
     },
-    "files": ["./src/main.ts"],
+    "include": ["./src/**/*", "./test/**/*"],
     "exclude": ["node_modules", "dist"]
 }
