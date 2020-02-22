@@ -4,12 +4,12 @@ import { AuthService } from '../services/auth.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private authService: AuthService) {}
-  canActivate(
-    context: ExecutionContext,
-  ): boolean | Promise<boolean> | Observable<boolean> {
-	return true
-	/*
+    constructor(private authService: AuthService) {}
+    canActivate(
+        context: ExecutionContext,
+    ): boolean | Promise<boolean> | Observable<boolean> {
+        return true;
+        /*
     if (process.env.NODE_ENV === 'development') {
       return true;
     }
@@ -25,5 +25,5 @@ export class AuthGuard implements CanActivate {
     );
     return valid;
 	*/
-  }
+    }
 }

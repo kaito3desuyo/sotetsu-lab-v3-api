@@ -51,10 +51,10 @@ export class Trip {
   @Column('uuid', { nullable: true })
   extra_calendar_id: string;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', precision: 3 })
   created_at: string;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
   updated_at: string;
 
   @OneToMany(type => Time, time => time.trip, {
