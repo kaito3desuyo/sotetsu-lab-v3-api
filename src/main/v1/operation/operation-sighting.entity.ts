@@ -26,7 +26,7 @@ export class OperationSighting {
 
   circulated_operation_id?: string;
 
-  @Column({ type: 'timestamptz', precision: 3 })
+  @Column({ type: 'timestamptz' })
   sighting_time: Date;
 
   @CreateDateColumn({ type: 'timestamptz', precision: 3 })

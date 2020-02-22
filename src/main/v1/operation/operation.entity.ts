@@ -26,10 +26,10 @@ export class Operation {
   @Column('varchar')
   operation_number: string;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', precision: 3 })
   created_at: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
   updated_at: Date;
 
   @ManyToOne(type => Calendar, calendar => calendar.operations)
