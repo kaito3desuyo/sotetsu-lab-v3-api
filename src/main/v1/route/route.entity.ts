@@ -48,10 +48,10 @@ export class Route {
   @Column('varchar', { nullable: true })
   route_text_color: string;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', precision: 3 })
   created_at: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
   updated_at: Date;
 
   @ManyToOne(type => Agency, agency => agency.routes)

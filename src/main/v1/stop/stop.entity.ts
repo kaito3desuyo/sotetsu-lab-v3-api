@@ -38,10 +38,10 @@ export class Stop {
   @Column('uuid', { nullable: true })
   zone_id: string;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', precision: 3 })
   created_at: string;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
   updated_at: string;
 
   @OneToMany(type => Time, time => time.stop)
