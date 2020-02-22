@@ -9,13 +9,13 @@ import { OperationService } from '../operation/operation.service';
 import { Operation } from '../operation/operation.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Operation, OperationSighting])],
-  controllers: [OperationSightingController],
-  providers: [
-    OperationService,
-    OperationSightingService,
-    NewOperationSightingService,
-    AuthService,
-  ],
+    imports: [TypeOrmModule.forFeature([Operation, OperationSighting])],
+    controllers: [OperationSightingController],
+    providers: [
+        OperationService,
+        OperationSightingService,
+        NewOperationSightingService,
+        AuthService,
+    ],
 })
 export class OperationSightingModule {}
