@@ -1,12 +1,13 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  OneToMany,
-  JoinColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-  ManyToOne,
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    OneToMany,
+    JoinColumn,
+    CreateDateColumn,
+    UpdateDateColumn,
+    ManyToOne,
+    Index,
 } from 'typeorm';
 import { TripClass } from './trip_class.entity';
 import { Time } from '../time/time.entity';
@@ -15,69 +16,70 @@ import { TripBlock } from './trip_block.entity';
 import { TripOperationList } from '../trip-operation-list/trip_operation_list.entity';
 // tslint:disable: variable-name
 @Entity({
-  name: 'trips',
+    name: 'trips',
 })
+@Index(['calendar_id', 'trip_direction'])
 export class Trip {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
 
-  @Column('uuid')
-  service_id: string;
+    @Column('uuid')
+    service_id: string;
 
-  @Column('varchar')
-  trip_number: string;
+    @Column('varchar')
+    trip_number: string;
 
-  @Column('uuid')
-  trip_class_id: string;
+    @Column('uuid')
+    trip_class_id: string;
 
-  @Column('varchar', { nullable: true })
-  trip_name: string;
+    @Column('varchar', { nullable: true })
+    trip_name: string;
 
-  @Column('smallint')
-  trip_direction: number;
+    @Column('smallint')
+    trip_direction: number;
 
-  @Column('uuid')
-  trip_block_id: string;
+    @Column('uuid')
+    trip_block_id: string;
 
-  @Column('boolean')
-  depot_in: boolean;
+    @Column('boolean')
+    depot_in: boolean;
 
-  @Column('boolean')
-  depot_out: boolean;
+    @Column('boolean')
+    depot_out: boolean;
 
-  @Column('uuid', { nullable: true })
-  calendar_id: string;
+    @Column('uuid', { nullable: true })
+    calendar_id: string;
 
-  @Column('uuid', { nullable: true })
-  extra_calendar_id: string;
+    @Column('uuid', { nullable: true })
+    extra_calendar_id: string;
 
-  @CreateDateColumn({ type: 'timestamptz', precision: 3 })
-  created_at: string;
+    @CreateDateColumn({ type: 'timestamptz', precision: 3 })
+    created_at: string;
 
-  @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
-  updated_at: string;
+    @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
+    updated_at: string;
 
-  @OneToMany(type => Time, time => time.trip, {
-    cascade: true,
-  })
-  readonly times?: Time[];
+    @OneToMany(type => Time, time => time.trip, {
+        cascade: true,
+    })
+    readonly times?: Time[];
 
-  @OneToMany(
-    type => TripOperationList,
-    tripOperationList => tripOperationList.trip,
-    { cascade: true },
-  )
-  readonly trip_operation_lists?: TripOperationList[];
+    @OneToMany(
+        type => TripOperationList,
+        tripOperationList => tripOperationList.trip,
+        { cascade: true },
+    )
+    readonly trip_operation_lists?: TripOperationList[];
 
-  @ManyToOne(type => Service, service => service.trips)
-  @JoinColumn({ name: 'service_id' })
-  readonly service?: Service;
+    @ManyToOne(type => Service, service => service.trips)
+    @JoinColumn({ name: 'service_id' })
+    readonly service?: Service;
 
-  @ManyToOne(type => TripClass, tripClass => tripClass.trips)
-  @JoinColumn({ name: 'trip_class_id' })
-  readonly trip_class?: TripClass;
+    @ManyToOne(type => TripClass, tripClass => tripClass.trips)
+    @JoinColumn({ name: 'trip_class_id' })
+    readonly trip_class?: TripClass;
 
-  @ManyToOne(type => TripBlock, tripBlock => tripBlock.trips)
-  @JoinColumn({ name: 'trip_block_id' })
-  readonly trip_block?: TripBlock;
+    @ManyToOne(type => TripBlock, tripBlock => tripBlock.trips)
+    @JoinColumn({ name: 'trip_block_id' })
+    readonly trip_block?: TripBlock;
 }
