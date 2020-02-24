@@ -6,6 +6,7 @@ import {
     UpdateDateColumn,
     ManyToOne,
     JoinColumn,
+    Index,
 } from 'typeorm';
 import { Operation } from './operation.entity';
 import { Formation } from '../formation/formation.entity';
@@ -14,6 +15,8 @@ import { Formation } from '../formation/formation.entity';
 @Entity({
     name: 'operation_sightings',
 })
+@Index(['formation_id', 'sighting_time'])
+@Index(['operation_id', 'sighting_time'])
 export class OperationSighting {
     @PrimaryGeneratedColumn('uuid')
     id: string;
@@ -26,7 +29,8 @@ export class OperationSighting {
 
     circulated_operation_id?: string;
 
-    @Column({ type: 'timestamptz' })
+    @Column({ type: 'timestamptz', precision: 3 })
+    @Index()
     sighting_time: Date;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
