@@ -1,11 +1,11 @@
 {
     "name": "sotetsu-lab-v3-api",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "description": "",
     "author": "kaito3desuyo",
     "license": "MIT",
     "scripts": {
-		"nest": "node --max_old_space_size=4096 ./node_modules/.bin/nest",
+        "nest": "node --max_old_space_size=4096 ./node_modules/.bin/nest",
         "prebuild": "rimraf dist && npm run copy-secrets",
         "build": "npm run nest -- build",
         "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -20,9 +20,9 @@
         "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
         "test:e2e": "jest --config ./test/jest-e2e.json",
         "copy-secrets": "mkdir dist && cp -rv src/secrets dist/secrets/",
-        "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/.bin/typeorm",
-        "migration:create": "npm run typeorm -- migration:create --config ormconfig.ts --connection  --name ",
-        "migration:generate": "npm run typeorm -- migration:generate --config ormconfig.ts --connection  --name ",
+        "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/.bin/typeorm --config ormconfig.ts",
+        "migration:create": "npm run typeorm -- migration:create",
+        "migration:generate": "npm run typeorm -- migration:generate",
         "migration:run": "npm run typeorm -- migration:run"
     },
     "dependencies": {
