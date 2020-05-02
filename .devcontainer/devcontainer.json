@@ -1,0 +1,19 @@
+{
+    "name": "sotetsu-lab-v3-api",
+    "dockerComposeFile": [
+        "../docker-compose.yml"
+    ],
+    "service": "development-api",
+    "workspaceFolder": "/home/sotetsu-lab-v3-api",
+    "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash"
+    },
+    "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ashinzekene.nestjs",
+        "mhutchie.git-graph",
+        "christian-kohler.path-intellisense"
+    ],
+    "shutdownAction": "stopCompose"
+}

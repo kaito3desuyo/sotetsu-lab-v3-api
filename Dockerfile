@@ -1,5 +1,7 @@
 FROM node:lts as development
 
+RUN npm i -g @nestjs/cli
+
 RUN mkdir -p /home/sotetsu-lab-v3-api && chown node:node /home/sotetsu-lab-v3-api
 
 USER node
