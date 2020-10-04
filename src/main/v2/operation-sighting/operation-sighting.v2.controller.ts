@@ -1,6 +1,6 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { OperationSightingService } from '../../../libs/operation-sighting/application-service/operation-sighting.service';
-import { AuthGuard } from '../../../shared/guards/auth.guard';
+import { AuthGuard } from '../../../core/auth/auth.guard';
 
 @Controller()
 @UseGuards(AuthGuard)

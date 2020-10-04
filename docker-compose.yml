@@ -5,7 +5,7 @@ volumes:
 networks:
     development-network:
 
-services: 
+services:
     development-db:
         build:
             context: ./db
@@ -38,3 +38,4 @@ services:
             - development-network
         environment:
             DATABASE_URL: postgresql://postgres:s0tetsu-L@b-v3@development-db/sotetsu_lab_v3_development
+            COGNITO_USERPOOL_ID: ap-northeast-1_S4qRgsVV8
