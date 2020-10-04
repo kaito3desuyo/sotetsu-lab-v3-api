@@ -13,6 +13,6 @@ export class AuthGuard implements CanActivate {
             req.headers['x-app-client-id'],
         );
 
-        return true;
+        return valid;
     }
 }

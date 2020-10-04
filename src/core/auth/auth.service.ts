@@ -8,9 +8,9 @@ import jwkKeys from './jwks.json';
 export class AuthService {
     checkToken(authHeader: string, clientIdHeader: string) {
         // 本番環境でなければ常にtrueを返す
-        if (process.env.NODE_ENV === 'development') {
-            return true;
-        }
+        // if (process.env.NODE_ENV === 'development') {
+        // return true;
+        // }
 
         if (!authHeader) {
             Logger.error('Authorization header is empty.');
