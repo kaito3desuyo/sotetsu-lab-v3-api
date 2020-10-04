@@ -8,7 +8,7 @@ import {
 import { Formation } from '../../../main/v1/formation/formation.entity';
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { FormationService } from './formation.service';
-import { AuthGuard } from '../../../shared/guards/auth.guard';
+import { AuthGuard } from '../../../core/auth/auth.guard';
 
 @Crud({
     model: {

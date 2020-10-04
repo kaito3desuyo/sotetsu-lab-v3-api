@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
-import { OperationV2Controller } from './operation.v2.controller';
-import { AuthService } from '../../../shared/services/auth.service';
+import { AuthModule } from 'src/core/auth/auth.module';
 import { OperationLibsModule } from '../../../libs/operation/operation.libs.module';
+import { OperationV2Controller } from './operation.v2.controller';
 
 @Module({
-    imports: [OperationLibsModule],
+    imports: [AuthModule, OperationLibsModule],
     controllers: [OperationV2Controller],
-    providers: [AuthService],
 })
 export class OperationV2Module {}

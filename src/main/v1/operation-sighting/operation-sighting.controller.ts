@@ -1,5 +1,5 @@
 import { Controller, UseGuards, Get, Query } from '@nestjs/common';
-import { AuthGuard } from '../../../shared/guards/auth.guard';
+import { AuthGuard } from '../../../core/auth/auth.guard';
 import { NewOperationSightingService } from './operation-sighting.service';
 import {
     uniqBy,
@@ -33,20 +33,22 @@ export class OperationSightingController {
     ) {}
 
     @Get()
-    async getOperationSightings(@Query()
-    query?: {
-        formation_id?: string;
-        operation_id?: string;
-        start_sighting_time?: string;
-        end_sighting_time?: string;
-        page?: number;
-        per?: number;
-        order?: string;
-    }): Promise<any> {
+    async getOperationSightings(
+        @Query()
+        query?: {
+            formation_id?: string;
+            operation_id?: string;
+            start_sighting_time?: string;
+            end_sighting_time?: string;
+            page?: number;
+            per?: number;
+            order?: string;
+        },
+    ): Promise<any> {
         const whereObject: {
             [K in keyof Partial<OperationSighting>]: FindOperator<
                 OperationSighting[K]
-            >
+            >;
         } = {};
 
         if (query.formation_id) {
@@ -71,12 +73,12 @@ export class OperationSightingController {
         }
 
         const orderObject: {
-            [K in keyof Partial<OperationSighting>]: 'ASC' | 'DESC'
+            [K in keyof Partial<OperationSighting>]: 'ASC' | 'DESC';
         } = {};
 
         if (query.order) {
             const order = query.order.split(',');
-            order.forEach(prop => {
+            order.forEach((prop) => {
                 if (prop[0] === '-') {
                     orderObject[prop.slice(1)] = 'DESC';
                 } else {
@@ -111,7 +113,7 @@ export class OperationSightingController {
             all: OperationSighting[],
             path: string,
         ) => {
-            return some(all, data => {
+            return some(all, (data) => {
                 return (
                     get(target, path) === get(data, path) &&
                     (moment(target.sighting_time) <
@@ -200,41 +202,46 @@ export class OperationSightingController {
         const groupByFormation = await this.operationSightingService.getOperationSightingsLatestGroupByFormations();
 
         const merged = [].concat(groupByOperation, groupByFormation);
-        const uniq = uniqBy(merged, data => data.id);
+        const uniq = uniqBy(merged, (data) => data.id);
         const sorted = sortBy(uniq, [
-            data1 => data1.sighting_time,
-            data2 => data2.updated_at,
+            (data1) => data1.sighting_time,
+            (data2) => data2.updated_at,
         ]);
         const reversed = reverse(sorted);
 
-        const operationSightingsCirculated = reversed.map(operationSighting => {
-            const currentOperationNumber = operationSighting.operation
-                ? operationSighting.operation.operation_number
-                : null;
-            const circulatedOperationNumber =
-                currentOperationNumber !== '100' &&
-                currentOperationNumber !== null
-                    ? circulateOperationNumber(
-                          currentOperationNumber,
-                          calcDayDifference(operationSighting.sighting_time),
-                      )
-                    : currentOperationNumber;
+        const operationSightingsCirculated = reversed.map(
+            (operationSighting) => {
+                const currentOperationNumber = operationSighting.operation
+                    ? operationSighting.operation.operation_number
+                    : null;
+                const circulatedOperationNumber =
+                    currentOperationNumber !== '100' &&
+                    currentOperationNumber !== null
+                        ? circulateOperationNumber(
+                              currentOperationNumber,
+                              calcDayDifference(
+                                  operationSighting.sighting_time,
+                              ),
+                          )
+                        : currentOperationNumber;
 
-            const circulatedOperation = circulatedOperationNumber
-                ? find(
-                      todaysOperations,
-                      o => o.operation_number === circulatedOperationNumber,
-                  ) || null
-                : null;
+                const circulatedOperation = circulatedOperationNumber
+                    ? find(
+                          todaysOperations,
+                          (o) =>
+                              o.operation_number === circulatedOperationNumber,
+                      ) || null
+                    : null;
 
-            return {
-                ...operationSighting,
-                circulated_operation_id: circulatedOperation
-                    ? circulatedOperation.id
-                    : null,
-                circulated_operation: circulatedOperation,
-            };
-        });
+                return {
+                    ...operationSighting,
+                    circulated_operation_id: circulatedOperation
+                        ? circulatedOperation.id
+                        : null,
+                    circulated_operation: circulatedOperation,
+                };
+            },
+        );
 
         const operationSightingsFiltered = operationSightingsCirculated.map(
             (target, index, array) => {
@@ -277,7 +284,7 @@ export class OperationSightingController {
         // 編成別
         const formationGroupedAgain = groupBy(
             operationSightingsFiltered,
-            data => data.formation.formation_number,
+            (data) => data.formation.formation_number,
         );
         const formationFlattedAgain: OperationSighting[] = flatMap(
             formationGroupedAgain,
@@ -289,7 +296,7 @@ export class OperationSightingController {
         // 運用別
         const operationGroupedAgain = groupBy(
             operationSightingsFiltered,
-            data =>
+            (data) =>
                 data.circulated_operation
                     ? data.circulated_operation.operation_number
                     : null,

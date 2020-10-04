@@ -13,7 +13,7 @@ import { SelectQueryBuilder, Brackets } from 'typeorm';
 import { QueryBuilderFunctions } from '../../../shared/classes/query-builder-functions';
 import moment from 'moment';
 import { Observable, of } from 'rxjs';
-import { AuthGuard } from './../../../shared/guards/auth.guard';
+import { AuthGuard } from '../../../core/auth/auth.guard';
 
 @Controller()
 @UseGuards(AuthGuard)
@@ -30,7 +30,9 @@ export class CalendarController {
     }
 
     @Get('/search')
-    async searchCalendars(@Query() query: { date: string }): Promise<{
+    async searchCalendars(
+        @Query() query: { date: string },
+    ): Promise<{
         calendars: Calendar[];
     }> {
         const qbFunctions = new QueryBuilderFunctions<Calendar>();
@@ -81,7 +83,7 @@ export class CalendarController {
 
         if (
             holidays.some(
-                o => o === moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD'),
+                (o) => o === moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD'),
             )
         ) {
             return of('sunday');

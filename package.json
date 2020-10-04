@@ -6,7 +6,7 @@
     "license": "MIT",
     "scripts": {
         "nest": "node --max_old_space_size=4096 ./node_modules/.bin/nest",
-        "prebuild": "rimraf dist && npm run copy-secrets",
+        "prebuild": "rimraf dist",
         "build": "npm run nest -- build",
         "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
         "start": "npm run nest -- start",
@@ -20,10 +20,11 @@
         "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
         "test:e2e": "jest --config ./test/jest-e2e.json",
         "copy-secrets": "mkdir dist && cp -rv src/secrets dist/secrets/",
-        "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/.bin/typeorm --config ormconfig.ts",
+        "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/.bin/typeorm --config ./src/core/config/ormconfig.ts",
         "migration:create": "npm run typeorm -- migration:create",
         "migration:generate": "npm run typeorm -- migration:generate",
-        "migration:run": "npm run typeorm -- migration:run"
+        "migration:run": "npm run typeorm -- migration:run",
+        "migration:revert": "npm run typeorm -- migration:revert"
     },
     "dependencies": {
         "@nestjs/common": "^6.11.11",

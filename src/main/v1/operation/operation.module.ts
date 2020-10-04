@@ -1,22 +1,20 @@
 import { Module } from '@nestjs/common';
-import { OperationController } from './operation.controller';
-import { OperationService } from './operation.service';
-import { Operation } from './operation.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { OperationSighting } from './operation-sighting.entity';
-import { OperationSightingService } from './operation-sightings.service';
+import { AuthModule } from 'src/core/auth/auth.module';
 import { Calendar } from '../calendar/calendar.entity';
 import { CalendarService } from '../calendar/calendar.service';
-import { AuthService } from './../../../shared/services/auth.service';
+import { OperationSighting } from './operation-sighting.entity';
+import { OperationSightingService } from './operation-sightings.service';
+import { OperationController } from './operation.controller';
+import { Operation } from './operation.entity';
+import { OperationService } from './operation.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Calendar, Operation, OperationSighting])],
-  controllers: [OperationController],
-  providers: [
-    CalendarService,
-    OperationService,
-    OperationSightingService,
-    AuthService,
-  ],
+    imports: [
+        TypeOrmModule.forFeature([Calendar, Operation, OperationSighting]),
+        AuthModule,
+    ],
+    controllers: [OperationController],
+    providers: [CalendarService, OperationService, OperationSightingService],
 })
 export class OperationModule {}

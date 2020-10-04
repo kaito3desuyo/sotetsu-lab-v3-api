@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from 'src/core/auth/auth.module';
 import { Formation } from '../../../main/v1/formation/formation.entity';
-import { FormationService } from './formation.service';
 import { FormationController } from './formation.controller';
-import { AuthService } from '../../../shared/services/auth.service';
+import { FormationService } from './formation.service';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Formation])],
+    imports: [TypeOrmModule.forFeature([Formation]), AuthModule],
     controllers: [FormationController],
-    providers: [FormationService, AuthService],
+    providers: [FormationService],
 })
 export class FormationV2Module {}

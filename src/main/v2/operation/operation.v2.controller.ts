@@ -5,7 +5,7 @@ import {
     Query,
     UnprocessableEntityException,
 } from '@nestjs/common';
-import { AuthGuard } from 'src/shared/guards/auth.guard';
+import { AuthGuard } from 'src/core/auth/auth.guard';
 import { OperationService } from 'src/libs/operation/application-service/operation.service';
 
 @Controller()

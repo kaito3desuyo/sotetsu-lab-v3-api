@@ -3,11 +3,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Calendar } from './calendar.entity';
 import { CalendarController } from './calendar.controller';
 import { CalendarService } from './calendar.service';
-import { AuthService } from './../../../shared/services/auth.service';
+import { AuthModule } from 'src/core/auth/auth.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Calendar]), HttpModule],
-  controllers: [CalendarController],
-  providers: [CalendarService, AuthService],
+    imports: [TypeOrmModule.forFeature([Calendar]), HttpModule, AuthModule],
+    controllers: [CalendarController],
+    providers: [CalendarService],
 })
 export class CalendarModule {}

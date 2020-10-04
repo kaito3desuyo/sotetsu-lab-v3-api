@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Vehicle } from './vehicle.entity';
+import { AuthModule } from 'src/core/auth/auth.module';
 import { VehicleController } from './vehicle.controller';
+import { Vehicle } from './vehicle.entity';
 import { VehicleService } from './vehicle.service';
-import { AuthService } from './../../../shared/services/auth.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Vehicle])],
-  controllers: [VehicleController],
-  providers: [VehicleService, AuthService],
+    imports: [TypeOrmModule.forFeature([Vehicle]), AuthModule],
+    controllers: [VehicleController],
+    providers: [VehicleService],
 })
 export class VehicleModule {}

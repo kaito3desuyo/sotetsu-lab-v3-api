@@ -12,7 +12,7 @@ import { Service } from './service.entity';
 import { ServiceService } from './service.service';
 import { sortBy, findIndex, some } from 'lodash';
 import { RouteStationList } from '../route-station-list/route-station-list.entity';
-import { AuthGuard } from './../../../shared/guards/auth.guard';
+import { AuthGuard } from '../../../core/auth/auth.guard';
 import { Station } from '../station/station.entity';
 
 @Controller()
