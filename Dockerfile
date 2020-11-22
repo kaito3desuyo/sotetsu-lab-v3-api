@@ -1,4 +1,4 @@
-FROM node:lts as development
+FROM node:14 as development
 
 RUN npm i -g @nestjs/cli
 
