@@ -31,7 +31,7 @@ export class AuthService {
 
         // 公開鍵
         const jwk = find(jwkKeys.keys, (obj) => obj.kid === decoded.header.kid);
-        const pem = jwkToPem(jwk);
+        const pem = jwkToPem(jwk as jwkToPem.JWK);
 
         const verify = jwt.verify(token[1], pem, {
             algorithms: ['RS256'],
