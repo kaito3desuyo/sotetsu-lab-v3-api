@@ -59,8 +59,8 @@ export class OperationSightingController {
         }
         if (query.start_sighting_time && query.end_sighting_time) {
             whereObject.sighting_time = Between(
-                query.start_sighting_time,
-                query.end_sighting_time,
+                new Date(query.start_sighting_time),
+                new Date(query.end_sighting_time),
             );
         } else if (query.start_sighting_time) {
             whereObject.sighting_time = MoreThanOrEqual(
@@ -98,8 +98,8 @@ export class OperationSightingController {
         return {
             operation_sightings: result.items,
             pagination: {
-                total_items: result.totalItems,
-                total_pages: result.pageCount,
+                total_items: result.meta.totalItems,
+                total_pages: result.meta.totalPages,
             },
         };
     }
