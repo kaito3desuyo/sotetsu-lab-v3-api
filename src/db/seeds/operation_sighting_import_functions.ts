@@ -12,7 +12,7 @@ export async function operationSightingsSeedToSaveData(seedData: any[]) {
     });
 
     const data = seedData
-        .filter(row => {
+        .filter((row) => {
             return (
                 row.operation_id &&
                 moment
@@ -22,7 +22,7 @@ export async function operationSightingsSeedToSaveData(seedData: any[]) {
                     moment.tz(row.last_update_timestamp, 'Asia/Tokyo')
             );
         })
-        .map(async row => {
+        .map(async (row) => {
             const weekdayOrHoliday = await fetchWeekdayOrHoliday(
                 moment
                     .tz(row.witness_timestamp, 'Asia/Tokyo')
@@ -40,7 +40,7 @@ export async function operationSightingsSeedToSaveData(seedData: any[]) {
 
             const formation = find(
                 formations,
-                o =>
+                (o) =>
                     o.formation_number === row.vehicle_id &&
                     (o.start_date === null ||
                         moment.tz(o.start_date, 'YYYY-MM-DD', 'Asia/Tokyo') <=
@@ -73,7 +73,7 @@ export async function operationSightingsSeedToSaveData(seedData: any[]) {
 
             const operation = find(
                 operations,
-                o =>
+                (o) =>
                     o.operation_number === row.operation_id &&
                     o.calendar[weekdayOrHoliday] === true &&
                     (o.calendar.start_date === null ||
@@ -126,7 +126,7 @@ export async function operationSightingsSeedToSaveData(seedData: any[]) {
 
     const result = await Promise.all(data);
 
-    return result.filter(o => o.formation_id && o.operation_id);
+    return result.filter((o) => o.formation_id && o.operation_id);
 }
 
 async function fetchWeekdayOrHoliday(date: string): Promise<string> {
@@ -153,7 +153,7 @@ async function fetchWeekdayOrHoliday(date: string): Promise<string> {
 
     if (
         holidays.some(
-            o =>
+            (o) =>
                 o ===
                 moment
                     .tz(date, 'YYYY-MM-DD', 'Asia/Tokyo')
@@ -302,4 +302,22 @@ const holidays = [
     '2020-09-22',
     '2020-11-03',
     '2020-11-23',
+    // 2021
+    '2021-01-01',
+    '2021-01-11',
+    '2021-02-11',
+    '2021-02-23',
+    '2021-03-20',
+    '2021-04-29',
+    '2021-05-03',
+    '2021-05-04',
+    '2021-05-05',
+    '2021-07-22',
+    '2021-07-23',
+    '2021-08-08',
+    '2021-08-09',
+    '2021-09-20',
+    '2021-09-23',
+    '2021-11-03',
+    '2021-11-23',
 ];
