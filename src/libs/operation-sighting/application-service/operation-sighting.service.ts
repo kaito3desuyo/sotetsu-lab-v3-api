@@ -22,7 +22,7 @@ export class OperationSightingService {
             all: OperationSighting[],
             path: string,
         ) => {
-            return some(all, o => {
+            return some(all, (o) => {
                 return (
                     get(target, path) === get(o, path) &&
                     (moment(target.sighting_time) < moment(o.sighting_time) ||
@@ -41,6 +41,12 @@ export class OperationSightingService {
                         added = added + 1;
                         if (String(added).slice(-1) === '6') {
                             added = added - 5;
+                        }
+                        break;
+                    case '2':
+                        added = added + 1;
+                        if (String(added).slice(-1) === '5') {
+                            added = added - 4;
                         }
                         break;
                     case '7':
@@ -112,10 +118,10 @@ export class OperationSightingService {
         ]);
 
         const data = _([...groupByOperation, ...groupByFormation])
-            .uniqBy(o => o.id)
-            .sortBy([o => o.sighting_time, o => o.updated_at])
+            .uniqBy((o) => o.id)
+            .sortBy([(o) => o.sighting_time, (o) => o.updated_at])
             .reverse()
-            .map(o => {
+            .map((o) => {
                 const currentOperationNumber = o.operation
                     ? o.operation.operation_number
                     : null;
@@ -130,7 +136,7 @@ export class OperationSightingService {
                 const circulatedOperation = circulatedOperationNumber
                     ? find(
                           todaysOperations,
-                          so =>
+                          (so) =>
                               so.operation_number === circulatedOperationNumber,
                       ) || null
                     : null;
@@ -178,11 +184,11 @@ export class OperationSightingService {
             groupByFormationResult,
             groupByOperationResult,
         ] = await Promise.all([
-            new Promise(resolve => {
+            new Promise((resolve) => {
                 // 編成別
                 const formationGrouped = groupBy(
                     data,
-                    o => o.formation.formation_number,
+                    (o) => o.formation.formation_number,
                 );
                 const formationFlatted: OperationSighting[] = flatMap(
                     formationGrouped,
@@ -192,9 +198,9 @@ export class OperationSightingService {
                 );
                 resolve(formationFlatted);
             }),
-            new Promise(resolve => {
+            new Promise((resolve) => {
                 // 運用別
-                const operationGrouped = groupBy(data, o =>
+                const operationGrouped = groupBy(data, (o) =>
                     o.circulated_operation
                         ? o.circulated_operation.operation_number
                         : null,
