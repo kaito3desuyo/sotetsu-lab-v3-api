@@ -4,8 +4,8 @@ phases:
     pre_build:
         commands:
             # Docker Hub へのログイン
-            # - echo Logging in to Docker Hub...
-            # - echo $DOCKER_HUB_PASSWORD | docker login -u $DOCKER_HUB_USERNAME --password-stdin
+            - echo Logging in to Docker Hub...
+            - echo $DOCKER_HUB_PASSWORD | docker login -u $DOCKER_HUB_USERNAME --password-stdin
 
             # 環境変数設定
             - AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
