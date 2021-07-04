@@ -1,9 +1,9 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { OperationSightingService } from '../../../libs/operation-sighting/application-service/operation-sighting.service';
-import { AuthGuard } from '../../../core/auth/auth.guard';
 
 @Controller()
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard('jwt'))
 export class OperationSightingV2Controller {
     constructor(private operationSightingService: OperationSightingService) {}
 

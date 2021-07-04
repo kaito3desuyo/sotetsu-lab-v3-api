@@ -1,10 +1,10 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { AgencyService } from './agency.service';
+import { AuthGuard } from '@nestjs/passport';
 import { Agency } from './agency.entity';
-import { AuthGuard } from '../../../core/auth/auth.guard';
+import { AgencyService } from './agency.service';
 
 @Controller()
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard('jwt'))
 export class AgencyController {
     constructor(private agencyService: AgencyService) {}
 

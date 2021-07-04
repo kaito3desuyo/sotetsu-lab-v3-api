@@ -1,21 +1,20 @@
 import {
     Controller,
     Get,
-    Query,
     HttpException,
     HttpStatus,
-    Param,
+    Query,
     UseGuards,
 } from '@nestjs/common';
-import { OperationSightingService } from '../operation/operation-sightings.service';
-import { FormationService } from './formation.service';
-import { Brackets, SelectQueryBuilder, Raw, In, getRepository } from 'typeorm';
+import { AuthGuard } from '@nestjs/passport';
 import moment from 'moment';
+import { Brackets, In, SelectQueryBuilder } from 'typeorm';
+import { OperationSightingService } from '../operation/operation-sightings.service';
 import { Formation } from './formation.entity';
-import { AuthGuard } from '../../../core/auth/auth.guard';
+import { FormationService } from './formation.service';
 
 @Controller()
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard('jwt'))
 export class FormationController {
     constructor(
         private formationService: FormationService,

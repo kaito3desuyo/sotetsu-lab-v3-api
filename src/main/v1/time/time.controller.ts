@@ -1,11 +1,11 @@
-import { Controller, UseGuards, Get, Query } from '@nestjs/common';
-import { AuthGuard } from '../../../core/auth/auth.guard';
-import { TimeService } from './time.service';
-import { SelectQueryBuilder } from 'typeorm/query-builder/SelectQueryBuilder';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { Brackets } from 'typeorm';
+import { SelectQueryBuilder } from 'typeorm/query-builder/SelectQueryBuilder';
+import { TimeService } from './time.service';
 
 @Controller()
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard('jwt'))
 export class TimeController {
     constructor(private timeService: TimeService) {}
 
