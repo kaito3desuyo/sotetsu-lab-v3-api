@@ -1,39 +1,43 @@
 version: 0.2
-### Defines the steps used by AWS CodeBuild
 
 phases:
-  install:
-    runtime-versions:
-      docker: 18
-  pre_build:
-    commands:
-      - echo Build started on `date`
-      - echo Logging in to Amazon ECR...
-      - aws --version
-      - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
-      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - IMAGE_TAG=${COMMIT_HASH:=latest}
-  build:
-    commands:
-      - echo Building the Docker image...
-      - docker build -t $REPOSITORY_URI:latest -t $REPOSITORY_URI:$IMAGE_TAG -f Dockerfile . --target=production
-  post_build:
-    commands:
-      - echo Pushing the Docker images to container registry...
-      - docker push $REPOSITORY_URI:latest
-      - docker push $REPOSITORY_URI:$IMAGE_TAG
-      - echo Writing image definitions file...
-      - printf '{"ImageURI":"%s"}' $REPOSITORY_URI:$IMAGE_TAG > imageDetail.json
-      - echo Build completed on `date`
+    pre_build:
+        commands:
+            # Docker Hub へのログイン
+            - echo Logging in to Docker Hub...
+            - echo $DOCKER_HUB_PASSWORD | docker login -u $DOCKER_HUB_USERNAME --password-stdin
+
+            # 環境変数設定
+            - AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
+            - ECR_URL=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
+
+            # AWS ECR へのログイン
+            - echo Logging in to AWS ECR...
+            - aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin ${ECR_URL}
+    build:
+        commands:
+            - echo Building the Docker image...
+            - docker build -t $REPOSITORY_URL:latest -t $REPOSITORY_URL:$CODEBUILD_RESOLVED_SOURCE_VERSION -f Dockerfile . --target=production
+
+            - echo Pushing the Docker images to container registry...
+            - docker push $REPOSITORY_URL:latest
+            - docker push $REPOSITORY_URL:$CODEBUILD_RESOLVED_SOURCE_VERSION
+
+            - echo Writing image definitions file...
+            - printf '{"ImageURI":"%s"}' $REPOSITORY_URL:$CODEBUILD_RESOLVED_SOURCE_VERSION > imageDetail.json
+
+            - echo Build completed on `date`
+
 artifacts:
-  files:
-    - appspec.yaml
-    - taskdef.json
-  secondary-artifacts:
-    DefinitionArtifact:
-      files:
+    files:
         - appspec.yaml
         - taskdef.json
-    ImageArtifact:
-      files:
         - imageDetail.json
+    secondary-artifacts:
+        DefinitionArtifact:
+            files:
+                - appspec.yaml
+                - taskdef.json
+        ImageArtifact:
+            files:
+                - imageDetail.json
