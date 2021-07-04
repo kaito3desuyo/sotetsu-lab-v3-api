@@ -33,6 +33,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
                 jwksUri: `${cognitoIdpUrl}/.well-known/jwks.json`,
             }),
             issuer: cognitoIdpUrl,
+            algorithms: ['RS256'],
             passReqToCallback: true,
         });
     }
