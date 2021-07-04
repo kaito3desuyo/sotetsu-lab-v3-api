@@ -1,10 +1,10 @@
-import { Controller, Get, Query, UseGuards, Param } from '@nestjs/common';
-import { StationService } from './station.service';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { Station } from './station.entity';
-import { AuthGuard } from '../../../core/auth/auth.guard';
+import { StationService } from './station.service';
 
 @Controller()
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard('jwt'))
 export class StationController {
     constructor(private stationService: StationService) {}
 

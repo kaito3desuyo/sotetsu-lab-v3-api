@@ -1,20 +1,20 @@
 import {
+    Body,
     Controller,
     Get,
-    Query,
-    Patch,
-    Body,
     Param,
+    Patch,
+    Query,
     UseGuards,
 } from '@nestjs/common';
-import { TripOperationListService } from './trip_operation_list.service';
-import { TripOperationList } from './trip_operation_list.entity';
+import { AuthGuard } from '@nestjs/passport';
 import { SelectQueryBuilder } from 'typeorm';
 import { UpdateTripOperationListDto } from './trip_operation_list.dto';
-import { AuthGuard } from '../../../core/auth/auth.guard';
+import { TripOperationList } from './trip_operation_list.entity';
+import { TripOperationListService } from './trip_operation_list.service';
 
 @Controller()
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard('jwt'))
 export class TripOperationListController {
     constructor(private tripOperationListService: TripOperationListService) {}
 

@@ -1,10 +1,10 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { RouteService } from './route.service';
+import { AuthGuard } from '@nestjs/passport';
 import { Route } from './route.entity';
-import { AuthGuard } from '../../../core/auth/auth.guard';
+import { RouteService } from './route.service';
 
 @Controller()
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard('jwt'))
 export class RouteController {
     constructor(private routeService: RouteService) {}
 

@@ -1,31 +1,29 @@
-import { Controller, UseGuards, Get, Query } from '@nestjs/common';
-import { AuthGuard } from '../../../core/auth/auth.guard';
-import { NewOperationSightingService } from './operation-sighting.service';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import {
-    uniqBy,
-    sortBy,
-    reverse,
-    groupBy,
-    map,
-    some,
-    get,
     find,
     flatMap,
-    filter,
+    get,
+    groupBy,
+    reverse,
+    some,
+    sortBy,
+    uniqBy,
 } from 'lodash';
-import { OperationSighting } from '../operation/operation-sighting.entity';
 import moment from 'moment';
-import { OperationService } from '../operation/operation.service';
 import {
-    Equal,
     Between,
-    MoreThanOrEqual,
-    LessThanOrEqual,
+    Equal,
     FindOperator,
+    LessThanOrEqual,
+    MoreThanOrEqual,
 } from 'typeorm';
+import { OperationSighting } from '../operation/operation-sighting.entity';
+import { OperationService } from '../operation/operation.service';
+import { NewOperationSightingService } from './operation-sighting.service';
 
 @Controller()
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard('jwt'))
 export class OperationSightingController {
     constructor(
         private operationService: OperationService,

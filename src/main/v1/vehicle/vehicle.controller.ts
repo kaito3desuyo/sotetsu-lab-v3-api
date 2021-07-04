@@ -1,20 +1,19 @@
 import {
+    Body,
     Controller,
     Get,
-    Query,
-    HttpStatus,
     HttpException,
+    HttpStatus,
     Post,
-    Body,
     UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { SelectQueryBuilder } from 'typeorm';
 import { Vehicle } from './vehicle.entity';
 import { VehicleService } from './vehicle.service';
-import { SelectQueryBuilder } from 'typeorm';
-import { AuthGuard } from '../../../core/auth/auth.guard';
 
 @Controller()
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard('jwt'))
 export class VehicleController {
     constructor(private vehicleService: VehicleService) {}
 

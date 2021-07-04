@@ -1,29 +1,29 @@
 import {
-    Controller,
-    Get,
-    Query,
-    Post,
     Body,
-    Param,
-    Put,
-    Patch,
+    Controller,
     Delete,
+    Get,
+    Param,
+    Patch,
+    Post,
+    Put,
+    Query,
     UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { find, isArray, sortBy } from 'lodash';
+import { DeepPartial, SelectQueryBuilder } from 'typeorm';
+import { TripOperationListService } from '../trip-operation-list/trip_operation_list.service';
+import { Trip } from './trip.entity';
 import { TripService } from './trip.service';
-import { SelectQueryBuilder, DeepPartial } from 'typeorm';
-import { filter, isArray, sortBy, find } from 'lodash';
+import { CreateTripBlockDto } from './trip_block.dto';
+import { TripBlock } from './trip_block.entity';
 import { TripBlockService } from './trip_block.service';
 import { TripClass } from './trip_class.entity';
 import { TripClassService } from './trip_class.service';
-import { TripBlock } from './trip_block.entity';
-import { CreateTripBlockDto } from './trip_block.dto';
-import { Trip } from './trip.entity';
-import { TripOperationListService } from '../trip-operation-list/trip_operation_list.service';
-import { AuthGuard } from '../../../core/auth/auth.guard';
 
 @Controller()
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard('jwt'))
 export class TripController {
     constructor(
         private tripService: TripService,

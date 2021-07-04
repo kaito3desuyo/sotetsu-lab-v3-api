@@ -1,15 +1,15 @@
 import {
     Controller,
     Get,
-    UseGuards,
     Query,
     UnprocessableEntityException,
+    UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from 'src/core/auth/auth.guard';
+import { AuthGuard } from '@nestjs/passport';
 import { OperationService } from 'src/libs/operation/application-service/operation.service';
 
 @Controller()
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard('jwt'))
 export class OperationV2Controller {
     constructor(private readonly operationService: OperationService) {}
 

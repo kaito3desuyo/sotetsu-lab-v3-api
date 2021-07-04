@@ -1,22 +1,20 @@
 import {
     Controller,
     Get,
-    Query,
     HttpException,
     HttpStatus,
-    UseGuards,
-    UnprocessableEntityException,
     Param,
+    Query,
+    UnprocessableEntityException,
+    UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { Station } from '../station/station.entity';
 import { Service } from './service.entity';
 import { ServiceService } from './service.service';
-import { sortBy, findIndex, some } from 'lodash';
-import { RouteStationList } from '../route-station-list/route-station-list.entity';
-import { AuthGuard } from '../../../core/auth/auth.guard';
-import { Station } from '../station/station.entity';
 
 @Controller()
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard('jwt'))
 export class ServiceController {
     constructor(private serviceService: ServiceService) {}
 

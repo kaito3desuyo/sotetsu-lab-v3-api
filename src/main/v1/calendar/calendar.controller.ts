@@ -1,22 +1,21 @@
 import {
     Controller,
     Get,
-    Query,
-    HttpException,
     HttpService,
     Param,
+    Query,
     UseGuards,
 } from '@nestjs/common';
-import { Calendar } from './calendar.entity';
-import { CalendarService } from './calendar.service';
-import { SelectQueryBuilder, Brackets } from 'typeorm';
-import { QueryBuilderFunctions } from '../../../shared/classes/query-builder-functions';
+import { AuthGuard } from '@nestjs/passport';
 import moment from 'moment';
 import { Observable, of } from 'rxjs';
-import { AuthGuard } from '../../../core/auth/auth.guard';
+import { SelectQueryBuilder } from 'typeorm';
+import { QueryBuilderFunctions } from '../../../shared/classes/query-builder-functions';
+import { Calendar } from './calendar.entity';
+import { CalendarService } from './calendar.service';
 
 @Controller()
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard('jwt'))
 export class CalendarController {
     constructor(
         private calendarService: CalendarService,
