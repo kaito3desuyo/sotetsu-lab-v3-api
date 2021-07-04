@@ -1,70 +1,50 @@
 {
-  "executionRoleArn": "arn:aws:iam::442730633672:role/sotetsu-lab-v3-ecs-task-execution",
-  "containerDefinitions": [
-    {
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-group": "/ecs/sotetsu-lab-v3-api",
-          "awslogs-region": "ap-northeast-1",
-          "awslogs-stream-prefix": "ecs"
+    "family": "sotetsu-lab-v3-api",
+    "networkMode": "awsvpc",
+    "executionRoleArn": "arn:aws:iam::442730633672:role/sotetsu-lab-v3-ecs-task-execution",
+    "cpu": "2048",
+    "memory": "300",
+    "requiresCompatibilities": ["EC2"],
+    "containerDefinitions": [
+        {
+            "name": "sotetsu-lab-v3-api",
+            "image": "<IMAGE1_NAME>",
+            "essential": true,
+            "portMappings": [
+                {
+                    "protocol": "tcp",
+                    "hostPort": 3000,
+                    "containerPort": 3000
+                }
+            ],
+            "environment": [
+                {
+                    "name": "NODE_ENV",
+                    "value": "production"
+                },
+                {
+                    "name": "CORS_HEADER_ORIGIN",
+                    "value": "https://v3.sotetsu-lab.com"
+                }
+            ],
+            "secrets": [
+                {
+                    "name": "DATABASE_URL",
+                    "valueFrom": "sotetsu-lab-v3-api-database-url"
+                },
+                {
+                    "name": "COGNITO_USERPOOL_ID",
+                    "valueFrom": "sotetsu-lab-v3-auth-cognito-userpool-id"
+                }
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/sotetsu-lab-v3-api",
+                    "awslogs-region": "ap-northeast-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
         }
-      },
-      "portMappings": [
-        {
-          "hostPort": 0,
-          "protocol": "tcp",
-          "containerPort": 3000
-        }
-      ],
-      "cpu": 0,
-      "environment": [
-        {
-          "name": "NODE_ENV",
-          "value": "production"
-        },
-		{
-		  "name": "CORS_HEADER_ORIGIN",
-		  "value": "https://v3.sotetsu-lab.com"
-		}
-      ],
-      "secrets": [
-        {
-          "name": "DATABASE_URL",
-          "valueFrom": "sotetsu-lab-v3-api-database-url"
-        },
-        {
-          "name": "COGNITO_USERPOOL_ID",
-          "valueFrom": "sotetsu-lab-v3-auth-cognito-userpool-id"
-        }
-      ],
-      "memory": 300,
-      "memoryReservation": null,
-      "image": "<IMAGE1_NAME>",
-      "name": "sotetsu-lab-v3-api"
-    }
-  ],
-  "compatibilities": ["EC2"],
-  "family": "sotetsu-lab-v3-api",
-  "requiresAttributes": [
-    {
-      "targetId": null,
-      "targetType": null,
-      "value": null,
-      "name": "com.amazonaws.ecs.capability.ecr-auth"
-    },
-    {
-      "targetId": null,
-      "targetType": null,
-      "value": null,
-      "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
-    },
-    {
-      "targetId": null,
-      "targetType": null,
-      "value": null,
-      "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
-    }
-  ],
-  "requiresCompatibilities": ["EC2"]
+    ]
 }
