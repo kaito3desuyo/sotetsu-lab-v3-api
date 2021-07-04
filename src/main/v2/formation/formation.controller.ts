@@ -1,14 +1,14 @@
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import {
     Crud,
     CrudController,
+    CrudRequest,
     Override,
     ParsedRequest,
-    CrudRequest,
 } from '@nestjsx/crud';
 import { Formation } from '../../../main/v1/formation/formation.entity';
-import { Controller, Get, UseGuards } from '@nestjs/common';
 import { FormationService } from './formation.service';
-import { AuthGuard } from '../../../core/auth/auth.guard';
 
 @Crud({
     model: {
@@ -16,7 +16,7 @@ import { AuthGuard } from '../../../core/auth/auth.guard';
     },
 })
 @Controller()
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard('jwt'))
 export class FormationController {
     constructor(public service: FormationService) {}
 

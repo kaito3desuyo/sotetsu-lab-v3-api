@@ -1,27 +1,27 @@
 import {
+    Body,
     Controller,
     Get,
-    Param,
-    Query,
     HttpException,
     HttpStatus,
+    Param,
     Post,
-    Body,
+    Query,
     UseGuards,
 } from '@nestjs/common';
-import { Operation } from './operation.entity';
-import { OperationService } from './operation.service';
+import { AuthGuard } from '@nestjs/passport';
+import { find } from 'lodash';
+import moment from 'moment';
+import { In, LessThanOrEqual, Not, SelectQueryBuilder } from 'typeorm';
+import { CalendarService } from '../calendar/calendar.service';
+import { TripOperationList } from '../trip-operation-list/trip_operation_list.entity';
 import { OperationSighting } from './operation-sighting.entity';
 import { OperationSightingService } from './operation-sightings.service';
-import { In, Not, LessThanOrEqual, SelectQueryBuilder } from 'typeorm';
-import { CalendarService } from '../calendar/calendar.service';
-import { AuthGuard } from '../../../core/auth/auth.guard';
-import moment from 'moment';
-import { find } from 'lodash';
-import { TripOperationList } from '../trip-operation-list/trip_operation_list.entity';
+import { Operation } from './operation.entity';
+import { OperationService } from './operation.service';
 
 @Controller()
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard('jwt'))
 export class OperationController {
     constructor(
         private calendarService: CalendarService,
