@@ -1,5 +1,3 @@
-// tslint:disable: variable-name
-
 import { Formation } from 'src/main/v1/formation/formation.entity';
 import { Route } from 'src/main/v1/route/route.entity';
 import {
@@ -19,34 +17,34 @@ export class AgencyModel {
     id: string;
 
     @Column('varchar')
-    agency_number: string;
+    agencyNumber: string;
 
     @Column('varchar', { nullable: true })
-    parent_agency_number: string;
+    parentAgencyNumber: string;
 
     @Column('varchar')
-    agency_official_name: string;
+    agencyOfficialName: string;
 
     @Column('varchar', { nullable: true })
-    agency_name: string;
+    agencyName: string;
 
     @Column('smallint')
-    agency_type: number;
+    agencyType: number;
 
     @Column('varchar', { nullable: true })
-    agency_url: string;
+    agencyUrl: string;
 
     @Column('varchar', { nullable: true })
-    agency_phone: string;
+    agencyPhone: string;
 
     @Column('varchar', { nullable: true })
-    agency_fare_url: string;
+    agencyFareUrl: string;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
-    created_at: Date;
+    createdAt: Date;
 
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
-    updated_at: Date;
+    updatedAt: Date;
 
     @OneToMany(() => Route, (route) => route.agency)
     routes?: Route[];
