@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { Route, RouterModule } from 'nest-router';
+import { AgencyV2Module } from 'src/libs/agency/agency.v2.module';
 import { FormationV2Module } from './formation/formation.module';
 import { OperationSightingV2Module } from './operation-sighting/operation-sighting.v2.module';
 import { OperationV2Module } from './operation/operation.v2.module';
@@ -8,6 +9,10 @@ const routes: Route[] = [
     {
         path: '/v2',
         children: [
+            {
+                path: '/agencies',
+                module: AgencyV2Module,
+            },
             {
                 path: '/formations',
                 module: FormationV2Module,
@@ -27,6 +32,7 @@ const routes: Route[] = [
 @Module({
     imports: [
         RouterModule.forRoutes(routes),
+        AgencyV2Module,
         FormationV2Module,
         OperationV2Module,
         OperationSightingV2Module,

@@ -1,6 +1,6 @@
-import { TypeOrmNamingStrategy } from '../../utils/typeorm-naming-strategy';
 import { join } from 'path';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { TypeOrmNamingStrategy } from './typeorm-naming-strategy';
 
 const ORM_CONFIG: TypeOrmModuleOptions = {
     type: 'postgres',

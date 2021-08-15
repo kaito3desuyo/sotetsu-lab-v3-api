@@ -4,6 +4,7 @@ import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
 import { ErrorFilter } from './shared/filters/error.filter';
 import helmet from 'helmet';
 import moment from 'moment-timezone';
+import { customValidationPipe } from './core/pipe/custom-validation.pipe';
 moment.tz.setDefault('Asia/Tokyo');
 
 async function bootstrap() {
@@ -12,6 +13,7 @@ async function bootstrap() {
     app.enableCors({
         origin: process.env.CORS_HEADER_ORIGIN || '*',
     });
+    app.useGlobalPipes(customValidationPipe());
     app.useGlobalFilters(new ErrorFilter());
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.listen(3000);
