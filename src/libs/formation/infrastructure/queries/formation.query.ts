@@ -22,7 +22,23 @@ export class FormationQuery extends TypeOrmCrudService<FormationModel> {
     ): Promise<
         FormationDetailsDto[] | GetManyDefaultResponse<FormationDetailsDto>
     > {
-        const models = await this.getMany(query);
+        // const models = await this.getMany(query);
+        const qb = await this.createBuilder(query.parsed, query.options, true);
+        const customQb = qb
+            .addOrderBy(
+                'to_number("vehicle_type", \'9999999999999999\')',
+                'ASC',
+            )
+            .addOrderBy(
+                'to_number("formation_number", \'9999999999999999\')',
+                'ASC',
+            );
+
+        const models = await this.doGetMany(
+            customQb,
+            query.parsed,
+            query.options,
+        );
 
         if (isArray(models)) {
             return models.map((o) => buildFormationDetailsDto(o));
