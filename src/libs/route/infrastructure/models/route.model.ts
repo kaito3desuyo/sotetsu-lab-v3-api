@@ -1,15 +1,14 @@
 import { AgencyModel } from 'src/libs/agency/infrastructure/models/agency.model';
-import { Agency } from 'src/main/v1/agency/agency.entity';
 import { OperatingSystem } from 'src/main/v1/operating-system/operating-system.entity';
 import { RouteStationList } from 'src/main/v1/route-station-list/route-station-list.entity';
 import {
-    Entity,
-    PrimaryGeneratedColumn,
     Column,
     CreateDateColumn,
+    Entity,
     JoinColumn,
     ManyToOne,
     OneToMany,
+    PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from 'typeorm';
 
