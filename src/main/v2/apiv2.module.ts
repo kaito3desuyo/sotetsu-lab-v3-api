@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { Route, RouterModule } from 'nest-router';
 import { AgencyV2Module } from 'src/libs/agency/agency.v2.module';
+import { FormationV2Module } from 'src/libs/formation/formation.v2.module';
 import { RouteV2Module } from 'src/libs/route/route.v2.module';
-import { FormationV2Module } from './formation/formation.module';
 import { OperationSightingV2Module } from './operation-sighting/operation-sighting.v2.module';
 import { OperationV2Module } from './operation/operation.v2.module';
 
