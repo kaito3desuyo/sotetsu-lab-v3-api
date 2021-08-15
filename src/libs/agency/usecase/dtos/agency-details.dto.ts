@@ -1,4 +1,5 @@
-import { Exclude, Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
+import { RouteDetailsDto } from 'src/libs/route/usecase/dtos/route-details.dto';
 import { BaseAgencyDto } from './base-agency.dto';
 
 export class AgencyDetailsDto extends BaseAgencyDto {
@@ -34,4 +35,8 @@ export class AgencyDetailsDto extends BaseAgencyDto {
 
     @Expose()
     updatedAt: Date;
+
+    @Expose()
+    @Type(() => RouteDetailsDto)
+    routes: RouteDetailsDto[];
 }
