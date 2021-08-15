@@ -23,6 +23,7 @@ export class FormationQuery extends TypeOrmCrudService<FormationModel> {
         FormationDetailsDto[] | GetManyDefaultResponse<FormationDetailsDto>
     > {
         // const models = await this.getMany(query);
+        // TODO: もうちょっとどうにかしたい
         const qb = await this.createBuilder(query.parsed, query.options, true);
         const customQb = qb
             .addOrderBy(
