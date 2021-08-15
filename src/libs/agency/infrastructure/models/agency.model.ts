@@ -1,3 +1,4 @@
+import { RouteModel } from 'src/libs/route/infrastructure/models/route.model';
 import { Formation } from 'src/main/v1/formation/formation.entity';
 import { Route } from 'src/main/v1/route/route.entity';
 import {
@@ -46,8 +47,8 @@ export class AgencyModel {
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
     updatedAt: Date;
 
-    @OneToMany(() => Route, (route) => route.agency)
-    routes?: Route[];
+    @OneToMany(() => RouteModel, (route) => route.agency)
+    routes?: RouteModel[];
 
     @OneToMany(() => Formation, (formation) => formation.agency)
     formations?: Formation[];

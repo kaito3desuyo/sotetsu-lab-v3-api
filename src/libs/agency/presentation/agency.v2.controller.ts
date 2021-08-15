@@ -29,7 +29,7 @@ import { AgencyDetailsDto } from '../usecase/dtos/agency-details.dto';
     },
 })
 @Controller()
-@UseGuards(AuthGuard('jwt'))
+// @UseGuards(AuthGuard('jwt'))
 // @UseInterceptors(CrudRequestInterceptor)
 export class AgencyV2Controller {
     constructor(private readonly agencyV2Service: AgencyV2Service) {}
