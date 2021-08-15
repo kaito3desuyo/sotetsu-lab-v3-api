@@ -1,16 +1,16 @@
-import { Controller, Get, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Crud, CrudRequest, Override, ParsedRequest } from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
 import { addPaginationHeaders } from 'src/core/util/pagination-header';
+import { AgencyModel } from '../infrastructure/models/agency.model';
 import { AgencyV2Service } from '../usecase/agency.v2.service';
 import { AgencyDetailsDto } from '../usecase/dtos/agency-details.dto';
-import { BaseAgencyDto } from '../usecase/dtos/base-agency.dto';
 
 @Crud({
     model: {
-        type: BaseAgencyDto,
+        type: AgencyModel,
     },
     routes: {
         only: ['getManyBase', 'getOneBase'],
@@ -38,7 +38,7 @@ export class AgencyV2Controller {
     @Get()
     async findMany(
         @ParsedRequest() crudReq: CrudRequest,
-        @Query() query: any,
+        // @Query() query: any,
         @Req() req: Request,
         @Res() res: Response,
     ): Promise<void> {
