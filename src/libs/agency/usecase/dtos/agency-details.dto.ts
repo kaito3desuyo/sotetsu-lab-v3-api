@@ -38,5 +38,5 @@ export class AgencyDetailsDto extends BaseAgencyDto {
 
     @Expose()
     @Type(() => RouteDetailsDto)
-    routes: RouteDetailsDto[];
+    routes?: RouteDetailsDto[];
 }
