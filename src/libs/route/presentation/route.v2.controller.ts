@@ -1,11 +1,11 @@
 import { Controller, Get, Req, Res } from '@nestjs/common';
 import { Crud, CrudRequest, Override, ParsedRequest } from '@nestjsx/crud';
-import { RouteModel } from '../infrastructure/models/route.model';
-import e, { Request, Response } from 'express';
-import { RouteV2Service } from '../usecase/route.v2.service';
-import { get, isArray } from 'lodash';
+import { Request, Response } from 'express';
+import { isArray } from 'lodash';
 import { addPaginationHeaders } from 'src/core/util/pagination-header';
+import { RouteModel } from '../infrastructure/models/route.model';
 import { RouteDetailsDto } from '../usecase/dtos/route-details.dto';
+import { RouteV2Service } from '../usecase/route.v2.service';
 
 @Crud({
     model: {
@@ -23,6 +23,7 @@ import { RouteDetailsDto } from '../usecase/dtos/route-details.dto';
     },
 })
 @Controller()
+// @UseGuards(AuthGuard('jwt'))
 export class RouteV2Controller {
     constructor(private readonly routeV2Service: RouteV2Service) {}
 

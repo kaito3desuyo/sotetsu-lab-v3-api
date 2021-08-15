@@ -44,8 +44,6 @@ export class AgencyV2Controller {
     ): Promise<void> {
         const agencies = await this.agencyV2Service.findMany(crudReq);
 
-        console.log(agencies);
-
         if (isArray(agencies)) {
             res.json(agencies);
         } else {
