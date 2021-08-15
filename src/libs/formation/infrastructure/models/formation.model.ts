@@ -11,6 +11,7 @@ import {
     ManyToOne,
     JoinColumn,
 } from 'typeorm';
+import { VehicleFormationModel } from './vehicle-formation.model';
 
 @Entity({
     name: 'formations',
@@ -48,17 +49,17 @@ export class FormationModel {
     agency?: AgencyModel;
 
     @OneToMany(
-        (type) => OperationSighting,
-        (operationSighting) => operationSighting.formation,
-    )
-    operationSightings?: OperationSighting[];
-
-    @OneToMany(
-        (type) => VehicleFormation,
+        (type) => VehicleFormationModel,
         (vehicleFormation) => vehicleFormation.formation,
         {
             cascade: true,
         },
     )
-    vehicleFormations?: VehicleFormation[];
+    vehicleFormations?: VehicleFormationModel[];
+
+    @OneToMany(
+        (type) => OperationSighting,
+        (operationSighting) => operationSighting.formation,
+    )
+    operationSightings?: OperationSighting[];
 }

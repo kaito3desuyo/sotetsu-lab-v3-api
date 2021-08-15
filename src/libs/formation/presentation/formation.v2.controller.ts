@@ -17,6 +17,7 @@ import { FormationV2Service } from '../usecase/formation.v2.service';
     query: {
         join: {
             agency: {},
+            vehicleFormations: {},
         },
     },
     params: {
