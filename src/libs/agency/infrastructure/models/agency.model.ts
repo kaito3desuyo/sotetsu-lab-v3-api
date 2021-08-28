@@ -1,12 +1,11 @@
 import { RouteModel } from 'src/libs/route/infrastructure/models/route.model';
 import { Formation } from 'src/main/v1/formation/formation.entity';
-import { Route } from 'src/main/v1/route/route.entity';
 import {
-    Entity,
-    PrimaryGeneratedColumn,
-    OneToMany,
     Column,
     CreateDateColumn,
+    Entity,
+    OneToMany,
+    PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from 'typeorm';
 
