@@ -1,9 +1,7 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
-import { ErrorFilter } from './shared/filters/error.filter';
 import helmet from 'helmet';
 import moment from 'moment-timezone';
+import { AppModule } from './app.module';
 import { customValidationPipe } from './core/pipe/custom-validation.pipe';
 moment.tz.setDefault('Asia/Tokyo');
 
@@ -14,8 +12,8 @@ async function bootstrap() {
         origin: process.env.CORS_HEADER_ORIGIN || '*',
     });
     app.useGlobalPipes(customValidationPipe());
-    app.useGlobalFilters(new ErrorFilter());
-    app.useGlobalFilters(new HttpExceptionFilter());
+    // app.useGlobalFilters(new ErrorFilter());
+    // app.useGlobalFilters(new HttpExceptionFilter());
     await app.listen(3000);
 }
 bootstrap();
