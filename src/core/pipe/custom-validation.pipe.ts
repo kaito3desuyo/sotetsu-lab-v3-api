@@ -12,7 +12,8 @@ export const customValidationPipe = (
     new ValidationPipe({
         ...validatorOptions,
         transform: true,
-        exceptionFactory: (errors: ValidationError[]) =>
-            new UnprocessableEntityException(errors),
+        exceptionFactory: (errors: ValidationError[]) => {
+            return new UnprocessableEntityException(errors);
+        },
         ...options,
     });
