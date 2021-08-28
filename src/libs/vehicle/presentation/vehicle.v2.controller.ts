@@ -1,24 +1,23 @@
 import { Controller, Get, Req, Res } from '@nestjs/common';
 import { Crud, CrudRequest, Override, ParsedRequest } from '@nestjsx/crud';
+import { VehicleModel } from '../infrastructure/models/vehicle.model';
 import { Request, Response } from 'express';
+import { VehicleV2Service } from '../usecase/vehicle.v2.service';
 import { isArray } from 'lodash';
 import { addPaginationHeaders } from 'src/core/util/pagination-header';
-import { FormationModel } from '../infrastructure/models/formation.model';
-import { FormationDetailsDto } from '../usecase/dtos/formation-details.dto';
-import { FormationV2Service } from '../usecase/formation.v2.service';
+import { VehicleDetailsDto } from '../usecase/dtos/vehicle-details.dto';
 
 @Crud({
     model: {
-        type: FormationModel,
+        type: VehicleModel,
     },
     routes: {
         only: ['getManyBase', 'getOneBase'],
     },
     query: {
         join: {
-            // ['agency']: {},
             ['vehicleFormations']: {},
-            ['vehicleFormations.vehicle']: {},
+            ['vehicleFormations.formation']: {},
         },
     },
     params: {
@@ -30,25 +29,23 @@ import { FormationV2Service } from '../usecase/formation.v2.service';
     },
 })
 @Controller()
-// @UseGuards(AuthGuard('jwt'))
-export class FormationV2Controller {
-    constructor(private readonly formationV2Service: FormationV2Service) {}
+export class VehicleV2Controller {
+    constructor(private readonly vehicleV2Service: VehicleV2Service) {}
 
     @Override('getManyBase')
     @Get()
     async findMany(
         @ParsedRequest() crudReq: CrudRequest,
-        // @Query() query: any,
         @Req() req: Request,
         @Res() res: Response,
     ): Promise<void> {
-        const formations = await this.formationV2Service.findMany(crudReq);
+        const vehicles = await this.vehicleV2Service.findMany(crudReq);
 
-        if (isArray(formations)) {
-            res.json(formations);
+        if (isArray(vehicles)) {
+            res.json(vehicles);
         } else {
-            addPaginationHeaders(req, res, formations);
-            res.json(formations.data);
+            addPaginationHeaders(req, res, vehicles);
+            res.json(vehicles.data);
         }
     }
 
@@ -56,8 +53,8 @@ export class FormationV2Controller {
     @Get(':id')
     async findOne(
         @ParsedRequest() crudReq: CrudRequest,
-    ): Promise<FormationDetailsDto> {
-        const formation = await this.formationV2Service.findOne(crudReq);
-        return formation;
+    ): Promise<VehicleDetailsDto> {
+        const vehicle = await this.vehicleV2Service.findOne(crudReq);
+        return vehicle;
     }
 }
