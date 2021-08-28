@@ -44,12 +44,12 @@ export class FormationModel {
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
     updatedAt: Date;
 
-    @ManyToOne((type) => AgencyModel, (agency) => agency.formations)
+    @ManyToOne(() => AgencyModel, (agency) => agency.formations)
     @JoinColumn({ name: 'agency_id' })
     agency?: AgencyModel;
 
     @OneToMany(
-        (type) => VehicleFormationModel,
+        () => VehicleFormationModel,
         (vehicleFormation) => vehicleFormation.formation,
         {
             cascade: true,
@@ -58,7 +58,7 @@ export class FormationModel {
     vehicleFormations?: VehicleFormationModel[];
 
     @OneToMany(
-        (type) => OperationSighting,
+        () => OperationSighting,
         (operationSighting) => operationSighting.formation,
     )
     operationSightings?: OperationSighting[];

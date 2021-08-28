@@ -1,3 +1,4 @@
+import { VehicleModel } from 'src/libs/vehicle/infrastructure/models/vehicle.model';
 import { Vehicle } from 'src/main/v1/vehicle/vehicle.entity';
 import {
     Entity,
@@ -33,7 +34,7 @@ export class VehicleFormationModel {
     updatedAt: Date;
 
     @ManyToOne(
-        (type) => FormationModel,
+        () => FormationModel,
         (formation) => formation.vehicleFormations,
         {
             onUpdate: 'CASCADE',
@@ -43,10 +44,10 @@ export class VehicleFormationModel {
     @JoinColumn({ name: 'formation_id' })
     readonly formation?: FormationModel;
 
-    @ManyToOne((type) => Vehicle, (vehicle) => vehicle.vehicle_formations, {
+    @ManyToOne(() => VehicleModel, (vehicle) => vehicle.vehicleFormations, {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
     })
     @JoinColumn({ name: 'vehicle_id' })
-    readonly vehicle?: Vehicle;
+    readonly vehicle?: VehicleModel;
 }
