@@ -6,7 +6,7 @@ import { FormationV2Module } from 'src/libs/formation/formation.v2.module';
 import { RouteV2Module } from 'src/libs/route/route.v2.module';
 import { VehicleV2Module } from 'src/libs/vehicle/vehicle.v2.module';
 import { OperationSightingV2Module } from './operation-sighting/operation-sighting.v2.module';
-import { OperationV2Module } from './operation/operation.v2.module';
+import { OperationV2Module } from '../../libs/operation/operation.v2.module';
 
 const routes: Route[] = [
     {

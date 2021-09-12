@@ -1,15 +1,52 @@
-/* eslint-disable @typescript-eslint/camelcase */
 import { Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Operation } from '../../../../main/v1/operation/operation.entity';
+import { OperationModel } from '../models/operation.model';
+import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
+import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
+import { OperationDetailsDto } from '../../usecase/dtos/operation-details.dto';
+import { isArray } from 'lodash';
+import { buildOperationDetailsDto } from '../builders/operation-dto.builder';
 
 @Injectable()
-export class OperationQuery {
+export class OperationQuery extends TypeOrmCrudService<OperationModel> {
     constructor(
         @InjectRepository(Operation)
         private readonly operationRepo: Repository<Operation>,
-    ) {}
+        @InjectRepository(OperationModel)
+        private readonly operationRepository: Repository<OperationModel>,
+    ) {
+        super(operationRepository);
+    }
+
+    async findManyOperations(
+        query: CrudRequest,
+    ): Promise<
+        OperationDetailsDto[] | GetManyDefaultResponse<OperationDetailsDto>
+    > {
+        const models = await this.getMany(query);
+
+        if (isArray(models)) {
+            return models.map((o) => buildOperationDetailsDto(o));
+        } else {
+            const data = models.data.map((o) => buildOperationDetailsDto(o));
+            return {
+                ...models,
+                data,
+            };
+        }
+    }
+
+    async findOneOperation(query: CrudRequest): Promise<OperationDetailsDto> {
+        const model = await this.getOne(query);
+
+        if (!model) {
+            return null;
+        }
+
+        return buildOperationDetailsDto(model);
+    }
 
     findByCalendarId(calendarId: string) {
         return this.operationRepo.find({
