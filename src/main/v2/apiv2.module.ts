@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { Route, RouterModule } from 'nest-router';
 import { AgencyV2Module } from 'src/libs/agency/agency.v2.module';
+import { CalendarV2Module } from 'src/libs/calendar/calendar.v2.module';
 import { FormationV2Module } from 'src/libs/formation/formation.v2.module';
 import { RouteV2Module } from 'src/libs/route/route.v2.module';
 import { VehicleV2Module } from 'src/libs/vehicle/vehicle.v2.module';
@@ -14,6 +15,10 @@ const routes: Route[] = [
             {
                 path: '/agencies',
                 module: AgencyV2Module,
+            },
+            {
+                path: '/calendars',
+                module: CalendarV2Module,
             },
             {
                 path: '/routes',
@@ -43,6 +48,7 @@ const routes: Route[] = [
     imports: [
         RouterModule.forRoutes(routes),
         AgencyV2Module,
+        CalendarV2Module,
         RouteV2Module,
         FormationV2Module,
         VehicleV2Module,
