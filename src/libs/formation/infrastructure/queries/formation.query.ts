@@ -61,21 +61,31 @@ export class FormationQuery extends TypeOrmCrudService<FormationModel> {
         FormationDetailsDto[] | GetManyDefaultResponse<FormationDetailsDto>
     > {
         const qb = await this.createBuilder(query.parsed, query.options, true);
-        const customQb = qb
-            .where(
-                new Brackets((subqb) => {
-                    return subqb
-                        .where('start_date <= :date', {
-                            date: params.date,
-                        })
-                        .orWhere('start_date IS NULL');
-                }),
-            )
+        const customQb = (query.parsed.filter.length === 0
+            ? qb.where(
+                  new Brackets((subqb) => {
+                      return subqb
+                          .where('start_date <= :startDate', {
+                              startDate: params.date,
+                          })
+                          .orWhere('start_date IS NULL');
+                  }),
+              )
+            : qb.andWhere(
+                  new Brackets((subqb) => {
+                      return subqb
+                          .where('start_date <= :startDate', {
+                              startDate: params.date,
+                          })
+                          .orWhere('start_date IS NULL');
+                  }),
+              )
+        )
             .andWhere(
                 new Brackets((subqb) => {
                     return subqb
-                        .where(':date <= end_date', {
-                            date: params.date,
+                        .where(':endDate <= end_date', {
+                            endDate: params.date,
                         })
                         .orWhere('end_date IS NULL');
                 }),
@@ -113,16 +123,26 @@ export class FormationQuery extends TypeOrmCrudService<FormationModel> {
         FormationDetailsDto[] | GetManyDefaultResponse<FormationDetailsDto>
     > {
         const qb = await this.createBuilder(query.parsed, query.options, true);
-        const customQb = qb
-            .where(
-                new Brackets((subqb) => {
-                    return subqb
-                        .where('start_date <= :startDate', {
-                            startDate: params.endDate,
-                        })
-                        .orWhere('start_date IS NULL');
-                }),
-            )
+        const customQb = (query.parsed.filter.length === 0
+            ? qb.where(
+                  new Brackets((subqb) => {
+                      return subqb
+                          .where('start_date <= :startDate', {
+                              startDate: params.endDate,
+                          })
+                          .orWhere('start_date IS NULL');
+                  }),
+              )
+            : qb.andWhere(
+                  new Brackets((subqb) => {
+                      return subqb
+                          .where('start_date <= :startDate', {
+                              startDate: params.endDate,
+                          })
+                          .orWhere('start_date IS NULL');
+                  }),
+              )
+        )
             .andWhere(
                 new Brackets((subqb) => {
                     return subqb
