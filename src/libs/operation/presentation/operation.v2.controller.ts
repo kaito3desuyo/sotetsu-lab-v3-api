@@ -59,6 +59,15 @@ export class OperationV2Controller {
         }
     }
 
+    @Override('getOneBase')
+    @Get(':id')
+    async findOne(
+        @ParsedRequest() crudReq: CrudRequest,
+    ): Promise<OperationDetailsDto> {
+        const operation = await this.operationV2Service.findOne(crudReq);
+        return operation;
+    }
+
     @Get('/trips')
     getOperationsTrips(@Query('calendar_id') calendarId: string) {
         if (!calendarId) {
