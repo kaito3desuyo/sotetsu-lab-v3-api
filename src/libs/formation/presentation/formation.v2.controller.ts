@@ -4,7 +4,6 @@ import {
     Param,
     Req,
     Res,
-    UnprocessableEntityException,
     UseInterceptors,
 } from '@nestjs/common';
 import {
@@ -16,9 +15,8 @@ import {
 } from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
-import moment from 'moment';
 import { addPaginationHeaders } from 'src/core/util/pagination-header';
-import { FormationModel } from '../infrastructure/models/formation.model';
+import { BaseFormationDto } from '../usecase/dtos/base-formation.dto';
 import { FormationDetailsDto } from '../usecase/dtos/formation-details.dto';
 import { FormationV2Service } from '../usecase/formation.v2.service';
 import { FormationFindManyBySpecificDateParam } from '../usecase/params/formation-find-many-by-specific-date.param';
@@ -26,7 +24,7 @@ import { FormationFindManyBySpecificPeriodParam } from '../usecase/params/format
 
 @Crud({
     model: {
-        type: FormationModel,
+        type: BaseFormationDto,
     },
     routes: {
         only: ['getManyBase', 'getOneBase'],
