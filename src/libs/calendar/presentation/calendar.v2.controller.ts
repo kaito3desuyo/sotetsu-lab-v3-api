@@ -5,6 +5,7 @@ import { Request, Response } from 'express';
 import { CalendarV2Service } from '../usecase/calendar.v2.service';
 import { isArray } from 'lodash';
 import { addPaginationHeaders } from 'src/core/util/pagination-header';
+import { CalendarDetailsDto } from '../usecase/dtos/calendar-details.dto';
 
 @Crud({
     model: {
@@ -43,5 +44,14 @@ export class CalendarV2Controller {
             addPaginationHeaders(req, res, calendars);
             res.json(calendars.data);
         }
+    }
+
+    @Override('getOneBase')
+    @Get(':id')
+    async findOne(
+        @ParsedRequest() crudReq: CrudRequest,
+    ): Promise<CalendarDetailsDto> {
+        const calendar = await this.calendarV2Service.findOne(crudReq);
+        return calendar;
     }
 }
