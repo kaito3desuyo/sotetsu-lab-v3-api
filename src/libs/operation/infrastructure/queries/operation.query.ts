@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
-import { RequestQueryBuilder } from '@nestjsx/crud-request';
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
-import { isArray, merge } from 'lodash';
+import { isArray } from 'lodash';
 import { Repository } from 'typeorm';
 import { Operation } from '../../../../main/v1/operation/operation.entity';
 import { OperationDetailsDto } from '../../usecase/dtos/operation-details.dto';
