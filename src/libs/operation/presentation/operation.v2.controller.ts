@@ -6,25 +6,40 @@ import {
     Res,
     UnprocessableEntityException,
     UseGuards,
+    UseInterceptors,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { Crud, CrudRequest, Override, ParsedRequest } from '@nestjsx/crud';
+import {
+    Crud,
+    CrudRequest,
+    CrudRequestInterceptor,
+    Override,
+    ParsedRequest,
+} from '@nestjsx/crud';
 import { OperationService } from 'src/libs/operation/usecase/operation.service';
 import { OperationDetailsDto } from '../usecase/dtos/operation-details.dto';
 import { Request, Response } from 'express';
 import { OperationV2Service } from '../usecase/operation.v2.service';
 import { isArray } from 'lodash';
 import { addPaginationHeaders } from 'src/core/util/pagination-header';
+import { BaseOperationDto } from '../usecase/dtos/base-operation.dto';
 
 @Crud({
     model: {
-        type: OperationDetailsDto,
+        type: BaseOperationDto,
     },
     routes: {
         only: ['getManyBase', 'getOneBase'],
     },
     query: {
-        join: {},
+        join: {
+            ['calendar']: {},
+            ['tripOperationLists']: {},
+            ['tripOperationLists.trip']: {},
+            ['tripOperationLists.startTime']: {},
+            ['tripOperationLists.endTime']: {},
+            // ['operationSightings']: {},
+        },
     },
     params: {
         id: {
@@ -66,6 +81,20 @@ export class OperationV2Controller {
     ): Promise<OperationDetailsDto> {
         const operation = await this.operationV2Service.findOne(crudReq);
         return operation;
+    }
+
+    @Get(':id/current-position')
+    @UseInterceptors(CrudRequestInterceptor)
+    async findOneWithCurrentPosition(
+        @ParsedRequest() crudReq: CrudRequest,
+        @Req() req: Request,
+        @Res() res: Response,
+    ): Promise<void> {
+        console.log(crudReq);
+        const operation = await this.operationV2Service.findOneWithCurrentPosition(
+            crudReq,
+        );
+        res.json(operation);
     }
 
     @Get('/trips')

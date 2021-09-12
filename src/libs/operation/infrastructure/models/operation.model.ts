@@ -1,4 +1,5 @@
 import { CalendarModel } from 'src/libs/calendar/infrastructure/models/calendar.model';
+import { TripOperationListModel } from 'src/libs/trip/infrastructure/models/trip-operation-list.model';
 import { OperationSighting } from 'src/main/v1/operation/operation-sighting.entity';
 import { TripOperationList } from 'src/main/v1/trip-operation-list/trip_operation_list.entity';
 import {
@@ -38,14 +39,14 @@ export class OperationModel {
     readonly calendar?: CalendarModel;
 
     @OneToMany(
-        () => TripOperationList,
+        () => TripOperationListModel,
         (tripOperationList) => tripOperationList.operation,
     )
-    readonly trip_operation_lists?: TripOperationList[];
+    readonly tripOperationLists?: TripOperationListModel[];
 
     @OneToMany(
         () => OperationSighting,
         (operationSighting) => operationSighting.operation,
     )
-    readonly operation_sightings?: OperationSighting[];
+    readonly operationSightings?: OperationSighting[];
 }

@@ -1,13 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Operation } from '../../../../main/v1/operation/operation.entity';
-import { OperationModel } from '../models/operation.model';
-import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
+import { RequestQueryBuilder } from '@nestjsx/crud-request';
+import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
+import { isArray, merge } from 'lodash';
+import { Repository } from 'typeorm';
+import { Operation } from '../../../../main/v1/operation/operation.entity';
 import { OperationDetailsDto } from '../../usecase/dtos/operation-details.dto';
-import { isArray } from 'lodash';
 import { buildOperationDetailsDto } from '../builders/operation-dto.builder';
+import { OperationModel } from '../models/operation.model';
 
 @Injectable()
 export class OperationQuery extends TypeOrmCrudService<OperationModel> {
