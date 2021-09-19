@@ -1,9 +1,10 @@
 import { Expose, Type } from 'class-transformer';
 import { OperationDetailsDto } from 'src/libs/operation/usecase/dtos/operation-details.dto';
+import { BaseTripOperationListDto } from './base-trip-operation-list.dto';
 import { TimeDetailsDto } from './time-details.dto';
 import { TripDetailsDto } from './trip-details.dto';
 
-export class TripOperationListDetailsDto {
+export class TripOperationListDetailsDto extends BaseTripOperationListDto {
     @Expose()
     id: string;
 
