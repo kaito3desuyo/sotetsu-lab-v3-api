@@ -64,6 +64,14 @@ export class OperationV2Service {
                                     'tripOperationLists.startTime.departureTime',
                                 order: 'ASC',
                             },
+                            {
+                                field: 'tripOperationLists.endTime.arrivalDays',
+                                order: 'ASC',
+                            },
+                            {
+                                field: 'tripOperationLists.endTime.arrivalTime',
+                                order: 'ASC',
+                            },
                         ],
                     },
                 },
@@ -251,6 +259,64 @@ export class OperationV2Service {
         return {
             operation: omit(dto, 'tripOperationLists'),
             position,
+        };
+    }
+
+    async findOneWithTrips(
+        query: CrudRequest,
+    ): Promise<{
+        operation: OperationDetailsDto;
+        trips: TripOperationListDetailsDto[];
+    }> {
+        const dto = await this.operationQuery.findOneOperation(
+            mergeWith(
+                query,
+                {
+                    parsed: {
+                        join: [
+                            {
+                                field: 'tripOperationLists',
+                                select: ['tripId', 'startTimeId', 'endTimeId'],
+                            },
+                            { field: 'tripOperationLists.trip' },
+                            { field: 'tripOperationLists.trip.times' },
+                            { field: 'tripOperationLists.startTime' },
+                            { field: 'tripOperationLists.endTime' },
+                        ],
+                        sort: [
+                            {
+                                field:
+                                    'tripOperationLists.startTime.departureDays',
+                                order: 'ASC',
+                            },
+                            {
+                                field:
+                                    'tripOperationLists.startTime.departureTime',
+                                order: 'ASC',
+                            },
+                            {
+                                field: 'tripOperationLists.endTime.arrivalDays',
+                                order: 'ASC',
+                            },
+                            {
+                                field: 'tripOperationLists.endTime.arrivalTime',
+                                order: 'ASC',
+                            },
+                            {
+                                field:
+                                    'tripOperationLists.trip.times.stopSequence',
+                                order: 'ASC',
+                            },
+                        ],
+                    },
+                },
+                crudReqMergeCustomizer,
+            ),
+        );
+
+        return {
+            operation: omit(dto, 'tripOperationLists'),
+            trips: dto.tripOperationLists,
         };
     }
 }

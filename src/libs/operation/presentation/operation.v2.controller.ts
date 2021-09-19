@@ -37,7 +37,10 @@ import { TripOperationListDetailsDto } from 'src/libs/trip/usecase/dtos/trip-ope
         join: {
             ['calendar']: {},
             ['tripOperationLists']: {},
-            ['tripOperationLists.trip']: {},
+            ['tripOperationLists.trip']: {
+                alias: 'trip',
+            },
+            ['tripOperationLists.trip.times']: {},
             ['tripOperationLists.startTime']: {},
             ['tripOperationLists.startTime.station']: {},
             ['tripOperationLists.endTime']: {},
@@ -105,15 +108,15 @@ export class OperationV2Controller {
         return result;
     }
 
-    @Get('/trips')
-    getOperationsTrips(@Query('calendar_id') calendarId: string) {
-        if (!calendarId) {
-            throw new UnprocessableEntityException(
-                'Please set `calendar_id` query.',
-            );
-        }
-        return this.operationService.findOperationTripsWithStartTimeAndEndTimeByCalendarId(
-            calendarId,
-        );
+    @Get(':id/trips')
+    @UseInterceptors(CrudRequestInterceptor)
+    async findOneWithTrips(
+        @ParsedRequest() crudReq: CrudRequest,
+    ): Promise<{
+        operation: OperationDetailsDto;
+        trips: TripOperationListDetailsDto[];
+    }> {
+        const result = await this.operationV2Service.findOneWithTrips(crudReq);
+        return result;
     }
 }

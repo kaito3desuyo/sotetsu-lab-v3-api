@@ -1,19 +1,16 @@
 // tslint:disable: variable-name
 
 import { OperationModel } from 'src/libs/operation/infrastructure/models/operation.model';
-import { Operation } from 'src/main/v1/operation/operation.entity';
 import { Station } from 'src/main/v1/station/station.entity';
-import { Time } from 'src/main/v1/time/time.entity';
-import { Trip } from 'src/main/v1/trip/trip.entity';
 import {
-    Entity,
-    PrimaryGeneratedColumn,
-    CreateDateColumn,
-    UpdateDateColumn,
     Column,
-    ManyToOne,
-    JoinColumn,
+    CreateDateColumn,
+    Entity,
     Index,
+    JoinColumn,
+    ManyToOne,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn,
 } from 'typeorm';
 import { TimeModel } from './time.model';
 import { TripModel } from './trip.model';

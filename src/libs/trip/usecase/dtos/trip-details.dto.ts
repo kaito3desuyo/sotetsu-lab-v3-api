@@ -1,4 +1,6 @@
 import { Expose, Type } from 'class-transformer';
+import { TimeDetailsDto } from './time-details.dto';
+import { TripOperationListDetailsDto } from './trip-operation-list-details.dto';
 
 export class TripDetailsDto {
     @Expose()
@@ -41,8 +43,10 @@ export class TripDetailsDto {
     updatedAt: Date;
 
     @Expose()
-    times?: any[];
+    @Type(() => TimeDetailsDto)
+    times?: TimeDetailsDto[];
 
     @Expose()
-    tripOperationLists?: any[];
+    @Type(() => TripOperationListDetailsDto)
+    tripOperationLists?: TripOperationListDetailsDto[];
 }
