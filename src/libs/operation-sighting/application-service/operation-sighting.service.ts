@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { OperationSightingQuery } from '../infrastructure/query/operation-sighting.query';
 import _, { find, some, get, groupBy, flatMap } from 'lodash';
 import moment, { Moment } from 'moment';
-import { OperationService } from '../../../libs/operation/application-service/operation.service';
+import { OperationService } from '../../operation/usecase/operation.service';
 import { OperationSighting } from '../../../main/v1/operation/operation-sighting.entity';
 
 @Injectable()

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { OperationQuery } from '../infrastructure/query/operation.query';
+import { OperationQuery } from '../infrastructure/queries/operation.query';
 
 @Injectable()
 export class OperationService {
