@@ -23,6 +23,8 @@ import { OperationV2Service } from '../usecase/operation.v2.service';
 import { isArray } from 'lodash';
 import { addPaginationHeaders } from 'src/core/util/pagination-header';
 import { BaseOperationDto } from '../usecase/dtos/base-operation.dto';
+import { TripDetailsDto } from 'src/libs/trip/usecase/dtos/trip-details.dto';
+import { TripOperationListDetailsDto } from 'src/libs/trip/usecase/dtos/trip-operation-list-details.dto';
 
 @Crud({
     model: {
@@ -37,7 +39,9 @@ import { BaseOperationDto } from '../usecase/dtos/base-operation.dto';
             ['tripOperationLists']: {},
             ['tripOperationLists.trip']: {},
             ['tripOperationLists.startTime']: {},
+            ['tripOperationLists.startTime.station']: {},
             ['tripOperationLists.endTime']: {},
+            ['tripOperationLists.endTime.station']: {},
             // ['operationSightings']: {},
         },
     },
@@ -87,14 +91,18 @@ export class OperationV2Controller {
     @UseInterceptors(CrudRequestInterceptor)
     async findOneWithCurrentPosition(
         @ParsedRequest() crudReq: CrudRequest,
-        @Req() req: Request,
-        @Res() res: Response,
-    ): Promise<void> {
-        console.log(crudReq);
-        const operation = await this.operationV2Service.findOneWithCurrentPosition(
+    ): Promise<{
+        operation: OperationDetailsDto;
+        position: {
+            prev: TripOperationListDetailsDto;
+            current: TripOperationListDetailsDto;
+            next: TripOperationListDetailsDto;
+        };
+    }> {
+        const result = await this.operationV2Service.findOneWithCurrentPosition(
             crudReq,
         );
-        res.json(operation);
+        return result;
     }
 
     @Get('/trips')
