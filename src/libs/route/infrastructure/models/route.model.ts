@@ -1,6 +1,5 @@
 import { AgencyModel } from 'src/libs/agency/infrastructure/models/agency.model';
 import { OperatingSystem } from 'src/main/v1/operating-system/operating-system.entity';
-import { RouteStationList } from 'src/main/v1/route-station-list/route-station-list.entity';
 import {
     Column,
     CreateDateColumn,
@@ -11,6 +10,7 @@ import {
     PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from 'typeorm';
+import { RouteStationListModel } from './route-station-list.model';
 
 @Entity({
     name: 'routes',
@@ -52,15 +52,15 @@ export class RouteModel {
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
     updatedAt: Date;
 
-    @ManyToOne((type) => AgencyModel, (agency) => agency.routes)
+    @ManyToOne(() => AgencyModel, (agency) => agency.routes)
     @JoinColumn({ name: 'agency_id' })
     readonly agency?: AgencyModel;
 
     @OneToMany(
-        (type) => RouteStationList,
+        () => RouteStationListModel,
         (routeStationList) => routeStationList.route,
     )
-    readonly route_station_lists?: RouteStationList[];
+    readonly routeStationLists?: RouteStationListModel[];
 
     @OneToMany(
         (type) => OperatingSystem,
