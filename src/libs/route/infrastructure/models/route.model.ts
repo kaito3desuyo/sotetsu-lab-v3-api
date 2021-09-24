@@ -1,4 +1,5 @@
 import { AgencyModel } from 'src/libs/agency/infrastructure/models/agency.model';
+import { OperatingSystemModel } from 'src/libs/service/infrastructure/models/operating-system.model';
 import { OperatingSystem } from 'src/main/v1/operating-system/operating-system.entity';
 import {
     Column,
@@ -63,8 +64,8 @@ export class RouteModel {
     readonly routeStationLists?: RouteStationListModel[];
 
     @OneToMany(
-        (type) => OperatingSystem,
+        () => OperatingSystemModel,
         (operatingSystem) => operatingSystem.route,
     )
-    readonly operating_systems?: OperatingSystem[];
+    readonly operatingSystems?: OperatingSystemModel[];
 }
