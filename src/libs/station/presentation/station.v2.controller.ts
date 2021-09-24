@@ -3,13 +3,12 @@ import { Crud, CrudRequest, Override, ParsedRequest } from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
 import { addPaginationHeaders } from 'src/core/util/pagination-header';
-import { RouteModel } from '../infrastructure/models/route.model';
-import { RouteDetailsDto } from '../usecase/dtos/route-details.dto';
-import { RouteV2Service } from '../usecase/route.v2.service';
+import { StationDetailsDto } from '../usecase/dtos/station-details.dto';
+import { StationV2Service } from '../usecase/station.v2.service';
 
 @Crud({
     model: {
-        type: RouteModel,
+        type: StationDetailsDto,
     },
     routes: {
         only: ['getManyBase', 'getOneBase'],
@@ -24,8 +23,8 @@ import { RouteV2Service } from '../usecase/route.v2.service';
 })
 @Controller()
 // @UseGuards(AuthGuard('jwt'))
-export class RouteV2Controller {
-    constructor(private readonly routeV2Service: RouteV2Service) {}
+export class StationV2Controller {
+    constructor(private readonly stationV2Service: StationV2Service) {}
 
     @Override('getManyBase')
     @Get()
@@ -34,22 +33,22 @@ export class RouteV2Controller {
         @Req() req: Request,
         @Res() res: Response,
     ): Promise<void> {
-        const routes = await this.routeV2Service.findMany(crudReq);
+        const stations = await this.stationV2Service.findMany(crudReq);
 
-        if (isArray(routes)) {
-            res.json(routes);
+        if (isArray(stations)) {
+            res.json(stations);
         } else {
-            addPaginationHeaders(req, res, routes);
-            res.json(routes.data);
+            addPaginationHeaders(req, res, stations);
+            res.json(stations.data);
         }
     }
 
     @Override('getOneBase')
-    @Get(':id')
+    @Get()
     async findOne(
         @ParsedRequest() crudReq: CrudRequest,
-    ): Promise<RouteDetailsDto> {
-        const route = await this.routeV2Service.findOne(crudReq);
-        return route;
+    ): Promise<StationDetailsDto> {
+        const station = await this.stationV2Service.findOne(crudReq);
+        return station;
     }
 }
