@@ -35,7 +35,7 @@ export class ServiceQuery extends TypeOrmCrudService<ServiceModel> {
         }
     }
 
-    async findOneServices(query: CrudRequest): Promise<ServiceDetailsDto> {
+    async findOneService(query: CrudRequest): Promise<ServiceDetailsDto> {
         const model = await this.getOne(query);
 
         if (!model) {
