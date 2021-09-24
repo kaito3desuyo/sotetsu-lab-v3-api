@@ -7,6 +7,7 @@ import { RouteV2Module } from 'src/libs/route/route.v2.module';
 import { VehicleV2Module } from 'src/libs/vehicle/vehicle.v2.module';
 import { OperationSightingV2Module } from './operation-sighting/operation-sighting.v2.module';
 import { OperationV2Module } from '../../libs/operation/operation.v2.module';
+import { StationV2Module } from 'src/libs/station/station.v2.module';
 
 const routes: Route[] = [
     {
@@ -40,6 +41,10 @@ const routes: Route[] = [
                 path: '/operation-sightings',
                 module: OperationSightingV2Module,
             },
+            {
+                path: '/stations',
+                module: StationV2Module,
+            },
         ],
     },
 ];
@@ -54,6 +59,7 @@ const routes: Route[] = [
         VehicleV2Module,
         OperationV2Module,
         OperationSightingV2Module,
+        StationV2Module,
     ],
 })
 export class ApiV2Module {}
