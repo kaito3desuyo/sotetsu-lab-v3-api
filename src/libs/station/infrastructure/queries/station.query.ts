@@ -35,7 +35,7 @@ export class StationQuery extends TypeOrmCrudService<StationModel> {
         }
     }
 
-    async findOneRoute(query: CrudRequest): Promise<StationDetailsDto> {
+    async findOneStation(query: CrudRequest): Promise<StationDetailsDto> {
         const model = await this.getOne(query);
 
         if (!model) {
