@@ -270,14 +270,10 @@ export class OperationV2Service {
     }> {
         const dto = await this.operationQuery.findOneOperation(
             mergeWith(
-                query,
                 {
                     parsed: {
                         join: [
-                            {
-                                field: 'tripOperationLists',
-                                select: ['tripId', 'startTimeId', 'endTimeId'],
-                            },
+                            { field: 'tripOperationLists' },
                             { field: 'tripOperationLists.trip' },
                             { field: 'tripOperationLists.trip.times' },
                             { field: 'tripOperationLists.startTime' },
@@ -310,6 +306,7 @@ export class OperationV2Service {
                         ],
                     },
                 },
+                query,
                 crudReqMergeCustomizer,
             ),
         );

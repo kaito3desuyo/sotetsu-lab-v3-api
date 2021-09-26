@@ -24,9 +24,44 @@ export class ServiceV2Service {
     }
 
     async findOneWithStations(query: CrudRequest): Promise<any> {
+        console.log(query.parsed.join, {
+            parsed: {
+                join: [
+                    {
+                        field: 'operatingSystems',
+                    },
+                    {
+                        field: 'operatingSystems.route',
+                    },
+                    {
+                        field: 'operatingSystems.route.routeStationLists',
+                    },
+                    {
+                        field:
+                            'operatingSystems.route.routeStationLists.station',
+                    },
+                    {
+                        field: 'operatingSystems.startRouteStationList',
+                    },
+                    {
+                        field: 'operatingSystems.endRouteStationList',
+                    },
+                ],
+                sort: [
+                    {
+                        field: 'operatingSystems.sequence',
+                        order: 'ASC',
+                    },
+                    {
+                        field:
+                            'operatingSystems.route.routeStationLists.stationSequence',
+                        order: 'ASC',
+                    },
+                ],
+            },
+        });
         const dto = await this.serviceQuery.findOneService(
             mergeWith(
-                query,
                 {
                     parsed: {
                         join: [
@@ -64,6 +99,7 @@ export class ServiceV2Service {
                         ],
                     },
                 },
+                query,
                 crudReqMergeCustomizer,
             ),
         );
