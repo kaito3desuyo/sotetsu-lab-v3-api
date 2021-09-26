@@ -1,5 +1,6 @@
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import { BaseRouteDto } from './base-route.dto';
+import { RouteStationListDetailsDto } from './route-station-list-details.dto';
 
 export class RouteDetailsDto extends BaseRouteDto {
     @Expose()
@@ -37,4 +38,8 @@ export class RouteDetailsDto extends BaseRouteDto {
 
     @Expose()
     updatedAt: Date;
+
+    @Expose()
+    @Type(() => RouteStationListDetailsDto)
+    routeStationLists?: RouteStationListDetailsDto[];
 }

@@ -1,5 +1,6 @@
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import { BaseServiceDto } from './base-service.dto';
+import { OperatingSystemDetailsDto } from './operating-system-details.dto';
 
 export class ServiceDetailsDto extends BaseServiceDto {
     @Expose()
@@ -16,4 +17,8 @@ export class ServiceDetailsDto extends BaseServiceDto {
 
     @Expose()
     updatedAt: Date;
+
+    @Expose()
+    @Type(() => OperatingSystemDetailsDto)
+    operatingSystems?: OperatingSystemDetailsDto[];
 }

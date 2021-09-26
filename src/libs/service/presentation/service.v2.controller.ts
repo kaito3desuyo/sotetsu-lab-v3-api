@@ -1,5 +1,11 @@
-import { Controller, Get, Req, Res } from '@nestjs/common';
-import { Crud, CrudRequest, Override, ParsedRequest } from '@nestjsx/crud';
+import { Controller, Get, Req, Res, UseInterceptors } from '@nestjs/common';
+import {
+    Crud,
+    CrudRequest,
+    CrudRequestInterceptor,
+    Override,
+    ParsedRequest,
+} from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
 import { addPaginationHeaders } from 'src/core/util/pagination-header';
@@ -13,6 +19,35 @@ import { ServiceV2Service } from '../usecase/service.v2.service';
     },
     routes: {
         only: ['getManyBase', 'getOneBase'],
+    },
+    query: {
+        join: {
+            ['operatingSystems']: {},
+            ['operatingSystems.route']: {
+                alias: 'route',
+            },
+            ['operatingSystems.route.routeStationLists']: {
+                alias: 'routeStationLists',
+            },
+            ['operatingSystems.route.routeStationLists.station']: {
+                alias: 'routeStationListsStation',
+            },
+            ['operatingSystems.route.routeStationLists.station.routeStationLists']: {
+                alias: 'routeStationListsStationRouteStationLists',
+            },
+            ['operatingSystems.startRouteStationList']: {
+                alias: 'startRouteStationList',
+            },
+            ['operatingSystems.startRouteStationList.station']: {
+                alias: 'startRouteStationListStation',
+            },
+            ['operatingSystems.endRouteStationList']: {
+                alias: 'endRouteStationList',
+            },
+            ['operatingSystems.endRouteStationList.station']: {
+                alias: 'endRouteStationListStation',
+            },
+        },
     },
     params: {
         id: {
@@ -51,5 +86,14 @@ export class ServiceV2Controller {
     ): Promise<ServiceDetailsDto> {
         const service = await this.serviceV2Service.findOne(crudReq);
         return service;
+    }
+
+    @Get(':id/stations')
+    @UseInterceptors(CrudRequestInterceptor)
+    async findOneWithStations(
+        @ParsedRequest() crudReq: CrudRequest,
+    ): Promise<any> {
+        const result = await this.serviceV2Service.findOneWithStations(crudReq);
+        return result;
     }
 }
