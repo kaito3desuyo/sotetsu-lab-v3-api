@@ -4,13 +4,14 @@ import { OperationSightingService } from './application-service/operation-sighti
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { OperationSighting } from '../../main/v1/operation/operation-sighting.entity';
 import { OperationLibsModule } from '../operation/operation.libs.module';
+import { OperationSightingModel } from './infrastructure/models/operation-sighting.model';
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([OperationSighting]),
+        TypeOrmModule.forFeature([OperationSighting, OperationSightingModel]),
         OperationLibsModule,
     ],
-    exports: [OperationSightingService],
+    exports: [OperationSightingService, OperationSightingQuery],
     providers: [OperationSightingService, OperationSightingQuery],
 })
 export class OperationSightingLibsModule {}
