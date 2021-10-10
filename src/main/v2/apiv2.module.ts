@@ -3,12 +3,13 @@ import { Route, RouterModule } from 'nest-router';
 import { AgencyV2Module } from 'src/libs/agency/agency.v2.module';
 import { CalendarV2Module } from 'src/libs/calendar/calendar.v2.module';
 import { FormationV2Module } from 'src/libs/formation/formation.v2.module';
+import { OperationSightingV2Module } from 'src/libs/operation-sighting/operation-sighting.v2.module';
 import { RouteV2Module } from 'src/libs/route/route.v2.module';
-import { VehicleV2Module } from 'src/libs/vehicle/vehicle.v2.module';
-import { OperationSightingV2Module } from './operation-sighting/operation-sighting.v2.module';
-import { OperationV2Module } from '../../libs/operation/operation.v2.module';
-import { StationV2Module } from 'src/libs/station/station.v2.module';
 import { ServiceV2Module } from 'src/libs/service/service.v2.module';
+import { StationV2Module } from 'src/libs/station/station.v2.module';
+import { VehicleV2Module } from 'src/libs/vehicle/vehicle.v2.module';
+// import { OperationSightingV2Module } from './operation-sighting/operation-sighting.v2.module';
+import { OperationV2Module } from '../../libs/operation/operation.v2.module';
 
 const routes: Route[] = [
     {
