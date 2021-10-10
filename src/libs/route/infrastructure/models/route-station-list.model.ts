@@ -1,3 +1,4 @@
+import { OperatingSystemModel } from 'src/libs/service/infrastructure/models/operating-system.model';
 import { StationModel } from 'src/libs/station/infrastructure/models/station.model';
 import { OperatingSystem } from 'src/main/v1/operating-system/operating-system.entity';
 import {
@@ -46,14 +47,14 @@ export class RouteStationListModel {
     station: StationModel;
 
     @OneToMany(
-        (type) => OperatingSystem,
-        (operatingSystem) => operatingSystem.start_route_station_list,
+        () => OperatingSystemModel,
+        (operatingSystem) => operatingSystem.startRouteStationList,
     )
-    start_operating_systems?: OperatingSystem;
+    startOperatingSystems?: OperatingSystemModel;
 
     @OneToMany(
-        (type) => OperatingSystem,
-        (operatingSystem) => operatingSystem.end_route_station_list,
+        () => OperatingSystemModel,
+        (operatingSystem) => operatingSystem.endRouteStationList,
     )
-    end_operating_systems?: OperatingSystem;
+    endOperatingSystems?: OperatingSystemModel;
 }
