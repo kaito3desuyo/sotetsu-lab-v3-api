@@ -39,7 +39,6 @@ export class OperationQuery extends TypeOrmCrudService<OperationModel> {
     }
 
     async findOneOperation(query: CrudRequest): Promise<OperationDetailsDto> {
-        console.log(JSON.stringify(query, null, 2));
         const model = await this.getOne(query);
 
         if (!model) {
