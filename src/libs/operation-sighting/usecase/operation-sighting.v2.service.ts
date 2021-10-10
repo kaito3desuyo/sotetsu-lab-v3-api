@@ -1,16 +1,24 @@
 import { Injectable } from '@nestjs/common';
-import dayjs from 'dayjs';
-import timezone from 'dayjs/plugin/timezone';
-import utc from 'dayjs/plugin/utc';
+import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
 import { OperationSightingQuery } from '../infrastructure/query/operation-sighting.query';
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
-dayjs.tz.setDefault('Asia/Tokyo');
+import { OperationSightingDetailsDto } from './dtos/operation-sighting-details.dto';
 
 @Injectable()
 export class OperationSightingV2Service {
     constructor(
         private readonly operationSightingQuery: OperationSightingQuery,
     ) {}
+
+    findMany(
+        query: CrudRequest,
+    ): Promise<
+        | OperationSightingDetailsDto[]
+        | GetManyDefaultResponse<OperationSightingDetailsDto>
+    > {
+        return this.operationSightingQuery.findManyOperationSightings(query);
+    }
+
+    findOne(query: CrudRequest): Promise<OperationSightingDetailsDto> {
+        return this.operationSightingQuery.findOneOperationSighting(query);
+    }
 }
