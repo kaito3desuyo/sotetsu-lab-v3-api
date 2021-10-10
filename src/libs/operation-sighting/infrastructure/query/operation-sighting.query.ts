@@ -1,14 +1,56 @@
-import { IOperationSightingQuery } from '../../application-service/query/i-operation-sighting.query';
 import { InjectRepository } from '@nestjs/typeorm';
-import { OperationSighting } from '../../../../main/v1/operation/operation-sighting.entity';
-import { Repository } from 'typeorm';
+import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
+import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
+import { isArray } from 'lodash';
 import moment, { Moment } from 'moment';
+import { Repository } from 'typeorm';
+import { OperationSighting } from '../../../../main/v1/operation/operation-sighting.entity';
+import { OperationSightingDetailsDto } from '../../usecase/dtos/operation-sighting-details.dto';
+import { buildOperationSightingDetailsDto } from '../builders/operation-sighting-dto.builder';
+import { OperationSightingModel } from '../models/operation-sighting.model';
 
-export class OperationSightingQuery implements IOperationSightingQuery {
+export class OperationSightingQuery extends TypeOrmCrudService<OperationSightingModel> {
     constructor(
         @InjectRepository(OperationSighting)
         private readonly operationSightingRepo: Repository<OperationSighting>,
-    ) {}
+        @InjectRepository(OperationSightingModel)
+        private readonly operationSightingRepository: Repository<OperationSightingModel>,
+    ) {
+        super(operationSightingRepository);
+    }
+
+    async findManyOperationSightings(
+        query: CrudRequest,
+    ): Promise<
+        | OperationSightingDetailsDto[]
+        | GetManyDefaultResponse<OperationSightingDetailsDto>
+    > {
+        const models = await this.getMany(query);
+
+        if (isArray(models)) {
+            return models.map((o) => buildOperationSightingDetailsDto(o));
+        } else {
+            const data = models.data.map((o) =>
+                buildOperationSightingDetailsDto(o),
+            );
+            return {
+                ...models,
+                data,
+            };
+        }
+    }
+
+    async findOneOperationSighting(
+        query: CrudRequest,
+    ): Promise<OperationSightingDetailsDto> {
+        const model = await this.getOne(query);
+
+        if (!model) {
+            return null;
+        }
+
+        return buildOperationSightingDetailsDto(model);
+    }
 
     async findLatestBySightingTimeGroupByOperation(time?: Moment) {
         const searchTime = time ? time : moment();
@@ -37,7 +79,7 @@ export class OperationSightingQuery implements IOperationSightingQuery {
             .getRawMany();
 
         const latestSightingsDetail = await this.operationSightingRepo.find({
-            where: latestSightings.map(data => {
+            where: latestSightings.map((data) => {
                 return {
                     operation_id: data.operation_id,
                     sighting_time: data.latest_sighting,
@@ -77,7 +119,7 @@ export class OperationSightingQuery implements IOperationSightingQuery {
             .getRawMany();
 
         const latestSightingsDetail = await this.operationSightingRepo.find({
-            where: latestSightings.map(data => {
+            where: latestSightings.map((data) => {
                 return {
                     formation_id: data.formation_id,
                     sighting_time: data.latest_sighting,
