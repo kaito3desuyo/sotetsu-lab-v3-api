@@ -36,7 +36,6 @@ export class OperationV2Service {
     }> {
         const dto = await this.operationQuery.findOneOperation(
             mergeWith(
-                query,
                 {
                     parsed: {
                         join: [
@@ -69,6 +68,7 @@ export class OperationV2Service {
                         ],
                     },
                 },
+                query,
                 crudReqMergeCustomizer,
             ),
         );

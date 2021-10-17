@@ -1,8 +1,22 @@
-import { Controller, Get, Req, Res } from '@nestjs/common';
-import { Crud, CrudRequest, Override, ParsedRequest } from '@nestjsx/crud';
+import {
+    Controller,
+    Get,
+    Query,
+    Req,
+    Res,
+    UseInterceptors,
+} from '@nestjs/common';
+import {
+    Crud,
+    CrudRequest,
+    CrudRequestInterceptor,
+    Override,
+    ParsedRequest,
+} from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
 import { addPaginationHeaders } from 'src/core/util/pagination-header';
+import { OperationSightingService } from '../application-service/operation-sighting.service';
 import { BaseOperationSightingDto } from '../usecase/dtos/base-operation-sighting.dto';
 import { OperationSightingDetailsDto } from '../usecase/dtos/operation-sighting-details.dto';
 import { OperationSightingV2Service } from '../usecase/operation-sighting.v2.service';
@@ -15,7 +29,10 @@ import { OperationSightingV2Service } from '../usecase/operation-sighting.v2.ser
         only: ['getManyBase', 'getOneBase'],
     },
     query: {
-        join: {},
+        join: {
+            operation: {},
+            formation: {},
+        },
     },
     params: {
         id: {
@@ -28,6 +45,7 @@ import { OperationSightingV2Service } from '../usecase/operation-sighting.v2.ser
 @Controller()
 export class OperationSightingV2Controller {
     constructor(
+        private readonly operationSightingService: OperationSightingService,
         private readonly operationSightingV2Service: OperationSightingV2Service,
     ) {}
 
@@ -40,6 +58,51 @@ export class OperationSightingV2Controller {
         @Res() res: Response,
     ): Promise<void> {
         const operationSightings = await this.operationSightingV2Service.findMany(
+            crudReq,
+        );
+
+        if (isArray(operationSightings)) {
+            res.json(operationSightings);
+        } else {
+            addPaginationHeaders(req, res, operationSightings);
+            res.json(operationSightings.data);
+        }
+    }
+
+    @Get('/latest')
+    getLatestOperationSightings(@Query('calendar_id') calendarId: string) {
+        return this.operationSightingService.findLatestBySightingTime(
+            calendarId,
+        );
+    }
+
+    @Get('latest/operation')
+    @UseInterceptors(CrudRequestInterceptor)
+    async findManyLatestGroupByOperation(
+        @ParsedRequest() crudReq: CrudRequest,
+        @Req() req: Request,
+        @Res() res: Response,
+    ): Promise<void> {
+        const operationSightings = await this.operationSightingV2Service.findManyLatestGroupByOperation(
+            crudReq,
+        );
+
+        if (isArray(operationSightings)) {
+            res.json(operationSightings);
+        } else {
+            addPaginationHeaders(req, res, operationSightings);
+            res.json(operationSightings.data);
+        }
+    }
+
+    @Get('latest/formation')
+    @UseInterceptors(CrudRequestInterceptor)
+    async findManyLatestGroupByFormation(
+        @ParsedRequest() crudReq: CrudRequest,
+        @Req() req: Request,
+        @Res() res: Response,
+    ): Promise<void> {
+        const operationSightings = await this.operationSightingV2Service.findManyLatestGroupByFormation(
             crudReq,
         );
 

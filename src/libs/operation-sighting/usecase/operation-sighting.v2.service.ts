@@ -18,6 +18,28 @@ export class OperationSightingV2Service {
         return this.operationSightingQuery.findManyOperationSightings(query);
     }
 
+    findManyLatestGroupByOperation(
+        query: CrudRequest,
+    ): Promise<
+        | OperationSightingDetailsDto[]
+        | GetManyDefaultResponse<OperationSightingDetailsDto>
+    > {
+        return this.operationSightingQuery.findManyLatestOperationSightingsGroupByOperation(
+            query,
+        );
+    }
+
+    findManyLatestGroupByFormation(
+        query: CrudRequest,
+    ): Promise<
+        | OperationSightingDetailsDto[]
+        | GetManyDefaultResponse<OperationSightingDetailsDto>
+    > {
+        return this.operationSightingQuery.findManyLatestOperationSightingsGroupByFormation(
+            query,
+        );
+    }
+
     findOne(query: CrudRequest): Promise<OperationSightingDetailsDto> {
         return this.operationSightingQuery.findOneOperationSighting(query);
     }
