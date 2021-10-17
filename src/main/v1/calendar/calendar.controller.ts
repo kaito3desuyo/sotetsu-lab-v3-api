@@ -39,12 +39,23 @@ export class CalendarController {
         let searchQuery: SelectQueryBuilder<Calendar> = calendarQueryBuilder;
 
         if (query.date) {
-            searchQuery = qbFunctions.searchDate(query.date, searchQuery);
+            if (
+                moment(query.date, 'YYYY-MM-DD').format('YYYY-MM-DD') ===
+                    '2021-10-23' ||
+                moment(query.date, 'YYYY-MM-DD').format('YYYY-MM-DD') ===
+                    '2021-10-24'
+            ) {
+                searchQuery = searchQuery.andWhereInIds([
+                    '27792766-0031-4b89-9c32-23eea267cbbc',
+                ]);
+            } else {
+                searchQuery = qbFunctions.searchDate(query.date, searchQuery);
 
-            const dayOfWeek = await this.fetchWeekdayOrHoliday(
-                query.date,
-            ).toPromise();
-            searchQuery = searchQuery.andWhere(`${dayOfWeek} = true`);
+                const dayOfWeek = await this.fetchWeekdayOrHoliday(
+                    query.date,
+                ).toPromise();
+                searchQuery = searchQuery.andWhere(`${dayOfWeek} = true`);
+            }
         }
 
         const calendars = await searchQuery.getMany();
