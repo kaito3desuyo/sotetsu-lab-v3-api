@@ -2,17 +2,11 @@
 import { Injectable } from '@nestjs/common';
 import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
 import dayjs from 'dayjs';
-import timezone from 'dayjs/plugin/timezone';
-import utc from 'dayjs/plugin/utc';
 import { find, mergeWith, omit } from 'lodash';
 import { crudReqMergeCustomizer } from 'src/core/util/merge-customizer';
 import { TripOperationListDetailsDto } from 'src/libs/trip/usecase/dtos/trip-operation-list-details.dto';
 import { OperationQuery } from '../infrastructure/queries/operation.query';
 import { OperationDetailsDto } from './dtos/operation-details.dto';
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
-dayjs.tz.setDefault('Asia/Tokyo');
 
 @Injectable()
 export class OperationV2Service {
@@ -42,7 +36,6 @@ export class OperationV2Service {
     }> {
         const dto = await this.operationQuery.findOneOperation(
             mergeWith(
-                query,
                 {
                     parsed: {
                         join: [
@@ -75,6 +68,7 @@ export class OperationV2Service {
                         ],
                     },
                 },
+                query,
                 crudReqMergeCustomizer,
             ),
         );
