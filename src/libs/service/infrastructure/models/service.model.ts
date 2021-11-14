@@ -1,3 +1,4 @@
+import { CalendarModel } from 'src/libs/calendar/infrastructure/models/calendar.model';
 import { TripModel } from 'src/libs/trip/infrastructure/models/trip.model';
 import {
     Entity,
@@ -27,6 +28,9 @@ export class ServiceModel {
 
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
     updatedAt: string;
+
+    @OneToMany(() => CalendarModel, (calendar) => calendar.service)
+    readonly calendars?: CalendarModel[];
 
     @OneToMany(
         () => OperatingSystemModel,
