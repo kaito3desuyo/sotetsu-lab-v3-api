@@ -1,4 +1,5 @@
 import { CalendarModel } from 'src/libs/calendar/infrastructure/models/calendar.model';
+import { TripClassModel } from 'src/libs/trip-class/infrastructure/models/trip-class.model';
 import { TripModel } from 'src/libs/trip/infrastructure/models/trip.model';
 import {
     Entity,
@@ -41,6 +42,6 @@ export class ServiceModel {
     @OneToMany(() => TripModel, (trip) => trip.service)
     readonly trips?: TripModel[];
 
-    // @OneToMany(type => TripClass, tripClass => tripClass.service)
-    // readonly trip_classes?: TripClass[];
+    @OneToMany((type) => TripClassModel, (tripClass) => tripClass.service)
+    readonly tripClasses?: TripClassModel[];
 }

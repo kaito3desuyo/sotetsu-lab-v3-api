@@ -1,3 +1,5 @@
+import { ServiceModel } from 'src/libs/service/infrastructure/models/service.model';
+import { TripClassModel } from 'src/libs/trip-class/infrastructure/models/trip-class.model';
 import { Service } from 'src/main/v1/service/service.entity';
 import { TripBlock } from 'src/main/v1/trip/trip_block.entity';
 import { TripClass } from 'src/main/v1/trip/trip_class.entity';
@@ -71,13 +73,13 @@ export class TripModel {
     )
     readonly tripOperationLists?: TripOperationListModel[];
 
-    @ManyToOne(() => Service, (service) => service.trips)
+    @ManyToOne(() => ServiceModel, (service) => service.trips)
     @JoinColumn({ name: 'service_id' })
-    readonly service?: Service;
+    readonly service?: ServiceModel;
 
-    @ManyToOne(() => TripClass, (tripClass) => tripClass.trips)
+    @ManyToOne(() => TripClassModel, (tripClass) => tripClass.trips)
     @JoinColumn({ name: 'trip_class_id' })
-    readonly trip_class?: TripClass;
+    readonly tripClass?: TripClassModel;
 
     @ManyToOne(() => TripBlock, (tripBlock) => tripBlock.trips)
     @JoinColumn({ name: 'trip_block_id' })
