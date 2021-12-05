@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { isArray } from 'lodash';
-import { buildTripClassDetailsDto } from 'src/libs/trip/infrastructure/builders/trip-class-dto-builder';
+import { buildTripClassDetailsDto } from 'src/libs/trip/infrastructure/builders/trip-class-dto.builder';
 import { Repository } from 'typeorm';
 import { TripClassDetailsDto } from '../../usecase/dtos/trip-class-details.dto';
 import { TripClassModel } from '../models/trip-class.model';
