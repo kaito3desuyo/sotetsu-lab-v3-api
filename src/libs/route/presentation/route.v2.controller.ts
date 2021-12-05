@@ -14,6 +14,14 @@ import { RouteV2Service } from '../usecase/route.v2.service';
     routes: {
         only: ['getManyBase', 'getOneBase'],
     },
+    query: {
+        join: {
+            ['routeStationLists']: {},
+            ['routeStationLists.station']: {},
+            ['operatingSystems']: {},
+            ['operatingSystems.service']: {},
+        },
+    },
     params: {
         id: {
             field: 'id',

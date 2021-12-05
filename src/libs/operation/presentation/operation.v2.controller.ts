@@ -38,6 +38,7 @@ import { OperationV2Service } from '../usecase/operation.v2.service';
                 alias: 'trip',
             },
             ['tripOperationLists.trip.times']: {},
+            ['tripOperationLists.trip.tripClass']: {},
             ['tripOperationLists.startTime']: {},
             ['tripOperationLists.startTime.station']: {},
             ['tripOperationLists.endTime']: {},
