@@ -14,7 +14,10 @@ import { TripClassV2Service } from '../usecase/trip-class.v2.service';
         only: ['getManyBase'],
     },
     query: {
-        join: {},
+        join: {
+            ['trips']: {},
+            ['service']: {},
+        },
     },
     params: {
         id: {
