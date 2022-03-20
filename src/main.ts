@@ -1,10 +1,16 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
-import { ErrorFilter } from './shared/filters/error.filter';
+import dayjs from 'dayjs';
+import timezone from 'dayjs/plugin/timezone';
+import utc from 'dayjs/plugin/utc';
 import helmet from 'helmet';
 import moment from 'moment-timezone';
+import { AppModule } from './app.module';
+import { customValidationPipe } from './core/pipe/custom-validation.pipe';
 moment.tz.setDefault('Asia/Tokyo');
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.tz.setDefault('Asia/Tokyo');
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
@@ -12,8 +18,9 @@ async function bootstrap() {
     app.enableCors({
         origin: process.env.CORS_HEADER_ORIGIN || '*',
     });
-    app.useGlobalFilters(new ErrorFilter());
-    app.useGlobalFilters(new HttpExceptionFilter());
+    app.useGlobalPipes(customValidationPipe());
+    // app.useGlobalFilters(new ErrorFilter());
+    // app.useGlobalFilters(new HttpExceptionFilter());
     await app.listen(3000);
 }
 bootstrap();
