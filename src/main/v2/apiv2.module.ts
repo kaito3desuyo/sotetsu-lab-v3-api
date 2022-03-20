@@ -7,6 +7,7 @@ import { OperationSightingV2Module } from 'src/libs/operation-sighting/operation
 import { RouteV2Module } from 'src/libs/route/route.v2.module';
 import { ServiceV2Module } from 'src/libs/service/service.v2.module';
 import { StationV2Module } from 'src/libs/station/station.v2.module';
+import { TripClassV2Module } from 'src/libs/trip-class/trip-class.v2.module';
 import { VehicleV2Module } from 'src/libs/vehicle/vehicle.v2.module';
 // import { OperationSightingV2Module } from './operation-sighting/operation-sighting.v2.module';
 import { OperationV2Module } from '../../libs/operation/operation.v2.module';
@@ -51,6 +52,10 @@ const routes: Route[] = [
                 path: '/stations',
                 module: StationV2Module,
             },
+            {
+                path: '/trip-classes',
+                module: TripClassV2Module,
+            },
         ],
     },
 ];
@@ -67,6 +72,7 @@ const routes: Route[] = [
         OperationV2Module,
         OperationSightingV2Module,
         StationV2Module,
+        TripClassV2Module,
     ],
 })
 export class ApiV2Module {}

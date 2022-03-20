@@ -29,7 +29,9 @@ import { CalendarFindManyBySpecificDateParam } from '../usecase/params/calendar-
         only: ['getManyBase', 'getOneBase'],
     },
     query: {
-        join: {},
+        join: {
+            service: {},
+        },
     },
     params: {
         id: {

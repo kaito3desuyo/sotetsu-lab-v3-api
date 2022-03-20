@@ -1,4 +1,5 @@
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
+import { ServiceDetailsDto } from 'src/libs/service/usecase/dtos/service-details.dto';
 import { BaseCalendarDto } from './base-calendar.dto';
 
 export class CalendarDetailsDto extends BaseCalendarDto {
@@ -43,4 +44,8 @@ export class CalendarDetailsDto extends BaseCalendarDto {
 
     @Expose()
     updatedAt: Date;
+
+    @Expose()
+    @Type(() => ServiceDetailsDto)
+    service?: ServiceDetailsDto;
 }

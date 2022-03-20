@@ -1,3 +1,4 @@
+import { ServiceModel } from 'src/libs/service/infrastructure/models/service.model';
 import { Operation } from 'src/main/v1/operation/operation.entity';
 import {
     Entity,
@@ -6,6 +7,8 @@ import {
     CreateDateColumn,
     UpdateDateColumn,
     OneToMany,
+    ManyToOne,
+    JoinColumn,
 } from 'typeorm';
 
 @Entity({
@@ -56,4 +59,8 @@ export class CalendarModel {
 
     @OneToMany(() => Operation, (operation) => operation.calendar)
     readonly operations?: Operation[];
+
+    @ManyToOne(() => ServiceModel, (service) => service.calendars)
+    @JoinColumn({ name: 'service_id' })
+    readonly service?: ServiceModel;
 }

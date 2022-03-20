@@ -13,6 +13,12 @@ import { StationV2Service } from '../usecase/station.v2.service';
     routes: {
         only: ['getManyBase', 'getOneBase'],
     },
+    query: {
+        join: {
+            ['routeStationLists']: {},
+            ['routeStationLists.route']: {},
+        },
+    },
     params: {
         id: {
             field: 'id',

@@ -1,4 +1,5 @@
 import { Expose, Type } from 'class-transformer';
+import { TripClassDetailsDto } from 'src/libs/trip-class/usecase/dtos/trip-class-details.dto';
 import { TimeDetailsDto } from './time-details.dto';
 import { TripOperationListDetailsDto } from './trip-operation-list-details.dto';
 
@@ -49,4 +50,8 @@ export class TripDetailsDto {
     @Expose()
     @Type(() => TripOperationListDetailsDto)
     tripOperationLists?: TripOperationListDetailsDto[];
+
+    @Expose()
+    @Type(() => TripClassDetailsDto)
+    tripClass?: TripClassDetailsDto;
 }

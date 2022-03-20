@@ -41,6 +41,7 @@ export class OperationV2Service {
                         join: [
                             { field: 'tripOperationLists' },
                             { field: 'tripOperationLists.trip' },
+                            { field: 'tripOperationLists.trip.tripClass' },
                             { field: 'tripOperationLists.startTime' },
                             // { field: 'tripOperationLists.startTime.station' },
                             { field: 'tripOperationLists.endTime' },
@@ -269,7 +270,8 @@ export class OperationV2Service {
                         join: [
                             { field: 'tripOperationLists' },
                             { field: 'tripOperationLists.trip' },
-                            { field: 'tripOperationLists.trip.times' },
+                            // { field: 'tripOperationLists.trip.times' },
+                            { field: 'tripOperationLists.trip.tripClass' },
                             { field: 'tripOperationLists.startTime' },
                             { field: 'tripOperationLists.endTime' },
                         ],
@@ -292,11 +294,11 @@ export class OperationV2Service {
                                 field: 'tripOperationLists.endTime.arrivalTime',
                                 order: 'ASC',
                             },
-                            {
-                                field:
-                                    'tripOperationLists.trip.times.stopSequence',
-                                order: 'ASC',
-                            },
+                            // {
+                            //     field:
+                            //         'tripOperationLists.trip.times.stopSequence',
+                            //     order: 'ASC',
+                            // },
                         ],
                     },
                 },

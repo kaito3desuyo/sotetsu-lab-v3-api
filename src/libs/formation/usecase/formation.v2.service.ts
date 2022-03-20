@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
-import { merge } from 'lodash';
+import { merge, mergeWith } from 'lodash';
+import { crudReqMergeCustomizer } from 'src/core/util/merge-customizer';
 import { FormationQuery } from '../infrastructure/queries/formation.query';
 import { FormationDetailsDto } from './dtos/formation-details.dto';
 import { FormationFindManyBySpecificDateParam } from './params/formation-find-many-by-specific-date.param';
@@ -25,34 +26,38 @@ export class FormationV2Service {
         FormationDetailsDto[] | GetManyDefaultResponse<FormationDetailsDto>
     > {
         return this.formationQuery.findManyFormations(
-            merge(query, {
-                parsed: {
-                    search: {
-                        $and: [
-                            {
-                                $or: [
-                                    {
-                                        startDate: { $lte: params.date },
-                                    },
-                                    {
-                                        startDate: null,
-                                    },
-                                ],
-                            },
-                            {
-                                $or: [
-                                    {
-                                        endDate: { $gte: params.date },
-                                    },
-                                    {
-                                        endDate: null,
-                                    },
-                                ],
-                            },
-                        ],
+            mergeWith(
+                {
+                    parsed: {
+                        search: {
+                            $and: [
+                                {
+                                    $or: [
+                                        {
+                                            startDate: { $lte: params.date },
+                                        },
+                                        {
+                                            startDate: null,
+                                        },
+                                    ],
+                                },
+                                {
+                                    $or: [
+                                        {
+                                            endDate: { $gte: params.date },
+                                        },
+                                        {
+                                            endDate: null,
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
                     },
                 },
-            }),
+                query,
+                crudReqMergeCustomizer,
+            ),
         );
     }
 
@@ -63,34 +68,38 @@ export class FormationV2Service {
         FormationDetailsDto[] | GetManyDefaultResponse<FormationDetailsDto>
     > {
         return this.formationQuery.findManyFormations(
-            merge(query, {
-                parsed: {
-                    search: {
-                        $and: [
-                            {
-                                $or: [
-                                    {
-                                        startDate: { $lte: params.endDate },
-                                    },
-                                    {
-                                        startDate: null,
-                                    },
-                                ],
-                            },
-                            {
-                                $or: [
-                                    {
-                                        endDate: { $gte: params.startDate },
-                                    },
-                                    {
-                                        endDate: null,
-                                    },
-                                ],
-                            },
-                        ],
+            mergeWith(
+                {
+                    parsed: {
+                        search: {
+                            $and: [
+                                {
+                                    $or: [
+                                        {
+                                            startDate: { $lte: params.endDate },
+                                        },
+                                        {
+                                            startDate: null,
+                                        },
+                                    ],
+                                },
+                                {
+                                    $or: [
+                                        {
+                                            endDate: { $gte: params.startDate },
+                                        },
+                                        {
+                                            endDate: null,
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
                     },
                 },
-            }),
+                query,
+                crudReqMergeCustomizer,
+            ),
         );
     }
 

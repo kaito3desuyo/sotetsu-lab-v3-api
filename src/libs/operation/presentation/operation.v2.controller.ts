@@ -1,4 +1,12 @@
-import { Controller, Get, Req, Res, UseInterceptors } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Query,
+    Req,
+    Res,
+    UnprocessableEntityException,
+    UseInterceptors,
+} from '@nestjs/common';
 import {
     Crud,
     CrudRequest,
@@ -30,6 +38,7 @@ import { OperationV2Service } from '../usecase/operation.v2.service';
                 alias: 'trip',
             },
             ['tripOperationLists.trip.times']: {},
+            ['tripOperationLists.trip.tripClass']: {},
             ['tripOperationLists.startTime']: {},
             ['tripOperationLists.startTime.station']: {},
             ['tripOperationLists.endTime']: {},
@@ -68,6 +77,18 @@ export class OperationV2Controller {
             addPaginationHeaders(req, res, operations);
             res.json(operations.data);
         }
+    }
+
+    @Get('/trips')
+    getOperationsTrips(@Query('calendar_id') calendarId: string) {
+        if (!calendarId) {
+            throw new UnprocessableEntityException(
+                'Please set `calendar_id` query.',
+            );
+        }
+        return this.operationService.findOperationTripsWithStartTimeAndEndTimeByCalendarId(
+            calendarId,
+        );
     }
 
     @Override('getOneBase')
