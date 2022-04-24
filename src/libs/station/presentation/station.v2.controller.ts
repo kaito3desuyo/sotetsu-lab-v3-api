@@ -17,6 +17,13 @@ import { StationV2Service } from '../usecase/station.v2.service';
         join: {
             ['routeStationLists']: {},
             ['routeStationLists.route']: {},
+            ['times']: {},
+            ['times.trip']: {
+                alias: 'trip',
+            },
+            ['times.trip.tripClass']: {
+                alias: 'tripClass',
+            },
         },
     },
     params: {
