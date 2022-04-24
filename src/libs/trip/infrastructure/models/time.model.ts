@@ -1,16 +1,15 @@
-import { Station } from 'src/main/v1/station/station.entity';
-import { Stop } from 'src/main/v1/stop/stop.entity';
-import { Trip } from 'src/main/v1/trip/trip.entity';
+import { StationModel } from 'src/libs/station/infrastructure/models/station.model';
+import { StopModel } from 'src/libs/station/infrastructure/models/stop.model';
 import {
-    Entity,
-    PrimaryGeneratedColumn,
     Column,
+    CreateDateColumn,
+    Entity,
+    Index,
     JoinColumn,
     ManyToOne,
-    CreateDateColumn,
-    UpdateDateColumn,
     OneToMany,
-    Index,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn,
 } from 'typeorm';
 import { TripOperationListModel } from './trip-operation-list.model';
 import { TripModel } from './trip.model';
@@ -79,13 +78,13 @@ export class TimeModel {
     @JoinColumn({ name: 'trip_id' })
     readonly trip?: TripModel;
 
-    @ManyToOne(() => Station, (station) => station.times)
+    @ManyToOne(() => StationModel, (station) => station.times)
     @JoinColumn({ name: 'station_id' })
-    readonly station?: Station;
+    readonly station?: StationModel;
 
-    @ManyToOne(() => Stop, (stop) => stop.times)
+    @ManyToOne(() => StopModel, (stop) => stop.times)
     @JoinColumn({ name: 'stop_id' })
-    readonly stop?: Stop;
+    readonly stop?: StopModel;
 
     @OneToMany(
         () => TripOperationListModel,

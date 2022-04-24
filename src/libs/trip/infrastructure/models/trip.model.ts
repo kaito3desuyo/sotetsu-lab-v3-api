@@ -1,8 +1,5 @@
 import { ServiceModel } from 'src/libs/service/infrastructure/models/service.model';
 import { TripClassModel } from 'src/libs/trip-class/infrastructure/models/trip-class.model';
-import { Service } from 'src/main/v1/service/service.entity';
-import { TripBlock } from 'src/main/v1/trip/trip_block.entity';
-import { TripClass } from 'src/main/v1/trip/trip_class.entity';
 import {
     Column,
     CreateDateColumn,
@@ -15,6 +12,7 @@ import {
     UpdateDateColumn,
 } from 'typeorm';
 import { TimeModel } from './time.model';
+import { TripBlockModel } from './trip-block.model';
 import { TripOperationListModel } from './trip-operation-list.model';
 
 @Entity({
@@ -81,7 +79,7 @@ export class TripModel {
     @JoinColumn({ name: 'trip_class_id' })
     readonly tripClass?: TripClassModel;
 
-    @ManyToOne(() => TripBlock, (tripBlock) => tripBlock.trips)
+    @ManyToOne(() => TripBlockModel, (tripBlock) => tripBlock.trips)
     @JoinColumn({ name: 'trip_block_id' })
-    readonly trip_block?: TripBlock;
+    readonly tripBlock?: TripBlockModel;
 }
