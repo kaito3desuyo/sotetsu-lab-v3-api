@@ -19,6 +19,7 @@ import { TripV2Service } from '../usecase/trip.v2.service';
             ['tripBlock.trips']: { alias: 'tripBlockTrips' },
             ['tripBlock.trips.times']: { alias: 'tripBlockTripsTimes' },
             ['times']: {},
+            ['tripOperationLists']: { alias: 'tripOperationLists' },
         },
     },
     params: {
