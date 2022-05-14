@@ -16,7 +16,7 @@ const ORM_CONFIG: TypeOrmModuleOptions = {
         migrationsDir: 'src/db/migrations',
     },
     synchronize: false,
-    logging: true,
+    logging: process.env.NODE_ENV === 'production' ? ['error'] : true,
     namingStrategy: new TypeOrmNamingStrategy(),
 };
 
