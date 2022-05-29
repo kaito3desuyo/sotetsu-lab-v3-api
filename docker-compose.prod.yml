@@ -1,0 +1,12 @@
+version: '3.7'
+
+services:
+    production-api:
+        build:
+            context: ./
+            dockerfile: Dockerfile
+            target: production-hosting
+        ports:
+            - '3000:3000'
+      
+        tty: true

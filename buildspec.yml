@@ -10,6 +10,7 @@ phases:
             # 環境変数設定
             - AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
             - ECR_URL=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
+            - URI=${ECR_URL}/${IMAGE_NAME}
 
             # AWS ECR へのログイン
             - echo Logging in to AWS ECR...
@@ -17,14 +18,13 @@ phases:
     build:
         commands:
             - echo Building the Docker image...
-            - docker build -t $REPOSITORY_URL:latest -t $REPOSITORY_URL:$CODEBUILD_RESOLVED_SOURCE_VERSION -f Dockerfile . --target=production
+            - docker build -t ${URI}:${CODEBUILD_RESOLVED_SOURCE_VERSION} .
 
             - echo Pushing the Docker images to container registry...
-            - docker push $REPOSITORY_URL:latest
-            - docker push $REPOSITORY_URL:$CODEBUILD_RESOLVED_SOURCE_VERSION
+            - docker push ${URI}:${CODEBUILD_RESOLVED_SOURCE_VERSION}
 
             - echo Writing image definitions file...
-            - printf '{"ImageURI":"%s"}' $REPOSITORY_URL:$CODEBUILD_RESOLVED_SOURCE_VERSION > imageDetail.json
+            - printf '{"ImageURI":"%s"}' ${URI}:${CODEBUILD_RESOLVED_SOURCE_VERSION} > imageDetail.json
 
             - echo Build completed on `date`
 
