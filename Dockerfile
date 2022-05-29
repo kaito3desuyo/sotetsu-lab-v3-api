@@ -1,43 +1,44 @@
-FROM node:14 as development
+ARG APP_NAME="sotetsu-lab-v3-api"
 
+FROM node:14-slim as base
+
+################################################################################
+
+FROM base as install-dependencies
+
+ENV TZ="Asia/Tokyo"
+ENV NODE_ENV="development"
 RUN npm i -g @nestjs/cli
-
-RUN mkdir -p /home/sotetsu-lab-v3-api && chown node:node /home/sotetsu-lab-v3-api
-
 USER node
 
-ENV NODE_ENV='development'
+################################################################################
 
-ENV TZ='Asia/Tokyo'
+FROM install-dependencies as development-base
 
-WORKDIR /home/sotetsu-lab-v3-api
+ARG APP_NAME
 
-COPY . /home/sotetsu-lab-v3-api
+WORKDIR /home/node/${APP_NAME}
+COPY --chown=node:node ./package*.json ./
+RUN npm ci
+COPY --chown=node:node . .
 
-RUN npm install
+################################################################################
 
-
-
-FROM development as builder
+FROM development-base as production-build
 
 RUN npm run build
 
+################################################################################
 
+FROM node:14-alpine as production-hosting
 
-FROM node:lts-alpine as production
+ARG APP_NAME
 
-ENV NODE_ENV='production'
-
-ENV TZ='Asia/Tokyo'
-
-WORKDIR /home/sotetsu-lab-v3-api
-
-COPY --from=builder /home/sotetsu-lab-v3-api/package*.json /home/sotetsu-lab-v3-api/
-
-COPY --from=builder /home/sotetsu-lab-v3-api/dist /home/sotetsu-lab-v3-api/dist
-
-RUN npm install
-
+ENV TZ="Asia/Tokyo"
+ENV NODE_ENV="production"
+WORKDIR /home/node/${APP_NAME}
+COPY --from=production-build /home/node/${APP_NAME}/package*.json ./
+COPY --from=production-build /home/node/${APP_NAME}/dist ./dist
+RUN npm ci --production
 EXPOSE 3000
-
 CMD ["npm", "run", "start:prod"]
