@@ -1,10 +1,10 @@
 {
     "family": "sotetsu-lab-v3-api",
-    "networkMode": "bridge",
+    "networkMode": "awsvpc",
     "executionRoleArn": "arn:aws:iam::442730633672:role/sotetsu-lab-v3-ecs-task-execution",
-    "cpu": "2048",
-    "memory": "300",
-    "requiresCompatibilities": ["EC2"],
+    "cpu": "512",
+    "memory": "1024",
+    "requiresCompatibilities": ["FARGATE"],
     "containerDefinitions": [
         {
             "name": "sotetsu-lab-v3-api",
@@ -13,7 +13,7 @@
             "portMappings": [
                 {
                     "protocol": "tcp",
-                    "hostPort": 0,
+                    "hostPort": 3000,
                     "containerPort": 3000
                 }
             ],
