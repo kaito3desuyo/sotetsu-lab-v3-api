@@ -1,6 +1,6 @@
 ARG APP_NAME="sotetsu-lab-v3-api"
 
-FROM node:14-slim as base
+FROM node:14 as base
 
 ################################################################################
 
@@ -17,6 +17,7 @@ FROM install-dependencies as development-base
 
 ARG APP_NAME
 
+RUN mkdir /home/node/${APP_NAME} 
 WORKDIR /home/node/${APP_NAME}
 COPY --chown=node:node ./package*.json ./
 RUN npm ci
@@ -36,9 +37,11 @@ ARG APP_NAME
 
 ENV TZ="Asia/Tokyo"
 ENV NODE_ENV="production"
+USER node
+RUN mkdir /home/node/${APP_NAME} 
 WORKDIR /home/node/${APP_NAME}
-COPY --from=production-build /home/node/${APP_NAME}/package*.json ./
-COPY --from=production-build /home/node/${APP_NAME}/dist ./dist
+COPY --from=production-build --chown=node:node /home/node/${APP_NAME}/package*.json ./
+COPY --from=production-build --chown=node:node /home/node/${APP_NAME}/dist ./dist
 RUN npm ci --production
 EXPOSE 3000
 CMD ["npm", "run", "start:prod"]
