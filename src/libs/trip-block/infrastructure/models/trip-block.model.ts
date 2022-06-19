@@ -5,7 +5,7 @@ import {
     UpdateDateColumn,
     OneToMany,
 } from 'typeorm';
-import { TripModel } from './trip.model';
+import { TripModel } from '../../../trip/infrastructure/models/trip.model';
 
 @Entity({
     name: 'trip_blocks',

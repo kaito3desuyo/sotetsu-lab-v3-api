@@ -1,5 +1,5 @@
 import { Expose, Type } from 'class-transformer';
-import { TripDetailsDto } from './trip-details.dto';
+import { TripDetailsDto } from 'src/libs/trip/usecase/dtos/trip-details.dto';
 
 export class TripBlockDetailsDto {
     @Expose()

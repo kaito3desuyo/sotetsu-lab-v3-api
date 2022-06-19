@@ -7,6 +7,7 @@ import { OperationSightingV2Module } from 'src/libs/operation-sighting/operation
 import { RouteV2Module } from 'src/libs/route/route.v2.module';
 import { ServiceV2Module } from 'src/libs/service/service.v2.module';
 import { StationV2Module } from 'src/libs/station/station.v2.module';
+import { TripBlockV2Module } from 'src/libs/trip-block/trip-block.v2.module';
 import { TripClassV2Module } from 'src/libs/trip-class/trip-class.v2.module';
 import { TripV2Module } from 'src/libs/trip/trip.v2.module';
 import { VehicleV2Module } from 'src/libs/vehicle/vehicle.v2.module';
@@ -61,6 +62,10 @@ const routes: Route[] = [
                 path: '/trip-classes',
                 module: TripClassV2Module,
             },
+            {
+                path: '/trip-blocks',
+                module: TripBlockV2Module,
+            },
         ],
     },
 ];
@@ -79,6 +84,7 @@ const routes: Route[] = [
         StationV2Module,
         TripV2Module,
         TripClassV2Module,
+        TripBlockV2Module,
     ],
 })
 export class ApiV2Module {}
