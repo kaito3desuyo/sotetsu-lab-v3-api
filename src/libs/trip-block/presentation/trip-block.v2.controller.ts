@@ -13,7 +13,23 @@ import { addPaginationHeaders } from 'src/core/util/pagination-header';
     routes: {
         only: ['getManyBase'],
     },
-    query: {},
+    query: {
+        join: {
+            ['trips']: {},
+            ['trips.times']: {
+                alias: 'times',
+            },
+            ['trips.tripOperationLists']: {
+                alias: 'tripOperationLists',
+            },
+            ['trips.tripOperationLists.operation']: {
+                alias: 'operation',
+            },
+            ['trips.tripClass']: {
+                alias: 'tripClass',
+            },
+        },
+    },
     params: {
         id: {
             field: 'id',
