@@ -4,7 +4,7 @@
         "../docker-compose.yml"
     ],
     "service": "development-api",
-    "workspaceFolder": "/home/sotetsu-lab-v3-api",
+    "workspaceFolder": "/home/node/sotetsu-lab-v3-api",
     "settings": {
         "terminal.integrated.shell.linux": "/bin/bash"
     },
@@ -13,7 +13,8 @@
         "esbenp.prettier-vscode",
         "ashinzekene.nestjs",
         "mhutchie.git-graph",
-        "christian-kohler.path-intellisense"
+        "christian-kohler.path-intellisense",
+        "vivaxy.vscode-conventional-commits"
     ],
     "shutdownAction": "stopCompose"
 }

@@ -12,7 +12,7 @@ import {
     UpdateDateColumn,
 } from 'typeorm';
 import { TimeModel } from './time.model';
-import { TripBlockModel } from './trip-block.model';
+import { TripBlockModel } from '../../../trip-block/infrastructure/models/trip-block.model';
 import { TripOperationListModel } from './trip-operation-list.model';
 
 @Entity({

@@ -24,7 +24,7 @@ services:
     development-api:
         build:
             context: .
-            target: development
+            target: development-base
         ports:
             - '3000:3000'
         depends_on:
@@ -32,8 +32,8 @@ services:
         tty: true
         command: sh -c "npm run start:dev"
         volumes:
-            - .:/home/sotetsu-lab-v3-api
-            - /home/sotetsu-lab-v3-api/node_modules
+            - .:/home/node/sotetsu-lab-v3-api
+            - /home/node/sotetsu-lab-v3-api/node_modules
         networks:
             - development-network
         environment:

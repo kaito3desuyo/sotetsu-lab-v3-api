@@ -1,7 +1,7 @@
 import { Expose, Type } from 'class-transformer';
+import { TripBlockDetailsDto } from 'src/libs/trip-block/usecase/dtos/trip-block-details.dto';
 import { TripClassDetailsDto } from 'src/libs/trip-class/usecase/dtos/trip-class-details.dto';
 import { TimeDetailsDto } from './time-details.dto';
-import { TripBlockDetailsDto } from './trip-block-details.dto';
 import { TripOperationListDetailsDto } from './trip-operation-list-details.dto';
 
 export class TripDetailsDto {
