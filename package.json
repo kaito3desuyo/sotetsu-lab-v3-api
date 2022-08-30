@@ -46,7 +46,7 @@
         "jwks-rsa": "^2.0.3",
         "lodash": "^4.17.21",
         "moment": "^2.29.1",
-        "moment-timezone": "^0.5.32",
+        "moment-timezone": "^0.5.35",
         "nest-router": "^1.0.9",
         "nestjs-typeorm-paginate": "^2.2.3",
         "passport": "^0.4.1",
