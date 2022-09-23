@@ -35,6 +35,9 @@ import { ServiceV2Service } from '../usecase/service.v2.service';
             ['operatingSystems.route.routeStationLists.station.routeStationLists']: {
                 alias: 'routeStationListsStationRouteStationLists',
             },
+            ['operatingSystems.route.routeStationLists.station.routeStationLists.route']: {
+                alias: 'routeStationListsStationRouteStationListsRoute',
+            },
             ['operatingSystems.startRouteStationList']: {
                 alias: 'startRouteStationList',
             },

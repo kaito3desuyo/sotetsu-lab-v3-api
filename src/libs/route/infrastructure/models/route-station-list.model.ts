@@ -1,6 +1,5 @@
 import { OperatingSystemModel } from 'src/libs/service/infrastructure/models/operating-system.model';
 import { StationModel } from 'src/libs/station/infrastructure/models/station.model';
-import { OperatingSystem } from 'src/main/v1/operating-system/operating-system.entity';
 import {
     Column,
     CreateDateColumn,
