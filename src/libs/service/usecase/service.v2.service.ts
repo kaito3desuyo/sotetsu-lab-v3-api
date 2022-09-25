@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
-import { findIndex, mergeWith, omit, some, sortBy } from 'lodash';
+import { cloneDeep, mergeWith, omit, sortBy } from 'lodash';
 import { crudReqMergeCustomizer } from 'src/core/util/merge-customizer';
 import { RouteStationListDetailsDto } from 'src/libs/route/usecase/dtos/route-station-list-details.dto';
 import { StationDetailsDto } from 'src/libs/station/usecase/dtos/station-details.dto';
@@ -84,26 +84,25 @@ export class ServiceV2Service {
                           (o) => o.stationSequence,
                       ).reverse();
 
-            const initialPosition = findIndex(
-                pickedRouteStationLists,
+            const initialPosition = cloneDeep(pickedRouteStationLists)
+                .reverse()
+                .findIndex(
+                    (o) =>
+                        o.stationId ===
+                        operatingSystem.startRouteStationList.stationId,
+                );
+
+            let position =
+                initialPosition !== -1
+                    ? pickedRouteStationLists.length - 1 - initialPosition
+                    : pickedRouteStationLists.length - 1;
+
+            const startStationIndex = sortedRouteStationLists.findIndex(
                 (o) =>
                     o.stationId ===
                     operatingSystem.startRouteStationList.stationId,
             );
-
-            let position = initialPosition;
-            if (initialPosition === -1) {
-                position = pickedRouteStationLists.length - 1;
-            }
-
-            const startStationIndex = findIndex(
-                sortedRouteStationLists,
-                (o) =>
-                    o.stationId ===
-                    operatingSystem.startRouteStationList.stationId,
-            );
-            const endStationIndex = findIndex(
-                sortedRouteStationLists,
+            const endStationIndex = sortedRouteStationLists.findIndex(
                 (o) =>
                     o.stationId ===
                     operatingSystem.endRouteStationList.stationId,
@@ -126,24 +125,37 @@ export class ServiceV2Service {
                     );
                     position++;
                 }
+
+                if (
+                    operatingSystem.startRouteStationListId !==
+                        sortedRouteStationList.id &&
+                    operatingSystem.endRouteStationListId !==
+                        sortedRouteStationList.id &&
+                    pickedRouteStationLists.some(
+                        (o) =>
+                            o.id !== sortedRouteStationList.id &&
+                            o.stationId === sortedRouteStationList.stationId,
+                    )
+                ) {
+                    position++;
+                }
             }
         }
 
         const stations: StationDetailsDto[] = [];
         for (let i = 0; i < pickedRouteStationLists.length; i++) {
             if (
-                pickedRouteStationLists[i + 1] &&
-                pickedRouteStationLists[i + 1].stationId ===
-                    pickedRouteStationLists[i].stationId
+                pickedRouteStationLists[i].stationId ===
+                pickedRouteStationLists[i + 1]?.stationId
             ) {
                 continue;
             }
 
             if (
-                some(
-                    pickedRouteStationLists,
+                pickedRouteStationLists.some(
                     (o, n) =>
                         i < n &&
+                        o.id !== pickedRouteStationLists[i].id &&
                         o.stationId === pickedRouteStationLists[i].stationId &&
                         !o.isLowPriority,
                 )
@@ -153,10 +165,10 @@ export class ServiceV2Service {
 
             if (
                 !!pickedRouteStationLists[i].isLowPriority &&
-                some(
-                    pickedRouteStationLists,
+                pickedRouteStationLists.some(
                     (o, n) =>
                         n < i &&
+                        o.id !== pickedRouteStationLists[i].id &&
                         o.stationId === pickedRouteStationLists[i].stationId,
                 )
             ) {
@@ -166,6 +178,9 @@ export class ServiceV2Service {
             stations.push(pickedRouteStationLists[i].station);
         }
 
-        return { service: omit(dto, 'operatingSystems'), stations };
+        return {
+            service: omit(dto, 'operatingSystems'),
+            stations,
+        };
     }
 }
