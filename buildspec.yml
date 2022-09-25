@@ -1,5 +1,8 @@
 version: 0.2
 
+env:
+    git-credential-helper: yes
+
 phases:
     pre_build:
         commands:
@@ -17,6 +20,8 @@ phases:
             - aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin ${ECR_URL}
     build:
         commands:
+            - git checkout $(git describe --tags --abbrev=0)
+
             - echo Building the Docker image...
             - docker build -t ${URI}:${CODEBUILD_RESOLVED_SOURCE_VERSION} .
 
