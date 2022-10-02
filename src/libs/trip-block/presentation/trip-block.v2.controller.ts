@@ -1,10 +1,11 @@
-import { Controller, Get, Req, Res } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Req, Res } from '@nestjs/common';
 import { Crud, CrudRequest, Override, ParsedRequest } from '@nestjsx/crud';
-import { BaseTripBlockDto } from '../usecase/dtos/base-trip-block.dto';
-import { TripBlockV2Service } from '../usecase/trip-block.v2.service';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
 import { addPaginationHeaders } from 'src/core/util/pagination-header';
+import { BaseTripBlockDto } from '../usecase/dtos/base-trip-block.dto';
+import { AddTripToTripBlockParam } from '../usecase/params/add-trip-to-trip-block.param';
+import { TripBlockV2Service } from '../usecase/trip-block.v2.service';
 
 @Crud({
     model: {
@@ -57,5 +58,15 @@ export class TripBlockV2Controller {
             addPaginationHeaders(req, res, tripBlocks);
             res.json(tripBlocks.data);
         }
+    }
+
+    @Patch('/:tripBlockId/add-trip/:tripId')
+    async addTripToTripBlock(
+        @Param() params: AddTripToTripBlockParam,
+    ): Promise<any> {
+        const tripBlock = await this.tripBlockV2Service.addTripToTripBlock(
+            params,
+        );
+        return tripBlock;
     }
 }

@@ -32,4 +32,18 @@ export class TripQuery extends TypeOrmCrudService<TripModel> {
             };
         }
     }
+
+    async findOneTripById(tripId: string): Promise<TripDetailsDto> {
+        const model = await this.tripRepository.findOne(tripId);
+        return buildTripDetailsDto(model);
+    }
+
+    async countTripByTripBlockId(tripBlockId: string): Promise<number> {
+        const count = await this.tripRepository.count({
+            where: {
+                tripBlockId,
+            },
+        });
+        return count;
+    }
 }
