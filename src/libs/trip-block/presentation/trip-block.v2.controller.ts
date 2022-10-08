@@ -4,7 +4,9 @@ import { Request, Response } from 'express';
 import { isArray } from 'lodash';
 import { addPaginationHeaders } from 'src/core/util/pagination-header';
 import { BaseTripBlockDto } from '../usecase/dtos/base-trip-block.dto';
+import { TripBlockDetailsDto } from '../usecase/dtos/trip-block-details.dto';
 import { AddTripToTripBlockParam } from '../usecase/params/add-trip-to-trip-block.param';
+import { DeleteTripFromTripBlockParam } from '../usecase/params/delete-trip-from-trip-block.param';
 import { TripBlockV2Service } from '../usecase/trip-block.v2.service';
 
 @Crud({
@@ -63,8 +65,18 @@ export class TripBlockV2Controller {
     @Patch('/:tripBlockId/add-trip/:tripId')
     async addTripToTripBlock(
         @Param() params: AddTripToTripBlockParam,
-    ): Promise<any> {
+    ): Promise<TripBlockDetailsDto> {
         const tripBlock = await this.tripBlockV2Service.addTripToTripBlock(
+            params,
+        );
+        return tripBlock;
+    }
+
+    @Patch('/:tripBlockId/delete-trip/:tripId')
+    async deleteTripFromTripBlock(
+        @Param() params: DeleteTripFromTripBlockParam,
+    ): Promise<TripBlockDetailsDto> {
+        const tripBlock = await this.tripBlockV2Service.deleteTripFromTripBlock(
             params,
         );
         return tripBlock;
