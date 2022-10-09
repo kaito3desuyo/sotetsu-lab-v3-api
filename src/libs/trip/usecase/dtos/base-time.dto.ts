@@ -2,12 +2,12 @@ export abstract class BaseTimeDto {
     id: string;
     tripId: string;
     stationId: string;
-    stopId: string;
+    stopId: string | null;
     stopSequence: number;
     pickupType: number;
     dropoffType: number;
-    arrivalDays: number;
-    arrivalTime: string;
-    departureDays: number;
-    departureTime: string;
+    arrivalDays: number | null;
+    arrivalTime: string | null;
+    departureDays: number | null;
+    departureTime: string | null;
 }

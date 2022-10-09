@@ -5,7 +5,7 @@ import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { isArray } from 'lodash';
 import { Repository } from 'typeorm';
 import { TripDetailsDto } from '../../usecase/dtos/trip-details.dto';
-import { buildTripDetailsDto } from '../builders/trip-dto.builder';
+import { TripDtoBuilder, TripsDtoBuilder } from '../builders/trip.dto.builder';
 import { TripModel } from '../models/trip.model';
 
 @Injectable()
@@ -23,9 +23,9 @@ export class TripQuery extends TypeOrmCrudService<TripModel> {
         const models = await this.getMany(query);
 
         if (isArray(models)) {
-            return models.map((o) => buildTripDetailsDto(o));
+            return TripsDtoBuilder.buildFromModel(models);
         } else {
-            const data = models.data.map((o) => buildTripDetailsDto(o));
+            const data = TripsDtoBuilder.buildFromModel(models.data);
             return {
                 ...models,
                 data,
@@ -35,7 +35,7 @@ export class TripQuery extends TypeOrmCrudService<TripModel> {
 
     async findOneTripById(tripId: string): Promise<TripDetailsDto> {
         const model = await this.tripRepository.findOne(tripId);
-        return buildTripDetailsDto(model);
+        return TripDtoBuilder.buildFromModel(model);
     }
 
     async countTripByTripBlockId(tripBlockId: string): Promise<number> {

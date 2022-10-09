@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { Repository } from 'typeorm';
 import { TripDetailsDto } from '../../usecase/dtos/trip-details.dto';
-import { buildTripDetailsDto } from '../builders/trip-dto.builder';
+import { TripDtoBuilder } from '../builders/trip.dto.builder';
 import { TripModel } from '../models/trip.model';
 
 @Injectable()
@@ -21,7 +21,7 @@ export class TripCommand extends TypeOrmCrudService<TripModel> {
     ): Promise<TripDetailsDto> {
         await this.tripRepository.update(tripId, { tripBlockId });
 
-        const trip = await this.tripRepository.findOne(tripId);
-        return buildTripDetailsDto(trip);
+        const model = await this.tripRepository.findOne(tripId);
+        return TripDtoBuilder.buildFromModel(model);
     }
 }

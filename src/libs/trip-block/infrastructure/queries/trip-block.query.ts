@@ -5,7 +5,10 @@ import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { isArray } from 'lodash';
 import { FindOneOptions, Repository } from 'typeorm';
 import { TripBlockDetailsDto } from '../../usecase/dtos/trip-block-details.dto';
-import { buildTripBlockDetailsDto } from '../builders/trip-block-dto.builder';
+import {
+    TripBlockDtoBuilder,
+    TripBlocksDtoBuilder,
+} from '../builders/trip-block.dto.builder';
 import { TripBlockModel } from '../models/trip-block.model';
 
 @Injectable()
@@ -25,9 +28,9 @@ export class TripBlockQuery extends TypeOrmCrudService<TripBlockModel> {
         const models = await this.getMany(query);
 
         if (isArray(models)) {
-            return models.map((o) => buildTripBlockDetailsDto(o));
+            return TripBlocksDtoBuilder.buildFromModel(models);
         } else {
-            const data = models.data.map((o) => buildTripBlockDetailsDto(o));
+            const data = TripBlocksDtoBuilder.buildFromModel(models.data);
             return {
                 ...models,
                 data,
@@ -43,6 +46,6 @@ export class TripBlockQuery extends TypeOrmCrudService<TripBlockModel> {
             tripBlockId,
             options,
         );
-        return buildTripBlockDetailsDto(model);
+        return TripBlockDtoBuilder.buildFromModel(model);
     }
 }

@@ -1,9 +1,23 @@
-import { Controller, Get, Param, Patch, Req, Res } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Get,
+    Param,
+    ParseArrayPipe,
+    Patch,
+    Post,
+    Req,
+    Res,
+    UseGuards,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { Crud, CrudRequest, Override, ParsedRequest } from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
+import { validationPipeOptions } from 'src/core/config/validator-options';
 import { addPaginationHeaders } from 'src/core/util/pagination-header';
 import { BaseTripBlockDto } from '../usecase/dtos/base-trip-block.dto';
+import { CreateTripBlockDto } from '../usecase/dtos/create-trip-block.dto';
 import { TripBlockDetailsDto } from '../usecase/dtos/trip-block-details.dto';
 import { AddTripToTripBlockParam } from '../usecase/params/add-trip-to-trip-block.param';
 import { DeleteTripFromTripBlockParam } from '../usecase/params/delete-trip-from-trip-block.param';
@@ -14,7 +28,7 @@ import { TripBlockV2Service } from '../usecase/trip-block.v2.service';
         type: BaseTripBlockDto,
     },
     routes: {
-        only: ['getManyBase'],
+        only: ['getManyBase', 'createManyBase'],
     },
     query: {
         join: {
@@ -42,6 +56,7 @@ import { TripBlockV2Service } from '../usecase/trip-block.v2.service';
     },
 })
 @Controller()
+// @UseGuards(AuthGuard('jwt'))
 export class TripBlockV2Controller {
     constructor(private readonly tripBlockV2Service: TripBlockV2Service) {}
 
@@ -60,6 +75,25 @@ export class TripBlockV2Controller {
             addPaginationHeaders(req, res, tripBlocks);
             res.json(tripBlocks.data);
         }
+    }
+
+    @Override('createManyBase')
+    @Post('/bulk')
+    async createMany(
+        @ParsedRequest() crudReq: CrudRequest,
+        @Body(
+            new ParseArrayPipe({
+                ...validationPipeOptions,
+                items: CreateTripBlockDto,
+            }),
+        )
+        body: CreateTripBlockDto[],
+    ): Promise<TripBlockDetailsDto[]> {
+        const tripBlocks = await this.tripBlockV2Service.createManyTripBlocks(
+            crudReq,
+            body,
+        );
+        return tripBlocks;
     }
 
     @Patch('/:tripBlockId/add-trip/:tripId')

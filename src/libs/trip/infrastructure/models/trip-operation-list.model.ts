@@ -1,7 +1,7 @@
 // tslint:disable: variable-name
 
 import { OperationModel } from 'src/libs/operation/infrastructure/models/operation.model';
-import { Station } from 'src/main/v1/station/station.entity';
+import { StationModel } from 'src/libs/station/infrastructure/models/station.model';
 import {
     Column,
     CreateDateColumn,
@@ -32,49 +32,49 @@ export class TripOperationListModel {
     operationId: string;
 
     @Column('uuid', { nullable: true })
-    startTimeId: string;
-
-    @Column('uuid', { nullable: true })
-    endTimeId: string;
-
-    @Column('uuid', { nullable: true })
     startStationId: string;
 
     @Column('uuid', { nullable: true })
     endStationId: string;
 
+    @Column('uuid', { nullable: true })
+    startTimeId: string;
+
+    @Column('uuid', { nullable: true })
+    endTimeId: string;
+
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
-    createdAt: Date;
+    readonly createdAt?: Date;
 
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
-    updatedAt: Date;
+    readonly updatedAt?: Date;
 
     @ManyToOne(() => TripModel, (trip) => trip.tripOperationLists, {
         onDelete: 'CASCADE',
     })
     @JoinColumn({ name: 'trip_id' })
-    trip?: TripModel;
+    readonly trip?: TripModel;
 
     @ManyToOne(
         () => OperationModel,
         (operation) => operation.tripOperationLists,
     )
     @JoinColumn({ name: 'operation_id' })
-    operation?: OperationModel;
+    readonly operation?: OperationModel;
 
     @ManyToOne(() => TimeModel, (time) => time.startTripOperationLists)
     @JoinColumn({ name: 'start_time_id' })
-    startTime?: TimeModel;
+    readonly startTime?: TimeModel;
 
     @ManyToOne(() => TimeModel, (time) => time.endTripOperationLists)
     @JoinColumn({ name: 'end_time_id' })
-    endTime?: TimeModel;
+    readonly endTime?: TimeModel;
 
-    @ManyToOne(() => Station, (station) => station)
+    @ManyToOne(() => StationModel, (station) => station)
     @JoinColumn({ name: 'start_station_id' })
-    startStation?: Station;
+    readonly startStation?: StationModel;
 
-    @ManyToOne(() => Station, (station) => station)
+    @ManyToOne(() => StationModel, (station) => station)
     @JoinColumn({ name: 'end_station_id' })
-    endStation?: Station;
+    readonly endStation?: StationModel;
 }

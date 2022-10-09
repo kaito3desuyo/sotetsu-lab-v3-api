@@ -54,10 +54,10 @@ export class TripModel {
     extraCalendarId: string;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
-    createdAt: Date;
+    readonly createdAt?: Date;
 
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
-    updatedAt: Date;
+    readonly updatedAt?: Date;
 
     @OneToMany(() => TimeModel, (time) => time.trip, {
         cascade: true,

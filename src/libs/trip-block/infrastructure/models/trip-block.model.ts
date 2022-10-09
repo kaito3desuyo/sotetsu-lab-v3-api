@@ -15,10 +15,10 @@ export class TripBlockModel {
     id: string;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
-    createdAt: Date;
+    readonly createdAt?: Date;
 
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
-    updatedAt: Date;
+    readonly updatedAt?: Date;
 
     @OneToMany(() => TripModel, (trip) => trip.tripBlock, { cascade: true })
     readonly trips?: TripModel[];
