@@ -1,14 +1,18 @@
 import { Exclude, Type } from 'class-transformer';
-import { ArrayNotEmpty, IsOptional, ValidateNested } from 'class-validator';
+import {
+    ArrayNotEmpty,
+    IsOptional,
+    ValidateIf,
+    ValidateNested,
+} from 'class-validator';
 import { ETripDirection } from '../../special/enums/trip.enum';
-import { CreateTimeDto } from './create-time.dto';
-import { CreateTripOperationListDto } from './create-trip-operation-list.dto';
+import { ReplaceTimeDto } from './replace-time.dto';
+import { ReplaceTripOperationListDto } from './replace-trip-operation-list.dto';
 import { ValidatableTripDto } from './validatable-trip.dto';
 
-export class CreateTripDto extends ValidatableTripDto {
-    @IsOptional()
-    @Exclude()
-    id: undefined;
+export class ReplaceTripDto extends ValidatableTripDto {
+    @ValidateIf((_, v) => v !== undefined)
+    id: string | undefined;
 
     serviceId: string;
 
@@ -33,12 +37,12 @@ export class CreateTripDto extends ValidatableTripDto {
     extraCalendarId: string | null;
 
     @ValidateNested({ each: true })
-    @Type(() => CreateTimeDto)
+    @Type(() => ReplaceTimeDto)
     @ArrayNotEmpty()
-    times: CreateTimeDto[];
+    times: ReplaceTimeDto[];
 
     @ValidateNested({ each: true })
-    @Type(() => CreateTripOperationListDto)
+    @Type(() => ReplaceTripOperationListDto)
     @ArrayNotEmpty()
-    tripOperationLists: CreateTripOperationListDto[];
+    tripOperationLists: ReplaceTripOperationListDto[];
 }

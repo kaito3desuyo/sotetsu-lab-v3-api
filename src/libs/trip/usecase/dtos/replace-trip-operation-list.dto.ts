@@ -1,11 +1,10 @@
 import { Exclude } from 'class-transformer';
-import { IsOptional } from 'class-validator';
+import { IsOptional, ValidateIf } from 'class-validator';
 import { ValidatableTripOperationListDto } from './validatable-trip-operation-list.dto';
 
-export class CreateTripOperationListDto extends ValidatableTripOperationListDto {
-    @IsOptional()
-    @Exclude()
-    id: undefined;
+export class ReplaceTripOperationListDto extends ValidatableTripOperationListDto {
+    @ValidateIf((_, v) => v !== undefined)
+    id: string | undefined;
 
     @IsOptional()
     @Exclude()

@@ -8,8 +8,12 @@ import { TripCommand } from 'src/libs/trip/infrastructure/commands/trip.command'
 import { TripQuery } from 'src/libs/trip/infrastructure/queries/trip.query';
 import { TripBlockCommand } from '../infrastructure/commands/trip-block.command';
 import { TripBlockQuery } from '../infrastructure/queries/trip-block.query';
-import { TripBlocksDomainBuilder } from './builders/trip-block.domain.builder';
+import {
+    TripBlockDomainBuilder,
+    TripBlocksDomainBuilder,
+} from './builders/trip-block.domain.builder';
 import { CreateTripBlockDto } from './dtos/create-trip-block.dto';
+import { ReplaceTripBlockDto } from './dtos/replace-trip-block.dto';
 import { TripBlockDetailsDto } from './dtos/trip-block-details.dto';
 import { AddTripToTripBlockParam } from './params/add-trip-to-trip-block.param';
 import { DeleteTripFromTripBlockParam } from './params/delete-trip-from-trip-block.param';
@@ -39,6 +43,18 @@ export class TripBlockV2Service {
         const result = await this.tripBlockCommand.createManyTripBlocks(
             query,
             domains,
+        );
+        return result;
+    }
+
+    async replaceOneTripBlock(
+        query: CrudRequest,
+        dto: ReplaceTripBlockDto,
+    ): Promise<TripBlockDetailsDto> {
+        const domain = TripBlockDomainBuilder.buildByReplaceDto(dto);
+        const result = await this.tripBlockCommand.replaceOneTripBlock(
+            query,
+            domain,
         );
         return result;
     }

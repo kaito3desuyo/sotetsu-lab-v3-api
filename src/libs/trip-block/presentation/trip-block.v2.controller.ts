@@ -6,11 +6,10 @@ import {
     ParseArrayPipe,
     Patch,
     Post,
+    Put,
     Req,
     Res,
-    UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import { Crud, CrudRequest, Override, ParsedRequest } from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
@@ -18,9 +17,11 @@ import { validationPipeOptions } from 'src/core/config/validator-options';
 import { addPaginationHeaders } from 'src/core/util/pagination-header';
 import { BaseTripBlockDto } from '../usecase/dtos/base-trip-block.dto';
 import { CreateTripBlockDto } from '../usecase/dtos/create-trip-block.dto';
+import { ReplaceTripBlockDto } from '../usecase/dtos/replace-trip-block.dto';
 import { TripBlockDetailsDto } from '../usecase/dtos/trip-block-details.dto';
 import { AddTripToTripBlockParam } from '../usecase/params/add-trip-to-trip-block.param';
 import { DeleteTripFromTripBlockParam } from '../usecase/params/delete-trip-from-trip-block.param';
+import { ReplaceTripBlockParam } from '../usecase/params/replace-trip-block.param';
 import { TripBlockV2Service } from '../usecase/trip-block.v2.service';
 
 @Crud({
@@ -28,7 +29,7 @@ import { TripBlockV2Service } from '../usecase/trip-block.v2.service';
         type: BaseTripBlockDto,
     },
     routes: {
-        only: ['getManyBase', 'createManyBase'],
+        only: ['getManyBase', 'createManyBase', 'replaceOneBase'],
     },
     query: {
         join: {
@@ -94,6 +95,23 @@ export class TripBlockV2Controller {
             body,
         );
         return tripBlocks;
+    }
+
+    @Override('replaceOneBase')
+    @Put('/:id')
+    async replaceOne(
+        @ParsedRequest() crudReq: CrudRequest,
+        @Param() params: ReplaceTripBlockParam,
+        @Body() body: ReplaceTripBlockDto,
+    ): Promise<TripBlockDetailsDto> {
+        const tripBlock = await this.tripBlockV2Service.replaceOneTripBlock(
+            crudReq,
+            {
+                ...body,
+                id: params.id,
+            },
+        );
+        return tripBlock;
     }
 
     @Patch('/:tripBlockId/add-trip/:tripId')

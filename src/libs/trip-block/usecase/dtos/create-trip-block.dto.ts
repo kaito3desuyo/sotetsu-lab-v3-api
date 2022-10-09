@@ -1,9 +1,10 @@
 import { Exclude, Type } from 'class-transformer';
-import { ArrayNotEmpty, ValidateNested } from 'class-validator';
+import { ArrayNotEmpty, IsOptional, ValidateNested } from 'class-validator';
 import { CreateTripDto } from 'src/libs/trip/usecase/dtos/create-trip.dto';
-import { BaseTripBlockDto } from './base-trip-block.dto';
+import { ValidatableTripBlockDto } from './validatable-trip-block.dto';
 
-export class CreateTripBlockDto extends BaseTripBlockDto {
+export class CreateTripBlockDto extends ValidatableTripBlockDto {
+    @IsOptional()
     @Exclude()
     id: undefined;
 

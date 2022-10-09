@@ -3,13 +3,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CrudRequest } from '@nestjsx/crud';
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { Repository } from 'typeorm';
-import { TripBlocks } from '../../domain/trip-block.domain';
+import { TripBlock, TripBlocks } from '../../domain/trip-block.domain';
 import { TripBlockDetailsDto } from '../../usecase/dtos/trip-block-details.dto';
 import {
     TripBlockDtoBuilder,
     TripBlocksDtoBuilder,
 } from '../builders/trip-block.dto.builder';
-import { TripBlocksModelBuilder } from '../builders/trip-block.model.builder';
+import {
+    TripBlockModelBuilder,
+    TripBlocksModelBuilder,
+} from '../builders/trip-block.model.builder';
 import { TripBlockModel } from '../models/trip-block.model';
 
 @Injectable()
@@ -33,6 +36,15 @@ export class TripBlockCommand extends TypeOrmCrudService<TripBlockModel> {
     async createEmptyTripBlock(): Promise<TripBlockDetailsDto> {
         const model = await this.tripBlockRepository.save({});
         return TripBlockDtoBuilder.buildFromModel(model);
+    }
+
+    async replaceOneTripBlock(
+        query: CrudRequest,
+        domain: TripBlock,
+    ): Promise<TripBlockDetailsDto> {
+        const model = TripBlockModelBuilder.buildFromDomain(domain);
+        const result = await this.replaceOne(query, model);
+        return TripBlockDtoBuilder.buildFromModel(result);
     }
 
     async deleteTripBlockById(tripBlockId: string): Promise<void> {
