@@ -1,7 +1,8 @@
 import { Expose, Type } from 'class-transformer';
 import { TripDetailsDto } from 'src/libs/trip/usecase/dtos/trip-details.dto';
+import { BaseTripBlockDto } from './base-trip-block.dto';
 
-export class TripBlockDetailsDto {
+export class TripBlockDetailsDto extends BaseTripBlockDto {
     @Expose()
     id: string;
 

@@ -3,11 +3,11 @@ export abstract class BaseTripDto {
     serviceId: string;
     tripNumber: string;
     tripClassId: string;
-    tripName: string;
+    tripName: string | null;
     tripDirection: number;
     tripBlockId: string;
     depotIn: boolean;
     depotOut: boolean;
-    calendarId: string;
-    extraCalendarId: string;
+    calendarId: string | null;
+    extraCalendarId: string | null;
 }

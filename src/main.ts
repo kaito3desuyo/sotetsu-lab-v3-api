@@ -1,3 +1,4 @@
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
@@ -5,7 +6,8 @@ import utc from 'dayjs/plugin/utc';
 import helmet from 'helmet';
 import moment from 'moment-timezone';
 import { AppModule } from './app.module';
-import { customValidationPipe } from './core/pipe/custom-validation.pipe';
+import { validationPipeOptions } from './core/config/validator-options';
+
 moment.tz.setDefault('Asia/Tokyo');
 
 dayjs.extend(utc);
@@ -18,7 +20,7 @@ async function bootstrap() {
     app.enableCors({
         origin: process.env.CORS_HEADER_ORIGIN || '*',
     });
-    app.useGlobalPipes(customValidationPipe());
+    app.useGlobalPipes(new ValidationPipe(validationPipeOptions));
     // app.useGlobalFilters(new ErrorFilter());
     // app.useGlobalFilters(new HttpExceptionFilter());
     await app.listen(3000);

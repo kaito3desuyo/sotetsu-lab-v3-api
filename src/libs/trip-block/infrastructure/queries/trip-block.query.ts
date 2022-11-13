@@ -3,9 +3,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { isArray } from 'lodash';
-import { Repository } from 'typeorm';
+import { FindOneOptions, Repository } from 'typeorm';
 import { TripBlockDetailsDto } from '../../usecase/dtos/trip-block-details.dto';
-import { buildTripBlockDetailsDto } from '../builders/trip-block-dto.builder';
+import {
+    TripBlockDtoBuilder,
+    TripBlocksDtoBuilder,
+} from '../builders/trip-block.dto.builder';
 import { TripBlockModel } from '../models/trip-block.model';
 
 @Injectable()
@@ -25,13 +28,24 @@ export class TripBlockQuery extends TypeOrmCrudService<TripBlockModel> {
         const models = await this.getMany(query);
 
         if (isArray(models)) {
-            return models.map((o) => buildTripBlockDetailsDto(o));
+            return TripBlocksDtoBuilder.buildFromModel(models);
         } else {
-            const data = models.data.map((o) => buildTripBlockDetailsDto(o));
+            const data = TripBlocksDtoBuilder.buildFromModel(models.data);
             return {
                 ...models,
                 data,
             };
         }
+    }
+
+    async findOneTripBlockById(
+        tripBlockId: string,
+        options?: FindOneOptions<TripBlockModel>,
+    ): Promise<TripBlockDetailsDto> {
+        const model = await this.tripBlockRepository.findOne(
+            tripBlockId,
+            options,
+        );
+        return TripBlockDtoBuilder.buildFromModel(model);
     }
 }
