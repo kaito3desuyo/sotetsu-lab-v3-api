@@ -39,6 +39,6 @@ export class CreateTripDto extends ValidatableTripDto {
 
     @ValidateNested({ each: true })
     @Type(() => CreateTripOperationListDto)
-    @ArrayNotEmpty()
+    // @ArrayNotEmpty()
     tripOperationLists: CreateTripOperationListDto[];
 }
