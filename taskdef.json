@@ -1,7 +1,8 @@
 {
-    "family": "sotetsu-lab-v3-api-ecs-taskdef",
+    "family": "${AWS_ECS_TASKDEF_FAMILY}",
     "networkMode": "awsvpc",
-    "executionRoleArn": "arn:aws:iam::442730633672:role/sotetsu-lab-v3-ecs-task-execution",
+    "taskRoleArn": "${AWS_ECS_TASK_ROLE_ARN}",
+    "executionRoleArn": "${AWS_ECS_TASK_EXECUTION_ROLE_ARN}",
     "cpu": "512",
     "memory": "1024",
     "requiresCompatibilities": ["FARGATE"],
@@ -39,9 +40,9 @@
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
-                    "awslogs-region": "ap-northeast-1",
-                    "awslogs-group": "/aws/ecs/sotetsu-lab-v3-api",
-                    "awslogs-stream-prefix": "/sotetsu-lab-v3-api-ecs-taskdef"
+                    "awslogs-region": "${AWS_REGION}",
+                    "awslogs-group": "${AWS_CLOUDWATCH_LOG_GROUP_NAME}",
+                    "awslogs-stream-prefix": "${AWS_CLOUDWATCH_LOG_STREAM_PREFIX}"
                 }
             }
         }
