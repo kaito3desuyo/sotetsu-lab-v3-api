@@ -12,6 +12,15 @@ export function isNewYear(date: string, format = 'YYYY-MM-DD'): boolean {
     return newYearDays.some((o) => o === dayjs(date, format).format('MM-DD'));
 }
 
+export function isSpecialCalendarAvailable(
+    date: string,
+    format = 'YYYY-MM-DD',
+): boolean {
+    return specialCalendarDays.some(
+        (o) => o === dayjs(date, format).format('YYYY-MM-DD'),
+    );
+}
+
 const holidays = [
     // 2014
     '2014-01-01',
@@ -204,3 +213,12 @@ const holidays = [
 ];
 
 const newYearDays = ['12-30', '12-31', '01-01', '01-02', '01-03'];
+
+const specialCalendarDays = [
+    // 2021年10月JR渋谷駅工事臨時ダイヤ
+    '2021-10-23',
+    '2021-10-24',
+    // 2023年1月JR渋谷駅工事臨時ダイヤ
+    '2023-01-07',
+    '2023-01-08',
+];
