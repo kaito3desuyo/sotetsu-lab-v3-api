@@ -5,9 +5,9 @@ Resources:
           Properties:
               TaskDefinition: <TASK_DEFINITION>
               LoadBalancerInfo:
-                  ContainerName: 'sotetsu-lab-v3-api'
+                  ContainerName: api
                   ContainerPort: 3000
               CapacityProviderStrategy:
                   - Base: 0
-                    CapacityProvider: 'FARGATE_SPOT'
+                    CapacityProvider: FARGATE_SPOT
                     Weight: 1

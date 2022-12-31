@@ -1,19 +1,19 @@
 {
-    "family": "sotetsu-lab-v3-api",
+    "family": "${AWS_ECS_TASKDEF_FAMILY}",
     "networkMode": "awsvpc",
-    "executionRoleArn": "arn:aws:iam::442730633672:role/sotetsu-lab-v3-ecs-task-execution",
+    "taskRoleArn": "${AWS_ECS_TASK_ROLE_ARN}",
+    "executionRoleArn": "${AWS_ECS_TASK_EXECUTION_ROLE_ARN}",
     "cpu": "512",
     "memory": "1024",
     "requiresCompatibilities": ["FARGATE"],
     "containerDefinitions": [
         {
-            "name": "sotetsu-lab-v3-api",
-            "image": "<IMAGE1_NAME>",
+            "name": "api",
+            "image": "",
             "essential": true,
             "portMappings": [
                 {
                     "protocol": "tcp",
-                    "hostPort": 3000,
                     "containerPort": 3000
                 }
             ],
@@ -40,9 +40,9 @@
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
-                    "awslogs-group": "/ecs/sotetsu-lab-v3-api",
-                    "awslogs-region": "ap-northeast-1",
-                    "awslogs-stream-prefix": "ecs"
+                    "awslogs-region": "${AWS_REGION}",
+                    "awslogs-group": "${AWS_CLOUDWATCH_LOG_GROUP_NAME}",
+                    "awslogs-stream-prefix": "${AWS_CLOUDWATCH_LOG_STREAM_PREFIX}"
                 }
             }
         }
