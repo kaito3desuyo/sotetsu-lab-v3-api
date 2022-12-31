@@ -1,5 +1,5 @@
 {
-    "family": "sotetsu-lab-v3-api",
+    "family": "sotetsu-lab-v3-api-ecs-taskdef",
     "networkMode": "awsvpc",
     "executionRoleArn": "arn:aws:iam::442730633672:role/sotetsu-lab-v3-ecs-task-execution",
     "cpu": "512",
@@ -7,13 +7,12 @@
     "requiresCompatibilities": ["FARGATE"],
     "containerDefinitions": [
         {
-            "name": "sotetsu-lab-v3-api",
-            "image": "<IMAGE1_NAME>",
+            "name": "api",
+            "image": "",
             "essential": true,
             "portMappings": [
                 {
                     "protocol": "tcp",
-                    "hostPort": 3000,
                     "containerPort": 3000
                 }
             ],
@@ -40,9 +39,9 @@
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
-                    "awslogs-group": "/ecs/sotetsu-lab-v3-api",
                     "awslogs-region": "ap-northeast-1",
-                    "awslogs-stream-prefix": "ecs"
+                    "awslogs-group": "/aws/ecs/sotetsu-lab-v3-api",
+                    "awslogs-stream-prefix": "/sotetsu-lab-v3-api-ecs-taskdef"
                 }
             }
         }
