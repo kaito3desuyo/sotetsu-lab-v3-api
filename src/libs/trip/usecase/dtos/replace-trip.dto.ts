@@ -43,6 +43,6 @@ export class ReplaceTripDto extends ValidatableTripDto {
 
     @ValidateNested({ each: true })
     @Type(() => ReplaceTripOperationListDto)
-    @ArrayNotEmpty()
+    // @ArrayNotEmpty()
     tripOperationLists: ReplaceTripOperationListDto[];
 }
