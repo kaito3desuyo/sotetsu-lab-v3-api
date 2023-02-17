@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import moment from 'moment-timezone';
 import { AppModule } from './app.module';
 import { validationPipeOptions } from './core/config/validator-options';
+import compression from 'compression';
 
 moment.tz.setDefault('Asia/Tokyo');
 
@@ -16,6 +17,7 @@ dayjs.tz.setDefault('Asia/Tokyo');
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
+    app.use(compression());
     app.use(helmet());
     app.enableCors({
         origin: process.env.CORS_HEADER_ORIGIN || '*',
