@@ -111,7 +111,11 @@ export class ServiceV2Service {
             for (const sortedRouteStationList of sortedRouteStationLists.filter(
                 (_, i) => startStationIndex <= i && i <= endStationIndex,
             )) {
-                if (operatingSystem.route.routeName === '厚木線') {
+                if (
+                    operatingSystem.route.routeName === '厚木線' ||
+                    operatingSystem.route.routeName === '副都心線' ||
+                    operatingSystem.route.routeName === '有楽町線'
+                ) {
                     pickedRouteStationLists.push({
                         ...sortedRouteStationList,
                         isLowPriority: true,
