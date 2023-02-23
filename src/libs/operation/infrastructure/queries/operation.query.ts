@@ -48,6 +48,24 @@ export class OperationQuery extends TypeOrmCrudService<OperationModel> {
         return buildOperationDetailsDto(model);
     }
 
+    async findAllOperationNumbers(calendarId: string): Promise<string[]> {
+        const data = await this.operationRepository
+            .createQueryBuilder('operation')
+            .select('operation.operation_number')
+            .where('operation.calendar_id = :calendarId', { calendarId })
+            .andWhere('operation.operation_number != :number', {
+                number: '100',
+            })
+            .orderBy(
+                "regexp_replace(operation.operation_number , '\\d', '', 'g')",
+            )
+            .addOrderBy('length(operation.operation_number)')
+            .addOrderBy('operation.operation_number')
+            .getRawMany<{ operation_number: string }>();
+
+        return data.map((o) => o.operation_number);
+    }
+
     findByCalendarId(calendarId: string) {
         return this.operationRepo.find({
             where: {

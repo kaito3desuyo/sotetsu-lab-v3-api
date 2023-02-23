@@ -79,6 +79,19 @@ export class OperationV2Controller {
         }
     }
 
+    @Get('/numbers')
+    async findAllOperationNumbers(
+        @Query('calendarId') calendarId: string,
+    ): Promise<string[]> {
+        if (!calendarId) {
+            throw new UnprocessableEntityException(
+                'Please set `calendarId` query.',
+            );
+        }
+
+        return this.operationV2Service.findAllOperationNumbers(calendarId);
+    }
+
     @Get('/trips')
     getOperationsTrips(@Query('calendar_id') calendarId: string) {
         if (!calendarId) {

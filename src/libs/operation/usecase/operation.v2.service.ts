@@ -24,6 +24,10 @@ export class OperationV2Service {
         return this.operationQuery.findOneOperation(query);
     }
 
+    findAllOperationNumbers(calendarId: string): Promise<string[]> {
+        return this.operationQuery.findAllOperationNumbers(calendarId);
+    }
+
     async findOneWithCurrentPosition(
         query: CrudRequest,
     ): Promise<{
