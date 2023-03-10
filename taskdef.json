@@ -3,8 +3,8 @@
     "networkMode": "awsvpc",
     "taskRoleArn": "${AWS_ECS_TASK_ROLE_ARN}",
     "executionRoleArn": "${AWS_ECS_TASK_EXECUTION_ROLE_ARN}",
-    "cpu": "512",
-    "memory": "1024",
+    "cpu": "256",
+    "memory": "512",
     "requiresCompatibilities": ["FARGATE"],
     "containerDefinitions": [
         {
