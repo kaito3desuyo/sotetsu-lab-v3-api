@@ -69,7 +69,7 @@ export class ServiceV2Service {
         );
 
         const pickedRouteStationLists: (RouteStationListDetailsDto & {
-            isLowPriority?: boolean;
+            priority?: number;
         })[] = [];
         for (const operatingSystem of dto.operatingSystems) {
             const sortedRouteStationLists =
@@ -118,15 +118,20 @@ export class ServiceV2Service {
                 ) {
                     pickedRouteStationLists.push({
                         ...sortedRouteStationList,
-                        isLowPriority: true,
+                        priority: 1,
+                    });
+                    position = pickedRouteStationLists.length - 1;
+                } else if (operatingSystem.route.routeName === '西武有楽町線') {
+                    pickedRouteStationLists.push({
+                        ...sortedRouteStationList,
+                        priority: 2,
                     });
                     position = pickedRouteStationLists.length - 1;
                 } else {
-                    pickedRouteStationLists.splice(
-                        position + 1,
-                        0,
-                        sortedRouteStationList,
-                    );
+                    pickedRouteStationLists.splice(position + 1, 0, {
+                        ...sortedRouteStationList,
+                        priority: 0,
+                    });
                     position++;
                 }
 
@@ -161,19 +166,32 @@ export class ServiceV2Service {
                         i < n &&
                         o.id !== pickedRouteStationLists[i].id &&
                         o.stationId === pickedRouteStationLists[i].stationId &&
-                        !o.isLowPriority,
+                        o.priority <= 0,
                 )
             ) {
                 continue;
             }
 
             if (
-                !!pickedRouteStationLists[i].isLowPriority &&
+                pickedRouteStationLists[i].priority >= 2 &&
+                pickedRouteStationLists.some(
+                    (o, n) =>
+                        i < n &&
+                        o.id !== pickedRouteStationLists[i].id &&
+                        o.stationId === pickedRouteStationLists[i].stationId,
+                )
+            ) {
+                continue;
+            }
+
+            if (
+                pickedRouteStationLists[i].priority >= 1 &&
                 pickedRouteStationLists.some(
                     (o, n) =>
                         n < i &&
                         o.id !== pickedRouteStationLists[i].id &&
-                        o.stationId === pickedRouteStationLists[i].stationId,
+                        o.stationId === pickedRouteStationLists[i].stationId &&
+                        o.priority <= 1,
                 )
             ) {
                 continue;
