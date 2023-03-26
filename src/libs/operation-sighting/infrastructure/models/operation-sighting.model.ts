@@ -31,10 +31,10 @@ export class OperationSightingModel {
     sightingTime: Date;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
-    createdAt: Date;
+    createdAt?: Date;
 
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
-    updatedAt: Date;
+    updatedAt?: Date;
 
     @ManyToOne(
         () => OperationModel,
