@@ -1,6 +1,8 @@
 import {
+    Body,
     Controller,
     Get,
+    Post,
     Query,
     Req,
     Res,
@@ -18,6 +20,7 @@ import { isArray } from 'lodash';
 import { addPaginationHeaders } from 'src/core/util/pagination-header';
 import { OperationSightingService } from '../application-service/operation-sighting.service';
 import { BaseOperationSightingDto } from '../usecase/dtos/base-operation-sighting.dto';
+import { CreateOperationSightingDto } from '../usecase/dtos/create-operation-sighting.dto';
 import { OperationSightingDetailsDto } from '../usecase/dtos/operation-sighting-details.dto';
 import { OperationSightingV2Service } from '../usecase/operation-sighting.v2.service';
 
@@ -26,7 +29,7 @@ import { OperationSightingV2Service } from '../usecase/operation-sighting.v2.ser
         type: BaseOperationSightingDto,
     },
     routes: {
-        only: ['getManyBase', 'getOneBase'],
+        only: ['getManyBase', 'getOneBase', 'createOneBase'],
     },
     query: {
         join: {
@@ -123,5 +126,18 @@ export class OperationSightingV2Controller {
             crudReq,
         );
         return operationSightings;
+    }
+
+    @Override('createOneBase')
+    @Post()
+    async createOne(
+        @ParsedRequest() crudReq: CrudRequest,
+        @Body() body: CreateOperationSightingDto,
+    ): Promise<OperationSightingDetailsDto> {
+        const result = await this.operationSightingV2Service.createOne(
+            crudReq,
+            body,
+        );
+        return result;
     }
 }

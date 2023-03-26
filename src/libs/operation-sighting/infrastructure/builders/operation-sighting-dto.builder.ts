@@ -8,3 +8,15 @@ export function buildOperationSightingDetailsDto(
 ): OperationSightingDetailsDto {
     return plainToClass(OperationSightingDetailsDto, model, transformerOptions);
 }
+
+export const OperationSightingDtoBuilder = {
+    buildFromModel: (
+        model: OperationSightingModel,
+    ): OperationSightingDetailsDto => {
+        return plainToClass(
+            OperationSightingDetailsDto,
+            model,
+            transformerOptions,
+        );
+    },
+} as const;
