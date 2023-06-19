@@ -1,12 +1,24 @@
-import { Module } from '@nestjs/common';
+import { Module, OnApplicationBootstrap } from '@nestjs/common';
+import { HttpAdapterHost } from '@nestjs/core';
+import { Server } from 'http';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { DatabaseModule } from './shared/modules/database.module';
 import { MainModule } from './main/main.module';
+import { DatabaseModule } from './shared/modules/database.module';
 
 @Module({
-  imports: [DatabaseModule, MainModule],
-  controllers: [AppController],
-  providers: [AppService],
+    imports: [DatabaseModule, MainModule],
+    controllers: [AppController],
+    providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements OnApplicationBootstrap {
+    constructor(private readonly refHost: HttpAdapterHost<any>) {}
+
+    onApplicationBootstrap(): void {
+        const server: Server = this.refHost.httpAdapter.getHttpServer();
+        server.keepAliveTimeout = 61 * 1000;
+        server.headersTimeout = 65 * 1000;
+
+        console.log(server.keepAliveTimeout);
+    }
+}
