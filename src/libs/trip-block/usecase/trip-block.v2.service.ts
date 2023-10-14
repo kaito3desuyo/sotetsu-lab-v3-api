@@ -1,8 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
-import { UniqueEntityId } from 'src/core/class/unique-entity-id';
 import { Trips } from 'src/libs/trip/domain/trip.domain';
-import { TripBlock, TripBlocks } from '../domain/trip-block.domain';
+import { TripBlock } from '../domain/trip-block.domain';
 import { TripBlockCommand } from '../infrastructure/commands/trip-block.command';
 import { TripBlockQuery } from '../infrastructure/queries/trip-block.query';
 import {
@@ -74,23 +73,19 @@ export class TripBlockV2Service {
             to: TripBlockDomainBuilder.buildByDetailsDto(tripBlockDto.to),
         };
 
-        const trip = {
-            from: tripBlock.from.props.trips.getItemByFn((trip) =>
-                trip.id.isEqual(new UniqueEntityId(dto.tripId)),
-            ),
-        };
+        const trip = tripBlock.from.getTripByTripId(dto.tripId);
 
-        tripBlock.from.props.trips.remove(trip.from);
-        tripBlock.to.props.trips.add(trip.from);
+        tripBlock.from.removeTrip(trip);
+        tripBlock.to.addTrip(trip);
 
-        const result = await this.tripBlockCommand.replaceOneTripBlock(
-            query,
-            tripBlock.to,
-        );
+        await this.tripBlockCommand.replaceOneTripBlockByDomain(tripBlock.to);
 
-        if (tripBlock.from.props.trips.isEmpty()) {
-            const tripBlocks = TripBlocks.create([tripBlock.from]);
-            await this.tripBlockCommand.deleteManyTripBlockByDomain(tripBlocks);
+        const result = await this.tripBlockQuery.findOneTripBlock(query);
+
+        if (tripBlock.from.tripsEmpty()) {
+            await this.tripBlockCommand.deleteOneTripBlockByDomain(
+                tripBlock.from,
+            );
         }
 
         return result;
