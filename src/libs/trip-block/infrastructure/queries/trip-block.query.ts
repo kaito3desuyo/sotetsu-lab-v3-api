@@ -38,6 +38,11 @@ export class TripBlockQuery extends TypeOrmCrudService<TripBlockModel> {
         }
     }
 
+    async findOneTripBlock(query: CrudRequest): Promise<TripBlockDetailsDto> {
+        const model = await this.getOne(query);
+        return TripBlockDtoBuilder.buildFromModel(model);
+    }
+
     async findOneTripBlockById(
         tripBlockId: string,
         options?: FindOneOptions<TripBlockModel>,

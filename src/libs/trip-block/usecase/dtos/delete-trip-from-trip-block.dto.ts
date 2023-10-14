@@ -1,4 +1,4 @@
-import { IsUUID, ValidateIf } from 'class-validator';
+import { IsBoolean, IsUUID, ValidateIf } from 'class-validator';
 
 export class DeleteTripFromTripBlockDto {
     @ValidateIf((_, v) => v !== undefined)
@@ -7,4 +7,7 @@ export class DeleteTripFromTripBlockDto {
 
     @IsUUID()
     tripId: string;
+
+    @IsBoolean()
+    holdAsAnotherTripBlock: boolean;
 }

@@ -2,8 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
 import { UniqueEntityId } from 'src/core/class/unique-entity-id';
 import { Trips } from 'src/libs/trip/domain/trip.domain';
-import { TripCommand } from 'src/libs/trip/infrastructure/commands/trip.command';
-import { TripQuery } from 'src/libs/trip/infrastructure/queries/trip.query';
 import { TripBlock, TripBlocks } from '../domain/trip-block.domain';
 import { TripBlockCommand } from '../infrastructure/commands/trip-block.command';
 import { TripBlockQuery } from '../infrastructure/queries/trip-block.query';
@@ -22,8 +20,6 @@ export class TripBlockV2Service {
     constructor(
         private readonly tripBlockCommand: TripBlockCommand,
         private readonly tripBlockQuery: TripBlockQuery,
-        private readonly tripCommand: TripCommand,
-        private readonly tripQuery: TripQuery,
     ) {}
 
     findMany(
@@ -122,14 +118,31 @@ export class TripBlockV2Service {
             throw new NotFoundException('Trip is not include this TripBlock.');
         }
 
-        const emptyTripBlock = TripBlock.create({ trips: Trips.create([]) });
-
         tripBlock.removeTrip(trip);
-        emptyTripBlock.addTrip(trip);
 
-        const result = await this.tripBlockCommand.replaceOneTripBlockByDomain(
-            emptyTripBlock,
-        );
+        const replaceSpecifiedTripBlock = async () => {
+            await this.tripBlockCommand.replaceOneTripBlockByDomain(tripBlock);
+        };
+
+        const replaceAsAnotherTripBlock = async () => {
+            const emptyTripBlock = TripBlock.create({
+                trips: Trips.create([]),
+            });
+
+            emptyTripBlock.addTrip(trip);
+
+            await this.tripBlockCommand.replaceOneTripBlockByDomain(
+                emptyTripBlock,
+            );
+        };
+
+        if (dto.holdAsAnotherTripBlock) {
+            await replaceAsAnotherTripBlock();
+        } else {
+            await replaceSpecifiedTripBlock();
+        }
+
+        const result = await this.tripBlockQuery.findOneTripBlock(query);
 
         if (tripBlock.tripsEmpty()) {
             await this.tripBlockCommand.deleteOneTripBlockByDomain(tripBlock);
