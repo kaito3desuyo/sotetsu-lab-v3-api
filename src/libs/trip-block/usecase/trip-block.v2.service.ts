@@ -1,13 +1,10 @@
-import {
-    BadRequestException,
-    Injectable,
-    NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
 import { UniqueEntityId } from 'src/core/class/unique-entity-id';
+import { Trips } from 'src/libs/trip/domain/trip.domain';
 import { TripCommand } from 'src/libs/trip/infrastructure/commands/trip.command';
 import { TripQuery } from 'src/libs/trip/infrastructure/queries/trip.query';
-import { TripBlocks } from '../domain/trip-block.domain';
+import { TripBlock, TripBlocks } from '../domain/trip-block.domain';
 import { TripBlockCommand } from '../infrastructure/commands/trip-block.command';
 import { TripBlockQuery } from '../infrastructure/queries/trip-block.query';
 import {
@@ -16,9 +13,9 @@ import {
 } from './builders/trip-block.domain.builder';
 import { AddTripToTripBlockDto } from './dtos/add-trip-to-trip-block.dto';
 import { CreateTripBlockDto } from './dtos/create-trip-block.dto';
+import { DeleteTripFromTripBlockDto } from './dtos/delete-trip-from-trip-block.dto';
 import { ReplaceTripBlockDto } from './dtos/replace-trip-block.dto';
 import { TripBlockDetailsDto } from './dtos/trip-block-details.dto';
-import { DeleteTripFromTripBlockParam } from './params/delete-trip-from-trip-block.param';
 
 @Injectable()
 export class TripBlockV2Service {
@@ -104,40 +101,40 @@ export class TripBlockV2Service {
     }
 
     async deleteTripFromTripBlock(
-        params: DeleteTripFromTripBlockParam,
+        query: CrudRequest,
+        dto: DeleteTripFromTripBlockDto,
     ): Promise<TripBlockDetailsDto> {
-        const [tripBlock, trip] = await Promise.all([
-            this.tripBlockQuery.findOneTripBlockById(params.tripBlockId, {
-                relations: ['trips'],
-            }),
-            this.tripQuery.findOneTripById(params.tripId),
-        ]);
-
-        if (!tripBlock || !trip) {
-            throw new NotFoundException('TripBlock or Trip not found.');
-        }
-
-        if (!tripBlock.trips.some((o) => o.id === trip.id)) {
-            throw new BadRequestException('Trip is not in TripBlock.');
-        }
-
-        const emptyTripBlock = await this.tripBlockCommand.createEmptyTripBlock();
-
-        await this.tripCommand.updateTripBlockId(trip.id, emptyTripBlock.id);
-
-        const tripCountInBeforeDeleteTripBlock = await this.tripQuery.countTripByTripBlockId(
-            trip.tripBlockId,
+        const tripBlockDto = await this.tripBlockQuery.findOneTripBlockByTripBlockId(
+            dto.id,
         );
 
-        if (tripCountInBeforeDeleteTripBlock === 0) {
-            await this.tripBlockCommand.deleteTripBlockById(trip.tripBlockId);
+        if (!tripBlockDto) {
+            throw new NotFoundException('TripBlock is not found.');
         }
 
-        const deletedTripBlock = await this.tripBlockQuery.findOneTripBlockById(
-            params.tripBlockId,
-            { relations: ['trips'] },
+        const tripBlock = TripBlockDomainBuilder.buildByDetailsDto(
+            tripBlockDto,
         );
 
-        return deletedTripBlock;
+        const trip = tripBlock.getTripByTripId(dto.tripId);
+
+        if (!trip) {
+            throw new NotFoundException('Trip is not include this TripBlock.');
+        }
+
+        const emptyTripBlock = TripBlock.create({ trips: Trips.create([]) });
+
+        tripBlock.removeTrip(trip);
+        emptyTripBlock.addTrip(trip);
+
+        const result = await this.tripBlockCommand.replaceOneTripBlockByDomain(
+            emptyTripBlock,
+        );
+
+        if (tripBlock.tripsEmpty()) {
+            await this.tripBlockCommand.deleteOneTripBlockByDomain(tripBlock);
+        }
+
+        return result;
     }
 }

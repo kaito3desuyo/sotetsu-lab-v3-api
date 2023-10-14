@@ -9,8 +9,10 @@ import {
     Put,
     Req,
     Res,
+    UseGuards,
     UseInterceptors,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import {
     Crud,
     CrudRequest,
@@ -22,15 +24,16 @@ import { Request, Response } from 'express';
 import { isArray } from 'lodash';
 import { validationPipeOptions } from 'src/core/config/validator-options';
 import { addPaginationHeaders } from 'src/core/util/pagination-header';
+import { AddTripToTripBlockDto } from '../usecase/dtos/add-trip-to-trip-block.dto';
 import { BaseTripBlockDto } from '../usecase/dtos/base-trip-block.dto';
 import { CreateTripBlockDto } from '../usecase/dtos/create-trip-block.dto';
+import { DeleteTripFromTripBlockDto } from '../usecase/dtos/delete-trip-from-trip-block.dto';
 import { ReplaceTripBlockDto } from '../usecase/dtos/replace-trip-block.dto';
 import { TripBlockDetailsDto } from '../usecase/dtos/trip-block-details.dto';
 import { AddTripToTripBlockParam } from '../usecase/params/add-trip-to-trip-block.param';
 import { DeleteTripFromTripBlockParam } from '../usecase/params/delete-trip-from-trip-block.param';
 import { ReplaceTripBlockParam } from '../usecase/params/replace-trip-block.param';
 import { TripBlockV2Service } from '../usecase/trip-block.v2.service';
-import { AddTripToTripBlockDto } from '../usecase/dtos/add-trip-to-trip-block.dto';
 
 @Crud({
     model: {
@@ -65,7 +68,7 @@ import { AddTripToTripBlockDto } from '../usecase/dtos/add-trip-to-trip-block.dt
     },
 })
 @Controller()
-// @UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'))
 export class TripBlockV2Controller {
     constructor(private readonly tripBlockV2Service: TripBlockV2Service) {}
 
@@ -139,12 +142,19 @@ export class TripBlockV2Controller {
         return tripBlock;
     }
 
-    @Patch('/:tripBlockId/delete-trip/:tripId')
+    @Patch('/:id/delete-trip')
+    @UseInterceptors(CrudRequestInterceptor)
     async deleteTripFromTripBlock(
+        @ParsedRequest() crudReq: CrudRequest,
         @Param() params: DeleteTripFromTripBlockParam,
+        @Body() body: DeleteTripFromTripBlockDto,
     ): Promise<TripBlockDetailsDto> {
         const tripBlock = await this.tripBlockV2Service.deleteTripFromTripBlock(
-            params,
+            crudReq,
+            {
+                ...body,
+                id: params.id,
+            },
         );
         return tripBlock;
     }
