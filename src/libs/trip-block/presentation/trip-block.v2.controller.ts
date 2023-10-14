@@ -9,8 +9,15 @@ import {
     Put,
     Req,
     Res,
+    UseInterceptors,
 } from '@nestjs/common';
-import { Crud, CrudRequest, Override, ParsedRequest } from '@nestjsx/crud';
+import {
+    Crud,
+    CrudRequest,
+    CrudRequestInterceptor,
+    Override,
+    ParsedRequest,
+} from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
 import { validationPipeOptions } from 'src/core/config/validator-options';
@@ -23,6 +30,7 @@ import { AddTripToTripBlockParam } from '../usecase/params/add-trip-to-trip-bloc
 import { DeleteTripFromTripBlockParam } from '../usecase/params/delete-trip-from-trip-block.param';
 import { ReplaceTripBlockParam } from '../usecase/params/replace-trip-block.param';
 import { TripBlockV2Service } from '../usecase/trip-block.v2.service';
+import { AddTripToTripBlockDto } from '../usecase/dtos/add-trip-to-trip-block.dto';
 
 @Crud({
     model: {
@@ -114,12 +122,19 @@ export class TripBlockV2Controller {
         return tripBlock;
     }
 
-    @Patch('/:tripBlockId/add-trip/:tripId')
+    @Patch('/:id/add-trip')
+    @UseInterceptors(CrudRequestInterceptor)
     async addTripToTripBlock(
+        @ParsedRequest() crudReq: CrudRequest,
         @Param() params: AddTripToTripBlockParam,
+        @Body() body: AddTripToTripBlockDto,
     ): Promise<TripBlockDetailsDto> {
         const tripBlock = await this.tripBlockV2Service.addTripToTripBlock(
-            params,
+            crudReq,
+            {
+                ...body,
+                id: params.id,
+            },
         );
         return tripBlock;
     }

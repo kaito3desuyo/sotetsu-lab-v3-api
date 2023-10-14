@@ -4,18 +4,20 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
+import { UniqueEntityId } from 'src/core/class/unique-entity-id';
 import { TripCommand } from 'src/libs/trip/infrastructure/commands/trip.command';
 import { TripQuery } from 'src/libs/trip/infrastructure/queries/trip.query';
+import { TripBlocks } from '../domain/trip-block.domain';
 import { TripBlockCommand } from '../infrastructure/commands/trip-block.command';
 import { TripBlockQuery } from '../infrastructure/queries/trip-block.query';
 import {
     TripBlockDomainBuilder,
     TripBlocksDomainBuilder,
 } from './builders/trip-block.domain.builder';
+import { AddTripToTripBlockDto } from './dtos/add-trip-to-trip-block.dto';
 import { CreateTripBlockDto } from './dtos/create-trip-block.dto';
 import { ReplaceTripBlockDto } from './dtos/replace-trip-block.dto';
 import { TripBlockDetailsDto } from './dtos/trip-block-details.dto';
-import { AddTripToTripBlockParam } from './params/add-trip-to-trip-block.param';
 import { DeleteTripFromTripBlockParam } from './params/delete-trip-from-trip-block.param';
 
 @Injectable()
@@ -39,7 +41,7 @@ export class TripBlockV2Service {
         query: CrudRequest,
         dtos: CreateTripBlockDto[],
     ): Promise<TripBlockDetailsDto[]> {
-        const domains = TripBlocksDomainBuilder.buildFromCreateDto(dtos);
+        const domains = TripBlocksDomainBuilder.buildByCreateDto(dtos);
         const result = await this.tripBlockCommand.createManyTripBlocks(
             query,
             domains,
@@ -60,33 +62,45 @@ export class TripBlockV2Service {
     }
 
     async addTripToTripBlock(
-        params: AddTripToTripBlockParam,
+        query: CrudRequest,
+        dto: AddTripToTripBlockDto,
     ): Promise<TripBlockDetailsDto> {
-        const [tripBlock, trip] = await Promise.all([
-            this.tripBlockQuery.findOneTripBlockById(params.tripBlockId),
-            this.tripQuery.findOneTripById(params.tripId),
-        ]);
+        const tripBlockDto = {
+            from: await this.tripBlockQuery.findOneTripBlockByTripId(
+                dto.tripId,
+            ),
+            to: await this.tripBlockQuery.findOneTripBlockByTripBlockId(dto.id),
+        };
 
-        if (!tripBlock || !trip) {
-            throw new NotFoundException('TripBlock or Trip not found.');
+        if (!tripBlockDto.from || !tripBlockDto.to) {
+            throw new NotFoundException('Either TripBlock is not found.');
         }
 
-        await this.tripCommand.updateTripBlockId(trip.id, tripBlock.id);
+        const tripBlock = {
+            from: TripBlockDomainBuilder.buildByDetailsDto(tripBlockDto.from),
+            to: TripBlockDomainBuilder.buildByDetailsDto(tripBlockDto.to),
+        };
 
-        const tripCountInBeforeUpdateTripBlock = await this.tripQuery.countTripByTripBlockId(
-            trip.tripBlockId,
+        const trip = {
+            from: tripBlock.from.props.trips.getItemByFn((trip) =>
+                trip.id.isEqual(new UniqueEntityId(dto.tripId)),
+            ),
+        };
+
+        tripBlock.from.props.trips.remove(trip.from);
+        tripBlock.to.props.trips.add(trip.from);
+
+        const result = await this.tripBlockCommand.replaceOneTripBlock(
+            query,
+            tripBlock.to,
         );
 
-        if (tripCountInBeforeUpdateTripBlock === 0) {
-            await this.tripBlockCommand.deleteTripBlockById(trip.tripBlockId);
+        if (tripBlock.from.props.trips.isEmpty()) {
+            const tripBlocks = TripBlocks.create([tripBlock.from]);
+            await this.tripBlockCommand.deleteManyTripBlockByDomain(tripBlocks);
         }
 
-        const updatedTripBlock = await this.tripBlockQuery.findOneTripBlockById(
-            params.tripBlockId,
-            { relations: ['trips'] },
-        );
-
-        return updatedTripBlock;
+        return result;
     }
 
     async deleteTripFromTripBlock(

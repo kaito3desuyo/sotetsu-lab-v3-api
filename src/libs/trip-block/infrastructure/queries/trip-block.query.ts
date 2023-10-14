@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { isArray } from 'lodash';
-import { FindOneOptions, Repository } from 'typeorm';
+import { FindOneOptions, Repository, SelectQueryBuilder } from 'typeorm';
 import { TripBlockDetailsDto } from '../../usecase/dtos/trip-block-details.dto';
 import {
     TripBlockDtoBuilder,
@@ -46,6 +46,48 @@ export class TripBlockQuery extends TypeOrmCrudService<TripBlockModel> {
             tripBlockId,
             options,
         );
+        return TripBlockDtoBuilder.buildFromModel(model);
+    }
+
+    async findOneTripBlockByTripBlockId(
+        tripBlockId: string,
+        options?: FindOneOptions<TripBlockModel>,
+    ): Promise<TripBlockDetailsDto> {
+        const model = await this.tripBlockRepository.findOne({
+            ...options,
+            join: {
+                alias: 'tripBlock',
+                leftJoinAndSelect: {
+                    trips: 'tripBlock.trips',
+                    times: 'trips.times',
+                    tripOperationLists: 'trips.tripOperationLists',
+                },
+            },
+            where: (qb: SelectQueryBuilder<TripBlockModel>) => {
+                qb.where('tripBlock.id = :tripBlockId', { tripBlockId });
+            },
+        });
+        return TripBlockDtoBuilder.buildFromModel(model);
+    }
+
+    async findOneTripBlockByTripId(
+        tripId: string,
+        options?: FindOneOptions<TripBlockModel>,
+    ): Promise<TripBlockDetailsDto> {
+        const model = await this.tripBlockRepository.findOne({
+            ...options,
+            join: {
+                alias: 'tripBlock',
+                leftJoinAndSelect: {
+                    trips: 'tripBlock.trips',
+                    times: 'trips.times',
+                    tripOperationLists: 'trips.tripOperationLists',
+                },
+            },
+            where: (qb: SelectQueryBuilder<TripBlockModel>) => {
+                qb.where('trips.id = :tripId', { tripId });
+            },
+        });
         return TripBlockDtoBuilder.buildFromModel(model);
     }
 }

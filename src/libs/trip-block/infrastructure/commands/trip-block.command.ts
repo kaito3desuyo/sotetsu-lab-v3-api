@@ -47,6 +47,21 @@ export class TripBlockCommand extends TypeOrmCrudService<TripBlockModel> {
         return TripBlockDtoBuilder.buildFromModel(result);
     }
 
+    async deleteOneTripBlock(
+        query: CrudRequest,
+    ): Promise<void | TripBlockDetailsDto> {
+        const result = await this.deleteOne(query);
+        return result && TripBlockDtoBuilder.buildFromModel(result);
+    }
+
+    async deleteManyTripBlockByDomain(
+        domains: TripBlocks,
+    ): Promise<TripBlockDetailsDto[]> {
+        const models = TripBlocksModelBuilder.buildFromDomain(domains);
+        const result = await this.tripBlockRepository.remove(models);
+        return TripBlocksDtoBuilder.buildFromModel(result);
+    }
+
     async deleteTripBlockById(tripBlockId: string): Promise<void> {
         await this.tripBlockRepository.delete(tripBlockId);
     }
