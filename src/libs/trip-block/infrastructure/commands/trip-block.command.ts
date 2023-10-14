@@ -33,11 +33,6 @@ export class TripBlockCommand extends TypeOrmCrudService<TripBlockModel> {
         return TripBlocksDtoBuilder.buildFromModel(result);
     }
 
-    async createEmptyTripBlock(): Promise<TripBlockDetailsDto> {
-        const model = await this.tripBlockRepository.save({});
-        return TripBlockDtoBuilder.buildFromModel(model);
-    }
-
     async replaceOneTripBlock(
         query: CrudRequest,
         domain: TripBlock,
@@ -47,7 +42,26 @@ export class TripBlockCommand extends TypeOrmCrudService<TripBlockModel> {
         return TripBlockDtoBuilder.buildFromModel(result);
     }
 
-    async deleteTripBlockById(tripBlockId: string): Promise<void> {
-        await this.tripBlockRepository.delete(tripBlockId);
+    async replaceOneTripBlockByDomain(
+        domain: TripBlock,
+    ): Promise<TripBlockDetailsDto> {
+        const model = TripBlockModelBuilder.buildFromDomain(domain);
+        const result = await this.tripBlockRepository.save(model);
+        return TripBlockDtoBuilder.buildFromModel(result);
+    }
+
+    async deleteOneTripBlock(
+        query: CrudRequest,
+    ): Promise<void | TripBlockDetailsDto> {
+        const result = await this.deleteOne(query);
+        return result && TripBlockDtoBuilder.buildFromModel(result);
+    }
+
+    async deleteOneTripBlockByDomain(
+        domain: TripBlock,
+    ): Promise<TripBlockDetailsDto> {
+        const model = TripBlockModelBuilder.buildFromDomain(domain);
+        const result = await this.tripBlockRepository.remove(model);
+        return TripBlockDtoBuilder.buildFromModel(result);
     }
 }

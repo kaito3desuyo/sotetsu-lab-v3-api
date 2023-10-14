@@ -1,7 +1,7 @@
 import { AggregatedRoot } from 'src/core/class/aggregated-root';
 import { UniqueEntityId } from 'src/core/class/unique-entity-id';
 import { WatchedList } from 'src/core/class/watched-list';
-import { Trips } from 'src/libs/trip/domain/trip.domain';
+import { Trip, Trips } from 'src/libs/trip/domain/trip.domain';
 
 interface ITripBlockProps {
     trips: Trips;
@@ -19,8 +19,28 @@ export class TripBlock extends AggregatedRoot<ITripBlockProps> {
 
     public update(props: Partial<ITripBlockProps>): void {
         for (const key of Object.keys(props)) {
-            this.props[key] = props[key];
+            if (key in this._props) {
+                this._props[key] = props[key];
+            }
         }
+    }
+
+    public getTripByTripId(tripId: string): Trip {
+        return this._props.trips.getItemByFn((trip) =>
+            trip.id.isEqual(new UniqueEntityId(tripId)),
+        );
+    }
+
+    public addTrip(trip: Trip): void {
+        this._props.trips.add(trip);
+    }
+
+    public removeTrip(trip: Trip): void {
+        this._props.trips.remove(trip);
+    }
+
+    public tripsEmpty(): boolean {
+        return this._props.trips.isEmpty();
     }
 
     private _copyTripBlockId(): void {

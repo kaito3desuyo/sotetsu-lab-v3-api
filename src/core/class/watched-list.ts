@@ -5,8 +5,8 @@ export abstract class WatchedList<T> {
     private _removed: T[];
 
     protected constructor(initialItems?: T[]) {
-        this._initial = initialItems ?? [];
-        this._current = initialItems ?? [];
+        this._initial = [...initialItems] ?? [];
+        this._current = [...initialItems] ?? [];
         this._new = [];
         this._removed = [];
     }
@@ -20,6 +20,10 @@ export abstract class WatchedList<T> {
         return this._current;
     }
 
+    public getItemByFn(fn: (value: T, index: number, obj: T[]) => boolean): T {
+        return this._current.find(fn);
+    }
+
     public getNewItems(): T[] {
         return this._new;
     }
@@ -30,6 +34,10 @@ export abstract class WatchedList<T> {
 
     public exists(item: T): boolean {
         return this._isCurrentItem(item);
+    }
+
+    public isEmpty(): boolean {
+        return this._current.length === 0;
     }
 
     public add(item: T): void {
