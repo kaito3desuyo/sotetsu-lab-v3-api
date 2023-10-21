@@ -1,6 +1,6 @@
 ARG APP_NAME="sotetsu-lab-v3-api"
 
-FROM node:14 as base
+FROM node:20 as base
 
 ################################################################################
 
@@ -31,9 +31,13 @@ RUN npm run build
 
 ################################################################################
 
-FROM node:14-alpine as production-hosting
+FROM node:20-alpine as production-hosting
 
 ARG APP_NAME
+
+COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.7.1 /lambda-adapter /opt/extensions/lambda-adapter
+ENV PORT="3000"
+ENV READINESS_CHECK_PATH="/health-check"
 
 ENV TZ="Asia/Tokyo"
 ENV NODE_ENV="production"
