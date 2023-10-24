@@ -56,7 +56,7 @@ const serverlessConfiguration: AWS = {
             image: {
                 name: 'app',
             },
-            memorySize: 2048,
+            memorySize: 1769,
             timeout: 25,
             // reservedConcurrency: 1000,
             environment: {
