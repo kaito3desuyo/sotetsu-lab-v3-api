@@ -17,6 +17,7 @@ dayjs.tz.setDefault('Asia/Tokyo');
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
+    app.enableShutdownHooks();
     app.use(compression());
     app.use(helmet());
     app.enableCors({
