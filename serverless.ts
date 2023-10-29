@@ -40,9 +40,9 @@ const serverlessConfiguration: AWS = {
                 },
             },
         },
-        httpApi: {
-            name: '${param:prefix}-apigw',
-        },
+        // httpApi: {
+        //     name: '${param:prefix}-apigw',
+        // },
         iam: {
             role: {
                 name: '${param:prefix}-lambda-role',
@@ -53,6 +53,7 @@ const serverlessConfiguration: AWS = {
     functions: {
         app: {
             name: '${param:prefix}-lambda',
+            url: true,
             image: {
                 name: 'app',
             },
@@ -69,9 +70,9 @@ const serverlessConfiguration: AWS = {
                     '${ssm:sotetsu-lab-v3-auth-cognito-userpool-id}',
             },
             events: [
-                {
-                    httpApi: '*',
-                },
+                // {
+                //     httpApi: '*',
+                // },
             ],
         },
     },
@@ -86,6 +87,82 @@ const serverlessConfiguration: AWS = {
             '${ssm:/aws/reference/secretsmanager/sotetsu-lab-v3-database-rds-secrets}',
         deploymentBucket: {
             blockPublicAccess: true,
+        },
+    },
+    resources: {
+        Resources: {
+            AppCloudFrontDistribution: {
+                Type: 'AWS::CloudFront::Distribution',
+                Properties: {
+                    DistributionConfig: {
+                        Enabled: true,
+                        HttpVersion: 'http2and3',
+                        Aliases: ['api.sotetsu-lab.com'],
+                        ViewerCertificate: {
+                            AcmCertificateArn:
+                                'arn:aws:acm:us-east-1:442730633672:certificate/1c93cef5-5e62-4b35-a5ac-321040f3ff1b',
+                            MinimumProtocolVersion: 'TLSv1.2_2021',
+                            SslSupportMethod: 'sni-only',
+                        },
+                        Origins: [
+                            {
+                                Id: 'Sotetsu Lab v3 API Lambda Function URL',
+                                DomainName: {
+                                    'Fn::Join': [
+                                        '',
+                                        {
+                                            'Fn::Split': [
+                                                '/',
+                                                {
+                                                    'Fn::Join': [
+                                                        '',
+                                                        {
+                                                            'Fn::Split': [
+                                                                'https://',
+                                                                {
+                                                                    'Fn::GetAtt': [
+                                                                        'AppLambdaFunctionUrl',
+                                                                        'FunctionUrl',
+                                                                    ],
+                                                                },
+                                                            ],
+                                                        },
+                                                    ],
+                                                },
+                                            ],
+                                        },
+                                    ],
+                                },
+                                CustomOriginConfig: {
+                                    OriginProtocolPolicy: 'https-only',
+                                    OriginSSLProtocols: ['TLSv1.2'],
+                                },
+                            },
+                        ],
+                        DefaultCacheBehavior: {
+                            TargetOriginId:
+                                'Sotetsu Lab v3 API Lambda Function URL',
+                            CachePolicyId:
+                                '4135ea2d-6df8-44a3-9df3-4b5a84be39ad',
+                            OriginRequestPolicyId:
+                                'b689b0a8-53d0-40ab-baf2-68738e2966ac',
+                            ResponseHeadersPolicyId:
+                                'eaab4381-ed33-4a86-88ca-d9558dc6cd63',
+                            ViewerProtocolPolicy: 'redirect-to-https',
+                            AllowedMethods: [
+                                'GET',
+                                'HEAD',
+                                'OPTIONS',
+                                'PUT',
+                                'POST',
+                                'PATCH',
+                                'DELETE',
+                            ],
+                            Compress: true,
+                        },
+                    },
+                },
+            },
         },
     },
 };
