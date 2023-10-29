@@ -142,8 +142,7 @@ const serverlessConfiguration: AWS = {
                         DefaultCacheBehavior: {
                             TargetOriginId:
                                 'Sotetsu Lab v3 API Lambda Function URL',
-                            CachePolicyId:
-                                '4135ea2d-6df8-44a3-9df3-4b5a84be39ad',
+                            CachePolicyId: { Ref: 'AppCloudFrontCachePolicy' },
                             OriginRequestPolicyId:
                                 'b689b0a8-53d0-40ab-baf2-68738e2966ac',
                             ResponseHeadersPolicyId:
@@ -159,6 +158,30 @@ const serverlessConfiguration: AWS = {
                                 'DELETE',
                             ],
                             Compress: true,
+                        },
+                    },
+                },
+            },
+            AppCloudFrontCachePolicy: {
+                Type: 'AWS::CloudFront::CachePolicy',
+                Properties: {
+                    CachePolicyConfig: {
+                        Name: 'Sotetsu_Lab_v3_API_CloudFront_Cache_Policy',
+                        DefaultTTL: 60,
+                        MaxTTL: 31536000,
+                        MinTTL: 1,
+                        ParametersInCacheKeyAndForwardedToOrigin: {
+                            HeadersConfig: {
+                                HeaderBehavior: 'none',
+                            },
+                            CookiesConfig: {
+                                CookieBehavior: 'none',
+                            },
+                            QueryStringsConfig: {
+                                QueryStringBehavior: 'all',
+                            },
+                            EnableAcceptEncodingGzip: true,
+                            EnableAcceptEncodingBrotli: true,
                         },
                     },
                 },
