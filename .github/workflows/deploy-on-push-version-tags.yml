@@ -6,6 +6,32 @@ on:
     workflow_dispatch:
 
 jobs:
+    deploy-to-lambda:
+        runs-on: ubuntu-latest
+        permissions:
+            id-token: write
+            contents: read
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+
+            - name: Use Node.js 20.x
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 20.x
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v1
+              with:
+                  role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
+                  aws-region: ap-northeast-1
+
+            - name: Deploy to AWS Lambda with Serverless Framework
+              run: |
+                  npm ci
+                  npx serverless deploy
+
     deploy:
         runs-on: ubuntu-latest
         permissions:
