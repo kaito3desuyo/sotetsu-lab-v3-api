@@ -32,64 +32,64 @@ jobs:
                   npm ci
                   npx serverless deploy
 
-    deploy:
-        runs-on: ubuntu-latest
-        permissions:
-            id-token: write
-            contents: read
+    # deploy:
+    #     runs-on: ubuntu-latest
+    #     permissions:
+    #         id-token: write
+    #         contents: read
 
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v3
+    #     steps:
+    #         - name: Checkout
+    #           uses: actions/checkout@v3
 
-            - name: Configure AWS credentials
-              uses: aws-actions/configure-aws-credentials@v1
-              with:
-                  role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
-                  aws-region: ap-northeast-1
+    #         - name: Configure AWS credentials
+    #           uses: aws-actions/configure-aws-credentials@v1
+    #           with:
+    #               role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
+    #               aws-region: ap-northeast-1
 
-            - name: Login to Amazon ECR
-              id: login-ecr
-              uses: aws-actions/amazon-ecr-login@v1
+    #         - name: Login to Amazon ECR
+    #           id: login-ecr
+    #           uses: aws-actions/amazon-ecr-login@v1
 
-            - name: Build, tag, and push docker image to Amazon ECR
-              id: build-image
-              env:
-                  AWS_ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-                  AWS_ECR_REPOSITORY_NAME: ${{ secrets.AWS_ECR_REPOSITORY_NAME }}
-                  IMAGE_TAG: ${{ github.sha }}
-              run: |
-                  docker build -t ${AWS_ECR_REGISTRY}/${AWS_ECR_REPOSITORY_NAME}:${IMAGE_TAG} .
-                  docker push ${AWS_ECR_REGISTRY}/${AWS_ECR_REPOSITORY_NAME}:${IMAGE_TAG}
-                  echo "image=${AWS_ECR_REGISTRY}/${AWS_ECR_REPOSITORY_NAME}:${IMAGE_TAG}" >> ${GITHUB_OUTPUT}
+    #         - name: Build, tag, and push docker image to Amazon ECR
+    #           id: build-image
+    #           env:
+    #               AWS_ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+    #               AWS_ECR_REPOSITORY_NAME: ${{ secrets.AWS_ECR_REPOSITORY_NAME }}
+    #               IMAGE_TAG: ${{ github.sha }}
+    #           run: |
+    #               docker build -t ${AWS_ECR_REGISTRY}/${AWS_ECR_REPOSITORY_NAME}:${IMAGE_TAG} .
+    #               docker push ${AWS_ECR_REGISTRY}/${AWS_ECR_REPOSITORY_NAME}:${IMAGE_TAG}
+    #               echo "image=${AWS_ECR_REGISTRY}/${AWS_ECR_REPOSITORY_NAME}:${IMAGE_TAG}" >> ${GITHUB_OUTPUT}
 
-            - name: Fill in AWS resource parameters in the Amazon ECS task definition
-              uses: danielr1996/envsubst-action@1.1.0
-              env:
-                  AWS_ECS_TASKDEF_FAMILY: ${{ secrets.AWS_ECS_TASKDEF_FAMILY }}
-                  AWS_ECS_TASK_ROLE_ARN: ${{ secrets.AWS_ECS_TASK_ROLE_ARN }}
-                  AWS_ECS_TASK_EXECUTION_ROLE_ARN: ${{ secrets.AWS_ECS_TASK_EXECUTION_ROLE_ARN }}
-                  AWS_CLOUDWATCH_LOG_GROUP_NAME: ${{ secrets.AWS_CLOUDWATCH_LOG_GROUP_NAME }}
-                  AWS_CLOUDWATCH_LOG_STREAM_PREFIX: ${{ secrets.AWS_CLOUDWATCH_LOG_STREAM_PREFIX }}
-              with:
-                  input: taskdef.json
-                  output: taskdef.json
+    #         - name: Fill in AWS resource parameters in the Amazon ECS task definition
+    #           uses: danielr1996/envsubst-action@1.1.0
+    #           env:
+    #               AWS_ECS_TASKDEF_FAMILY: ${{ secrets.AWS_ECS_TASKDEF_FAMILY }}
+    #               AWS_ECS_TASK_ROLE_ARN: ${{ secrets.AWS_ECS_TASK_ROLE_ARN }}
+    #               AWS_ECS_TASK_EXECUTION_ROLE_ARN: ${{ secrets.AWS_ECS_TASK_EXECUTION_ROLE_ARN }}
+    #               AWS_CLOUDWATCH_LOG_GROUP_NAME: ${{ secrets.AWS_CLOUDWATCH_LOG_GROUP_NAME }}
+    #               AWS_CLOUDWATCH_LOG_STREAM_PREFIX: ${{ secrets.AWS_CLOUDWATCH_LOG_STREAM_PREFIX }}
+    #           with:
+    #               input: taskdef.json
+    #               output: taskdef.json
 
-            - name: Fill in the new image ID in the Amazon ECS task definition
-              id: task-def
-              uses: aws-actions/amazon-ecs-render-task-definition@v1
-              with:
-                  task-definition: taskdef.json
-                  container-name: api
-                  image: ${{ steps.build-image.outputs.image }}
+    #         - name: Fill in the new image ID in the Amazon ECS task definition
+    #           id: task-def
+    #           uses: aws-actions/amazon-ecs-render-task-definition@v1
+    #           with:
+    #               task-definition: taskdef.json
+    #               container-name: api
+    #               image: ${{ steps.build-image.outputs.image }}
 
-            - name: Deploy Amazon ECS task definition
-              uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-              with:
-                  task-definition: ${{ steps.task-def.outputs.task-definition }}
-                  cluster: ${{ secrets.AWS_ECS_CLUSTER_NAME }}
-                  service: ${{ secrets.AWS_ECS_SERVICE_NAME }}
-                  wait-for-service-stability: true
-                  codedeploy-appspec: appspec.yaml
-                  codedeploy-application: ${{ secrets.AWS_CODEDEPLOY_APPLICATION_NAME }}
-                  codedeploy-deployment-group: ${{ secrets.AWS_CODEDEPLOY_DEPLOYMENT_GROUP_NAME }}
+    #         - name: Deploy Amazon ECS task definition
+    #           uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+    #           with:
+    #               task-definition: ${{ steps.task-def.outputs.task-definition }}
+    #               cluster: ${{ secrets.AWS_ECS_CLUSTER_NAME }}
+    #               service: ${{ secrets.AWS_ECS_SERVICE_NAME }}
+    #               wait-for-service-stability: true
+    #               codedeploy-appspec: appspec.yaml
+    #               codedeploy-application: ${{ secrets.AWS_CODEDEPLOY_APPLICATION_NAME }}
+    #               codedeploy-deployment-group: ${{ secrets.AWS_CODEDEPLOY_DEPLOYMENT_GROUP_NAME }}
