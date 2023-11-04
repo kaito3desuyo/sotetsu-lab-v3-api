@@ -5,11 +5,13 @@ const system = 'sotetsu-lab-v3' as const;
 const serverlessConfiguration: AWS = {
     service: `${system}-api`,
     frameworkVersion: '3',
-    plugins: ['serverless-deployment-bucket'],
+    plugins: ['serverless-deployment-bucket', 'serverless-layers'],
     provider: {
         name: 'aws',
         stage: 'prod',
         region: 'ap-northeast-1',
+        runtime: 'nodejs18.x',
+        architecture: 'arm64',
         stackName: '${param:prefix}-cfstack',
         stackTags: {
             System: system,
@@ -48,32 +50,52 @@ const serverlessConfiguration: AWS = {
                 name: '${param:prefix}-lambda-role',
             },
         },
+        environment: {
+            // HOME: '/tmp',
+            TZ: 'Asia/Tokyo',
+            NODE_ENV: 'production',
+            CORS_HEADER_ORIGIN: 'https://v3.sotetsu-lab.com',
+            DATABASE_URL:
+                'postgresql://${self:custom.databaseSecrets.username}:${self:custom.databaseSecrets.password}@${ssm:sotetsu-lab-v3-database-rds-proxy-host-param}/sotetsu_lab_v3',
+            COGNITO_USERPOOL_ID:
+                '${ssm:sotetsu-lab-v3-auth-cognito-userpool-id}',
+        },
     },
     // import the function via paths
     functions: {
+        // app: {
+        //     name: '${param:prefix}-lambda',
+        //     url: true,
+        //     image: {
+        //         name: 'app',
+        //     },
+        //     memorySize: 1769,
+        //     timeout: 25,
+        //     // reservedConcurrency: 1000,
+        //     environment: {
+        //         HOME: '/tmp',
+        //         NODE_ENV: 'production',
+        //         CORS_HEADER_ORIGIN: 'https://v3.sotetsu-lab.com',
+        //         DATABASE_URL:
+        //             'postgresql://${self:custom.databaseSecrets.username}:${self:custom.databaseSecrets.password}@${ssm:sotetsu-lab-v3-database-rds-proxy-host-param}/sotetsu_lab_v3',
+        //         COGNITO_USERPOOL_ID:
+        //             '${ssm:sotetsu-lab-v3-auth-cognito-userpool-id}',
+        //     },
+        //     events: [
+        //         // {
+        //         //     httpApi: '*',
+        //         // },
+        //     ],
+        // },
         app: {
+            handler: `dist/handler.main`,
             name: '${param:prefix}-lambda',
-            url: true,
-            image: {
-                name: 'app',
-            },
             memorySize: 1769,
-            timeout: 25,
-            // reservedConcurrency: 1000,
-            environment: {
-                HOME: '/tmp',
-                NODE_ENV: 'production',
-                CORS_HEADER_ORIGIN: 'https://v3.sotetsu-lab.com',
-                DATABASE_URL:
-                    'postgresql://${self:custom.databaseSecrets.username}:${self:custom.databaseSecrets.password}@${ssm:sotetsu-lab-v3-database-rds-proxy-host-param}/sotetsu_lab_v3',
-                COGNITO_USERPOOL_ID:
-                    '${ssm:sotetsu-lab-v3-auth-cognito-userpool-id}',
+            timeout: 60,
+            url: true,
+            package: {
+                patterns: ['!**', 'dist/**'],
             },
-            events: [
-                // {
-                //     httpApi: '*',
-                // },
-            ],
         },
     },
     package: { individually: true },
@@ -167,7 +189,7 @@ const serverlessConfiguration: AWS = {
                 Properties: {
                     CachePolicyConfig: {
                         Name: 'Sotetsu_Lab_v3_API_CloudFront_Cache_Policy',
-                        DefaultTTL: 60,
+                        DefaultTTL: 1,
                         MaxTTL: 31536000,
                         MinTTL: 1,
                         ParametersInCacheKeyAndForwardedToOrigin: {

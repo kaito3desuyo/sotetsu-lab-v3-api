@@ -30,7 +30,7 @@ jobs:
             - name: Deploy to AWS Lambda with Serverless Framework
               run: |
                   npm ci
-                  npx serverless deploy
+                  npm run deploy
 
     # deploy:
     #     runs-on: ubuntu-latest
