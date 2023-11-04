@@ -16,7 +16,7 @@ import {
 } from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
-import { addPaginationHeaders } from 'src/core/util/pagination-header';
+import { addPaginationHeaders } from 'src/core/utils/pagination-header';
 import { BaseOperationSightingDto } from '../usecase/dtos/base-operation-sighting.dto';
 import { CreateOperationSightingDto } from '../usecase/dtos/create-operation-sighting.dto';
 import { OperationSightingDetailsDto } from '../usecase/dtos/operation-sighting-details.dto';

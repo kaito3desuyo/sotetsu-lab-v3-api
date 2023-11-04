@@ -1,5 +1,5 @@
 import { plainToClass } from 'class-transformer';
-import { transformerOptions } from 'src/core/config/transformer-options';
+import { transformerOptions } from 'src/core/configs/transformer-options';
 import { OperationDetailsDto } from '../../usecase/dtos/operation-details.dto';
 import { OperationModel } from '../models/operation.model';
 

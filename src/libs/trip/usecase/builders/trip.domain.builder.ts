@@ -1,4 +1,4 @@
-import { UniqueEntityId } from 'src/core/class/unique-entity-id';
+import { UniqueEntityId } from 'src/core/classes/unique-entity-id';
 import { Trip, Trips } from '../../domain/trip.domain';
 import { CreateTripDto } from '../dtos/create-trip.dto';
 import { ReplaceTripDto } from '../dtos/replace-trip.dto';

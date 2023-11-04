@@ -1,6 +1,6 @@
-import { Entity } from 'src/core/class/entity';
-import { UniqueEntityId } from 'src/core/class/unique-entity-id';
-import { WatchedList } from 'src/core/class/watched-list';
+import { Entity } from 'src/core/classes/entity';
+import { UniqueEntityId } from 'src/core/classes/unique-entity-id';
+import { WatchedList } from 'src/core/classes/watched-list';
 
 interface ITripOperationListProps {
     tripId: string;

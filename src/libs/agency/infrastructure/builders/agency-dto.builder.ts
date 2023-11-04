@@ -1,5 +1,5 @@
 import { plainToClass } from 'class-transformer';
-import { transformerOptions } from 'src/core/config/transformer-options';
+import { transformerOptions } from 'src/core/configs/transformer-options';
 import { AgencyDetailsDto } from '../../usecase/dtos/agency-details.dto';
 import { AgencyModel } from '../models/agency.model';
 

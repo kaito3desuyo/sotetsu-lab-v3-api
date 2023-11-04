@@ -6,8 +6,8 @@ import {
     isNewYear,
     getDayOfWeek,
     isSpecialCalendarAvailable,
-} from 'src/core/util/day-of-week';
-import { crudReqMergeCustomizer } from 'src/core/util/merge-customizer';
+} from 'src/core/utils/day-of-week';
+import { crudReqMergeCustomizer } from 'src/core/utils/merge-customizer';
 import { CalendarQuery } from '../infrastructure/queries/calendar.query';
 import { CalendarDetailsDto } from './dtos/calendar-details.dto';
 import { CalendarFindManyBySpecificDateParam } from './params/calendar-find-many-by-specific-date.param';

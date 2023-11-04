@@ -1,6 +1,6 @@
-import { AggregatedRoot } from 'src/core/class/aggregated-root';
-import { UniqueEntityId } from 'src/core/class/unique-entity-id';
-import { WatchedList } from 'src/core/class/watched-list';
+import { AggregatedRoot } from 'src/core/classes/aggregated-root';
+import { UniqueEntityId } from 'src/core/classes/unique-entity-id';
+import { WatchedList } from 'src/core/classes/watched-list';
 import { Trip, Trips } from 'src/libs/trip/domain/trip.domain';
 
 interface ITripBlockProps {

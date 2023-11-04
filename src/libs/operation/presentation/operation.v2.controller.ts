@@ -16,7 +16,7 @@ import {
 } from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
-import { addPaginationHeaders } from 'src/core/util/pagination-header';
+import { addPaginationHeaders } from 'src/core/utils/pagination-header';
 import { TripOperationListDetailsDto } from 'src/libs/trip/usecase/dtos/trip-operation-list-details.dto';
 import { BaseOperationDto } from '../usecase/dtos/base-operation.dto';
 import { OperationDetailsDto } from '../usecase/dtos/operation-details.dto';

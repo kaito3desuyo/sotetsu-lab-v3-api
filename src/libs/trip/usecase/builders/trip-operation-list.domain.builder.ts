@@ -1,4 +1,4 @@
-import { UniqueEntityId } from 'src/core/class/unique-entity-id';
+import { UniqueEntityId } from 'src/core/classes/unique-entity-id';
 import {
     TripOperationList,
     TripOperationLists,

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
 import { cloneDeep, mergeWith, omit, sortBy } from 'lodash';
-import { crudReqMergeCustomizer } from 'src/core/util/merge-customizer';
+import { crudReqMergeCustomizer } from 'src/core/utils/merge-customizer';
 import { RouteStationListDetailsDto } from 'src/libs/route/usecase/dtos/route-station-list-details.dto';
 import { StationDetailsDto } from 'src/libs/station/usecase/dtos/station-details.dto';
 import { ServiceQuery } from '../infrastructure/queries/service.query';

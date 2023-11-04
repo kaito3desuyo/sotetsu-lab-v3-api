@@ -8,7 +8,7 @@ import {
 } from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
-import { addPaginationHeaders } from 'src/core/util/pagination-header';
+import { addPaginationHeaders } from 'src/core/utils/pagination-header';
 import { ServiceModel } from '../infrastructure/models/service.model';
 import { ServiceDetailsDto } from '../usecase/dtos/service-details.dto';
 import { ServiceV2Service } from '../usecase/service.v2.service';

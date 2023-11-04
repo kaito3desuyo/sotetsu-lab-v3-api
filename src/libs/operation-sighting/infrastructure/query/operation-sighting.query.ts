@@ -3,7 +3,7 @@ import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import dayjs from 'dayjs';
 import { isArray, mergeWith } from 'lodash';
-import { crudReqMergeCustomizer } from 'src/core/util/merge-customizer';
+import { crudReqMergeCustomizer } from 'src/core/utils/merge-customizer';
 import { Repository } from 'typeorm';
 import { OperationSightingDetailsDto } from '../../usecase/dtos/operation-sighting-details.dto';
 import { buildOperationSightingDetailsDto } from '../builders/operation-sighting-dto.builder';

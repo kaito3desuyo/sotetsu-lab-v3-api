@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
 import dayjs from 'dayjs';
 import { find, mergeWith, omit } from 'lodash';
-import { crudReqMergeCustomizer } from 'src/core/util/merge-customizer';
+import { crudReqMergeCustomizer } from 'src/core/utils/merge-customizer';
 import { TripOperationListDetailsDto } from 'src/libs/trip/usecase/dtos/trip-operation-list-details.dto';
 import { OperationQuery } from '../infrastructure/queries/operation.query';
 import { OperationDetailsDto } from './dtos/operation-details.dto';

@@ -17,7 +17,7 @@ import { BaseCalendarDto } from '../usecase/dtos/base-calendar.dto';
 import { Request, Response } from 'express';
 import { CalendarV2Service } from '../usecase/calendar.v2.service';
 import { isArray } from 'lodash';
-import { addPaginationHeaders } from 'src/core/util/pagination-header';
+import { addPaginationHeaders } from 'src/core/utils/pagination-header';
 import { CalendarDetailsDto } from '../usecase/dtos/calendar-details.dto';
 import { CalendarFindManyBySpecificDateParam } from '../usecase/params/calendar-find-many-by-specific-date.param';
 

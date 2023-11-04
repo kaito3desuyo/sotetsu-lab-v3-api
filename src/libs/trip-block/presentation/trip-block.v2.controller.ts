@@ -22,8 +22,8 @@ import {
 } from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
-import { validationPipeOptions } from 'src/core/config/validator-options';
-import { addPaginationHeaders } from 'src/core/util/pagination-header';
+import { validationPipeOptions } from 'src/core/configs/validator-options';
+import { addPaginationHeaders } from 'src/core/utils/pagination-header';
 import { AddTripToTripBlockDto } from '../usecase/dtos/add-trip-to-trip-block.dto';
 import { BaseTripBlockDto } from '../usecase/dtos/base-trip-block.dto';
 import { CreateTripBlockDto } from '../usecase/dtos/create-trip-block.dto';
