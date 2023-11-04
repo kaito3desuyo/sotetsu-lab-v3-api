@@ -1,5 +1,5 @@
 import { plainToClass } from 'class-transformer';
-import { transformerOptions } from 'src/core/config/transformer-options';
+import { transformerOptions } from 'src/core/configs/transformer-options';
 import { TripBlockDetailsDto } from '../../usecase/dtos/trip-block-details.dto';
 import { TripBlockModel } from '../models/trip-block.model';
 

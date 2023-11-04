@@ -1,5 +1,5 @@
-import { AggregatedRoot } from 'src/core/class/aggregated-root';
-import { UniqueEntityId } from 'src/core/class/unique-entity-id';
+import { AggregatedRoot } from 'src/core/classes/aggregated-root';
+import { UniqueEntityId } from 'src/core/classes/unique-entity-id';
 
 type OperationSightingProps = {
     formationId: string;

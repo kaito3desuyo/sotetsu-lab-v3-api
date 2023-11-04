@@ -15,7 +15,7 @@ import {
 } from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
-import { addPaginationHeaders } from 'src/core/util/pagination-header';
+import { addPaginationHeaders } from 'src/core/utils/pagination-header';
 import { BaseFormationDto } from '../usecase/dtos/base-formation.dto';
 import { FormationDetailsDto } from '../usecase/dtos/formation-details.dto';
 import { FormationV2Service } from '../usecase/formation.v2.service';

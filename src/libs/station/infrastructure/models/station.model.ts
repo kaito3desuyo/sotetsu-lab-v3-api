@@ -1,5 +1,3 @@
-// tslint:disable: variable-name
-
 import { RouteStationListModel } from 'src/libs/route/infrastructure/models/route-station-list.model';
 import { TimeModel } from 'src/libs/trip/infrastructure/models/time.model';
 import {

@@ -16,8 +16,7 @@ import {
 } from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
-import { addPaginationHeaders } from 'src/core/util/pagination-header';
-import { OperationService } from 'src/libs/operation/usecase/operation.service';
+import { addPaginationHeaders } from 'src/core/utils/pagination-header';
 import { TripOperationListDetailsDto } from 'src/libs/trip/usecase/dtos/trip-operation-list-details.dto';
 import { BaseOperationDto } from '../usecase/dtos/base-operation.dto';
 import { OperationDetailsDto } from '../usecase/dtos/operation-details.dto';
@@ -57,10 +56,7 @@ import { OperationV2Service } from '../usecase/operation.v2.service';
 @Controller()
 // @UseGuards(AuthGuard('jwt'))
 export class OperationV2Controller {
-    constructor(
-        private readonly operationService: OperationService,
-        private readonly operationV2Service: OperationV2Service,
-    ) {}
+    constructor(private readonly operationV2Service: OperationV2Service) {}
 
     @Override('getManyBase')
     @Get()
@@ -90,18 +86,6 @@ export class OperationV2Controller {
         }
 
         return this.operationV2Service.findAllOperationNumbers(calendarId);
-    }
-
-    @Get('/trips')
-    getOperationsTrips(@Query('calendar_id') calendarId: string) {
-        if (!calendarId) {
-            throw new UnprocessableEntityException(
-                'Please set `calendar_id` query.',
-            );
-        }
-        return this.operationService.findOperationTripsWithStartTimeAndEndTimeByCalendarId(
-            calendarId,
-        );
     }
 
     @Override('getOneBase')

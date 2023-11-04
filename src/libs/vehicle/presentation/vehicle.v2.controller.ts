@@ -4,7 +4,7 @@ import { VehicleModel } from '../infrastructure/models/vehicle.model';
 import { Request, Response } from 'express';
 import { VehicleV2Service } from '../usecase/vehicle.v2.service';
 import { isArray } from 'lodash';
-import { addPaginationHeaders } from 'src/core/util/pagination-header';
+import { addPaginationHeaders } from 'src/core/utils/pagination-header';
 import { VehicleDetailsDto } from '../usecase/dtos/vehicle-details.dto';
 
 @Crud({

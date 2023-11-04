@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
 import { merge, mergeWith } from 'lodash';
-import { crudReqMergeCustomizer } from 'src/core/util/merge-customizer';
+import { crudReqMergeCustomizer } from 'src/core/utils/merge-customizer';
 import { FormationQuery } from '../infrastructure/queries/formation.query';
 import { FormationDetailsDto } from './dtos/formation-details.dto';
 import { FormationFindManyBySpecificDateParam } from './params/formation-find-many-by-specific-date.param';

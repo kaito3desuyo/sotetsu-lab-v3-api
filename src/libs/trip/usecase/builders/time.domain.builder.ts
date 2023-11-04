@@ -1,4 +1,4 @@
-import { UniqueEntityId } from 'src/core/class/unique-entity-id';
+import { UniqueEntityId } from 'src/core/classes/unique-entity-id';
 import { Time, Times } from '../../domain/time.domain';
 import { CreateTimeDto } from '../dtos/create-time.dto';
 import { ReplaceTimeDto } from '../dtos/replace-time.dto';

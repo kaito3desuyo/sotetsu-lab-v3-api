@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuthModule } from 'src/core/auth/auth.module';
+import { AuthModule } from 'src/core/modules/auth/auth.module';
 import { VehicleModel } from './infrastructure/models/vehicle.model';
 import { VehicleQuery } from './infrastructure/queries/vehicle.query';
 

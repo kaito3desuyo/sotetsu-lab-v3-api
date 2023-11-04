@@ -1,15 +1,14 @@
 import { AgencyModel } from 'src/libs/agency/infrastructure/models/agency.model';
-import { OperationSighting } from 'src/main/v1/operation/operation-sighting.entity';
-import { VehicleFormation } from 'src/main/v1/vehicle-formation/vehicle-formation.entity';
+import { OperationSightingModel } from 'src/libs/operation-sighting/infrastructure/models/operation-sighting.model';
 import {
-    Entity,
-    PrimaryGeneratedColumn,
     Column,
     CreateDateColumn,
-    UpdateDateColumn,
-    OneToMany,
-    ManyToOne,
+    Entity,
     JoinColumn,
+    ManyToOne,
+    OneToMany,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn,
 } from 'typeorm';
 import { VehicleFormationModel } from './vehicle-formation.model';
 
@@ -58,8 +57,8 @@ export class FormationModel {
     vehicleFormations?: VehicleFormationModel[];
 
     @OneToMany(
-        () => OperationSighting,
+        () => OperationSightingModel,
         (operationSighting) => operationSighting.formation,
     )
-    operationSightings?: OperationSighting[];
+    operationSightings?: OperationSightingModel[];
 }

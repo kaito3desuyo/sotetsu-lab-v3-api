@@ -4,7 +4,7 @@ import { Server } from 'http';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MainModule } from './main/main.module';
-import { DatabaseModule } from './shared/modules/database.module';
+import { DatabaseModule } from './core/modules/database/database.module';
 
 @Module({
     imports: [DatabaseModule, MainModule],

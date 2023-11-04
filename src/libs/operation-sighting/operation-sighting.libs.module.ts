@@ -1,26 +1,12 @@
 import { Module } from '@nestjs/common';
-import { OperationSightingQuery } from './infrastructure/query/operation-sighting.query';
-import { OperationSightingService } from './application-service/operation-sighting.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { OperationSighting } from '../../main/v1/operation/operation-sighting.entity';
-import { OperationLibsModule } from '../operation/operation.libs.module';
-import { OperationSightingModel } from './infrastructure/models/operation-sighting.model';
 import { OperationSightingCommand } from './infrastructure/command/operation-sighting.command';
+import { OperationSightingModel } from './infrastructure/models/operation-sighting.model';
+import { OperationSightingQuery } from './infrastructure/query/operation-sighting.query';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([OperationSighting, OperationSightingModel]),
-        OperationLibsModule,
-    ],
-    exports: [
-        OperationSightingService,
-        OperationSightingCommand,
-        OperationSightingQuery,
-    ],
-    providers: [
-        OperationSightingService,
-        OperationSightingCommand,
-        OperationSightingQuery,
-    ],
+    imports: [TypeOrmModule.forFeature([OperationSightingModel])],
+    exports: [OperationSightingCommand, OperationSightingQuery],
+    providers: [OperationSightingCommand, OperationSightingQuery],
 })
 export class OperationSightingLibsModule {}

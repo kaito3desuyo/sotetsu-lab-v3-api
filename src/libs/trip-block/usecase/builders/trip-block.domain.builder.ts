@@ -1,4 +1,4 @@
-import { UniqueEntityId } from 'src/core/class/unique-entity-id';
+import { UniqueEntityId } from 'src/core/classes/unique-entity-id';
 import { TripsDomainBuilder } from 'src/libs/trip/usecase/builders/trip.domain.builder';
 import { TripBlock, TripBlocks } from '../../domain/trip-block.domain';
 import { CreateTripBlockDto } from '../dtos/create-trip-block.dto';

@@ -3,7 +3,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { Crud, CrudRequest, Override, ParsedRequest } from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
-import { addPaginationHeaders } from 'src/core/util/pagination-header';
+import { addPaginationHeaders } from 'src/core/utils/pagination-header';
 import { AgencyModel } from '../infrastructure/models/agency.model';
 import { AgencyV2Service } from '../usecase/agency.v2.service';
 import { AgencyDetailsDto } from '../usecase/dtos/agency-details.dto';

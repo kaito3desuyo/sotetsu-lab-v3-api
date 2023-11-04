@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { AuthModule } from 'src/core/auth/auth.module';
+import { AuthModule } from 'src/core/modules/auth/auth.module';
 import { OperationSightingLibsModule } from './operation-sighting.libs.module';
 import { OperationSightingV2Controller } from './presentation/operation-sighting.v2.controller';
 import { OperationSightingV2Service } from './usecase/operation-sighting.v2.service';

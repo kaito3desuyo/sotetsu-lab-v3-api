@@ -7,7 +7,7 @@ import utc from 'dayjs/plugin/utc';
 import helmet from 'helmet';
 import moment from 'moment-timezone';
 import { AppModule } from './app.module';
-import { validationPipeOptions } from './core/config/validator-options';
+import { validationPipeOptions } from './core/configs/validator-options';
 
 moment.tz.setDefault('Asia/Tokyo');
 

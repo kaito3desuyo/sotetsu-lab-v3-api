@@ -1,5 +1,5 @@
 import { plainToClass } from 'class-transformer';
-import { transformerOptions } from 'src/core/config/transformer-options';
+import { transformerOptions } from 'src/core/configs/transformer-options';
 import { OperationSightingDetailsDto } from '../../usecase/dtos/operation-sighting-details.dto';
 import { OperationSightingModel } from '../models/operation-sighting.model';
 

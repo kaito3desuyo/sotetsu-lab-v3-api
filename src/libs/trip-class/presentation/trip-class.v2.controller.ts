@@ -2,7 +2,7 @@ import { Controller, Get, Req, Res } from '@nestjs/common';
 import { Crud, CrudRequest, Override, ParsedRequest } from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
-import { addPaginationHeaders } from 'src/core/util/pagination-header';
+import { addPaginationHeaders } from 'src/core/utils/pagination-header';
 import { BaseTripClassDto } from '../usecase/dtos/base-trip-class.dto';
 import { TripClassV2Service } from '../usecase/trip-class.v2.service';
 
