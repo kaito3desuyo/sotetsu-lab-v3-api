@@ -3,7 +3,6 @@ import {
     Controller,
     Get,
     Post,
-    Query,
     Req,
     Res,
     UseInterceptors,
@@ -18,7 +17,6 @@ import {
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
 import { addPaginationHeaders } from 'src/core/util/pagination-header';
-import { OperationSightingService } from '../application-service/operation-sighting.service';
 import { BaseOperationSightingDto } from '../usecase/dtos/base-operation-sighting.dto';
 import { CreateOperationSightingDto } from '../usecase/dtos/create-operation-sighting.dto';
 import { OperationSightingDetailsDto } from '../usecase/dtos/operation-sighting-details.dto';
@@ -48,7 +46,6 @@ import { OperationSightingV2Service } from '../usecase/operation-sighting.v2.ser
 @Controller()
 export class OperationSightingV2Controller {
     constructor(
-        private readonly operationSightingService: OperationSightingService,
         private readonly operationSightingV2Service: OperationSightingV2Service,
     ) {}
 
@@ -70,13 +67,6 @@ export class OperationSightingV2Controller {
             addPaginationHeaders(req, res, operationSightings);
             res.json(operationSightings.data);
         }
-    }
-
-    @Get('/latest')
-    getLatestOperationSightings(@Query('calendar_id') calendarId: string) {
-        return this.operationSightingService.findLatestBySightingTime(
-            calendarId,
-        );
     }
 
     @Get('latest/operation')

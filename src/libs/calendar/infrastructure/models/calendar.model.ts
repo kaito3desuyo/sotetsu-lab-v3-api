@@ -1,14 +1,14 @@
+import { OperationModel } from 'src/libs/operation/infrastructure/models/operation.model';
 import { ServiceModel } from 'src/libs/service/infrastructure/models/service.model';
-import { Operation } from 'src/main/v1/operation/operation.entity';
 import {
-    Entity,
-    PrimaryGeneratedColumn,
     Column,
     CreateDateColumn,
-    UpdateDateColumn,
-    OneToMany,
-    ManyToOne,
+    Entity,
     JoinColumn,
+    ManyToOne,
+    OneToMany,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn,
 } from 'typeorm';
 
 @Entity({
@@ -57,8 +57,8 @@ export class CalendarModel {
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
     updatedAt: Date;
 
-    @OneToMany(() => Operation, (operation) => operation.calendar)
-    readonly operations?: Operation[];
+    @OneToMany(() => OperationModel, (operation) => operation.calendar)
+    readonly operations?: OperationModel[];
 
     @ManyToOne(() => ServiceModel, (service) => service.calendars)
     @JoinColumn({ name: 'service_id' })

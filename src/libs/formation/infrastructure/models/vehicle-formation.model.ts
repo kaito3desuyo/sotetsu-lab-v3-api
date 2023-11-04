@@ -1,13 +1,12 @@
 import { VehicleModel } from 'src/libs/vehicle/infrastructure/models/vehicle.model';
-import { Vehicle } from 'src/main/v1/vehicle/vehicle.entity';
 import {
-    Entity,
-    PrimaryGeneratedColumn,
     Column,
     CreateDateColumn,
-    UpdateDateColumn,
-    ManyToOne,
+    Entity,
     JoinColumn,
+    ManyToOne,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn,
 } from 'typeorm';
 import { FormationModel } from './formation.model';
 

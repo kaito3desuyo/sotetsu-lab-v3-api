@@ -1,5 +1,5 @@
+import { FormationModel } from 'src/libs/formation/infrastructure/models/formation.model';
 import { RouteModel } from 'src/libs/route/infrastructure/models/route.model';
-import { Formation } from 'src/main/v1/formation/formation.entity';
 import {
     Column,
     CreateDateColumn,
@@ -49,6 +49,6 @@ export class AgencyModel {
     @OneToMany(() => RouteModel, (route) => route.agency)
     routes?: RouteModel[];
 
-    @OneToMany(() => Formation, (formation) => formation.agency)
-    formations?: Formation[];
+    @OneToMany(() => FormationModel, (formation) => formation.agency)
+    formations?: FormationModel[];
 }

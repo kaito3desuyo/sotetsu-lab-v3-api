@@ -1,17 +1,16 @@
 import { CalendarModel } from 'src/libs/calendar/infrastructure/models/calendar.model';
+import { OperationSightingModel } from 'src/libs/operation-sighting/infrastructure/models/operation-sighting.model';
 import { TripOperationListModel } from 'src/libs/trip/infrastructure/models/trip-operation-list.model';
-import { OperationSighting } from 'src/main/v1/operation/operation-sighting.entity';
-import { TripOperationList } from 'src/main/v1/trip-operation-list/trip_operation_list.entity';
 import {
-    Entity,
-    PrimaryGeneratedColumn,
     Column,
     CreateDateColumn,
-    UpdateDateColumn,
-    ManyToOne,
-    JoinColumn,
-    OneToMany,
+    Entity,
     Index,
+    JoinColumn,
+    ManyToOne,
+    OneToMany,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn,
 } from 'typeorm';
 
 @Entity({
@@ -45,8 +44,8 @@ export class OperationModel {
     readonly tripOperationLists?: TripOperationListModel[];
 
     @OneToMany(
-        () => OperationSighting,
+        () => OperationSightingModel,
         (operationSighting) => operationSighting.operation,
     )
-    readonly operationSightings?: OperationSighting[];
+    readonly operationSightings?: OperationSightingModel[];
 }

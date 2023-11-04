@@ -1,6 +1,5 @@
 import { AgencyModel } from 'src/libs/agency/infrastructure/models/agency.model';
 import { OperatingSystemModel } from 'src/libs/service/infrastructure/models/operating-system.model';
-import { OperatingSystem } from 'src/main/v1/operating-system/operating-system.entity';
 import {
     Column,
     CreateDateColumn,

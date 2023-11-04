@@ -1,5 +1,3 @@
-// tslint:disable: variable-name
-
 import { OperationModel } from 'src/libs/operation/infrastructure/models/operation.model';
 import { StationModel } from 'src/libs/station/infrastructure/models/station.model';
 import {
