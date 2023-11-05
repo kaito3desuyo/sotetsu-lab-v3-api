@@ -1,28 +1,34 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
-import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { isArray } from 'lodash';
-import { Repository } from 'typeorm';
 import { OperationDetailsDto } from '../../usecase/dtos/operation-details.dto';
-import { buildOperationDetailsDto } from '../builders/operation-dto.builder';
+import {
+    OperationsDtoBuilder,
+    buildOperationDetailsDto,
+} from '../builders/operation-dto.builder';
+import { OperationRepository } from '../repositories/operation.repository';
+import { FindManyOptions } from 'typeorm';
 import { OperationModel } from '../models/operation.model';
 
 @Injectable()
-export class OperationQuery extends TypeOrmCrudService<OperationModel> {
-    constructor(
-        @InjectRepository(OperationModel)
-        private readonly operationRepository: Repository<OperationModel>,
-    ) {
-        super(operationRepository);
+export class OperationQuery {
+    constructor(private readonly operationRepository: OperationRepository) {}
+
+    async findMany(
+        options?: FindManyOptions<OperationModel>,
+    ): Promise<OperationDetailsDto[]> {
+        const models = await this.operationRepository.find(options);
+        return OperationsDtoBuilder.buildFromModel(models);
     }
+
+    // =========================================================================
 
     async findManyOperations(
         query: CrudRequest,
     ): Promise<
         OperationDetailsDto[] | GetManyDefaultResponse<OperationDetailsDto>
     > {
-        const models = await this.getMany(query);
+        const models = await this.operationRepository.getMany(query);
 
         if (isArray(models)) {
             return models.map((o) => buildOperationDetailsDto(o));
@@ -36,7 +42,7 @@ export class OperationQuery extends TypeOrmCrudService<OperationModel> {
     }
 
     async findOneOperation(query: CrudRequest): Promise<OperationDetailsDto> {
-        const model = await this.getOne(query);
+        const model = await this.operationRepository.getOne(query);
 
         if (!model) {
             return null;

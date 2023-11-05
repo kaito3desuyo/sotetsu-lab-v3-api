@@ -25,6 +25,10 @@ export class TripBlock extends AggregatedRoot<ITripBlockProps> {
         }
     }
 
+    public getTripItems(): Trip[] {
+        return this._props.trips.getItems();
+    }
+
     public getTripByTripId(tripId: string): Trip {
         return this._props.trips.getItemByFn((trip) =>
             trip.id.isEqual(new UniqueEntityId(tripId)),
@@ -39,7 +43,7 @@ export class TripBlock extends AggregatedRoot<ITripBlockProps> {
         this._props.trips.remove(trip);
     }
 
-    public tripsEmpty(): boolean {
+    public isTripEmpty(): boolean {
         return this._props.trips.isEmpty();
     }
 

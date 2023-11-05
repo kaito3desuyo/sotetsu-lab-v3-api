@@ -2,7 +2,10 @@ import { Entity } from 'src/core/classes/entity';
 import { UniqueEntityId } from 'src/core/classes/unique-entity-id';
 import { WatchedList } from 'src/core/classes/watched-list';
 import { Times } from './time.domain';
-import { TripOperationLists } from './trip-operation-list.domain';
+import {
+    TripOperationList,
+    TripOperationLists,
+} from './trip-operation-list.domain';
 
 interface ITripProps {
     serviceId: string;
@@ -34,6 +37,18 @@ export class Trip extends Entity<ITripProps> {
         for (const key of Object.keys(props)) {
             this._props[key] = props[key];
         }
+    }
+
+    public getFirstTripOperationList(): TripOperationList {
+        return this._props.tripOperationLists.getItemByFn((_, i) => i === 0);
+    }
+
+    public addTripOperationList(tripOperationList: TripOperationList): void {
+        this._props.tripOperationLists.add(tripOperationList);
+    }
+
+    public removeTripOperationList(tripOperationList: TripOperationList): void {
+        this._props.tripOperationLists.remove(tripOperationList);
     }
 
     private _copyTripId(): void {

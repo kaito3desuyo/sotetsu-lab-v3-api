@@ -8,3 +8,15 @@ export function buildOperationDetailsDto(
 ): OperationDetailsDto {
     return plainToClass(OperationDetailsDto, model, transformerOptions);
 }
+
+export const OperationDtoBuilder = {
+    buildFromModel: (model: OperationModel): OperationDetailsDto => {
+        return plainToClass(OperationDetailsDto, model, transformerOptions);
+    },
+} as const;
+
+export const OperationsDtoBuilder = {
+    buildFromModel: (models: OperationModel[]): OperationDetailsDto[] => {
+        return models.map((model) => OperationDtoBuilder.buildFromModel(model));
+    },
+};

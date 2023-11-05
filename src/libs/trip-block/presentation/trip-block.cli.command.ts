@@ -1,4 +1,5 @@
 import { Command, CommandRunner, SubCommand } from 'nest-commander';
+import { TripBlockCliService } from '../usecase/trip-block.cli.service';
 
 @SubCommand({
     name: 'copy-trip-blocks',
@@ -6,8 +7,16 @@ import { Command, CommandRunner, SubCommand } from 'nest-commander';
     arguments: '<fromCalendarId> <toCalendarId>',
 })
 export class CopyTripBlocksCommand implements CommandRunner {
-    run(passedParams: string[], options?: Record<string, any>): Promise<void> {
-        throw new Error('Method not implemented.');
+    constructor(private readonly tripBlockCliService: TripBlockCliService) {}
+
+    async run(
+        [fromCalendarId, toCalendarId]: [string, string],
+        options?: Record<string, any>,
+    ): Promise<void> {
+        await this.tripBlockCliService.copyTripBlocks(
+            fromCalendarId,
+            toCalendarId,
+        );
     }
 }
 

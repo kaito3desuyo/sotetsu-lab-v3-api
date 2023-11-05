@@ -82,7 +82,7 @@ export class TripBlockV2Service {
 
         const result = await this.tripBlockQuery.findOneTripBlock(query);
 
-        if (tripBlock.from.tripsEmpty()) {
+        if (tripBlock.from.isTripEmpty()) {
             await this.tripBlockCommand.deleteOneTripBlockByDomain(
                 tripBlock.from,
             );
@@ -95,17 +95,15 @@ export class TripBlockV2Service {
         query: CrudRequest,
         dto: DeleteTripFromTripBlockDto,
     ): Promise<TripBlockDetailsDto> {
-        const tripBlockDto = await this.tripBlockQuery.findOneTripBlockByTripBlockId(
-            dto.id,
-        );
+        const tripBlockDto =
+            await this.tripBlockQuery.findOneTripBlockByTripBlockId(dto.id);
 
         if (!tripBlockDto) {
             throw new NotFoundException('TripBlock is not found.');
         }
 
-        const tripBlock = TripBlockDomainBuilder.buildByDetailsDto(
-            tripBlockDto,
-        );
+        const tripBlock =
+            TripBlockDomainBuilder.buildByDetailsDto(tripBlockDto);
 
         const trip = tripBlock.getTripByTripId(dto.tripId);
 
@@ -139,7 +137,7 @@ export class TripBlockV2Service {
 
         const result = await this.tripBlockQuery.findOneTripBlock(query);
 
-        if (tripBlock.tripsEmpty()) {
+        if (tripBlock.isTripEmpty()) {
             await this.tripBlockCommand.deleteOneTripBlockByDomain(tripBlock);
         }
 
