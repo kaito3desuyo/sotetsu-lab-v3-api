@@ -1,31 +1,39 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
-import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { isArray } from 'lodash';
-import { FindOneOptions, Repository, SelectQueryBuilder } from 'typeorm';
+import { FindManyOptions, FindOneOptions, SelectQueryBuilder } from 'typeorm';
 import { TripBlockDetailsDto } from '../../usecase/dtos/trip-block-details.dto';
 import {
     TripBlockDtoBuilder,
     TripBlocksDtoBuilder,
 } from '../builders/trip-block.dto.builder';
 import { TripBlockModel } from '../models/trip-block.model';
+import { TripBlockRepository } from '../repositories/trip-block.repository';
 
 @Injectable()
-export class TripBlockQuery extends TypeOrmCrudService<TripBlockModel> {
-    constructor(
-        @InjectRepository(TripBlockModel)
-        private readonly tripBlockRepository: Repository<TripBlockModel>,
-    ) {
-        super(tripBlockRepository);
+export class TripBlockQuery {
+    constructor(private readonly tripBlockRepository: TripBlockRepository) {}
+
+    async findMany(
+        options?: FindManyOptions<TripBlockModel>,
+    ): Promise<TripBlockDetailsDto[]> {
+        const models = await this.tripBlockRepository.find(options);
+        return TripBlocksDtoBuilder.buildFromModel(models);
     }
+
+    async findOne(): Promise<TripBlockDetailsDto> {
+        const model = await this.tripBlockRepository.findOne();
+        return TripBlockDtoBuilder.buildFromModel(model);
+    }
+
+    // =========================================================================
 
     async findManyTripBlocks(
         query: CrudRequest,
     ): Promise<
         TripBlockDetailsDto[] | GetManyDefaultResponse<TripBlockDetailsDto>
     > {
-        const models = await this.getMany(query);
+        const models = await this.tripBlockRepository.getMany(query);
 
         if (isArray(models)) {
             return TripBlocksDtoBuilder.buildFromModel(models);
@@ -39,7 +47,7 @@ export class TripBlockQuery extends TypeOrmCrudService<TripBlockModel> {
     }
 
     async findOneTripBlock(query: CrudRequest): Promise<TripBlockDetailsDto> {
-        const model = await this.getOne(query);
+        const model = await this.tripBlockRepository.getOne(query);
         return TripBlockDtoBuilder.buildFromModel(model);
     }
 
