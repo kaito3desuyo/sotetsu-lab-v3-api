@@ -3,11 +3,12 @@ import { HttpAdapterHost } from '@nestjs/core';
 import { Server } from 'http';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { MainModule } from './main/main.module';
+import { AuthModule } from './core/modules/auth/auth.module';
 import { DatabaseModule } from './core/modules/database/database.module';
+import { ApiRoutingModule } from './routes/api-routing.module';
 
 @Module({
-    imports: [DatabaseModule, MainModule],
+    imports: [AuthModule, DatabaseModule, ApiRoutingModule],
     controllers: [AppController],
     providers: [AppService],
 })
