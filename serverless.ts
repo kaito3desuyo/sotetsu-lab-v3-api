@@ -142,10 +142,11 @@ const serverlessConfiguration: AWS = {
                                                             'Fn::Split': [
                                                                 'https://',
                                                                 {
-                                                                    'Fn::GetAtt': [
-                                                                        'AppLambdaFunctionUrl',
-                                                                        'FunctionUrl',
-                                                                    ],
+                                                                    'Fn::GetAtt':
+                                                                        [
+                                                                            'AppLambdaFunctionUrl',
+                                                                            'FunctionUrl',
+                                                                        ],
                                                                 },
                                                             ],
                                                         },
