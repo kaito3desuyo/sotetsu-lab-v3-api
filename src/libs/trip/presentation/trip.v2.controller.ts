@@ -1,7 +1,8 @@
-import { Controller, Get, Req, Res } from '@nestjs/common';
+import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
 import { Crud, CrudRequest, Override, ParsedRequest } from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
+import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 import { addPaginationHeaders } from 'src/core/utils/pagination-header';
 import { BaseTripDto } from '../usecase/dtos/base-trip.dto';
 import { TripV2Service } from '../usecase/trip.v2.service';
@@ -31,7 +32,7 @@ import { TripV2Service } from '../usecase/trip.v2.service';
     },
 })
 @Controller()
-// @UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard)
 export class TripV2Controller {
     constructor(private readonly tripV2Service: TripV2Service) {}
 

@@ -59,6 +59,7 @@ const serverlessConfiguration: AWS = {
                 'postgresql://${self:custom.databaseSecrets.username}:${self:custom.databaseSecrets.password}@${ssm:sotetsu-lab-v3-database-rds-proxy-host-param}/sotetsu_lab_v3',
             COGNITO_USERPOOL_ID:
                 '${ssm:sotetsu-lab-v3-auth-cognito-userpool-id}',
+            COGNITO_CLIENT_ID: '${ssm:sotetsu-lab-v3-auth-cognito-client-id}',
         },
     },
     // import the function via paths

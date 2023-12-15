@@ -12,7 +12,6 @@ import {
     UseGuards,
     UseInterceptors,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import {
     Crud,
     CrudRequest,
@@ -23,6 +22,7 @@ import {
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
 import { validationPipeOptions } from 'src/core/configs/validator-options';
+import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 import { addPaginationHeaders } from 'src/core/utils/pagination-header';
 import { AddTripToTripBlockDto } from '../usecase/dtos/add-trip-to-trip-block.dto';
 import { BaseTripBlockDto } from '../usecase/dtos/base-trip-block.dto';
@@ -68,7 +68,7 @@ import { TripBlockV2Service } from '../usecase/trip-block.v2.service';
     },
 })
 @Controller()
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard)
 export class TripBlockV2Controller {
     constructor(private readonly tripBlockV2Service: TripBlockV2Service) {}
 

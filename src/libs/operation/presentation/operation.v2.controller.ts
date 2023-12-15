@@ -5,6 +5,7 @@ import {
     Req,
     Res,
     UnprocessableEntityException,
+    UseGuards,
     UseInterceptors,
 } from '@nestjs/common';
 import {
@@ -16,6 +17,7 @@ import {
 } from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
+import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 import { addPaginationHeaders } from 'src/core/utils/pagination-header';
 import { TripOperationListDetailsDto } from 'src/libs/trip/usecase/dtos/trip-operation-list-details.dto';
 import { BaseOperationDto } from '../usecase/dtos/base-operation.dto';
@@ -54,7 +56,7 @@ import { OperationV2Service } from '../usecase/operation.v2.service';
     },
 })
 @Controller()
-// @UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard)
 export class OperationV2Controller {
     constructor(private readonly operationV2Service: OperationV2Service) {}
 
@@ -117,9 +119,7 @@ export class OperationV2Controller {
 
     @Get(':id/trips')
     @UseInterceptors(CrudRequestInterceptor)
-    async findOneWithTrips(
-        @ParsedRequest() crudReq: CrudRequest,
-    ): Promise<{
+    async findOneWithTrips(@ParsedRequest() crudReq: CrudRequest): Promise<{
         operation: OperationDetailsDto;
         trips: TripOperationListDetailsDto[];
     }> {
