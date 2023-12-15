@@ -4,6 +4,7 @@ import {
     Param,
     Req,
     Res,
+    UseGuards,
     UseInterceptors,
 } from '@nestjs/common';
 import {
@@ -13,11 +14,12 @@ import {
     Override,
     ParsedRequest,
 } from '@nestjsx/crud';
-import { BaseCalendarDto } from '../usecase/dtos/base-calendar.dto';
 import { Request, Response } from 'express';
-import { CalendarV2Service } from '../usecase/calendar.v2.service';
 import { isArray } from 'lodash';
+import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 import { addPaginationHeaders } from 'src/core/utils/pagination-header';
+import { CalendarV2Service } from '../usecase/calendar.v2.service';
+import { BaseCalendarDto } from '../usecase/dtos/base-calendar.dto';
 import { CalendarDetailsDto } from '../usecase/dtos/calendar-details.dto';
 import { CalendarFindManyBySpecificDateParam } from '../usecase/params/calendar-find-many-by-specific-date.param';
 
@@ -45,6 +47,7 @@ import { CalendarFindManyBySpecificDateParam } from '../usecase/params/calendar-
     },
 })
 @Controller()
+@UseGuards(AuthGuard)
 export class CalendarV2Controller {
     constructor(private readonly calendarV2Service: CalendarV2Service) {}
 

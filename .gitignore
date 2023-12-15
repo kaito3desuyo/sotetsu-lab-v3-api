@@ -36,3 +36,7 @@ node_modules
 
 # Serverless
 .serverless
+
+# Env file
+.env
+.env.*

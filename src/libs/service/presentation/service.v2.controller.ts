@@ -1,4 +1,11 @@
-import { Controller, Get, Req, Res, UseInterceptors } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Req,
+    Res,
+    UseGuards,
+    UseInterceptors,
+} from '@nestjs/common';
 import {
     Crud,
     CrudRequest,
@@ -8,6 +15,7 @@ import {
 } from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
+import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 import { addPaginationHeaders } from 'src/core/utils/pagination-header';
 import { ServiceModel } from '../infrastructure/models/service.model';
 import { ServiceDetailsDto } from '../usecase/dtos/service-details.dto';
@@ -32,12 +40,14 @@ import { ServiceV2Service } from '../usecase/service.v2.service';
             ['operatingSystems.route.routeStationLists.station']: {
                 alias: 'routeStationListsStation',
             },
-            ['operatingSystems.route.routeStationLists.station.routeStationLists']: {
-                alias: 'routeStationListsStationRouteStationLists',
-            },
-            ['operatingSystems.route.routeStationLists.station.routeStationLists.route']: {
-                alias: 'routeStationListsStationRouteStationListsRoute',
-            },
+            ['operatingSystems.route.routeStationLists.station.routeStationLists']:
+                {
+                    alias: 'routeStationListsStationRouteStationLists',
+                },
+            ['operatingSystems.route.routeStationLists.station.routeStationLists.route']:
+                {
+                    alias: 'routeStationListsStationRouteStationListsRoute',
+                },
             ['operatingSystems.route.routeStationLists.station.stops']: {
                 alias: 'routeStationListsStationStops',
             },
@@ -64,7 +74,7 @@ import { ServiceV2Service } from '../usecase/service.v2.service';
     },
 })
 @Controller()
-// @UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard)
 export class ServiceV2Controller {
     constructor(private readonly serviceV2Service: ServiceV2Service) {}
 
