@@ -1,7 +1,8 @@
-import { Controller, Get, Req, Res } from '@nestjs/common';
+import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
 import { Crud, CrudRequest, Override, ParsedRequest } from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
+import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 import { addPaginationHeaders } from 'src/core/utils/pagination-header';
 import { StationDetailsDto } from '../usecase/dtos/station-details.dto';
 import { StationV2Service } from '../usecase/station.v2.service';
@@ -35,7 +36,7 @@ import { StationV2Service } from '../usecase/station.v2.service';
     },
 })
 @Controller()
-// @UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard)
 export class StationV2Controller {
     constructor(private readonly stationV2Service: StationV2Service) {}
 

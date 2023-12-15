@@ -4,6 +4,7 @@ import {
     Param,
     Req,
     Res,
+    UseGuards,
     UseInterceptors,
 } from '@nestjs/common';
 import {
@@ -21,6 +22,7 @@ import { FormationDetailsDto } from '../usecase/dtos/formation-details.dto';
 import { FormationV2Service } from '../usecase/formation.v2.service';
 import { FormationFindManyBySpecificDateParam } from '../usecase/params/formation-find-many-by-specific-date.param';
 import { FormationFindManyBySpecificPeriodParam } from '../usecase/params/formation-find-many-by-specific-period.param';
+import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 
 @Crud({
     model: {
@@ -54,7 +56,7 @@ import { FormationFindManyBySpecificPeriodParam } from '../usecase/params/format
     },
 })
 @Controller()
-// @UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard)
 export class FormationV2Controller {
     constructor(private readonly formationV2Service: FormationV2Service) {}
 
@@ -114,10 +116,11 @@ export class FormationV2Controller {
         @Req() req: Request,
         @Res() res: Response,
     ): Promise<void> {
-        const formations = await this.formationV2Service.findManyBySpecificPeriod(
-            crudReq,
-            params,
-        );
+        const formations =
+            await this.formationV2Service.findManyBySpecificPeriod(
+                crudReq,
+                params,
+            );
 
         if (isArray(formations)) {
             res.json(formations);

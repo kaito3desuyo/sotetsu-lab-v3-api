@@ -5,6 +5,7 @@ import {
     Post,
     Req,
     Res,
+    UseGuards,
     UseInterceptors,
 } from '@nestjs/common';
 import {
@@ -16,6 +17,7 @@ import {
 } from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
+import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 import { addPaginationHeaders } from 'src/core/utils/pagination-header';
 import { BaseOperationSightingDto } from '../usecase/dtos/base-operation-sighting.dto';
 import { CreateOperationSightingDto } from '../usecase/dtos/create-operation-sighting.dto';
@@ -44,6 +46,7 @@ import { OperationSightingV2Service } from '../usecase/operation-sighting.v2.ser
     },
 })
 @Controller()
+@UseGuards(AuthGuard)
 export class OperationSightingV2Controller {
     constructor(
         private readonly operationSightingV2Service: OperationSightingV2Service,
@@ -57,9 +60,8 @@ export class OperationSightingV2Controller {
         @Req() req: Request,
         @Res() res: Response,
     ): Promise<void> {
-        const operationSightings = await this.operationSightingV2Service.findMany(
-            crudReq,
-        );
+        const operationSightings =
+            await this.operationSightingV2Service.findMany(crudReq);
 
         if (isArray(operationSightings)) {
             res.json(operationSightings);
@@ -76,9 +78,10 @@ export class OperationSightingV2Controller {
         @Req() req: Request,
         @Res() res: Response,
     ): Promise<void> {
-        const operationSightings = await this.operationSightingV2Service.findManyLatestGroupByOperation(
-            crudReq,
-        );
+        const operationSightings =
+            await this.operationSightingV2Service.findManyLatestGroupByOperation(
+                crudReq,
+            );
 
         if (isArray(operationSightings)) {
             res.json(operationSightings);
@@ -95,9 +98,10 @@ export class OperationSightingV2Controller {
         @Req() req: Request,
         @Res() res: Response,
     ): Promise<void> {
-        const operationSightings = await this.operationSightingV2Service.findManyLatestGroupByFormation(
-            crudReq,
-        );
+        const operationSightings =
+            await this.operationSightingV2Service.findManyLatestGroupByFormation(
+                crudReq,
+            );
 
         if (isArray(operationSightings)) {
             res.json(operationSightings);
@@ -112,9 +116,8 @@ export class OperationSightingV2Controller {
     async findOne(
         @ParsedRequest() crudReq: CrudRequest,
     ): Promise<OperationSightingDetailsDto> {
-        const operationSightings = await this.operationSightingV2Service.findOne(
-            crudReq,
-        );
+        const operationSightings =
+            await this.operationSightingV2Service.findOne(crudReq);
         return operationSightings;
     }
 

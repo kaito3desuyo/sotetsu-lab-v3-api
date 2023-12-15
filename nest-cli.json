@@ -1,5 +1,13 @@
 {
-  "language": "ts",
-  "collection": "@nestjs/schematics",
-  "sourceRoot": "src"
+    "language": "ts",
+    "collection": "@nestjs/schematics",
+    "sourceRoot": "src",
+    "compilerOptions": {
+        "assets": [
+            {
+                "include": "core/modules/auth/jwks.json",
+                "watchAssets": true
+            }
+        ]
+    }
 }

@@ -1,11 +1,12 @@
-import { Controller, Get, Req, Res } from '@nestjs/common';
+import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
 import { Crud, CrudRequest, Override, ParsedRequest } from '@nestjsx/crud';
-import { VehicleModel } from '../infrastructure/models/vehicle.model';
 import { Request, Response } from 'express';
-import { VehicleV2Service } from '../usecase/vehicle.v2.service';
 import { isArray } from 'lodash';
+import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 import { addPaginationHeaders } from 'src/core/utils/pagination-header';
+import { VehicleModel } from '../infrastructure/models/vehicle.model';
 import { VehicleDetailsDto } from '../usecase/dtos/vehicle-details.dto';
+import { VehicleV2Service } from '../usecase/vehicle.v2.service';
 
 @Crud({
     model: {
@@ -29,6 +30,7 @@ import { VehicleDetailsDto } from '../usecase/dtos/vehicle-details.dto';
     },
 })
 @Controller()
+@UseGuards(AuthGuard)
 export class VehicleV2Controller {
     constructor(private readonly vehicleV2Service: VehicleV2Service) {}
 
