@@ -24,6 +24,7 @@ const ORM_CONFIG: TypeOrmModuleOptions = {
     synchronize: false,
     logging: process.env.NODE_ENV === 'production' ? ['error'] : true,
     namingStrategy: new TypeOrmNamingStrategy(),
+    installExtensions: false,
     extra: {
         max: 1,
         connectionTimeoutMillis: 1000,
