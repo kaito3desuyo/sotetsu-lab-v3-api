@@ -2,6 +2,7 @@ import {
     Body,
     Controller,
     Get,
+    Param,
     Post,
     Req,
     Res,
@@ -23,6 +24,7 @@ import { BaseOperationSightingDto } from '../usecase/dtos/base-operation-sightin
 import { CreateOperationSightingDto } from '../usecase/dtos/create-operation-sighting.dto';
 import { OperationSightingDetailsDto } from '../usecase/dtos/operation-sighting-details.dto';
 import { OperationSightingV2Service } from '../usecase/operation-sighting.v2.service';
+import { OperationSightingTimeCrossSectionDto } from '../usecase/dtos/operation-sighting-time-cross-section.dto';
 
 @Crud({
     model: {
@@ -119,6 +121,17 @@ export class OperationSightingV2Controller {
         const operationSightings =
             await this.operationSightingV2Service.findOne(crudReq);
         return operationSightings;
+    }
+
+    @Get('time-cross-section/from-operation-number/:operationNumber')
+    async findOneTimeCrossSectionFromOperationNumber(
+        @Param() params: { operationNumber: string },
+    ): Promise<OperationSightingTimeCrossSectionDto> {
+        const result =
+            await this.operationSightingV2Service.findOneTimeCrossSectionFromOperationNumber(
+                params,
+            );
+        return result;
     }
 
     @Override('createOneBase')
