@@ -272,6 +272,29 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
         return buildOperationSightingDetailsDto(result);
     }
 
+    async findOneLatestOperationSightingFromFormationNumber(params: {
+        formationNumber: string;
+    }): Promise<OperationSightingDetailsDto> {
+        const { formationNumber } = params;
+
+        const result = await this.findOne({
+            relations: ['operation', 'formation'],
+            where: {
+                formation: {
+                    formationNumber,
+                },
+            },
+            order: {
+                sightingTime: 'DESC',
+                updatedAt: 'DESC',
+            },
+        });
+
+        if (!result) return null;
+
+        return buildOperationSightingDetailsDto(result);
+    }
+
     async findOneLatestOperationSightingFromFormationNumberAndSightingTimeRange(params: {
         formationNumber: string;
         sightingTimeStart: dayjs.Dayjs;

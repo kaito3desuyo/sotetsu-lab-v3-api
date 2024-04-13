@@ -134,6 +134,17 @@ export class OperationSightingV2Controller {
         return result;
     }
 
+    @Get('time-cross-section/from-formation-number/:formationNumber')
+    async findOneTimeCrossSectionFromFormationNumber(
+        @Param() params: { formationNumber: string },
+    ): Promise<OperationSightingTimeCrossSectionDto> {
+        const result =
+            await this.operationSightingV2Service.findOneTimeCrossSectionFromFormationNumber(
+                params,
+            );
+        return result;
+    }
+
     @Override('createOneBase')
     @Post()
     async createOne(

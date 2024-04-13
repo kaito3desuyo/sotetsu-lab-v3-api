@@ -158,6 +158,108 @@ export class OperationSightingV2Service {
         };
     }
 
+    async findOneTimeCrossSectionFromFormationNumber(params: {
+        formationNumber: string;
+    }): Promise<OperationSightingTimeCrossSectionDto> {
+        const { formationNumber } = params;
+
+        const latestSighting: OperationSightingTimeCrossSectionDto['latestSighting'] =
+            await this.operationSightingQuery.findOneLatestOperationSightingFromFormationNumber(
+                {
+                    formationNumber,
+                },
+            );
+
+        if (!latestSighting) {
+            throw new NotFoundException(
+                'Latest `OperationSighting` is not found.',
+            );
+        }
+
+        let targetOperationNumber = latestSighting.operation.operationNumber;
+        let expectedSighting: OperationSightingTimeCrossSectionDto['expectedSighting'] =
+            cloneDeep(latestSighting);
+
+        const searchTime = dayjs();
+        const latestSightingTime = dayjs(latestSighting.sightingTime);
+
+        const diffDays = getBaseDate(searchTime).diff(
+            getBaseDate(latestSightingTime),
+            'days',
+        );
+
+        for (let i = 1; i <= diffDays; i++) {
+            targetOperationNumber = operationNumberCirculateMap.get(
+                targetOperationNumber,
+            );
+            if (!targetOperationNumber) break;
+
+            const sightingTimeStart = latestSightingTime
+                .add(i, 'days')
+                .hour(4)
+                .minute(0)
+                .second(0)
+                .millisecond(0);
+            const sightingTimeEnd = sightingTimeStart.add(24, 'hours');
+
+            const targetOperationSighting =
+                await this.operationSightingQuery.findOneLatestOperationSightingFromOperationNumberAndSightingTimeRange(
+                    {
+                        operationNumber: targetOperationNumber,
+                        sightingTimeStart,
+                        sightingTimeEnd,
+                    },
+                );
+
+            if (targetOperationSighting) {
+                break;
+            }
+
+            expectedSighting.operation.operationNumber = targetOperationNumber;
+        }
+
+        const sightingTimeStart = searchTime
+            .hour(4)
+            .minute(0)
+            .second(0)
+            .millisecond(0);
+        const sightingTimeEnd = searchTime
+            .add(1, 'days')
+            .hour(4)
+            .minute(0)
+            .second(0)
+            .millisecond(0);
+
+        const newerOperationSighting =
+            await this.operationSightingQuery.findOneLatestOperationSightingFromOperationNumberAndSightingTimeRange(
+                {
+                    operationNumber: expectedSighting.operation.operationNumber,
+                    sightingTimeStart,
+                    sightingTimeEnd,
+                },
+            );
+
+        if (
+            newerOperationSighting &&
+            newerOperationSighting.formation.formationNumber !==
+                expectedSighting.formation.formationNumber
+        ) {
+            expectedSighting = null;
+        }
+
+        expectedSighting = {
+            ...pick(latestSighting, ['formation']),
+            operation:
+                expectedSighting &&
+                pick(expectedSighting.operation, ['operationNumber']),
+        };
+
+        return {
+            latestSighting,
+            expectedSighting,
+        };
+    }
+
     async createOne(
         query: CrudRequest,
         dto: CreateOperationSightingDto,
@@ -165,9 +267,9 @@ export class OperationSightingV2Service {
         const domain = OperationSightingDomainBuilder.buildByCreateDto(dto);
         const result =
             await this.operationSightingCommand.createOneOperationSighting(
-            query,
-            domain,
-        );
+                query,
+                domain,
+            );
         return result;
     }
 }
