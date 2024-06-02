@@ -26,10 +26,11 @@ export class AuthGuard implements CanActivate {
     async canActivate(context: ExecutionContext): Promise<boolean> {
         try {
             const req = context.switchToHttp().getRequest();
-            const jwt = (req.headers.authorization ?? '').replace(
-                'Bearer ',
-                '',
-            );
+            const jwt = (
+                req.headers['x-sotetsu-lab-authorization'] ??
+                req.headers.authorization ??
+                ''
+            ).replace('Bearer ', '');
             const payload = await verifier.verify(jwt);
             req.cognito_jwt_payload = payload;
 
