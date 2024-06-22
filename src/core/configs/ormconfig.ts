@@ -26,8 +26,8 @@ const ORM_CONFIG: TypeOrmModuleOptions = {
     namingStrategy: new TypeOrmNamingStrategy(),
     installExtensions: false,
     extra: {
-        max: 1,
-        connectionTimeoutMillis: 1000,
+        // max: 1,
+        // connectionTimeoutMillis: 1000,
     },
 };
 

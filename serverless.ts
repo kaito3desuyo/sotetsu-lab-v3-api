@@ -11,6 +11,7 @@ const serverlessConfiguration: AWS = {
         stage: 'prod',
         region: 'ap-northeast-1',
         runtime: 'nodejs18.x',
+        memorySize: 1769, // 1 vCPU
         architecture: 'arm64',
         stackName: '${param:prefix}-cfstack',
         stackTags: {
@@ -91,9 +92,10 @@ const serverlessConfiguration: AWS = {
         app: {
             handler: `dist/handler.main`,
             name: '${param:prefix}-lambda',
-            memorySize: 1769,
-            timeout: 60,
-            url: true,
+            // url: true,
+            url: {
+                authorizer: 'aws_iam',
+            },
             package: {
                 patterns: ['!**', 'dist/**'],
             },
@@ -157,6 +159,9 @@ const serverlessConfiguration: AWS = {
                                         },
                                     ],
                                 },
+                                OriginAccessControlId: {
+                                    Ref: 'AppCloudFrontOriginAccessConrtolToLambdaFunctionURL',
+                                },
                                 CustomOriginConfig: {
                                     OriginProtocolPolicy: 'https-only',
                                     OriginSSLProtocols: ['TLSv1.2'],
@@ -186,6 +191,17 @@ const serverlessConfiguration: AWS = {
                     },
                 },
             },
+            AppCloudFrontOriginAccessConrtolToLambdaFunctionURL: {
+                Type: 'AWS::CloudFront::OriginAccessControl',
+                Properties: {
+                    OriginAccessControlConfig: {
+                        Name: 'Sotetsu Lab v3 API Lambda Function URL',
+                        OriginAccessControlOriginType: 'lambda',
+                        SigningBehavior: 'always',
+                        SigningProtocol: 'sigv4',
+                    },
+                },
+            },
             AppCloudFrontCachePolicy: {
                 Type: 'AWS::CloudFront::CachePolicy',
                 Properties: {
@@ -207,6 +223,24 @@ const serverlessConfiguration: AWS = {
                             EnableAcceptEncodingGzip: true,
                             EnableAcceptEncodingBrotli: true,
                         },
+                    },
+                },
+            },
+            AppLambdaPermissionFromCloudFront: {
+                Type: 'AWS::Lambda::Permission',
+                Properties: {
+                    FunctionName: { Ref: 'AppLambdaFunction' },
+                    FunctionUrlAuthType: 'AWS_IAM',
+                    Action: 'lambda:InvokeFunctionUrl',
+                    Principal: 'cloudfront.amazonaws.com',
+                    SourceArn: {
+                        'Fn::Join': [
+                            '',
+                            [
+                                'arn:aws:cloudfront::${aws:accountId}:distribution/',
+                                { Ref: 'AppCloudFrontDistribution' },
+                            ],
+                        ],
                     },
                 },
             },
