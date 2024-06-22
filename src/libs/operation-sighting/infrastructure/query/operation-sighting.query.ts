@@ -4,7 +4,7 @@ import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import dayjs from 'dayjs';
 import { isArray, mergeWith } from 'lodash';
 import { crudReqMergeCustomizer } from 'src/core/utils/merge-customizer';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { OperationSightingDetailsDto } from '../../usecase/dtos/operation-sighting-details.dto';
 import { buildOperationSightingDetailsDto } from '../builders/operation-sighting-dto.builder';
 import { OperationSightingModel } from '../models/operation-sighting.model';
@@ -36,18 +36,6 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
                 data,
             };
         }
-    }
-
-    async findOneOperationSighting(
-        query: CrudRequest,
-    ): Promise<OperationSightingDetailsDto> {
-        const model = await this.getOne(query);
-
-        if (!model) {
-            return null;
-        }
-
-        return buildOperationSightingDetailsDto(model);
     }
 
     async findManyLatestOperationSightingsGroupByOperation(
@@ -88,8 +76,8 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
             .addGroupBy('"LatestSightings"."latest_sighting_time"');
 
         const latestOperationSightingTimes = await mainQb.getRawMany();
-        const latestOperationSightingIds = await this.operationSightingRepository.find(
-            {
+        const latestOperationSightingIds =
+            await this.operationSightingRepository.find({
                 select: ['id'],
                 where: latestOperationSightingTimes.map((data) => {
                     return {
@@ -98,8 +86,7 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
                         updatedAt: data.latest_update_time,
                     };
                 }),
-            },
-        );
+            });
 
         const models = await this.getMany(
             mergeWith(
@@ -174,8 +161,8 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
             .addGroupBy('"LatestSightings"."latest_sighting_time"');
 
         const latestOperationSightingTimes = await mainQb.getRawMany();
-        const latestOperationSightingIds = await this.operationSightingRepository.find(
-            {
+        const latestOperationSightingIds =
+            await this.operationSightingRepository.find({
                 select: ['id'],
                 where: latestOperationSightingTimes.map((data) => {
                     return {
@@ -184,8 +171,7 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
                         updatedAt: data.latest_update_time,
                     };
                 }),
-            },
-        );
+            });
 
         const models = await this.getMany(
             mergeWith(
@@ -220,5 +206,121 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
                 data,
             };
         }
+    }
+
+    async findOneOperationSighting(
+        query: CrudRequest,
+    ): Promise<OperationSightingDetailsDto> {
+        const model = await this.getOne(query);
+
+        if (!model) {
+            return null;
+        }
+
+        return buildOperationSightingDetailsDto(model);
+    }
+
+    async findOneLatestOperationSightingFromOperationNumber(params: {
+        operationNumber: string;
+    }): Promise<OperationSightingDetailsDto> {
+        const { operationNumber } = params;
+
+        const result = await this.findOne({
+            relations: ['operation', 'formation'],
+            where: {
+                operation: {
+                    operationNumber,
+                },
+            },
+            order: {
+                sightingTime: 'DESC',
+                updatedAt: 'DESC',
+            },
+        });
+
+        if (!result) return null;
+
+        return buildOperationSightingDetailsDto(result);
+    }
+
+    async findOneLatestOperationSightingFromOperationNumberAndSightingTimeRange(params: {
+        operationNumber: string;
+        sightingTimeStart: dayjs.Dayjs;
+        sightingTimeEnd: dayjs.Dayjs;
+    }): Promise<OperationSightingDetailsDto> {
+        const { operationNumber, sightingTimeStart, sightingTimeEnd } = params;
+
+        const result = await this.findOne({
+            relations: ['operation', 'formation'],
+            where: {
+                operation: {
+                    operationNumber,
+                },
+                sightingTime: Between(
+                    sightingTimeStart.toISOString(),
+                    sightingTimeEnd.toISOString(),
+                ),
+            },
+            order: {
+                sightingTime: 'DESC',
+                updatedAt: 'DESC',
+            },
+        });
+
+        if (!result) return null;
+
+        return buildOperationSightingDetailsDto(result);
+    }
+
+    async findOneLatestOperationSightingFromFormationNumber(params: {
+        formationNumber: string;
+    }): Promise<OperationSightingDetailsDto> {
+        const { formationNumber } = params;
+
+        const result = await this.findOne({
+            relations: ['operation', 'formation'],
+            where: {
+                formation: {
+                    formationNumber,
+                },
+            },
+            order: {
+                sightingTime: 'DESC',
+                updatedAt: 'DESC',
+            },
+        });
+
+        if (!result) return null;
+
+        return buildOperationSightingDetailsDto(result);
+    }
+
+    async findOneLatestOperationSightingFromFormationNumberAndSightingTimeRange(params: {
+        formationNumber: string;
+        sightingTimeStart: dayjs.Dayjs;
+        sightingTimeEnd: dayjs.Dayjs;
+    }): Promise<OperationSightingDetailsDto> {
+        const { formationNumber, sightingTimeStart, sightingTimeEnd } = params;
+
+        const result = await this.findOne({
+            relations: ['operation', 'formation'],
+            where: {
+                formation: {
+                    formationNumber,
+                },
+                sightingTime: Between(
+                    sightingTimeStart.toISOString(),
+                    sightingTimeEnd.toISOString(),
+                ),
+            },
+            order: {
+                sightingTime: 'DESC',
+                updatedAt: 'DESC',
+            },
+        });
+
+        if (!result) return null;
+
+        return buildOperationSightingDetailsDto(result);
     }
 }
