@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
 import dayjs from 'dayjs';
-import { cloneDeep, pick } from 'lodash';
+import { pick } from 'lodash';
 import { getBaseDate } from 'src/core/utils/datetime';
 import { OperationSightingCommand } from '../infrastructure/command/operation-sighting.command';
 import { OperationSightingQuery } from '../infrastructure/query/operation-sighting.query';
@@ -80,7 +80,7 @@ export class OperationSightingV2Service {
 
         let targetOperationNumber = operationNumber;
         let expectedSighting: OperationSightingTimeCrossSectionDto['expectedSighting'] =
-            cloneDeep(latestSighting);
+            structuredClone(latestSighting);
 
         const searchTime = dayjs();
         const latestSightingTime = dayjs(latestSighting.sightingTime);
@@ -91,11 +91,21 @@ export class OperationSightingV2Service {
         );
 
         for (let i = 1; i <= diffDays; i++) {
+            /**
+             * 運用番号が順送り対象ではない場合は、期待される目撃情報をnullにする
+             */
             targetOperationNumber = operationNumberCirculateReverseMap.get(
                 targetOperationNumber,
             );
-            if (!targetOperationNumber) break;
 
+            if (!targetOperationNumber) {
+                expectedSighting = null;
+                break;
+            }
+
+            /**
+             * 順送り前の運用番号で、別編成の目撃情報がある場合は、期待される目撃情報を上書きする
+             */
             const sightingTimeStart = searchTime
                 .subtract(i, 'days')
                 .hour(4)
@@ -122,34 +132,42 @@ export class OperationSightingV2Service {
             }
         }
 
-        const sightingTimeStart = latestSightingTime;
-        const sightingTimeEnd = searchTime
-            .add(1, 'days')
-            .hour(4)
-            .minute(0)
-            .second(0)
-            .millisecond(0);
+        if (expectedSighting) {
+            /**
+             * 期待される目撃情報の編成番号で、別運用の目撃情報がある場合は、期待される目撃情報をnullにする
+             */
+            const sightingTimeStart = latestSightingTime;
+            const sightingTimeEnd = searchTime
+                .add(1, 'days')
+                .hour(4)
+                .minute(0)
+                .second(0)
+                .millisecond(0);
 
-        const newerFormationSighting =
-            await this.operationSightingQuery.findOneLatestOperationSightingFromFormationNumberAndSightingTimeRange(
-                {
-                    formationNumber: expectedSighting.formation.formationNumber,
-                    sightingTimeStart,
-                    sightingTimeEnd,
-                },
-            );
+            const newerFormationSighting =
+                await this.operationSightingQuery.findOneLatestOperationSightingFromFormationNumberAndSightingTimeRange(
+                    {
+                        formationNumber:
+                            expectedSighting.formation.formationNumber,
+                        sightingTimeStart,
+                        sightingTimeEnd,
+                    },
+                );
 
-        if (
-            newerFormationSighting &&
-            newerFormationSighting.operation.operationNumber !==
-                expectedSighting.operation.operationNumber
-        ) {
-            expectedSighting = null;
+            if (
+                newerFormationSighting &&
+                newerFormationSighting.operation.operationNumber !==
+                    expectedSighting.operation.operationNumber
+            ) {
+                expectedSighting = null;
+            }
         }
 
-        expectedSighting = expectedSighting && {
+        expectedSighting = {
             ...pick(latestSighting, ['operation']),
-            formation: pick(expectedSighting.formation, ['formationNumber']),
+            formation:
+                expectedSighting &&
+                pick(expectedSighting.formation, ['formationNumber']),
         };
 
         return {
@@ -178,7 +196,24 @@ export class OperationSightingV2Service {
 
         let targetOperationNumber = latestSighting.operation.operationNumber;
         let expectedSighting: OperationSightingTimeCrossSectionDto['expectedSighting'] =
-            cloneDeep(latestSighting);
+            structuredClone(latestSighting);
+
+        /**
+         * 最後の目撃情報が休車の場合は、その後の処理を省略して、期待される目撃情報を休車のまま返す
+         */
+        if (latestSighting.operation.operationNumber === '100') {
+            expectedSighting = {
+                ...pick(latestSighting, ['formation']),
+                operation:
+                    expectedSighting &&
+                    pick(expectedSighting.operation, ['operationNumber']),
+            };
+
+            return {
+                latestSighting,
+                expectedSighting,
+            };
+        }
 
         const searchTime = dayjs();
         const latestSightingTime = dayjs(latestSighting.sightingTime);
@@ -189,11 +224,21 @@ export class OperationSightingV2Service {
         );
 
         for (let i = 1; i <= diffDays; i++) {
+            /**
+             * 運用番号が順送り対象ではない場合は、期待される目撃情報をnullにする
+             */
             targetOperationNumber = operationNumberCirculateMap.get(
                 targetOperationNumber,
             );
-            if (!targetOperationNumber) break;
 
+            if (!targetOperationNumber) {
+                expectedSighting = null;
+                break;
+            }
+
+            /**
+             * 順送り後の運用番号で、別編成の目撃情報がある場合は、期待される目撃情報をnullにする
+             */
             const sightingTimeStart = latestSightingTime
                 .add(i, 'days')
                 .hour(4)
@@ -211,40 +256,51 @@ export class OperationSightingV2Service {
                     },
                 );
 
-            if (targetOperationSighting) {
+            if (
+                targetOperationSighting &&
+                targetOperationSighting.formation.formationNumber !==
+                    expectedSighting.formation.formationNumber
+            ) {
+                expectedSighting = null;
                 break;
             }
 
             expectedSighting.operation.operationNumber = targetOperationNumber;
         }
 
-        const sightingTimeStart = searchTime
-            .hour(4)
-            .minute(0)
-            .second(0)
-            .millisecond(0);
-        const sightingTimeEnd = searchTime
-            .add(1, 'days')
-            .hour(4)
-            .minute(0)
-            .second(0)
-            .millisecond(0);
+        if (expectedSighting) {
+            /**
+             * 期待される目撃情報の運用番号で、別編成の目撃情報がある場合は、期待される目撃情報をnullにする
+             */
+            const sightingTimeStart = searchTime
+                .hour(4)
+                .minute(0)
+                .second(0)
+                .millisecond(0);
+            const sightingTimeEnd = searchTime
+                .add(1, 'days')
+                .hour(4)
+                .minute(0)
+                .second(0)
+                .millisecond(0);
 
-        const newerOperationSighting =
-            await this.operationSightingQuery.findOneLatestOperationSightingFromOperationNumberAndSightingTimeRange(
-                {
-                    operationNumber: expectedSighting.operation.operationNumber,
-                    sightingTimeStart,
-                    sightingTimeEnd,
-                },
-            );
+            const newerOperationSighting =
+                await this.operationSightingQuery.findOneLatestOperationSightingFromOperationNumberAndSightingTimeRange(
+                    {
+                        operationNumber:
+                            expectedSighting.operation.operationNumber,
+                        sightingTimeStart,
+                        sightingTimeEnd,
+                    },
+                );
 
-        if (
-            newerOperationSighting &&
-            newerOperationSighting.formation.formationNumber !==
-                expectedSighting.formation.formationNumber
-        ) {
-            expectedSighting = null;
+            if (
+                newerOperationSighting &&
+                newerOperationSighting.formation.formationNumber !==
+                    expectedSighting.formation.formationNumber
+            ) {
+                expectedSighting = null;
+            }
         }
 
         expectedSighting = {
@@ -311,6 +367,8 @@ const operationNumberCirculateMap = new Map([
     ['92G', '93G'],
     ['94G', '95G'],
     ['95G', '91G'],
+    // 休車
+    ['100', '100'],
 ]);
 const operationNumberCirculateReverseMap = new Map([
     ...Array.from(operationNumberCirculateMap.entries()).map(
