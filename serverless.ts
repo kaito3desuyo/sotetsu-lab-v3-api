@@ -5,7 +5,11 @@ const system = 'sotetsu-lab-v3' as const;
 const serverlessConfiguration: AWS = {
     service: `${system}-api`,
     frameworkVersion: '3',
-    plugins: ['serverless-deployment-bucket', 'serverless-layers'],
+    plugins: [
+        'serverless-deployment-bucket',
+        'serverless-layers',
+        'serverless-plugin-warmup',
+    ],
     provider: {
         name: 'aws',
         stage: 'prod',
@@ -112,6 +116,23 @@ const serverlessConfiguration: AWS = {
             '${ssm:/aws/reference/secretsmanager/sotetsu-lab-v3-database-rds-secrets}',
         deploymentBucket: {
             blockPublicAccess: true,
+        },
+        warmup: {
+            defaultWarmer: {
+                enabled: true,
+                name: '${param:prefix}-warmup-lambda',
+                vpc: false,
+                events: [
+                    {
+                        schedule: 'cron(0/5 0-14 ? * * *)',
+                    },
+                    {
+                        schedule: 'cron(0/5 21-23 ? * * *)',
+                    },
+                ],
+                concurrency: 40,
+                logRetentionInDays: 7,
+            },
         },
     },
     resources: {
