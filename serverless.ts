@@ -17,6 +17,7 @@ const serverlessConfiguration: AWS = {
         runtime: 'nodejs18.x',
         memorySize: 1769, // 1 vCPU
         architecture: 'arm64',
+        logRetentionInDays: 30,
         stackName: '${param:prefix}-cfstack',
         stackTags: {
             System: system,
