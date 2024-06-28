@@ -81,6 +81,7 @@
         "serverless": "^3.35.2",
         "serverless-deployment-bucket": "^1.6.0",
         "serverless-layers": "^2.7.0",
+        "serverless-plugin-warmup": "^8.3.0",
         "supertest": "^6.3.3",
         "ts-jest": "^26.5.6",
         "ts-node": "^9.1.1",
