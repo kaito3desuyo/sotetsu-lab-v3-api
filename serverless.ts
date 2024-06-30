@@ -229,7 +229,7 @@ const serverlessConfiguration: AWS = {
                 Properties: {
                     CachePolicyConfig: {
                         Name: 'Sotetsu_Lab_v3_API_CloudFront_Cache_Policy',
-                        DefaultTTL: 30,
+                        DefaultTTL: 1,
                         MaxTTL: 31536000,
                         MinTTL: 1,
                         ParametersInCacheKeyAndForwardedToOrigin: {
