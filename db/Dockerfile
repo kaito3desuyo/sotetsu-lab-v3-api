@@ -1,4 +1,4 @@
-FROM postgis/postgis:12-master
+FROM postgis/postgis:16-master
 
 RUN localedef -i ja_JP -f UTF-8 ja_JP.UTF-8
 
