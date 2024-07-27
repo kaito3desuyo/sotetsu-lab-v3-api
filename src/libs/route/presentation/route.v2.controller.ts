@@ -5,7 +5,6 @@ import { isArray } from 'lodash';
 import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 import { addPaginationHeaders } from 'src/core/utils/pagination-header';
 import { RouteModel } from '../infrastructure/models/route.model';
-import { RouteDetailsDto } from '../usecase/dtos/route-details.dto';
 import { RouteV2Service } from '../usecase/route.v2.service';
 
 @Crud({
@@ -45,6 +44,8 @@ export class RouteV2Controller {
     ): Promise<void> {
         const routes = await this.routeV2Service.findMany(crudReq);
 
+        res.header('Cache-Control', 'max-age=2592000, must-revalidate');
+
         if (isArray(routes)) {
             res.json(routes);
         } else {
@@ -57,8 +58,12 @@ export class RouteV2Controller {
     @Get(':id')
     async findOne(
         @ParsedRequest() crudReq: CrudRequest,
-    ): Promise<RouteDetailsDto> {
+        @Res() res: Response,
+    ): Promise<void> {
         const route = await this.routeV2Service.findOne(crudReq);
-        return route;
+
+        res.header('Cache-Control', 'max-age=2592000, must-revalidate');
+
+        res.json(route);
     }
 }

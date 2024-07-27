@@ -20,7 +20,6 @@ import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 import { addPaginationHeaders } from 'src/core/utils/pagination-header';
 import { CalendarV2Service } from '../usecase/calendar.v2.service';
 import { BaseCalendarDto } from '../usecase/dtos/base-calendar.dto';
-import { CalendarDetailsDto } from '../usecase/dtos/calendar-details.dto';
 import { CalendarFindManyBySpecificDateParam } from '../usecase/params/calendar-find-many-by-specific-date.param';
 
 @Crud({
@@ -60,6 +59,8 @@ export class CalendarV2Controller {
     ): Promise<void> {
         const calendars = await this.calendarV2Service.findMany(crudReq);
 
+        res.header('Cache-Control', 'max-age=2592000, must-revalidate');
+
         if (isArray(calendars)) {
             res.json(calendars);
         } else {
@@ -81,6 +82,8 @@ export class CalendarV2Controller {
             params,
         );
 
+        res.header('Cache-Control', 'max-age=2592000, must-revalidate');
+
         if (isArray(formations)) {
             res.json(formations);
         } else {
@@ -93,8 +96,12 @@ export class CalendarV2Controller {
     @Get(':id')
     async findOne(
         @ParsedRequest() crudReq: CrudRequest,
-    ): Promise<CalendarDetailsDto> {
+        @Res() res: Response,
+    ): Promise<void> {
         const calendar = await this.calendarV2Service.findOne(crudReq);
-        return calendar;
+
+        res.header('Cache-Control', 'max-age=2592000, must-revalidate');
+
+        res.json(calendar);
     }
 }

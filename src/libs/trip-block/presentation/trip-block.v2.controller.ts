@@ -81,6 +81,8 @@ export class TripBlockV2Controller {
     ): Promise<void> {
         const tripBlocks = await this.tripBlockV2Service.findMany(crudReq);
 
+        res.header('Cache-Control', 'max-age=1, must-revalidate');
+
         if (isArray(tripBlocks)) {
             res.json(tripBlocks);
         } else {
@@ -90,7 +92,7 @@ export class TripBlockV2Controller {
     }
 
     @Override('createManyBase')
-    @Post('/bulk')
+    @Post('bulk')
     async createMany(
         @ParsedRequest() crudReq: CrudRequest,
         @Body(
@@ -109,7 +111,7 @@ export class TripBlockV2Controller {
     }
 
     @Override('replaceOneBase')
-    @Put('/:id')
+    @Put(':id')
     async replaceOne(
         @ParsedRequest() crudReq: CrudRequest,
         @Param() params: ReplaceTripBlockParam,
@@ -125,7 +127,7 @@ export class TripBlockV2Controller {
         return tripBlock;
     }
 
-    @Patch('/:id/add-trip')
+    @Patch(':id/add-trip')
     @UseInterceptors(CrudRequestInterceptor)
     async addTripToTripBlock(
         @ParsedRequest() crudReq: CrudRequest,
@@ -142,7 +144,7 @@ export class TripBlockV2Controller {
         return tripBlock;
     }
 
-    @Patch('/:id/delete-trip')
+    @Patch(':id/delete-trip')
     @UseInterceptors(CrudRequestInterceptor)
     async deleteTripFromTripBlock(
         @ParsedRequest() crudReq: CrudRequest,

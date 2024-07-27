@@ -16,13 +16,12 @@ import {
 } from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
+import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 import { addPaginationHeaders } from 'src/core/utils/pagination-header';
 import { BaseFormationDto } from '../usecase/dtos/base-formation.dto';
-import { FormationDetailsDto } from '../usecase/dtos/formation-details.dto';
 import { FormationV2Service } from '../usecase/formation.v2.service';
 import { FormationFindManyBySpecificDateParam } from '../usecase/params/formation-find-many-by-specific-date.param';
 import { FormationFindManyBySpecificPeriodParam } from '../usecase/params/formation-find-many-by-specific-period.param';
-import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 
 @Crud({
     model: {
@@ -70,6 +69,8 @@ export class FormationV2Controller {
     ): Promise<void> {
         const formations = await this.formationV2Service.findMany(crudReq);
 
+        res.header('Cache-Control', 'max-age=2592000, must-revalidate');
+
         if (isArray(formations)) {
             res.json(formations);
         } else {
@@ -82,9 +83,13 @@ export class FormationV2Controller {
     @Get(':id')
     async findOne(
         @ParsedRequest() crudReq: CrudRequest,
-    ): Promise<FormationDetailsDto> {
+        @Res() res: Response,
+    ): Promise<void> {
         const formation = await this.formationV2Service.findOne(crudReq);
-        return formation;
+
+        res.header('Cache-Control', 'max-age=2592000, must-revalidate');
+
+        res.json(formation);
     }
 
     @Get('as/of/:date')
@@ -99,6 +104,8 @@ export class FormationV2Controller {
             crudReq,
             params,
         );
+
+        res.header('Cache-Control', 'max-age=2592000, must-revalidate');
 
         if (isArray(formations)) {
             res.json(formations);
@@ -121,6 +128,8 @@ export class FormationV2Controller {
                 crudReq,
                 params,
             );
+
+        res.header('Cache-Control', 'max-age=2592000, must-revalidate');
 
         if (isArray(formations)) {
             res.json(formations);

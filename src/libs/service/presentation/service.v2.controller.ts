@@ -18,7 +18,6 @@ import { isArray } from 'lodash';
 import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 import { addPaginationHeaders } from 'src/core/utils/pagination-header';
 import { ServiceModel } from '../infrastructure/models/service.model';
-import { ServiceDetailsDto } from '../usecase/dtos/service-details.dto';
 import { ServiceV2Service } from '../usecase/service.v2.service';
 
 @Crud({
@@ -87,6 +86,8 @@ export class ServiceV2Controller {
     ): Promise<void> {
         const services = await this.serviceV2Service.findMany(crudReq);
 
+        res.header('Cache-Control', 'max-age=2592000, must-revalidate');
+
         if (isArray(services)) {
             res.json(services);
         } else {
@@ -99,17 +100,27 @@ export class ServiceV2Controller {
     @Get(':id')
     async findOne(
         @ParsedRequest() crudReq: CrudRequest,
-    ): Promise<ServiceDetailsDto> {
+        @Res() res: Response,
+    ): Promise<void> {
         const service = await this.serviceV2Service.findOne(crudReq);
-        return service;
+
+        res.header('Cache-Control', 'max-age=2592000, must-revalidate');
+
+        res.json(service);
     }
 
     @Get(':id/stations')
     @UseInterceptors(CrudRequestInterceptor)
     async findOneWithStations(
         @ParsedRequest() crudReq: CrudRequest,
-    ): Promise<any> {
-        const result = await this.serviceV2Service.findOneWithStations(crudReq);
-        return result;
+        @Res() res: Response,
+    ): Promise<void> {
+        const serviceStations = await this.serviceV2Service.findOneWithStations(
+            crudReq,
+        );
+
+        res.header('Cache-Control', 'max-age=2592000, must-revalidate');
+
+        res.json(serviceStations);
     }
 }
