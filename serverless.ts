@@ -104,6 +104,7 @@ const serverlessConfiguration: AWS = {
             package: {
                 patterns: ['!**', 'dist/**'],
             },
+            timeout: 60,
         },
     },
     package: { individually: true },
@@ -120,7 +121,7 @@ const serverlessConfiguration: AWS = {
         },
         warmup: {
             defaultWarmer: {
-                enabled: true,
+                enabled: false,
                 name: '${param:prefix}-warmup-lambda',
                 vpc: false,
                 events: [
