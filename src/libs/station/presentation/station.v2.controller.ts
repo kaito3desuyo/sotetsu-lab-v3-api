@@ -49,6 +49,8 @@ export class StationV2Controller {
     ): Promise<void> {
         const stations = await this.stationV2Service.findMany(crudReq);
 
+        res.header('Cache-Control', 'max-age=2592000, must-revalidate');
+
         if (isArray(stations)) {
             res.json(stations);
         } else {
@@ -58,11 +60,15 @@ export class StationV2Controller {
     }
 
     @Override('getOneBase')
-    @Get()
+    @Get(':id')
     async findOne(
         @ParsedRequest() crudReq: CrudRequest,
-    ): Promise<StationDetailsDto> {
+        @Res() res: Response,
+    ): Promise<void> {
         const station = await this.stationV2Service.findOne(crudReq);
-        return station;
+
+        res.header('Cache-Control', 'max-age=2592000, must-revalidate');
+
+        res.json(station);
     }
 }

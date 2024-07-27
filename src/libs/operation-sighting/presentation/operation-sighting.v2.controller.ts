@@ -24,7 +24,6 @@ import { BaseOperationSightingDto } from '../usecase/dtos/base-operation-sightin
 import { CreateOperationSightingDto } from '../usecase/dtos/create-operation-sighting.dto';
 import { OperationSightingDetailsDto } from '../usecase/dtos/operation-sighting-details.dto';
 import { OperationSightingV2Service } from '../usecase/operation-sighting.v2.service';
-import { OperationSightingTimeCrossSectionDto } from '../usecase/dtos/operation-sighting-time-cross-section.dto';
 
 @Crud({
     model: {
@@ -58,12 +57,13 @@ export class OperationSightingV2Controller {
     @Get()
     async findMany(
         @ParsedRequest() crudReq: CrudRequest,
-        // @Query() query: any,
         @Req() req: Request,
         @Res() res: Response,
     ): Promise<void> {
         const operationSightings =
             await this.operationSightingV2Service.findMany(crudReq);
+
+        res.header('Cache-Control', 'max-age=1, must-revalidate');
 
         if (isArray(operationSightings)) {
             res.json(operationSightings);
@@ -85,6 +85,8 @@ export class OperationSightingV2Controller {
                 crudReq,
             );
 
+        res.header('Cache-Control', 'max-age=1, must-revalidate');
+
         if (isArray(operationSightings)) {
             res.json(operationSightings);
         } else {
@@ -105,6 +107,8 @@ export class OperationSightingV2Controller {
                 crudReq,
             );
 
+        res.header('Cache-Control', 'max-age=1, must-revalidate');
+
         if (isArray(operationSightings)) {
             res.json(operationSightings);
         } else {
@@ -117,32 +121,44 @@ export class OperationSightingV2Controller {
     @Get(':id')
     async findOne(
         @ParsedRequest() crudReq: CrudRequest,
-    ): Promise<OperationSightingDetailsDto> {
+        @Res() res: Response,
+    ): Promise<void> {
         const operationSightings =
             await this.operationSightingV2Service.findOne(crudReq);
-        return operationSightings;
+
+        res.header('Cache-Control', 'max-age=2592000, must-revalidate');
+
+        res.json(operationSightings);
     }
 
     @Get('time-cross-section/from-operation-number/:operationNumber')
     async findOneTimeCrossSectionFromOperationNumber(
         @Param() params: { operationNumber: string },
-    ): Promise<OperationSightingTimeCrossSectionDto> {
-        const result =
+        @Res() res: Response,
+    ): Promise<void> {
+        const timeCrossSections =
             await this.operationSightingV2Service.findOneTimeCrossSectionFromOperationNumber(
                 params,
             );
-        return result;
+
+        res.header('Cache-Control', 'max-age=1, must-revalidate');
+
+        res.json(timeCrossSections);
     }
 
     @Get('time-cross-section/from-formation-number/:formationNumber')
     async findOneTimeCrossSectionFromFormationNumber(
         @Param() params: { formationNumber: string },
-    ): Promise<OperationSightingTimeCrossSectionDto> {
-        const result =
+        @Res() res: Response,
+    ): Promise<void> {
+        const timeCrossSections =
             await this.operationSightingV2Service.findOneTimeCrossSectionFromFormationNumber(
                 params,
             );
-        return result;
+
+        res.header('Cache-Control', 'max-age=1, must-revalidate');
+
+        res.json(timeCrossSections);
     }
 
     @Override('createOneBase')
@@ -155,6 +171,7 @@ export class OperationSightingV2Controller {
             crudReq,
             body,
         );
+
         return result;
     }
 }

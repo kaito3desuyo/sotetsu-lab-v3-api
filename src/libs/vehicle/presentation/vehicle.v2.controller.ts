@@ -5,7 +5,6 @@ import { isArray } from 'lodash';
 import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 import { addPaginationHeaders } from 'src/core/utils/pagination-header';
 import { VehicleModel } from '../infrastructure/models/vehicle.model';
-import { VehicleDetailsDto } from '../usecase/dtos/vehicle-details.dto';
 import { VehicleV2Service } from '../usecase/vehicle.v2.service';
 
 @Crud({
@@ -43,6 +42,8 @@ export class VehicleV2Controller {
     ): Promise<void> {
         const vehicles = await this.vehicleV2Service.findMany(crudReq);
 
+        res.header('Cache-Control', 'max-age=2592000, must-revalidate');
+
         if (isArray(vehicles)) {
             res.json(vehicles);
         } else {
@@ -55,8 +56,12 @@ export class VehicleV2Controller {
     @Get(':id')
     async findOne(
         @ParsedRequest() crudReq: CrudRequest,
-    ): Promise<VehicleDetailsDto> {
+        @Res() res: Response,
+    ): Promise<void> {
         const vehicle = await this.vehicleV2Service.findOne(crudReq);
-        return vehicle;
+
+        res.header('Cache-Control', 'max-age=2592000, must-revalidate');
+
+        res.json(vehicle);
     }
 }

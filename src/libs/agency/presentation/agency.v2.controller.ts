@@ -6,7 +6,6 @@ import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 import { addPaginationHeaders } from 'src/core/utils/pagination-header';
 import { AgencyModel } from '../infrastructure/models/agency.model';
 import { AgencyV2Service } from '../usecase/agency.v2.service';
-import { AgencyDetailsDto } from '../usecase/dtos/agency-details.dto';
 
 @Crud({
     model: {
@@ -44,6 +43,8 @@ export class AgencyV2Controller {
     ): Promise<void> {
         const agencies = await this.agencyV2Service.findMany(crudReq);
 
+        res.header('Cache-Control', 'max-age=2592000, must-revalidate');
+
         if (isArray(agencies)) {
             res.json(agencies);
         } else {
@@ -56,8 +57,12 @@ export class AgencyV2Controller {
     @Get(':id')
     async findOne(
         @ParsedRequest() crudReq: CrudRequest,
-    ): Promise<AgencyDetailsDto> {
+        @Res() res: Response,
+    ): Promise<void> {
         const agency = await this.agencyV2Service.findOne(crudReq);
-        return agency;
+
+        res.header('Cache-Control', 'max-age=2592000, must-revalidate');
+
+        res.json(agency);
     }
 }

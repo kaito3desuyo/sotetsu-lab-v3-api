@@ -45,6 +45,8 @@ export class TripV2Controller {
     ): Promise<void> {
         const trips = await this.tripV2Service.findMany(crudReq);
 
+        res.header('Cache-Control', 'max-age=1, must-revalidate');
+
         if (isArray(trips)) {
             res.json(trips);
         } else {

@@ -2,7 +2,8 @@
 import { Injectable } from '@nestjs/common';
 import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
 import dayjs from 'dayjs';
-import { find, mergeWith, omit } from 'lodash';
+import omit from 'just-omit';
+import { mergeWith } from 'lodash';
 import { crudReqMergeCustomizer } from 'src/core/utils/merge-customizer';
 import { TripOperationListDetailsDto } from 'src/libs/trip/usecase/dtos/trip-operation-list-details.dto';
 import { OperationQuery } from '../infrastructure/queries/operation.query';
@@ -28,9 +29,7 @@ export class OperationV2Service {
         return this.operationQuery.findAllOperationNumbers(calendarId);
     }
 
-    async findOneWithCurrentPosition(
-        query: CrudRequest,
-    ): Promise<{
+    async findOneWithCurrentPosition(query: CrudRequest): Promise<{
         operation: OperationDetailsDto;
         position: {
             prev: TripOperationListDetailsDto;
@@ -53,13 +52,11 @@ export class OperationV2Service {
                         ],
                         sort: [
                             {
-                                field:
-                                    'tripOperationLists.startTime.departureDays',
+                                field: 'tripOperationLists.startTime.departureDays',
                                 order: 'ASC',
                             },
                             {
-                                field:
-                                    'tripOperationLists.startTime.departureTime',
+                                field: 'tripOperationLists.startTime.departureTime',
                                 order: 'ASC',
                             },
                             {
@@ -86,33 +83,31 @@ export class OperationV2Service {
 
         if (!dto.tripOperationLists.length) {
             return {
-                operation: omit(dto, 'tripOperationLists'),
+                operation: omit(dto, ['tripOperationLists']),
                 position,
             };
         }
 
         const now = dayjs();
-        const today = dayjs().format('YYYY-MM-DD');
-        const timeFormat = 'YYYY-MM-DD HH:mm:ss';
+        const today = now.format('YYYY-MM-DD');
+        const target = (days: number, time: string) =>
+            dayjs(`${today} ${time}`, 'YYYY-MM-DD HH:mm:ss')
+                .subtract(now.hour() < 4 ? 1 : 0, 'days')
+                .add(days - 1, 'days');
 
         /**
          * 0番目の列車の発車時刻よりも前の場合
          */
         if (
             now <
-            dayjs(
-                today + ' ' + dto.tripOperationLists[0].startTime.departureTime,
-                timeFormat,
+            target(
+                dto.tripOperationLists.at(0).startTime.departureDays,
+                dto.tripOperationLists.at(0).startTime.departureTime,
             )
-                .subtract(now.hour() < 4 ? 1 : 0, 'days')
-                .add(
-                    dto.tripOperationLists[0].startTime.departureDays - 1,
-                    'days',
-                )
         ) {
-            position.next = dto.tripOperationLists[0];
+            position.next = dto.tripOperationLists.at(0);
             return {
-                operation: omit(dto, 'tripOperationLists'),
+                operation: omit(dto, ['tripOperationLists']),
                 position,
             };
         }
@@ -121,63 +116,43 @@ export class OperationV2Service {
          * 現在位置が列車間の場合
          */
         // n番目の列車の到着時刻 < 現時刻 <= n + 1番目の列車の出発時刻
-        const nArrToNowToNPlus1Dep = find(
-            dto.tripOperationLists,
+        const nArrToNowToNPlus1Dep = dto.tripOperationLists.find(
             (_, index, array) => {
-                if (!array[index + 1]) {
+                if (!array.at(index + 1)) {
                     return undefined;
                 }
+
                 return (
-                    dayjs(
-                        today + ' ' + array[index].endTime.arrivalTime,
-                        timeFormat,
-                    )
-                        .subtract(now.hour() < 4 ? 1 : 0, 'days')
-                        .add(array[index].endTime.arrivalDays - 1, 'days') <=
-                        now &&
+                    target(
+                        array.at(index).endTime.arrivalDays,
+                        array.at(index).endTime.arrivalTime,
+                    ) <= now &&
                     now <
-                        dayjs(
-                            today +
-                                ' ' +
-                                array[index + 1].startTime.departureTime,
-                            timeFormat,
+                        target(
+                            array.at(index + 1).startTime.departureDays,
+                            array.at(index + 1).startTime.departureTime,
                         )
-                            .subtract(now.hour() < 4 ? 1 : 0, 'days')
-                            .add(
-                                array[index + 1].startTime.departureDays - 1,
-                                'days',
-                            )
                 );
             },
         );
 
         // n - 1番目の列車の到着時刻 < 現時刻 <= n番目の列車の出発時刻
-        const nMinus1ToNowToNDep = find(
-            dto.tripOperationLists,
+        const nMinus1ToNowToNDep = dto.tripOperationLists.find(
             (_, index, array) => {
-                if (!array[index - 1]) {
+                if (!array.at(index - 1)) {
                     return undefined;
                 }
+
                 return (
-                    dayjs(
-                        today + ' ' + array[index - 1].endTime.arrivalTime,
-                        timeFormat,
-                    )
-                        .subtract(now.hour() < 4 ? 1 : 0, 'days')
-                        .add(
-                            array[index - 1].endTime.arrivalDays - 1,
-                            'days',
-                        ) <= now &&
+                    target(
+                        array.at(index - 1).endTime.arrivalDays,
+                        array.at(index - 1).endTime.arrivalTime,
+                    ) <= now &&
                     now <
-                        dayjs(
-                            today + ' ' + array[index].startTime.departureTime,
-                            timeFormat,
+                        target(
+                            array.at(index).startTime.departureDays,
+                            array.at(index).startTime.departureTime,
                         )
-                            .subtract(now.hour() < 4 ? 1 : 0, 'days')
-                            .add(
-                                array[index].startTime.departureDays - 1,
-                                'days',
-                            )
                 );
             },
         );
@@ -186,7 +161,7 @@ export class OperationV2Service {
             position.prev = nArrToNowToNPlus1Dep;
             position.next = nMinus1ToNowToNDep;
             return {
-                operation: omit(dto, 'tripOperationLists'),
+                operation: omit(dto, ['tripOperationLists']),
                 position,
             };
         }
@@ -194,29 +169,18 @@ export class OperationV2Service {
         /**
          * 現在走行中の列車
          */
-        const currentRunning = find(
-            dto.tripOperationLists,
+        const currentRunning = dto.tripOperationLists.find(
             (tripOperationList) => {
                 return (
-                    dayjs(
-                        today + ' ' + tripOperationList.startTime.departureTime,
-                        timeFormat,
-                    )
-                        .subtract(now.hour() < 4 ? 1 : 0, 'days')
-                        .add(
-                            tripOperationList.startTime.departureDays - 1,
-                            'days',
-                        ) <= now &&
+                    target(
+                        tripOperationList.startTime.departureDays,
+                        tripOperationList.startTime.departureTime,
+                    ) <= now &&
                     now <
-                        dayjs(
-                            today + ' ' + tripOperationList.endTime.arrivalTime,
-                            timeFormat,
+                        target(
+                            tripOperationList.endTime.arrivalDays,
+                            tripOperationList.endTime.arrivalTime,
                         )
-                            .subtract(now.hour() < 4 ? 1 : 0, 'days')
-                            .add(
-                                tripOperationList.endTime.arrivalDays - 1,
-                                'days',
-                            )
                 );
             },
         );
@@ -224,7 +188,7 @@ export class OperationV2Service {
         if (currentRunning) {
             position.current = currentRunning;
             return {
-                operation: omit(dto, 'tripOperationLists'),
+                operation: omit(dto, ['tripOperationLists']),
                 position,
             };
         }
@@ -233,37 +197,25 @@ export class OperationV2Service {
          * 最後の列車の到着時刻よりも現時刻が大きい場合
          */
         if (
-            dayjs(
-                today +
-                    ' ' +
-                    dto.tripOperationLists[dto.tripOperationLists.length - 1]
-                        .endTime.arrivalTime,
-                timeFormat,
-            )
-                .subtract(now.hour() < 4 ? 1 : 0, 'days')
-                .add(
-                    dto.tripOperationLists[dto.tripOperationLists.length - 1]
-                        .endTime.arrivalDays - 1,
-                    'days',
-                ) <= now
+            target(
+                dto.tripOperationLists.at(-1).endTime.arrivalDays,
+                dto.tripOperationLists.at(-1).endTime.arrivalTime,
+            ) <= now
         ) {
-            position.prev =
-                dto.tripOperationLists[dto.tripOperationLists.length - 1];
+            position.prev = dto.tripOperationLists.at(-1);
             return {
-                operation: omit(dto, 'tripOperationLists'),
+                operation: omit(dto, ['tripOperationLists']),
                 position,
             };
         }
 
         return {
-            operation: omit(dto, 'tripOperationLists'),
+            operation: omit(dto, ['tripOperationLists']),
             position,
         };
     }
 
-    async findOneWithTrips(
-        query: CrudRequest,
-    ): Promise<{
+    async findOneWithTrips(query: CrudRequest): Promise<{
         operation: OperationDetailsDto;
         trips: TripOperationListDetailsDto[];
     }> {
@@ -281,13 +233,11 @@ export class OperationV2Service {
                         ],
                         sort: [
                             {
-                                field:
-                                    'tripOperationLists.startTime.departureDays',
+                                field: 'tripOperationLists.startTime.departureDays',
                                 order: 'ASC',
                             },
                             {
-                                field:
-                                    'tripOperationLists.startTime.departureTime',
+                                field: 'tripOperationLists.startTime.departureTime',
                                 order: 'ASC',
                             },
                             {
