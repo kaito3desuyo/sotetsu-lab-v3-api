@@ -29,6 +29,10 @@ export class TripBlockV2Service {
         return this.tripBlockQuery.findManyTripBlocks(query);
     }
 
+    findOne(query: CrudRequest): Promise<TripBlockDetailsDto> {
+        return this.tripBlockQuery.findOneTripBlock(query);
+    }
+
     async createManyTripBlocks(
         query: CrudRequest,
         dtos: CreateTripBlockDto[],
