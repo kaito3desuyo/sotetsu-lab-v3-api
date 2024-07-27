@@ -17,9 +17,9 @@ export class AppModule implements OnApplicationBootstrap {
 
     onApplicationBootstrap(): void {
         const server: Server = this.refHost.httpAdapter.getHttpServer();
-        server.keepAliveTimeout = 61 * 1000;
-        server.headersTimeout = 65 * 1000;
+        // server.keepAliveTimeout = 61 * 1000;
+        // server.headersTimeout = 65 * 1000;
 
-        console.log(server.keepAliveTimeout);
+        console.log(server.keepAliveTimeout, server.headersTimeout);
     }
 }
