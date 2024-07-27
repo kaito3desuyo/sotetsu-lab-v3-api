@@ -40,7 +40,7 @@ import { TripBlockV2Service } from '../usecase/trip-block.v2.service';
         type: BaseTripBlockDto,
     },
     routes: {
-        only: ['getManyBase', 'createManyBase', 'replaceOneBase'],
+        only: ['getManyBase', 'getOneBase', 'createManyBase', 'replaceOneBase'],
     },
     query: {
         join: {
@@ -89,6 +89,19 @@ export class TripBlockV2Controller {
             addPaginationHeaders(req, res, tripBlocks);
             res.json(tripBlocks.data);
         }
+    }
+
+    @Override('getOneBase')
+    @Get(':id')
+    async findOne(
+        @ParsedRequest() crudReq: CrudRequest,
+        @Res() res: Response,
+    ): Promise<void> {
+        const tripBlock = await this.tripBlockV2Service.findOne(crudReq);
+
+        res.header('Cache-Control', 'max-age=1, must-revalidate');
+
+        res.json(tripBlock);
     }
 
     @Override('createManyBase')

@@ -48,6 +48,11 @@ export class TripBlockQuery {
 
     async findOneTripBlock(query: CrudRequest): Promise<TripBlockDetailsDto> {
         const model = await this.tripBlockRepository.getOne(query);
+
+        if (!model) {
+            return null;
+        }
+
         return TripBlockDtoBuilder.buildFromModel(model);
     }
 
