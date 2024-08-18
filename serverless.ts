@@ -14,7 +14,7 @@ const serverlessConfiguration: AWS = {
         name: 'aws',
         stage: 'prod',
         region: 'ap-northeast-1',
-        runtime: 'nodejs18.x',
+        runtime: 'nodejs20.x',
         memorySize: 1769, // 1 vCPU
         architecture: 'arm64',
         logRetentionInDays: 30,
