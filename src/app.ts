@@ -1,7 +1,7 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
-import compression from 'compression';
+// import compression from 'compression';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
@@ -17,7 +17,7 @@ export async function createApp(): Promise<INestApplication> {
     const app = await NestFactory.create(AppModule, new ExpressAdapter());
 
     app.enableShutdownHooks();
-    app.use(compression());
+    // app.use(compression());
     app.use(helmet());
     app.enableCors({
         origin: process.env.CORS_HEADER_ORIGIN || '*',
