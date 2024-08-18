@@ -15,7 +15,7 @@ const serverlessConfiguration: AWS = {
         stage: 'prod',
         region: 'ap-northeast-1',
         runtime: 'nodejs20.x',
-        memorySize: 1769, // 1 vCPU
+        memorySize: 512, // 1 vCPU
         architecture: 'arm64',
         logRetentionInDays: 30,
         stackName: '${param:prefix}-cfstack',
