@@ -1,4 +1,11 @@
 import {
+    Crud,
+    CrudRequest,
+    CrudRequestInterceptor,
+    Override,
+    ParsedRequest,
+} from '@dataui/crud';
+import {
     Controller,
     Get,
     Req,
@@ -6,13 +13,6 @@ import {
     UseGuards,
     UseInterceptors,
 } from '@nestjs/common';
-import {
-    Crud,
-    CrudRequest,
-    CrudRequestInterceptor,
-    Override,
-    ParsedRequest,
-} from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
 import { AuthGuard } from 'src/core/modules/auth/auth.guard';
@@ -115,9 +115,8 @@ export class ServiceV2Controller {
         @ParsedRequest() crudReq: CrudRequest,
         @Res() res: Response,
     ): Promise<void> {
-        const serviceStations = await this.serviceV2Service.findOneWithStations(
-            crudReq,
-        );
+        const serviceStations =
+            await this.serviceV2Service.findOneWithStations(crudReq);
 
         res.header('Cache-Control', 'max-age=2592000, must-revalidate');
 

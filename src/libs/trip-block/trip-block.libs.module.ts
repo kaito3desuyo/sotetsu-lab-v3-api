@@ -4,11 +4,10 @@ import { AuthModule } from 'src/core/modules/auth/auth.module';
 import { TripBlockCommand } from './infrastructure/commands/trip-block.command';
 import { TripBlockModel } from './infrastructure/models/trip-block.model';
 import { TripBlockQuery } from './infrastructure/queries/trip-block.query';
-import { TripBlockRepository } from './infrastructure/repositories/trip-block.repository';
 
 @Module({
     imports: [TypeOrmModule.forFeature([TripBlockModel]), AuthModule],
     exports: [TripBlockCommand, TripBlockQuery],
-    providers: [TripBlockRepository, TripBlockCommand, TripBlockQuery],
+    providers: [TripBlockCommand, TripBlockQuery],
 })
 export class TripBlockLibsModule {}

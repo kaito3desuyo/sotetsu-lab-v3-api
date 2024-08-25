@@ -1,6 +1,6 @@
+import { CrudRequest, GetManyDefaultResponse } from '@dataui/crud';
 import { Injectable } from '@nestjs/common';
-import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
-import { merge, mergeWith } from 'lodash';
+import { mergeWith } from 'lodash';
 import { crudReqMergeCustomizer } from 'src/core/utils/merge-customizer';
 import { FormationQuery } from '../infrastructure/queries/formation.query';
 import { FormationDetailsDto } from './dtos/formation-details.dto';

@@ -1,5 +1,5 @@
+import { CrudRequest, GetManyDefaultResponse } from '@dataui/crud';
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
 import { Trips } from 'src/libs/trip/domain/trip.domain';
 import { TripBlock } from '../domain/trip-block.domain';
 import { TripBlockCommand } from '../infrastructure/commands/trip-block.command';

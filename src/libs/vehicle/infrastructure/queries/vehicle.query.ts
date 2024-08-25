@@ -1,7 +1,7 @@
+import { CrudRequest, GetManyDefaultResponse } from '@dataui/crud';
+import { TypeOrmCrudService } from '@dataui/crud-typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
-import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { isArray } from 'lodash';
 import { Repository } from 'typeorm';
 import { VehicleDetailsDto } from '../../usecase/dtos/vehicle-details.dto';

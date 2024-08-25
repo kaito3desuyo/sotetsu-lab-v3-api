@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
+import { CrudRequest, GetManyDefaultResponse } from '@dataui/crud';
 import { Injectable } from '@nestjs/common';
-import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
 import dayjs from 'dayjs';
 import omit from 'just-omit';
 import { mergeWith } from 'lodash';
