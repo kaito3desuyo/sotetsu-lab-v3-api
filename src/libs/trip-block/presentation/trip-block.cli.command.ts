@@ -6,8 +6,10 @@ import { TripBlockCliService } from '../usecase/trip-block.cli.service';
     description: 'Copy Trip Blocks',
     arguments: '<fromCalendarId> <toCalendarId>',
 })
-export class CopyTripBlocksCommand implements CommandRunner {
-    constructor(private readonly tripBlockCliService: TripBlockCliService) {}
+export class CopyTripBlocksCommand extends CommandRunner {
+    constructor(private readonly tripBlockCliService: TripBlockCliService) {
+        super();
+    }
 
     async run(
         [fromCalendarId, toCalendarId]: [string, string],
@@ -26,7 +28,7 @@ export class CopyTripBlocksCommand implements CommandRunner {
     subCommands: [CopyTripBlocksCommand],
     options: {},
 })
-export class TripBlockCommand implements CommandRunner {
+export class TripBlockCommand extends CommandRunner {
     async run(): Promise<void> {
         console.error('error: please use sub commands.');
         process.exitCode = 1;
