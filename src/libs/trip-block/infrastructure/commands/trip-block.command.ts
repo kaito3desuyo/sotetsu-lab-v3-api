@@ -1,5 +1,8 @@
+import { CrudRequest } from '@dataui/crud';
+import { TypeOrmCrudService } from '@dataui/crud-typeorm';
 import { Injectable } from '@nestjs/common';
-import { CrudRequest } from '@nestjsx/crud';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, SaveOptions } from 'typeorm';
 import { TripBlock, TripBlocks } from '../../domain/trip-block.domain';
 import { TripBlockDetailsDto } from '../../usecase/dtos/trip-block-details.dto';
 import {
@@ -10,12 +13,16 @@ import {
     TripBlockModelBuilder,
     TripBlocksModelBuilder,
 } from '../builders/trip-block.model.builder';
-import { TripBlockRepository } from '../repositories/trip-block.repository';
-import { SaveOptions } from 'typeorm';
+import { TripBlockModel } from '../models/trip-block.model';
 
 @Injectable()
-export class TripBlockCommand {
-    constructor(private readonly tripBlockRepository: TripBlockRepository) {}
+export class TripBlockCommand extends TypeOrmCrudService<TripBlockModel> {
+    constructor(
+        @InjectRepository(TripBlockModel)
+        private readonly tripBlockRepository: Repository<TripBlockModel>,
+    ) {
+        super(tripBlockRepository);
+    }
 
     async bulkCreate(
         domains: TripBlocks,
@@ -33,7 +40,7 @@ export class TripBlockCommand {
         domains: TripBlocks,
     ): Promise<TripBlockDetailsDto[]> {
         const models = TripBlocksModelBuilder.buildFromDomain(domains);
-        const result = await this.tripBlockRepository.createMany(query, {
+        const result = await this.createMany(query, {
             bulk: models,
         });
         return TripBlocksDtoBuilder.buildFromModel(result);
@@ -44,7 +51,7 @@ export class TripBlockCommand {
         domain: TripBlock,
     ): Promise<TripBlockDetailsDto> {
         const model = TripBlockModelBuilder.buildFromDomain(domain);
-        const result = await this.tripBlockRepository.replaceOne(query, model);
+        const result = await this.replaceOne(query, model);
         return TripBlockDtoBuilder.buildFromModel(result);
     }
 
@@ -59,7 +66,7 @@ export class TripBlockCommand {
     async deleteOneTripBlock(
         query: CrudRequest,
     ): Promise<void | TripBlockDetailsDto> {
-        const result = await this.tripBlockRepository.deleteOne(query);
+        const result = await this.deleteOne(query);
         return result && TripBlockDtoBuilder.buildFromModel(result);
     }
 

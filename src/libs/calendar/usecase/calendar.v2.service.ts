@@ -1,10 +1,10 @@
+import { CrudRequest, GetManyDefaultResponse } from '@dataui/crud';
 import { Injectable } from '@nestjs/common';
-import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
-import { merge, mergeWith } from 'lodash';
+import { mergeWith } from 'lodash';
 import {
+    getDayOfWeek,
     isHoliday,
     isNewYear,
-    getDayOfWeek,
     isSpecialCalendarAvailable,
 } from 'src/core/utils/day-of-week';
 import { crudReqMergeCustomizer } from 'src/core/utils/merge-customizer';
@@ -67,9 +67,9 @@ export class CalendarV2Service {
                                           saturday: false,
                                       }
                                     : isHoliday(params.date) ||
-                                      isNewYear(params.date)
-                                    ? { sunday: true }
-                                    : { [getDayOfWeek(params.date)]: true },
+                                        isNewYear(params.date)
+                                      ? { sunday: true }
+                                      : { [getDayOfWeek(params.date)]: true },
                             ],
                         },
                     },

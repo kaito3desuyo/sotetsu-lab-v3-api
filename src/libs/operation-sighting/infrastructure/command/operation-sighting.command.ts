@@ -1,7 +1,7 @@
+import { CrudRequest } from '@dataui/crud';
+import { TypeOrmCrudService } from '@dataui/crud-typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CrudRequest } from '@nestjsx/crud';
-import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { Repository } from 'typeorm';
 import { OperationSighting } from '../../domain/operation-sighting.domain';
 import { OperationSightingDetailsDto } from '../../usecase/dtos/operation-sighting-details.dto';

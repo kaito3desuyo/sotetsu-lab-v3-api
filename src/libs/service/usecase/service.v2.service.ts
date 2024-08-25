@@ -1,5 +1,5 @@
+import { CrudRequest, GetManyDefaultResponse } from '@dataui/crud';
 import { Injectable } from '@nestjs/common';
-import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
 import { cloneDeep, mergeWith, omit, sortBy } from 'lodash';
 import { crudReqMergeCustomizer } from 'src/core/utils/merge-customizer';
 import { RouteStationListDetailsDto } from 'src/libs/route/usecase/dtos/route-station-list-details.dto';
@@ -36,12 +36,10 @@ export class ServiceV2Service {
                                 field: 'operatingSystems.route',
                             },
                             {
-                                field:
-                                    'operatingSystems.route.routeStationLists',
+                                field: 'operatingSystems.route.routeStationLists',
                             },
                             {
-                                field:
-                                    'operatingSystems.route.routeStationLists.station',
+                                field: 'operatingSystems.route.routeStationLists.station',
                             },
                             {
                                 field: 'operatingSystems.startRouteStationList',
@@ -56,8 +54,7 @@ export class ServiceV2Service {
                                 order: 'ASC',
                             },
                             {
-                                field:
-                                    'operatingSystems.route.routeStationLists.stationSequence',
+                                field: 'operatingSystems.route.routeStationLists.stationSequence',
                                 order: 'ASC',
                             },
                         ],

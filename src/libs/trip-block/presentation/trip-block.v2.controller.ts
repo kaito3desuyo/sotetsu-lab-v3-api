@@ -1,4 +1,11 @@
 import {
+    Crud,
+    CrudRequest,
+    CrudRequestInterceptor,
+    Override,
+    ParsedRequest,
+} from '@dataui/crud';
+import {
     Body,
     Controller,
     Get,
@@ -12,13 +19,6 @@ import {
     UseGuards,
     UseInterceptors,
 } from '@nestjs/common';
-import {
-    Crud,
-    CrudRequest,
-    CrudRequestInterceptor,
-    Override,
-    ParsedRequest,
-} from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
 import { validationPipeOptions } from 'src/core/configs/validator-options';

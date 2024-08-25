@@ -1,5 +1,5 @@
+import { CrudRequest, GetManyDefaultResponse } from '@dataui/crud';
 import { Injectable } from '@nestjs/common';
-import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
 import { TripClassQuery } from '../infrastructure/queries/trip-class.query';
 import { TripClassDetailsDto } from './dtos/trip-class-details.dto';
 

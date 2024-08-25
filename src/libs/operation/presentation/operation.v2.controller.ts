@@ -1,4 +1,11 @@
 import {
+    Crud,
+    CrudRequest,
+    CrudRequestInterceptor,
+    Override,
+    ParsedRequest,
+} from '@dataui/crud';
+import {
     Controller,
     Get,
     Query,
@@ -8,13 +15,6 @@ import {
     UseGuards,
     UseInterceptors,
 } from '@nestjs/common';
-import {
-    Crud,
-    CrudRequest,
-    CrudRequestInterceptor,
-    Override,
-    ParsedRequest,
-} from '@nestjsx/crud';
 import dayjs from 'dayjs';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
@@ -110,9 +110,8 @@ export class OperationV2Controller {
         @ParsedRequest() crudReq: CrudRequest,
         @Res() res: Response,
     ): Promise<void> {
-        const result = await this.operationV2Service.findOneWithCurrentPosition(
-            crudReq,
-        );
+        const result =
+            await this.operationV2Service.findOneWithCurrentPosition(crudReq);
 
         const now = dayjs();
         const today = now.format('YYYY-MM-DD');
@@ -160,9 +159,8 @@ export class OperationV2Controller {
         @ParsedRequest() crudReq: CrudRequest,
         @Res() res: Response,
     ): Promise<void> {
-        const operationTrips = await this.operationV2Service.findOneWithTrips(
-            crudReq,
-        );
+        const operationTrips =
+            await this.operationV2Service.findOneWithTrips(crudReq);
 
         res.header('Cache-Control', 'max-age=1, must-revalidate');
 

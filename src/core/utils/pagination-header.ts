@@ -1,4 +1,4 @@
-import { GetManyDefaultResponse } from '@nestjsx/crud';
+import { GetManyDefaultResponse } from '@dataui/crud';
 import { Request, Response } from 'express';
 
 export function addPaginationHeaders(

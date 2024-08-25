@@ -1,5 +1,5 @@
+import { CrudRequest, GetManyDefaultResponse } from '@dataui/crud';
 import { Injectable } from '@nestjs/common';
-import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
 import { RouteQuery } from '../infrastructure/queries/route.query';
 import { RouteDetailsDto } from './dtos/route-details.dto';
 

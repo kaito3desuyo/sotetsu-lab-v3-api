@@ -1,18 +1,24 @@
+import { CrudRequest, GetManyDefaultResponse } from '@dataui/crud';
+import { TypeOrmCrudService } from '@dataui/crud-typeorm';
 import { Injectable } from '@nestjs/common';
-import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
+import { InjectRepository } from '@nestjs/typeorm';
 import { isArray } from 'lodash';
+import { FindManyOptions, Repository } from 'typeorm';
 import { OperationDetailsDto } from '../../usecase/dtos/operation-details.dto';
 import {
     OperationsDtoBuilder,
     buildOperationDetailsDto,
 } from '../builders/operation-dto.builder';
-import { OperationRepository } from '../repositories/operation.repository';
-import { FindManyOptions } from 'typeorm';
 import { OperationModel } from '../models/operation.model';
 
 @Injectable()
-export class OperationQuery {
-    constructor(private readonly operationRepository: OperationRepository) {}
+export class OperationQuery extends TypeOrmCrudService<OperationModel> {
+    constructor(
+        @InjectRepository(OperationModel)
+        private readonly operationRepository: Repository<OperationModel>,
+    ) {
+        super(operationRepository);
+    }
 
     async findMany(
         options?: FindManyOptions<OperationModel>,
@@ -28,7 +34,7 @@ export class OperationQuery {
     ): Promise<
         OperationDetailsDto[] | GetManyDefaultResponse<OperationDetailsDto>
     > {
-        const models = await this.operationRepository.getMany(query);
+        const models = await this.getMany(query);
 
         if (isArray(models)) {
             return models.map((o) => buildOperationDetailsDto(o));
@@ -42,7 +48,7 @@ export class OperationQuery {
     }
 
     async findOneOperation(query: CrudRequest): Promise<OperationDetailsDto> {
-        const model = await this.operationRepository.getOne(query);
+        const model = await this.getOne(query);
 
         if (!model) {
             return null;

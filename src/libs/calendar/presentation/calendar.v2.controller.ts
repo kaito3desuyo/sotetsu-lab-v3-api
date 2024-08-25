@@ -1,4 +1,11 @@
 import {
+    Crud,
+    CrudRequest,
+    CrudRequestInterceptor,
+    Override,
+    ParsedRequest,
+} from '@dataui/crud';
+import {
     Controller,
     Get,
     Param,
@@ -7,13 +14,6 @@ import {
     UseGuards,
     UseInterceptors,
 } from '@nestjs/common';
-import {
-    Crud,
-    CrudRequest,
-    CrudRequestInterceptor,
-    Override,
-    ParsedRequest,
-} from '@nestjsx/crud';
 import { Request, Response } from 'express';
 import { isArray } from 'lodash';
 import { AuthGuard } from 'src/core/modules/auth/auth.guard';

@@ -1,6 +1,6 @@
+import { CrudRequest, GetManyDefaultResponse } from '@dataui/crud';
+import { TypeOrmCrudService } from '@dataui/crud-typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
-import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import dayjs from 'dayjs';
 import { isArray, mergeWith } from 'lodash';
 import { crudReqMergeCustomizer } from 'src/core/utils/merge-customizer';
