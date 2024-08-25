@@ -29,6 +29,9 @@
         "migration:revert": "npm run typeorm -- migration:revert"
     },
     "dependencies": {
+        "@dataui/crud": "^5.1.13",
+        "@dataui/crud-request": "^5.1.13",
+        "@dataui/crud-typeorm": "^5.1.13",
         "@h4ad/serverless-adapter": "^3.2.0",
         "@nestjs/common": "^8.4.7",
         "@nestjs/core": "^8.4.7",
