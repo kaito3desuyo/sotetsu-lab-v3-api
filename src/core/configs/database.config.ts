@@ -1,8 +1,9 @@
-import { TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { join } from 'path';
+import { join } from 'node:path';
+import { DataSourceOptions } from 'typeorm';
 import { TypeOrmNamingStrategy } from './typeorm-naming-strategy';
+import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
-const ORM_CONFIG: TypeOrmModuleOptions = {
+export const DataSourceConfig: DataSourceOptions = {
     type: 'postgres',
     url: process.env.DATABASE_URL,
     entities: [join(__dirname, '..', '..', '**', '*.model.{ts,js}')],
@@ -18,20 +19,24 @@ const ORM_CONFIG: TypeOrmModuleOptions = {
             '*.{ts,js}',
         ),
     ],
-    cli: {
-        migrationsDir: 'db/migrations',
-    },
+    // cli: {
+    //     migrationsDir: 'db/migrations',
+    // },
     synchronize: false,
     logging: process.env.NODE_ENV === 'production' ? ['error'] : true,
     namingStrategy: new TypeOrmNamingStrategy(),
-    retryAttempts: 10,
-    retryDelay: 0,
+    // retryAttempts: 10,
+    // retryDelay: 0,
     installExtensions: false,
-    keepConnectionAlive: true,
+    // keepConnectionAlive: true,
     extra: {
         // max: 1,
         // connectionTimeoutMillis: 1000,
     },
 };
 
-export = ORM_CONFIG;
+export const NestJSTypeOrmConfig: TypeOrmModuleOptions = {
+    ...DataSourceConfig,
+    retryAttempts: 10,
+    retryDelay: 0,
+};

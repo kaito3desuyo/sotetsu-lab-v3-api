@@ -1,8 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { OperationQuery } from 'src/libs/operation/infrastructure/queries/operation.query';
-import { SelectQueryBuilder } from 'typeorm';
 import { TripBlockCommand } from '../infrastructure/commands/trip-block.command';
-import { TripBlockModel } from '../infrastructure/models/trip-block.model';
 import { TripBlockQuery } from '../infrastructure/queries/trip-block.query';
 import { TripBlocksDomainBuilder } from './builders/trip-block.domain.builder';
 import { CreateTripBlockDto } from './dtos/create-trip-block.dto';
@@ -29,11 +27,16 @@ export class TripBlockCliService {
                     operation: 'tripOperationLists.operation',
                 },
             },
-            where: (qb: SelectQueryBuilder<TripBlockModel>) => {
-                qb.where('trips.calendarId = :calendarId', {
+            where: {
+                trips: {
                     calendarId: fromCalendarId,
-                });
+                },
             },
+            // (qb: SelectQueryBuilder<TripBlockModel>) => {
+            //     qb.where('trips.calendarId = :calendarId', {
+            //         calendarId: fromCalendarId,
+            //     });
+            // },
         });
 
         const operationDtos = {
