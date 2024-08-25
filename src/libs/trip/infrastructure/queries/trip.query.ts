@@ -34,7 +34,9 @@ export class TripQuery extends TypeOrmCrudService<TripModel> {
     }
 
     async findOneTripById(tripId: string): Promise<TripDetailsDto> {
-        const model = await this.tripRepository.findOne(tripId);
+        const model = await this.tripRepository.findOne({
+            where: { id: tripId },
+        });
         return TripDtoBuilder.buildFromModel(model);
     }
 

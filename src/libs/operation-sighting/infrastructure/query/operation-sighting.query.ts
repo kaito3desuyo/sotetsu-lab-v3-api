@@ -257,8 +257,8 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
                     operationNumber,
                 },
                 sightingTime: Between(
-                    sightingTimeStart.toISOString(),
-                    sightingTimeEnd.toISOString(),
+                    sightingTimeStart.toISOString() as unknown as Date,
+                    sightingTimeEnd.toISOString() as unknown as Date,
                 ),
             },
             order: {
@@ -309,8 +309,8 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
                     formationNumber,
                 },
                 sightingTime: Between(
-                    sightingTimeStart.toISOString(),
-                    sightingTimeEnd.toISOString(),
+                    sightingTimeStart.toISOString() as unknown as Date,
+                    sightingTimeEnd.toISOString() as unknown as Date,
                 ),
             },
             order: {

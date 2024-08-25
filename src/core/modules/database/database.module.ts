@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import ORM_CONFIG from 'src/core/configs/ormconfig';
+import { NestJSTypeOrmConfig } from 'src/core/configs/database.config';
 
 @Module({
     imports: [
         TypeOrmModule.forRoot({
-            ...ORM_CONFIG,
+            ...NestJSTypeOrmConfig,
             migrations: [],
         }),
     ],

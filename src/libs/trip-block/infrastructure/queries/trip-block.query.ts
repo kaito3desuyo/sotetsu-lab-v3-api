@@ -3,12 +3,7 @@ import { TypeOrmCrudService } from '@dataui/crud-typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { isArray } from 'lodash';
-import {
-    FindManyOptions,
-    FindOneOptions,
-    Repository,
-    SelectQueryBuilder,
-} from 'typeorm';
+import { FindManyOptions, FindOneOptions, Repository } from 'typeorm';
 import { TripBlockDetailsDto } from '../../usecase/dtos/trip-block-details.dto';
 import {
     TripBlockDtoBuilder,
@@ -81,9 +76,12 @@ export class TripBlockQuery extends TypeOrmCrudService<TripBlockModel> {
                     tripOperationLists: 'trips.tripOperationLists',
                 },
             },
-            where: (qb: SelectQueryBuilder<TripBlockModel>) => {
-                qb.where('tripBlock.id = :tripBlockId', { tripBlockId });
+            where: {
+                id: tripBlockId,
             },
+            // (qb: SelectQueryBuilder<TripBlockModel>) => {
+            //     qb.where('tripBlock.id = :tripBlockId', { tripBlockId });
+            // },
         });
         return TripBlockDtoBuilder.buildFromModel(model);
     }
@@ -102,9 +100,14 @@ export class TripBlockQuery extends TypeOrmCrudService<TripBlockModel> {
                     tripOperationLists: 'trips.tripOperationLists',
                 },
             },
-            where: (qb: SelectQueryBuilder<TripBlockModel>) => {
-                qb.where('trips.id = :tripId', { tripId });
+            where: {
+                trips: {
+                    id: tripId,
+                },
             },
+            // (qb: SelectQueryBuilder<TripBlockModel>) => {
+            //     qb.where('trips.id = :tripId', { tripId });
+            // },
         });
         return TripBlockDtoBuilder.buildFromModel(model);
     }
