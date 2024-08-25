@@ -5,10 +5,11 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './core/modules/auth/auth.module';
 import { DatabaseModule } from './core/modules/database/database.module';
+import { LoggerModule } from './core/modules/logger/logger.module';
 import { ApiRoutingModule } from './routes/api-routing.module';
 
 @Module({
-    imports: [AuthModule, DatabaseModule, ApiRoutingModule],
+    imports: [AuthModule, DatabaseModule, LoggerModule, ApiRoutingModule],
     controllers: [AppController],
     providers: [AppService],
 })
@@ -20,6 +21,6 @@ export class AppModule implements OnApplicationBootstrap {
         // server.keepAliveTimeout = 61 * 1000;
         // server.headersTimeout = 65 * 1000;
 
-        console.log(server.keepAliveTimeout, server.headersTimeout);
+        // console.log(server.keepAliveTimeout, server.headersTimeout);
     }
 }
