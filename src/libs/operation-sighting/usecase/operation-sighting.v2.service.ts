@@ -106,7 +106,7 @@ export class OperationSightingV2Service {
             /**
              * 順送り前の運用番号で、別編成の目撃情報がある場合は、期待される目撃情報を上書きする
              */
-            const sightingTimeStart = searchTime
+            const sightingTimeStart = getBaseDate(searchTime)
                 .subtract(i, 'days')
                 .hour(4)
                 .minute(0)
@@ -137,7 +137,7 @@ export class OperationSightingV2Service {
              * 期待される目撃情報の編成番号で、別運用の目撃情報がある場合は、期待される目撃情報をnullにする
              */
             const sightingTimeStart = latestSightingTime;
-            const sightingTimeEnd = searchTime
+            const sightingTimeEnd = getBaseDate(searchTime)
                 .add(1, 'days')
                 .hour(4)
                 .minute(0)
@@ -239,7 +239,7 @@ export class OperationSightingV2Service {
             /**
              * 順送り後の運用番号で、別編成の目撃情報がある場合は、期待される目撃情報をnullにする
              */
-            const sightingTimeStart = latestSightingTime
+            const sightingTimeStart = getBaseDate(latestSightingTime)
                 .add(i, 'days')
                 .hour(4)
                 .minute(0)
@@ -272,17 +272,12 @@ export class OperationSightingV2Service {
             /**
              * 期待される目撃情報の運用番号で、別編成の目撃情報がある場合は、期待される目撃情報をnullにする
              */
-            const sightingTimeStart = searchTime
+            const sightingTimeStart = getBaseDate(searchTime)
                 .hour(4)
                 .minute(0)
                 .second(0)
                 .millisecond(0);
-            const sightingTimeEnd = searchTime
-                .add(1, 'days')
-                .hour(4)
-                .minute(0)
-                .second(0)
-                .millisecond(0);
+            const sightingTimeEnd = sightingTimeStart.add(1, 'days');
 
             const newerOperationSighting =
                 await this.operationSightingQuery.findOneLatestOperationSightingFromOperationNumberAndSightingTimeRange(
