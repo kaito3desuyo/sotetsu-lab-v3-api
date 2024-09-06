@@ -12,7 +12,10 @@ const baseConfig: Options = {
             };
         },
     },
-    redact: ['req.headers["x-sotetsu-lab-authorization"]'],
+    redact: [
+        'req.headers["x-amz-security-token"]',
+        'req.headers["x-sotetsu-lab-authorization"]',
+    ],
 };
 
 export const LoggerConfig: Record<string, Options> = {
