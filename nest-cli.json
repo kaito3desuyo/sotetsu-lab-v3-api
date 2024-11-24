@@ -7,6 +7,10 @@
             {
                 "include": "core/modules/auth/jwks.json",
                 "watchAssets": true
+            },
+            {
+                "include": "run.sh",
+                "watchAssets": false
             }
         ]
     }

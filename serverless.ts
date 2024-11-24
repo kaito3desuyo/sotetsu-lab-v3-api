@@ -57,6 +57,8 @@ const serverlessConfiguration: AWS = {
             },
         },
         environment: {
+            AWS_LAMBDA_EXEC_WRAPPER: '/opt/bootstrap',
+            AWS_LWA_PORT: '3000',
             // HOME: '/tmp',
             TZ: 'Asia/Tokyo',
             NODE_ENV: 'production',
@@ -95,7 +97,7 @@ const serverlessConfiguration: AWS = {
         //     ],
         // },
         app: {
-            handler: `dist/handler.main`,
+            handler: `dist/run.sh`,
             name: '${param:prefix}-lambda',
             // url: true,
             url: {
@@ -104,7 +106,7 @@ const serverlessConfiguration: AWS = {
             package: {
                 patterns: ['!**', 'dist/**'],
             },
-            timeout: 60,
+            timeout: 6,
         },
     },
     package: { individually: true },
@@ -119,6 +121,18 @@ const serverlessConfiguration: AWS = {
         deploymentBucket: {
             blockPublicAccess: true,
         },
+        'serverless-layers': [
+            {
+                default: {
+                    dependenciesPath: 'package.json',
+                },
+            },
+            {
+                lambdaWebAdapter: {
+                    arn: 'arn:aws:lambda:ap-northeast-1:753240598075:layer:LambdaAdapterLayerArm64:23',
+                },
+            },
+        ],
         warmup: {
             defaultWarmer: {
                 enabled: false,
