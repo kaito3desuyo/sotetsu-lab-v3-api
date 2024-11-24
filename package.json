@@ -22,11 +22,12 @@
         "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
         "test:e2e": "jest --config ./test/jest-e2e.json",
         "copy-secrets": "mkdir dist && cp -rv src/secrets dist/secrets/",
+        "dotenv": "dotenvx run --env-file=.env.local --",
         "typeorm": "typeorm-ts-node-commonjs",
-        "migration:create": "npm run typeorm -- migration:create",
-        "migration:generate": "npm run typeorm -- migration:generate -d src/core/utils/data-source.ts",
-        "migration:run": "npm run typeorm -- migration:run -d src/core/utils/data-source.ts",
-        "migration:revert": "npm run typeorm -- migration:revert -d src/core/utils/data-source.ts"
+        "migration:create": "npm run dotenv -- npm run typeorm -- migration:create",
+        "migration:generate": "npm run dotenv -- npm run typeorm -- migration:generate -d src/core/utils/data-source.ts",
+        "migration:run": "npm run dotenv -- npm run typeorm -- migration:run -d src/core/utils/data-source.ts",
+        "migration:revert": "npm run dotenv -- npm run typeorm -- migration:revert -d src/core/utils/data-source.ts"
     },
     "dependencies": {
         "@dataui/crud": "^5.3.4",
@@ -56,6 +57,7 @@
         "uuid": "^10.0.0"
     },
     "devDependencies": {
+        "@dotenvx/dotenvx": "^1.24.5",
         "@nestjs/cli": "^10.4.4",
         "@nestjs/schematics": "^10.1.4",
         "@nestjs/testing": "^10.4.1",

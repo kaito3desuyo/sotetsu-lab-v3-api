@@ -16,6 +16,7 @@ import { OperationModel } from 'src/libs/operation/infrastructure/models/operati
 })
 @Index(['formationId', 'sightingTime'])
 @Index(['operationId', 'sightingTime'])
+@Index(['sightingTime', 'updatedAt', 'id'])
 export class OperationSightingModel {
     @PrimaryGeneratedColumn('uuid')
     id: string;

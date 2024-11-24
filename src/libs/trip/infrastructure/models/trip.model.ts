@@ -39,6 +39,7 @@ export class TripModel {
     tripDirection: number;
 
     @Column('uuid')
+    @Index()
     tripBlockId: string;
 
     @Column('boolean')

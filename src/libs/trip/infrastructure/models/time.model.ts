@@ -22,6 +22,7 @@ export class TimeModel {
     id: string;
 
     @Column('uuid')
+    @Index()
     tripId: string;
 
     @Column('uuid')
