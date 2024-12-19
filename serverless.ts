@@ -28,17 +28,17 @@ const serverlessConfiguration: AWS = {
             name: '${param:prefix}-sls-deployment-bucket',
             serverSideEncryption: 'AES256',
         },
-        vpc: {
-            subnetIds: {
-                'Fn::Split': [
-                    ',',
-                    '${ssm:sotetsu-lab-v3-api-subnet-ids-param}',
-                ],
-            },
-            securityGroupIds: [
-                '${ssm:sotetsu-lab-v3-api-security-group-id-param}',
-            ],
-        },
+        // vpc: {
+        //     subnetIds: {
+        //         'Fn::Split': [
+        //             ',',
+        //             '${ssm:sotetsu-lab-v3-api-subnet-ids-param}',
+        //         ],
+        //     },
+        //     securityGroupIds: [
+        //         '${ssm:sotetsu-lab-v3-api-security-group-id-param}',
+        //     ],
+        // },
         ecr: {
             images: {
                 app: {
@@ -64,7 +64,7 @@ const serverlessConfiguration: AWS = {
             NODE_ENV: 'production',
             CORS_HEADER_ORIGIN: 'https://v3.sotetsu-lab.com',
             DATABASE_URL:
-                'postgresql://${self:custom.databaseSecrets.username}:${self:custom.databaseSecrets.password}@${ssm:sotetsu-lab-v3-database-rds-proxy-host-param}/sotetsu_lab_v3',
+                'postgresql://${self:custom.databaseSecrets.username}:${self:custom.databaseSecrets.password}@${self:custom.databaseSecrets.host}:${self:custom.databaseSecrets.port}/${self:custom.databaseSecrets.dbname}',
             COGNITO_USERPOOL_ID:
                 '${ssm:sotetsu-lab-v3-auth-cognito-userpool-id}',
             COGNITO_CLIENT_ID: '${ssm:sotetsu-lab-v3-auth-cognito-client-id}',
@@ -117,7 +117,7 @@ const serverlessConfiguration: AWS = {
     },
     custom: {
         databaseSecrets:
-            '${ssm:/aws/reference/secretsmanager/sotetsu-lab-v3-database-rds-secrets}',
+            '${ssm:/aws/reference/secretsmanager/sotetsu-lab-v3-database-supabase-secrets}',
         deploymentBucket: {
             blockPublicAccess: true,
         },
