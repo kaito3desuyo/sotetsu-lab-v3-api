@@ -4,6 +4,7 @@ import {
     Column,
     CreateDateColumn,
     Entity,
+    Index,
     JoinColumn,
     ManyToOne,
     PrimaryGeneratedColumn,
@@ -19,15 +20,19 @@ export class OperatingSystemModel {
     id: string;
 
     @Column('uuid')
+    @Index()
     serviceId: string;
 
     @Column('uuid')
+    @Index()
     routeId: string;
 
     @Column('uuid')
+    @Index()
     startRouteStationListId: string;
 
     @Column('uuid')
+    @Index()
     endRouteStationListId: string;
 
     @Column('smallint')

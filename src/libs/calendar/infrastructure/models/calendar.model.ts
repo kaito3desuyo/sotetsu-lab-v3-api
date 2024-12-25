@@ -4,6 +4,7 @@ import {
     Column,
     CreateDateColumn,
     Entity,
+    Index,
     JoinColumn,
     ManyToOne,
     OneToMany,
@@ -19,6 +20,7 @@ export class CalendarModel {
     id: string;
 
     @Column('uuid')
+    @Index()
     serviceId: string;
 
     @Column('varchar')

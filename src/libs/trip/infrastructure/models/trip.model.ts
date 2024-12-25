@@ -24,12 +24,14 @@ export class TripModel {
     id: string;
 
     @Column('uuid')
+    @Index()
     serviceId: string;
 
     @Column('varchar')
     tripNumber: string;
 
     @Column('uuid')
+    @Index()
     tripClassId: string;
 
     @Column('varchar', { nullable: true })
@@ -49,9 +51,11 @@ export class TripModel {
     depotOut: boolean;
 
     @Column('uuid', { nullable: true })
+    @Index()
     calendarId: string;
 
     @Column('uuid', { nullable: true })
+    @Index()
     extraCalendarId: string;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })

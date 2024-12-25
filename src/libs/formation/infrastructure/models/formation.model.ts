@@ -4,6 +4,7 @@ import {
     Column,
     CreateDateColumn,
     Entity,
+    Index,
     JoinColumn,
     ManyToOne,
     OneToMany,
@@ -20,12 +21,14 @@ export class FormationModel {
     id: string;
 
     @Column('uuid')
+    @Index()
     agencyId: string;
 
     @Column('varchar')
     vehicleType: string;
 
     @Column('varchar')
+    @Index()
     formationNumber: string;
 
     @Column('text', { nullable: true })

@@ -4,6 +4,7 @@ import {
     Column,
     CreateDateColumn,
     Entity,
+    Index,
     JoinColumn,
     ManyToOne,
     OneToMany,
@@ -20,9 +21,11 @@ export class RouteStationListModel {
     id: string;
 
     @Column('uuid')
+    @Index()
     routeId: string;
 
     @Column('uuid')
+    @Index()
     stationId: string;
 
     @Column('smallint')
