@@ -25,6 +25,7 @@ export class OperationModel {
     calendarId: string;
 
     @Column('varchar')
+    @Index()
     operationNumber: string;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })

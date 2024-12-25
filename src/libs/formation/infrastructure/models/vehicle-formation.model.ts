@@ -3,6 +3,7 @@ import {
     Column,
     CreateDateColumn,
     Entity,
+    Index,
     JoinColumn,
     ManyToOne,
     PrimaryGeneratedColumn,
@@ -18,9 +19,11 @@ export class VehicleFormationModel {
     id: string;
 
     @Column('uuid')
+    @Index()
     formationId: string;
 
     @Column('uuid')
+    @Index()
     vehicleId: string;
 
     @Column('smallint')

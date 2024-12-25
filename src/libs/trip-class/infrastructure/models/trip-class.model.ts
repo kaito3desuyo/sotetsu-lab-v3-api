@@ -1,15 +1,15 @@
 import { ServiceModel } from 'src/libs/service/infrastructure/models/service.model';
 import { TripModel } from 'src/libs/trip/infrastructure/models/trip.model';
 import {
-    Entity,
-    PrimaryGeneratedColumn,
     Column,
-    OneToOne,
-    JoinColumn,
     CreateDateColumn,
-    UpdateDateColumn,
+    Entity,
+    Index,
+    JoinColumn,
     ManyToOne,
     OneToMany,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn,
 } from 'typeorm';
 
 @Entity({
@@ -20,6 +20,7 @@ export class TripClassModel {
     id: string;
 
     @Column('uuid')
+    @Index()
     serviceId: string;
 
     @Column('varchar')

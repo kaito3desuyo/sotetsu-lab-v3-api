@@ -23,6 +23,7 @@ export class TripOperationListModel {
     id: string;
 
     @Column('uuid')
+    @Index()
     tripId: string;
 
     @Column('uuid')
@@ -30,15 +31,19 @@ export class TripOperationListModel {
     operationId: string;
 
     @Column('uuid', { nullable: true })
+    @Index()
     startStationId: string;
 
     @Column('uuid', { nullable: true })
+    @Index()
     endStationId: string;
 
     @Column('uuid', { nullable: true })
+    @Index()
     startTimeId: string;
 
     @Column('uuid', { nullable: true })
+    @Index()
     endTimeId: string;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })

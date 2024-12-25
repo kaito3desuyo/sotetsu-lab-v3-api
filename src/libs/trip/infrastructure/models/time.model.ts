@@ -26,9 +26,11 @@ export class TimeModel {
     tripId: string;
 
     @Column('uuid')
+    @Index()
     stationId: string;
 
     @Column('uuid', { nullable: true })
+    @Index()
     stopId: string;
 
     @Column('int')
