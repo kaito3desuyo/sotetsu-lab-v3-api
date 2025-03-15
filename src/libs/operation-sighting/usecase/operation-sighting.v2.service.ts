@@ -73,9 +73,13 @@ export class OperationSightingV2Service {
             );
 
         if (!latestSighting) {
-            throw new NotFoundException(
-                'Latest `OperationSighting` is not found.',
-            );
+            return {
+                latestSighting: null,
+                expectedSighting: null,
+            };
+            // throw new NotFoundException(
+            //     'Latest `OperationSighting` is not found.',
+            // );
         }
 
         let targetOperationNumber = operationNumber;
@@ -187,9 +191,13 @@ export class OperationSightingV2Service {
             );
 
         if (!latestSighting) {
-            throw new NotFoundException(
-                'Latest `OperationSighting` is not found.',
-            );
+            return {
+                latestSighting: null,
+                expectedSighting: null,
+            };
+            // throw new NotFoundException(
+            //     'Latest `OperationSighting` is not found.',
+            // );
         }
 
         let targetOperationNumber = latestSighting.operation.operationNumber;
