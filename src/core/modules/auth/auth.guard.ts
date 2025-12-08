@@ -6,6 +6,7 @@ import {
     UnauthorizedException,
 } from '@nestjs/common';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
+import { Request } from 'express';
 import { readFileSync } from 'fs';
 
 const verifier = CognitoJwtVerifier.create({
@@ -25,13 +26,16 @@ export class AuthGuard implements CanActivate {
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         try {
-            const req = context.switchToHttp().getRequest();
-            const jwt = (
+            const req = context.switchToHttp().getRequest<Request>();
+            const authHeader =
                 req.headers['x-sotetsu-lab-authorization'] ??
                 req.headers.authorization ??
-                ''
+                '';
+            const jwt = (
+                Array.isArray(authHeader) ? authHeader[0] : authHeader
             ).replace('Bearer ', '');
             const payload = await verifier.verify(jwt);
+
             req.cognito_jwt_payload = payload;
 
             return true;

@@ -6,7 +6,14 @@ import { OperationSightingModel } from '../models/operation-sighting.model';
 export function buildOperationSightingDetailsDto(
     model: OperationSightingModel,
 ): OperationSightingDetailsDto {
-    return plainToClass(OperationSightingDetailsDto, model, transformerOptions);
+    return plainToClass(
+        OperationSightingDetailsDto,
+        {
+            ...model,
+            operationSightingId: model.id,
+        },
+        transformerOptions,
+    );
 }
 
 export const OperationSightingDtoBuilder = {
@@ -15,7 +22,10 @@ export const OperationSightingDtoBuilder = {
     ): OperationSightingDetailsDto => {
         return plainToClass(
             OperationSightingDetailsDto,
-            model,
+            {
+                ...model,
+                operationSightingId: model.id,
+            },
             transformerOptions,
         );
     },
