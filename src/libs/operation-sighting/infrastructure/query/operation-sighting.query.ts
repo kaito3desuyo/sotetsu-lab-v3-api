@@ -11,6 +11,15 @@ import {
     OperationSightingDtoBuilder,
 } from '../builders/operation-sighting-dto.builder';
 import { OperationSightingModel } from '../models/operation-sighting.model';
+import { TZDate } from '@date-fns/tz';
+import { flow } from 'es-toolkit';
+import {
+    addDays,
+    setHours,
+    setMilliseconds,
+    setMinutes,
+    setSeconds,
+} from 'date-fns';
 
 export class OperationSightingQuery extends TypeOrmCrudService<OperationSightingModel> {
     constructor(
@@ -209,6 +218,39 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
                 data,
             };
         }
+    }
+
+    async findManyBySpecificPeriod(params: {
+        start: string;
+        end: string;
+        includeInvalidated?: boolean;
+    }): Promise<OperationSightingDetailsDto[]> {
+        const { start, end, includeInvalidated = false } = params;
+
+        const setToFourAM = flow(
+            (date) => setHours(date, 4),
+            (date) => setMinutes(date, 0),
+            (date) => setSeconds(date, 0),
+            (date) => setMilliseconds(date, 0),
+        );
+
+        const startDate = setToFourAM(new TZDate(start, 'Asia/Tokyo'));
+        const endDate = setToFourAM(addDays(new TZDate(end, 'Asia/Tokyo'), 1));
+
+        const model = await this.operationSightingRepository.find({
+            relations: ['invalidations', 'managementLogs'],
+            where: {
+                sightingTime: Between(startDate, endDate),
+                invalidations: includeInvalidated
+                    ? undefined
+                    : { id: IsNull() },
+            },
+            order: {
+                sightingTime: 'ASC',
+            },
+        });
+
+        return model.map((o) => OperationSightingDtoBuilder.buildFromModel(o));
     }
 
     async findOneOperationSighting(

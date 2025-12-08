@@ -13,6 +13,20 @@ export class OperationSightingV3Service {
         private readonly operationSightingQuery: OperationSightingQuery,
     ) {}
 
+    async findManyBySpecificPeriod(params: {
+        start: string;
+        end: string;
+        includeInvalidated?: boolean;
+    }): Promise<OperationSightingDetailsDto[]> {
+        const { start, end, includeInvalidated = false } = params;
+
+        return this.operationSightingQuery.findManyBySpecificPeriod({
+            start,
+            end,
+            includeInvalidated,
+        });
+    }
+
     async invalidate(
         params: InvalidateOperationSightingDto,
     ): Promise<OperationSightingDetailsDto> {
