@@ -1,4 +1,12 @@
-import { Body, Controller, Param, Patch, UseGuards } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Get,
+    Param,
+    Patch,
+    Query,
+    UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 import { RBAC } from 'src/core/modules/rbac/rbac.decorator';
 import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
@@ -14,6 +22,22 @@ export class OperationSightingV3Controller {
     constructor(
         private readonly operationSightingV3Service: OperationSightingV3Service,
     ) {}
+
+    @Get('/from/:start/to/:end')
+    async findManyBySpecificPeriod(
+        @Param('start') start: string,
+        @Param('end') end: string,
+        @Query('includeInvalidated') includeInvalidated?: boolean,
+    ): Promise<OperationSightingDetailsDto[]> {
+        const result =
+            await this.operationSightingV3Service.findManyBySpecificPeriod({
+                start,
+                end,
+                includeInvalidated,
+            });
+
+        return result;
+    }
 
     @Patch('/:id/invalidate')
     @RBAC(Role.EDITOR, Role.MANAGER)
