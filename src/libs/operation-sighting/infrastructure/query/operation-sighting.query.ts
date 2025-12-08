@@ -4,9 +4,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import { isArray, mergeWith } from 'lodash';
 import { crudReqMergeCustomizer } from 'src/core/utils/merge-customizer';
-import { Between, Repository } from 'typeorm';
+import { Between, IsNull, Repository } from 'typeorm';
 import { OperationSightingDetailsDto } from '../../usecase/dtos/operation-sighting-details.dto';
-import { buildOperationSightingDetailsDto } from '../builders/operation-sighting-dto.builder';
+import {
+    buildOperationSightingDetailsDto,
+    OperationSightingDtoBuilder,
+} from '../builders/operation-sighting-dto.builder';
 import { OperationSightingModel } from '../models/operation-sighting.model';
 
 export class OperationSightingQuery extends TypeOrmCrudService<OperationSightingModel> {
@@ -210,7 +213,7 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
 
     async findOneOperationSighting(
         query: CrudRequest,
-    ): Promise<OperationSightingDetailsDto> {
+    ): Promise<OperationSightingDetailsDto | null> {
         const model = await this.getOne(query);
 
         if (!model) {
@@ -218,6 +221,21 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
         }
 
         return buildOperationSightingDetailsDto(model);
+    }
+
+    async findOneById(params: {
+        id: string;
+    }): Promise<OperationSightingDetailsDto | null> {
+        const model = await this.operationSightingRepository.findOne({
+            where: { id: params.id },
+            relations: ['invalidations', 'managementLogs'],
+        });
+
+        if (!model) {
+            return null;
+        }
+
+        return OperationSightingDtoBuilder.buildFromModel(model);
     }
 
     async findOneLatestOperationSightingFromOperationNumber(params: {

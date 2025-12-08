@@ -1,15 +1,18 @@
-import {
-    Entity,
-    PrimaryGeneratedColumn,
-    Column,
-    CreateDateColumn,
-    UpdateDateColumn,
-    ManyToOne,
-    JoinColumn,
-    Index,
-} from 'typeorm';
 import { FormationModel } from 'src/libs/formation/infrastructure/models/formation.model';
 import { OperationModel } from 'src/libs/operation/infrastructure/models/operation.model';
+import {
+    Column,
+    CreateDateColumn,
+    Entity,
+    Index,
+    JoinColumn,
+    ManyToOne,
+    OneToMany,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn,
+} from 'typeorm';
+import { OperationSightingInvalidationModel } from './operation-sighting-invalidation.model';
+import { OperationSightingManagementLogModel } from './operation-sighting-management-log.model';
 
 @Entity({
     name: 'operation_sightings',
@@ -50,4 +53,20 @@ export class OperationSightingModel {
     )
     @JoinColumn({ name: 'formation_id' })
     readonly formation?: FormationModel;
+
+    @OneToMany(
+        () => OperationSightingInvalidationModel,
+        (operationSightingInvalidation) =>
+            operationSightingInvalidation.operationSighting,
+        { cascade: true },
+    )
+    readonly invalidations?: OperationSightingInvalidationModel[];
+
+    @OneToMany(
+        () => OperationSightingManagementLogModel,
+        (operationSightingManagementLog) =>
+            operationSightingManagementLog.operationSighting,
+        { cascade: true },
+    )
+    readonly managementLogs?: OperationSightingManagementLogModel[];
 }

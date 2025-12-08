@@ -1,9 +1,5 @@
 import { CrudRequest, GetManyDefaultResponse } from '@dataui/crud';
-import {
-    Injectable,
-    NotFoundException,
-    UnprocessableEntityException,
-} from '@nestjs/common';
+import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import dayjs from 'dayjs';
 import { pick } from 'lodash';
 import { getBaseDate } from 'src/core/utils/datetime';

@@ -18,6 +18,14 @@ export class OperationSightingCommand extends TypeOrmCrudService<OperationSighti
         super(operationSightingRepository);
     }
 
+    async save(
+        domain: OperationSighting,
+    ): Promise<OperationSightingDetailsDto> {
+        const model = OperationSightingModelBuilder.buildFromDomain(domain);
+        const result = await this.operationSightingRepository.save(model);
+        return OperationSightingDtoBuilder.buildFromModel(result);
+    }
+
     async createOneOperationSighting(
         query: CrudRequest,
         domain: OperationSighting,

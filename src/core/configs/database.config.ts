@@ -30,8 +30,9 @@ export const DataSourceConfig: DataSourceOptions = {
     installExtensions: false,
     // keepConnectionAlive: true,
     extra: {
-        // max: 1,
+        max: 1,
         // connectionTimeoutMillis: 1000,
+        idleTimeoutMillis: 1000 * 60 * 5,
     },
 };
 

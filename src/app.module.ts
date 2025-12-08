@@ -6,10 +6,17 @@ import { AppService } from './app.service';
 import { AuthModule } from './core/modules/auth/auth.module';
 import { DatabaseModule } from './core/modules/database/database.module';
 import { LoggerModule } from './core/modules/logger/logger.module';
+import { RBACModule } from './core/modules/rbac/rbac.module';
 import { ApiRoutingModule } from './routes/api-routing.module';
 
 @Module({
-    imports: [AuthModule, DatabaseModule, LoggerModule, ApiRoutingModule],
+    imports: [
+        AuthModule,
+        RBACModule,
+        DatabaseModule,
+        LoggerModule,
+        ApiRoutingModule,
+    ],
     controllers: [AppController],
     providers: [AppService],
 })
