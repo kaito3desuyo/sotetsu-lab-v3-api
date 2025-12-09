@@ -8,6 +8,9 @@ export class OperationDetailsDto extends BaseOperationDto {
     id: string;
 
     @Expose()
+    operationId: string;
+
+    @Expose()
     calendarId: string;
 
     @Expose()

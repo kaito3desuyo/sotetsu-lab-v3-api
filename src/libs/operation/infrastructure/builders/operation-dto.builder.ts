@@ -11,7 +11,14 @@ export function buildOperationDetailsDto(
 
 export const OperationDtoBuilder = {
     buildFromModel: (model: OperationModel): OperationDetailsDto => {
-        return plainToClass(OperationDetailsDto, model, transformerOptions);
+        return plainToClass(
+            OperationDetailsDto,
+            {
+                ...model,
+                operationId: model.id,
+            },
+            transformerOptions,
+        );
     },
 } as const;
 
