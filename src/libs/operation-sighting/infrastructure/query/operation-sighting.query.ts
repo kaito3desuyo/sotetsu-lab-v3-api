@@ -1,5 +1,6 @@
 import { CrudRequest, GetManyDefaultResponse } from '@dataui/crud';
 import { TypeOrmCrudService } from '@dataui/crud-typeorm';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import { isArray, mergeWith } from 'lodash';
@@ -11,16 +12,8 @@ import {
     OperationSightingDtoBuilder,
 } from '../builders/operation-sighting-dto.builder';
 import { OperationSightingModel } from '../models/operation-sighting.model';
-import { TZDate } from '@date-fns/tz';
-import { flow } from 'es-toolkit';
-import {
-    addDays,
-    setHours,
-    setMilliseconds,
-    setMinutes,
-    setSeconds,
-} from 'date-fns';
 
+@Injectable()
 export class OperationSightingQuery extends TypeOrmCrudService<OperationSightingModel> {
     constructor(
         @InjectRepository(OperationSightingModel)
@@ -227,20 +220,23 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
     }): Promise<OperationSightingDetailsDto[]> {
         const { start, end, includeInvalidated = false } = params;
 
-        const setToFourAM = flow(
-            (date) => setHours(date, 4),
-            (date) => setMinutes(date, 0),
-            (date) => setSeconds(date, 0),
-            (date) => setMilliseconds(date, 0),
-        );
-
-        const startDate = setToFourAM(new TZDate(start, 'Asia/Tokyo'));
-        const endDate = setToFourAM(addDays(new TZDate(end, 'Asia/Tokyo'), 1));
+        const format = 'YYYY-MM-DD';
+        const startDate = dayjs(start, format)
+            .hour(4)
+            .minute(0)
+            .second(0)
+            .millisecond(0);
+        const endDate = dayjs(end, format)
+            .add(1, 'day')
+            .hour(4)
+            .minute(0)
+            .second(0)
+            .millisecond(0);
 
         const model = await this.operationSightingRepository.find({
             relations: ['invalidations', 'managementLogs'],
             where: {
-                sightingTime: Between(startDate, endDate),
+                sightingTime: Between(startDate.toDate(), endDate.toDate()),
                 invalidations: includeInvalidated
                     ? undefined
                     : { id: IsNull() },
