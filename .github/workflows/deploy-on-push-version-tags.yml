@@ -14,15 +14,15 @@ jobs:
 
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v6
 
-            - name: Use Node.js 20.x
-              uses: actions/setup-node@v3
+            - name: Use Node.js 24.x
+              uses: actions/setup-node@v6
               with:
-                  node-version: 20.x
+                  node-version: 24.x
 
             - name: Configure AWS credentials
-              uses: aws-actions/configure-aws-credentials@v1
+              uses: aws-actions/configure-aws-credentials@v5
               with:
                   role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
                   aws-region: ap-northeast-1
