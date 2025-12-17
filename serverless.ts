@@ -14,9 +14,10 @@ const serverlessConfiguration: AWS = {
         name: 'aws',
         stage: 'prod',
         region: 'ap-northeast-1',
-        runtime: 'nodejs20.x',
-        memorySize: 512, // 1 vCPU
         architecture: 'arm64',
+        runtime: 'nodejs24.x',
+        memorySize: 885, // 1 vCPU
+        timeout: 3,
         logRetentionInDays: 30,
         stackName: '${param:prefix}-cfstack',
         stackTags: {
@@ -106,7 +107,6 @@ const serverlessConfiguration: AWS = {
             package: {
                 patterns: ['!**', 'dist/**'],
             },
-            timeout: 6,
         },
     },
     package: { individually: true },
