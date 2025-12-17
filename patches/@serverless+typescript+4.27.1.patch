@@ -1,0 +1,28 @@
+diff --git a/node_modules/@serverless/typescript/index.d.ts b/node_modules/@serverless/typescript/index.d.ts
+index 03c333f..6b92e2e 100644
+--- a/node_modules/@serverless/typescript/index.d.ts
++++ b/node_modules/@serverless/typescript/index.d.ts
+@@ -1479,14 +1479,21 @@ export interface AWS {
+     Parameters?: {
+       [k: string]: unknown;
+     };
+-    Resources?: {
++    Resources?: ({
+       "Fn::Transform"?: {
+         Name: string;
+         Parameters?: {
+           [k: string]: unknown;
+         };
+       };
+-    };
++    } | {
++      [k: string]: {
++        Type: string;
++        Properties: {
++          [k: string]: unknown;
++        };
++      };
++    });
+     Transform?: string[];
+     extensions?: {
+       /**
