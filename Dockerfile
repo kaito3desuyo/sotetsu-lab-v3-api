@@ -1,6 +1,6 @@
 ARG APP_NAME="sotetsu-lab-v3-api"
 
-FROM node:20 as base
+FROM node:24 as base
 
 ################################################################################
 
@@ -31,7 +31,7 @@ RUN npm run build
 
 ################################################################################
 
-FROM node:20-alpine as production-hosting
+FROM node:24-alpine as production-hosting
 
 ARG APP_NAME
 
