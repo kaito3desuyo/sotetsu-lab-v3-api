@@ -13,6 +13,7 @@ import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
 import { Role } from 'src/core/modules/rbac/role.enum';
 import { InvalidateOperationSightingDto } from '../usecase/dtos/invalidate-operation-sighting.dto';
 import { OperationSightingDetailsDto } from '../usecase/dtos/operation-sighting-details.dto';
+import { OperationSightingTimeCrossSectionDto } from '../usecase/dtos/operation-sighting-time-cross-section.dto';
 import { RestoreOperationSightingDto } from '../usecase/dtos/restore-operation-sighting.dto';
 import { OperationSightingV3Service } from '../usecase/operation-sighting.v3.service';
 
@@ -35,6 +36,38 @@ export class OperationSightingV3Controller {
                 end,
                 includeInvalidated,
             });
+
+        return result;
+    }
+
+    @Get('/time-cross-section/operation-number/:operationNumber')
+    async findOneTimeCrossSectionByOperationNumber(
+        @Param('operationNumber') operationNumber: string,
+        @Query('searchTime') searchTime?: string,
+    ): Promise<OperationSightingTimeCrossSectionDto> {
+        const result =
+            await this.operationSightingV3Service.findOneTimeCrossSectionByOperationNumber(
+                {
+                    operationNumber,
+                    searchTime,
+                },
+            );
+
+        return result;
+    }
+
+    @Get('/time-cross-section/formation-number/:formationNumber')
+    async findOneTimeCrossSectionByFormationNumber(
+        @Param('formationNumber') formationNumber: string,
+        @Query('searchTime') searchTime?: string,
+    ): Promise<OperationSightingTimeCrossSectionDto> {
+        const result =
+            await this.operationSightingV3Service.findOneTimeCrossSectionByFormationNumber(
+                {
+                    formationNumber,
+                    searchTime,
+                },
+            );
 
         return result;
     }

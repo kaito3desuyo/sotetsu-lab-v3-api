@@ -8,3 +8,9 @@ export function buildCalendarDetailsDto(
 ): CalendarDetailsDto {
     return plainToClass(CalendarDetailsDto, model, transformerOptions);
 }
+
+export const CalendarDtoBuilder = {
+    toDetailsDto: (model: CalendarModel): CalendarDetailsDto => {
+        return plainToClass(CalendarDetailsDto, model, transformerOptions);
+    },
+} as const;

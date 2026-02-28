@@ -2,10 +2,20 @@ import { CrudRequest, GetManyDefaultResponse } from '@dataui/crud';
 import { TypeOrmCrudService } from '@dataui/crud-typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import dayjs from 'dayjs';
 import { isArray } from 'lodash';
-import { Repository } from 'typeorm';
+import {
+    IsNull,
+    LessThanOrEqual,
+    MoreThanOrEqual,
+    Or,
+    Repository,
+} from 'typeorm';
 import { FormationDetailsDto } from '../../usecase/dtos/formation-details.dto';
-import { buildFormationDetailsDto } from '../builders/formation-dto.builder';
+import {
+    buildFormationDetailsDto,
+    FormationDtoBuilder,
+} from '../builders/formation-dto.builder';
 import { FormationModel } from '../models/formation.model';
 
 @Injectable()
@@ -50,6 +60,33 @@ export class FormationQuery extends TypeOrmCrudService<FormationModel> {
                 data,
             };
         }
+    }
+
+    async findManyBySpecificPeriod(params: {
+        startDate: string;
+        endDate: string;
+    }): Promise<FormationDetailsDto[]> {
+        const { startDate, endDate } = params;
+
+        const format = 'YYYY-MM-DD';
+        const startDateInstance = dayjs(startDate, format);
+        const endDateInstance = dayjs(endDate, format);
+
+        const result = await this.formationRepository.find({
+            where: {
+                startDate: Or(
+                    LessThanOrEqual(endDateInstance.format(format)),
+                    IsNull(),
+                ),
+                endDate: Or(
+                    MoreThanOrEqual(startDateInstance.format(format)),
+                    IsNull(),
+                ),
+            },
+            relations: ['agency'],
+        });
+
+        return result.map((model) => FormationDtoBuilder.buildFromModel(model));
     }
 
     async findOneFormation(query: CrudRequest): Promise<FormationDetailsDto> {

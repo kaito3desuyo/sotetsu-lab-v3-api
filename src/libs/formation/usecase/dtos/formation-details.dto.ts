@@ -8,6 +8,9 @@ export class FormationDetailsDto extends BaseFormationDto {
     id: string;
 
     @Expose()
+    formationId: string;
+
+    @Expose()
     agencyId: string;
 
     @Expose()

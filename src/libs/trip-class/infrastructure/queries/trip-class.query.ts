@@ -4,8 +4,11 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { isArray } from 'lodash';
 import { Repository } from 'typeorm';
-import { buildTripClassDetailsDto } from '../../builders/trip-class-dto.builder';
 import { TripClassDetailsDto } from '../../usecase/dtos/trip-class-details.dto';
+import {
+    buildTripClassDetailsDto,
+    TripClassesDtoBuilder,
+} from '../builders/trip-class-dto.builder';
 import { TripClassModel } from '../models/trip-class.model';
 
 @Injectable()
@@ -15,6 +18,11 @@ export class TripClassQuery extends TypeOrmCrudService<TripClassModel> {
         private readonly tripClassRepository: Repository<TripClassModel>,
     ) {
         super(tripClassRepository);
+    }
+
+    async findMany(): Promise<TripClassDetailsDto[]> {
+        const models = await this.tripClassRepository.find();
+        return TripClassesDtoBuilder.toDetailsDtos(models);
     }
 
     async findManyTripClasses(

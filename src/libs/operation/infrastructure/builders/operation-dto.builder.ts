@@ -20,10 +20,23 @@ export const OperationDtoBuilder = {
             transformerOptions,
         );
     },
+    toDetailsDto: (model: OperationModel): OperationDetailsDto => {
+        return plainToClass(
+            OperationDetailsDto,
+            {
+                ...model,
+                operationId: model.id,
+            },
+            transformerOptions,
+        );
+    },
 } as const;
 
 export const OperationsDtoBuilder = {
     buildFromModel: (models: OperationModel[]): OperationDetailsDto[] => {
         return models.map((model) => OperationDtoBuilder.buildFromModel(model));
+    },
+    toDetailsDto: (models: OperationModel[]): OperationDetailsDto[] => {
+        return models.map((model) => OperationDtoBuilder.toDetailsDto(model));
     },
 };

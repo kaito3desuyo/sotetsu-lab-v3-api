@@ -299,6 +299,32 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
         return buildOperationSightingDetailsDto(result);
     }
 
+    async findOneLatestByOperationNumber(params: {
+        operationNumber: string;
+    }): Promise<OperationSightingDetailsDto> {
+        const { operationNumber } = params;
+
+        const result = await this.operationSightingRepository.findOne({
+            relations: ['operation', 'formation', 'invalidations'],
+            where: {
+                operation: {
+                    operationNumber,
+                },
+                invalidations: {
+                    id: IsNull(),
+                },
+            },
+            order: {
+                sightingTime: 'DESC',
+                updatedAt: 'DESC',
+            },
+        });
+
+        if (!result) return null;
+
+        return OperationSightingDtoBuilder.buildFromModel(result);
+    }
+
     async findOneLatestOperationSightingFromOperationNumberAndSightingTimeRange(params: {
         operationNumber: string;
         sightingTimeStart: dayjs.Dayjs;
@@ -328,6 +354,38 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
         return buildOperationSightingDetailsDto(result);
     }
 
+    async findOneLatestByOperationNumberAndSightingTimeRange(params: {
+        operationNumber: string;
+        sightingTimeStart: dayjs.Dayjs;
+        sightingTimeEnd: dayjs.Dayjs;
+    }): Promise<OperationSightingDetailsDto> {
+        const { operationNumber, sightingTimeStart, sightingTimeEnd } = params;
+
+        const result = await this.operationSightingRepository.findOne({
+            relations: ['operation', 'formation', 'invalidations'],
+            where: {
+                operation: {
+                    operationNumber,
+                },
+                sightingTime: Between(
+                    sightingTimeStart.toISOString() as unknown as Date,
+                    sightingTimeEnd.toISOString() as unknown as Date,
+                ),
+                invalidations: {
+                    id: IsNull(),
+                },
+            },
+            order: {
+                sightingTime: 'DESC',
+                updatedAt: 'DESC',
+            },
+        });
+
+        if (!result) return null;
+
+        return OperationSightingDtoBuilder.buildFromModel(result);
+    }
+
     async findOneLatestOperationSightingFromFormationNumber(params: {
         formationNumber: string;
     }): Promise<OperationSightingDetailsDto> {
@@ -349,6 +407,32 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
         if (!result) return null;
 
         return buildOperationSightingDetailsDto(result);
+    }
+
+    async findOneLatestByFormationNumber(params: {
+        formationNumber: string;
+    }): Promise<OperationSightingDetailsDto> {
+        const { formationNumber } = params;
+
+        const result = await this.operationSightingRepository.findOne({
+            relations: ['operation', 'formation', 'invalidations'],
+            where: {
+                formation: {
+                    formationNumber,
+                },
+                invalidations: {
+                    id: IsNull(),
+                },
+            },
+            order: {
+                sightingTime: 'DESC',
+                updatedAt: 'DESC',
+            },
+        });
+
+        if (!result) return null;
+
+        return OperationSightingDtoBuilder.buildFromModel(result);
     }
 
     async findOneLatestOperationSightingFromFormationNumberAndSightingTimeRange(params: {
@@ -378,5 +462,37 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
         if (!result) return null;
 
         return buildOperationSightingDetailsDto(result);
+    }
+
+    async findOneLatestByFormationNumberAndSightingTimeRange(params: {
+        formationNumber: string;
+        sightingTimeStart: dayjs.Dayjs;
+        sightingTimeEnd: dayjs.Dayjs;
+    }): Promise<OperationSightingDetailsDto> {
+        const { formationNumber, sightingTimeStart, sightingTimeEnd } = params;
+
+        const result = await this.operationSightingRepository.findOne({
+            relations: ['operation', 'formation', 'invalidations'],
+            where: {
+                formation: {
+                    formationNumber,
+                },
+                sightingTime: Between(
+                    sightingTimeStart.toISOString() as unknown as Date,
+                    sightingTimeEnd.toISOString() as unknown as Date,
+                ),
+                invalidations: {
+                    id: IsNull(),
+                },
+            },
+            order: {
+                sightingTime: 'DESC',
+                updatedAt: 'DESC',
+            },
+        });
+
+        if (!result) return null;
+
+        return OperationSightingDtoBuilder.buildFromModel(result);
     }
 }
