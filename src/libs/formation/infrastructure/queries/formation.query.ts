@@ -83,6 +83,7 @@ export class FormationQuery extends TypeOrmCrudService<FormationModel> {
                     IsNull(),
                 ),
             },
+            relations: ['agency'],
         });
 
         return result.map((model) => FormationDtoBuilder.buildFromModel(model));
