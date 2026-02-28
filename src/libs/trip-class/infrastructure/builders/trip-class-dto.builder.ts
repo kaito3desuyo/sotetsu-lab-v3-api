@@ -8,3 +8,15 @@ export function buildTripClassDetailsDto(
 ): TripClassDetailsDto {
     return plainToClass(TripClassDetailsDto, model, transformerOptions);
 }
+
+export const TripClassDtoBuilder = {
+    toDetailsDto: (model: TripClassModel): TripClassDetailsDto => {
+        return plainToClass(TripClassDetailsDto, model, transformerOptions);
+    },
+} as const;
+
+export const TripClassesDtoBuilder = {
+    toDetailsDtos: (models: TripClassModel[]): TripClassDetailsDto[] => {
+        return models.map((model) => TripClassDtoBuilder.toDetailsDto(model));
+    },
+} as const;
