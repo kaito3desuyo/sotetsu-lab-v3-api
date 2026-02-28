@@ -5,7 +5,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { isArray } from 'lodash';
 import { Repository } from 'typeorm';
 import { ServiceDetailsDto } from '../../usecase/dtos/service-details.dto';
-import { buildServiceDetailsDto } from '../builders/service-dto.builder';
+import { ServiceRoutesDto } from '../../usecase/dtos/service-routes.dto';
+import {
+    buildServiceDetailsDto,
+    ServiceDtoBuilder,
+} from '../builders/service-dto.builder';
 import { ServiceModel } from '../models/service.model';
 
 @Injectable()
@@ -43,5 +47,22 @@ export class ServiceQuery extends TypeOrmCrudService<ServiceModel> {
         }
 
         return buildServiceDetailsDto(model);
+    }
+
+    async findOneWithRoutes(params: {
+        serviceId: string;
+    }): Promise<ServiceRoutesDto | null> {
+        const { serviceId } = params;
+
+        const model = await this.serviceRepository.findOne({
+            where: { id: serviceId },
+            relations: ['operatingSystems', 'operatingSystems.route'],
+        });
+
+        if (!model) {
+            return null;
+        }
+
+        return ServiceDtoBuilder.toRoutesDto(model);
     }
 }

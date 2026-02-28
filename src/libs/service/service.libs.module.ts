@@ -5,7 +5,7 @@ import { ServiceModel } from './infrastructure/models/service.model';
 import { ServiceQuery } from './infrastructure/queries/service.query';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([ServiceModel]), AuthModule],
+    imports: [TypeOrmModule.forFeature([ServiceModel])],
     exports: [ServiceQuery],
     providers: [ServiceQuery],
 })
