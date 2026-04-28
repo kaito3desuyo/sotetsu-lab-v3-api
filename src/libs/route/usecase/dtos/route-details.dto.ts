@@ -2,6 +2,7 @@ import { Expose, Type } from 'class-transformer';
 import { OperatingSystemDetailsDto } from 'src/libs/service/usecase/dtos/operating-system-details.dto';
 import { BaseRouteDto } from './base-route.dto';
 import { RouteStationListDetailsDto } from './route-station-list-details.dto';
+import { AgencyDetailsDto } from 'src/libs/agency/usecase/dtos/agency-details.dto';
 
 export class RouteDetailsDto extends BaseRouteDto {
     @Expose()
@@ -39,6 +40,10 @@ export class RouteDetailsDto extends BaseRouteDto {
 
     @Expose()
     updatedAt: Date;
+
+    @Expose()
+    @Type(() => AgencyDetailsDto)
+    agency?: AgencyDetailsDto;
 
     @Expose()
     @Type(() => RouteStationListDetailsDto)
