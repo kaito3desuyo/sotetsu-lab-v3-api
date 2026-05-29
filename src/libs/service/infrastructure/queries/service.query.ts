@@ -1,11 +1,14 @@
 import { CrudRequest, GetManyDefaultResponse } from '@dataui/crud';
 import { TypeOrmCrudService } from '@dataui/crud-typeorm';
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { isArray } from 'lodash';
-import { Repository } from 'typeorm';
+import { DataSourceConfig } from 'src/core/configs/database.config';
+import { AgencyModel } from 'src/libs/agency/infrastructure/models/agency.model';
+import { EntityManager, Repository } from 'typeorm';
 import { ServiceDetailsDto } from '../../usecase/dtos/service-details.dto';
 import { ServiceRoutesDto } from '../../usecase/dtos/service-routes.dto';
+import { ServiceAgenciesDtoBuilder } from '../builders/service-agencies.dto.builder';
 import {
     buildServiceDetailsDto,
     ServiceDtoBuilder,
@@ -17,6 +20,8 @@ export class ServiceQuery extends TypeOrmCrudService<ServiceModel> {
     constructor(
         @InjectRepository(ServiceModel)
         private readonly serviceRepository: Repository<ServiceModel>,
+        @InjectEntityManager(DataSourceConfig)
+        private readonly entityManager: EntityManager,
     ) {
         super(serviceRepository);
     }
@@ -47,6 +52,45 @@ export class ServiceQuery extends TypeOrmCrudService<ServiceModel> {
         }
 
         return buildServiceDetailsDto(model);
+    }
+
+    async findOneWithAgencies(params: { serviceId: string }): Promise<any> {
+        const { serviceId } = params;
+
+        const model = await this.entityManager.transaction(
+            async (transactionalEntityManager) => {
+                const service = await transactionalEntityManager
+                    .getRepository(ServiceModel)
+                    .createQueryBuilder('service')
+                    .select('service')
+                    .where('service.id = :serviceId', { serviceId })
+                    .getOne();
+
+                const agencies = await transactionalEntityManager
+                    .getRepository(AgencyModel)
+                    .createQueryBuilder('agency')
+                    .select('agency')
+                    .distinct(true)
+                    .addSelect(
+                        'substring(agency.agency_number from 2 for 12)',
+                        'agency_number_sort_key',
+                    )
+                    .leftJoin('agency.routes', 'route')
+                    .leftJoin('route.operatingSystems', 'operatingSystem')
+                    .leftJoin('operatingSystem.service', 'service')
+                    .where('service.id = :serviceId', { serviceId })
+                    .orderBy('agency_number_sort_key', 'ASC')
+                    .addOrderBy('agency.agency_number', 'ASC')
+                    .getMany();
+
+                return {
+                    service,
+                    agencies,
+                };
+            },
+        );
+
+        return ServiceAgenciesDtoBuilder.buildFromModel(model);
     }
 
     async findOneWithRoutes(params: {

@@ -55,6 +55,7 @@
         "pino-http": "^10.2.0",
         "pluralize": "^8.0.0",
         "reflect-metadata": "^0.1.12",
+        "ts-custom-error": "^3.3.1",
         "typeorm": "^0.3.20",
         "uuid": "^10.0.0"
     },

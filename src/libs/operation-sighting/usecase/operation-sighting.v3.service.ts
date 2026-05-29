@@ -1,12 +1,15 @@
 import {
     Injectable,
+    Logger,
     NotFoundException,
     UnprocessableEntityException,
 } from '@nestjs/common';
 import dayjs from 'dayjs';
 import clone from 'just-clone';
 import pick from 'just-pick';
+import { UseCaseError } from 'src/core/classes/custom-error';
 import { getBaseDate } from 'src/core/utils/datetime';
+import { CalendarQuery } from 'src/libs/calendar/infrastructure/queries/calendar.query';
 import { FormationQuery } from 'src/libs/formation/infrastructure/queries/formation.query';
 import { OperationQuery } from 'src/libs/operation/infrastructure/queries/operation.query';
 import { OperationSightingCommand } from '../infrastructure/command/operation-sighting.command';
@@ -15,11 +18,13 @@ import { OperationSightingDomainBuilder } from './builders/operation-sighting.do
 import { InvalidateOperationSightingDto } from './dtos/invalidate-operation-sighting.dto';
 import { OperationSightingDetailsDto } from './dtos/operation-sighting-details.dto';
 import { OperationSightingTimeCrossSectionDto } from './dtos/operation-sighting-time-cross-section.dto';
+import { PostOperationSightingDto } from './dtos/post-operation-sighting.dto';
 import { RestoreOperationSightingDto } from './dtos/restore-operation-sighting.dto';
-import { CalendarQuery } from 'src/libs/calendar/infrastructure/queries/calendar.query';
 
 @Injectable()
 export class OperationSightingV3Service {
+    readonly #logger = new Logger(OperationSightingV3Service.name);
+
     constructor(
         private readonly operationSightingCommand: OperationSightingCommand,
         private readonly operationSightingQuery: OperationSightingQuery,
@@ -309,6 +314,168 @@ export class OperationSightingV3Service {
             latestSighting,
             expectedSighting,
         };
+    }
+
+    async post(
+        params: PostOperationSightingDto,
+    ): Promise<OperationSightingDetailsDto> {
+        const {
+            agencyId,
+            formationOrVehicleNumber,
+            operationNumber,
+            sightingTime,
+        } = params;
+
+        // 目撃時刻はUTCオフセット付きISO8601想定
+        if (!/(?:Z|[+-]\d{2}:?\d{2})$/i.test(sightingTime)) {
+            throw new UseCaseError('目撃時刻の形式が正しくありません', {
+                agencyId,
+                formationOrVehicleNumber,
+                operationNumber,
+                sightingTime,
+                reason: 'offset_missing',
+            });
+        }
+
+        const sightingTimeInstance = dayjs.utc(sightingTime);
+
+        if (!sightingTimeInstance.isValid()) {
+            throw new UseCaseError('目撃時刻の形式が正しくありません', {
+                agencyId,
+                formationOrVehicleNumber,
+                operationNumber,
+                sightingTime,
+                reason: 'invalid_datetime',
+            });
+        }
+
+        if (sightingTimeInstance.isAfter(dayjs.utc())) {
+            throw new UseCaseError('未来の時刻は指定できません', {
+                agencyId,
+                formationOrVehicleNumber,
+                operationNumber,
+                sightingTime,
+                reason: 'future_datetime',
+            });
+        }
+
+        const sightingTimeInJst = sightingTimeInstance.tz();
+        const date = getBaseDate(sightingTimeInJst).format('YYYY-MM-DD');
+
+        const calendar = await this.calendarQuery.findOneBySpecificDate({
+            date,
+        });
+
+        if (!calendar) {
+            throw new UseCaseError('対象日の運行情報が見つかりません', {
+                date,
+                agencyId,
+                operationNumber,
+                sightingTime,
+                reason: 'calendar_not_found',
+            });
+        }
+
+        const operation =
+            await this.operationQuery.findOneByCalendarIdAndOperationNumber({
+                calendarId: calendar.id,
+                operationNumber,
+            });
+
+        if (!operation) {
+            throw new UseCaseError(
+                '指定された運用番号の運用情報が見つかりません',
+                {
+                    calendarId: calendar.id,
+                    operationNumber,
+                    date,
+                    reason: 'operation_not_found',
+                },
+            );
+        }
+
+        const firstDepartureTime =
+            await this.operationQuery.findOneFirstDepartureTimeByOperationIdAndDate(
+                {
+                    operationId: operation.id,
+                    date,
+                },
+            );
+
+        if (!firstDepartureTime) {
+            throw new UseCaseError('対象運用の始発時刻を特定できません', {
+                operationId: operation.id,
+                operationNumber,
+                date,
+                reason: 'first_departure_not_found',
+            });
+        }
+
+        if (
+            sightingTimeInJst.isBefore(
+                firstDepartureTime.subtract(30, 'minute'),
+            )
+        ) {
+            const earliestPostTime = firstDepartureTime
+                .subtract(30, 'minute')
+                .format('YYYY-MM-DD HH:mm');
+
+            throw new UseCaseError(
+                '始発時刻の30分前より前の時刻は投稿できません',
+                {
+                    operationId: operation.id,
+                    operationNumber,
+                    sightingTime,
+                    sightingTimeJst: sightingTimeInJst.format(),
+                    date,
+                    earliestPostTime,
+                    reason: 'too_early_post',
+                },
+            );
+        }
+
+        let formation =
+            await this.formationQuery.findOneByAgencyIdAndFormationNumberAndDate(
+                {
+                    agencyId,
+                    formationNumber: formationOrVehicleNumber,
+                    date,
+                },
+            );
+
+        if (!formation) {
+            formation =
+                await this.formationQuery.findOneByAgencyIdAndVehicleNumberAndDate(
+                    {
+                        agencyId,
+                        vehicleNumber: formationOrVehicleNumber,
+                        date,
+                    },
+                );
+        }
+
+        if (!formation) {
+            throw new UseCaseError(
+                '入力された編成番号/車両番号に対応する編成が見つかりません',
+                {
+                    agencyId,
+                    formationOrVehicleNumber,
+                    date,
+                    reason: 'formation_not_found',
+                },
+            );
+        }
+
+        const domain = OperationSightingDomainBuilder.buildByCreateDto({
+            id: undefined,
+            formationId: formation.id,
+            operationId: operation.id,
+            sightingTime: sightingTimeInstance.toDate(),
+        });
+
+        const result = await this.operationSightingCommand.save(domain);
+
+        return result;
     }
 
     async invalidate(

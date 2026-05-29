@@ -304,4 +304,62 @@ export class OperationQuery extends TypeOrmCrudService<OperationModel> {
 
         return data.map((o) => o.operation_number);
     }
+
+    async findOneByCalendarIdAndOperationNumber(params: {
+        calendarId: string;
+        operationNumber: string;
+    }): Promise<OperationDetailsDto | null> {
+        const { calendarId, operationNumber } = params;
+
+        const model = await this.operationRepository
+            .createQueryBuilder('operation')
+            .select('operation')
+            .where('operation.calendar_id = :calendarId', { calendarId })
+            .andWhere('operation.operation_number = :operationNumber', {
+                operationNumber,
+            })
+            .getOne();
+
+        if (!model) {
+            return null;
+        }
+
+        return OperationDtoBuilder.buildFromModel(model);
+    }
+
+    async findOneFirstDepartureTimeByOperationIdAndDate(params: {
+        operationId: string;
+        date: string;
+    }): Promise<dayjs.Dayjs | null> {
+        const { operationId, date } = params;
+
+        const firstDeparture = await this.operationRepository
+            .createQueryBuilder('operation')
+            .select('startTime.departureDays', 'departureDays')
+            .addSelect('startTime.departureTime', 'departureTime')
+            .leftJoin('operation.tripOperationLists', 'tripOperationList')
+            .leftJoin('tripOperationList.startTime', 'startTime')
+            .where('operation.id = :operationId', { operationId })
+            .andWhere('startTime.departureDays IS NOT NULL')
+            .andWhere('startTime.departureTime IS NOT NULL')
+            .orderBy('startTime.departureDays', 'ASC')
+            .addOrderBy('startTime.departureTime', 'ASC')
+            .limit(1)
+            .getRawOne<{ departureDays: number; departureTime: string }>();
+
+        if (!firstDeparture) {
+            return null;
+        }
+
+        const dateTimeStr = `${date} ${firstDeparture.departureTime}`;
+        const format = 'YYYY-MM-DD HH:mm:ss';
+
+        if (!dayjs(dateTimeStr, format, true).isValid()) {
+            return null;
+        }
+
+        return dayjs
+            .tz(dateTimeStr, format, 'Asia/Tokyo')
+            .add(Number(firstDeparture.departureDays) - 1, 'day');
+    }
 }

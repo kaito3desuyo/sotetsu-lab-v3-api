@@ -98,4 +98,76 @@ export class FormationQuery extends TypeOrmCrudService<FormationModel> {
 
         return buildFormationDetailsDto(model);
     }
+
+    async findOneByAgencyIdAndFormationNumberAndDate(params: {
+        agencyId: string;
+        formationNumber: string;
+        date: string;
+    }): Promise<FormationDetailsDto | null> {
+        const { agencyId, formationNumber, date } = params;
+
+        const model = await this.formationRepository
+            .createQueryBuilder('formation')
+            .select('formation')
+            .where('formation.agency_id = :agencyId', { agencyId })
+            .andWhere('formation.formation_number = :formationNumber', {
+                formationNumber,
+            })
+            .andWhere(
+                '(formation.start_date <= :date OR formation.start_date IS NULL)',
+                {
+                    date,
+                },
+            )
+            .andWhere(
+                '(formation.end_date >= :date OR formation.end_date IS NULL)',
+                {
+                    date,
+                },
+            )
+            .getOne();
+
+        if (!model) {
+            return null;
+        }
+
+        return FormationDtoBuilder.buildFromModel(model);
+    }
+
+    async findOneByAgencyIdAndVehicleNumberAndDate(params: {
+        agencyId: string;
+        vehicleNumber: string;
+        date: string;
+    }): Promise<FormationDetailsDto | null> {
+        const { agencyId, vehicleNumber, date } = params;
+
+        const model = await this.formationRepository
+            .createQueryBuilder('formation')
+            .select('formation')
+            .leftJoin('formation.vehicleFormations', 'vehicleFormation')
+            .leftJoin('vehicleFormation.vehicle', 'vehicle')
+            .where('formation.agency_id = :agencyId', { agencyId })
+            .andWhere('vehicle.vehicle_number = :vehicleNumber', {
+                vehicleNumber,
+            })
+            .andWhere(
+                '(formation.start_date <= :date OR formation.start_date IS NULL)',
+                {
+                    date,
+                },
+            )
+            .andWhere(
+                '(formation.end_date >= :date OR formation.end_date IS NULL)',
+                {
+                    date,
+                },
+            )
+            .getOne();
+
+        if (!model) {
+            return null;
+        }
+
+        return FormationDtoBuilder.buildFromModel(model);
+    }
 }

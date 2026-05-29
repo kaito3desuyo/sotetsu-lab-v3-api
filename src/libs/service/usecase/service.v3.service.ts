@@ -6,6 +6,18 @@ import { ServiceRoutesDto } from './dtos/service-routes.dto';
 export class ServiceV3Service {
     constructor(private readonly serviceQuery: ServiceQuery) {}
 
+    async findOneWithAgencies(params: { serviceId: string }): Promise<any> {
+        const result = await this.serviceQuery.findOneWithAgencies(params);
+
+        if (!result) {
+            throw new NotFoundException(
+                `Service with ID "${params.serviceId}" not found.`,
+            );
+        }
+
+        return result;
+    }
+
     async findOneWithRoutes(params: {
         serviceId: string;
     }): Promise<ServiceRoutesDto> {

@@ -3,15 +3,18 @@ import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 // import compression from 'compression';
 import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { validationPipeOptions } from './core/configs/validator-options';
+import { UseCaseErrorFilter } from './core/filters/usecase-error.filter';
 import { LoggerService } from './core/modules/logger/logger.service';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
+dayjs.extend(customParseFormat);
 dayjs.tz.setDefault('Asia/Tokyo');
 
 export async function createApp(): Promise<INestApplication> {
@@ -29,6 +32,7 @@ export async function createApp(): Promise<INestApplication> {
     app.useGlobalPipes(new ValidationPipe(validationPipeOptions));
     // app.useGlobalFilters(new ErrorFilter());
     // app.useGlobalFilters(new HttpExceptionFilter());
+    app.useGlobalFilters(new UseCaseErrorFilter());
 
     return app;
 }
