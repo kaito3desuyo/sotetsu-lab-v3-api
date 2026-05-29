@@ -315,6 +315,7 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
             .andWhere('invalidation.id IS NULL')
             .orderBy('sighting.sightingTime', 'DESC')
             .addOrderBy('sighting.updatedAt', 'DESC')
+            .limit(1)
             .getOne();
 
         if (!result) return null;
@@ -373,6 +374,7 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
             .andWhere('invalidation.id IS NULL')
             .orderBy('sighting.sightingTime', 'DESC')
             .addOrderBy('sighting.updatedAt', 'DESC')
+            .limit(1)
             .getOne();
 
         if (!result) return null;
@@ -419,6 +421,7 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
             .andWhere('invalidation.id IS NULL')
             .orderBy('sighting.sightingTime', 'DESC')
             .addOrderBy('sighting.updatedAt', 'DESC')
+            .limit(1)
             .getOne();
 
         if (!result) return null;
@@ -477,6 +480,7 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
             .andWhere('invalidation.id IS NULL')
             .orderBy('sighting.sightingTime', 'DESC')
             .addOrderBy('sighting.updatedAt', 'DESC')
+            .limit(1)
             .getOne();
 
         if (!result) return null;
