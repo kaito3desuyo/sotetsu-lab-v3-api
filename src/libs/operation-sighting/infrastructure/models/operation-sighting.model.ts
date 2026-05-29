@@ -17,6 +17,8 @@ import { OperationSightingManagementLogModel } from './operation-sighting-manage
 @Entity({
     name: 'operation_sightings',
 })
+@Index(['formationId'])
+@Index(['operationId'])
 @Index(['formationId', 'sightingTime'])
 @Index(['operationId', 'sightingTime'])
 @Index(['sightingTime', 'updatedAt', 'id'])

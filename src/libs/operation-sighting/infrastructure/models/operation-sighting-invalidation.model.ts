@@ -2,6 +2,7 @@ import {
     Column,
     CreateDateColumn,
     Entity,
+    Index,
     JoinColumn,
     ManyToOne,
     PrimaryGeneratedColumn,
@@ -12,6 +13,7 @@ import { OperationSightingModel } from './operation-sighting.model';
 @Entity({
     name: 'operation_sighting_invalidations',
 })
+@Index(['operationSightingId'])
 export class OperationSightingInvalidationModel {
     @PrimaryGeneratedColumn('uuid')
     id: string;
