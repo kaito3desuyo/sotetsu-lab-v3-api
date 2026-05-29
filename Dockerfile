@@ -20,7 +20,7 @@ ARG APP_NAME
 RUN mkdir /home/node/${APP_NAME} 
 WORKDIR /home/node/${APP_NAME}
 COPY --chown=node:node ./package*.json ./
-RUN npm ci
+RUN npm i
 COPY --chown=node:node . .
 
 ################################################################################

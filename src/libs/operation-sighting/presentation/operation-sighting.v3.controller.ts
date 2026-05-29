@@ -14,8 +14,8 @@ import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
 import { Role } from 'src/core/modules/rbac/role.enum';
 import { InvalidateOperationSightingDto } from '../usecase/dtos/invalidate-operation-sighting.dto';
 import { OperationSightingDetailsDto } from '../usecase/dtos/operation-sighting-details.dto';
-import { PostOperationSightingDto } from '../usecase/dtos/post-operation-sighting.dto';
 import { OperationSightingTimeCrossSectionDto } from '../usecase/dtos/operation-sighting-time-cross-section.dto';
+import { PostOperationSightingDto } from '../usecase/dtos/post-operation-sighting.dto';
 import { RestoreOperationSightingDto } from '../usecase/dtos/restore-operation-sighting.dto';
 import { OperationSightingV3Service } from '../usecase/operation-sighting.v3.service';
 
