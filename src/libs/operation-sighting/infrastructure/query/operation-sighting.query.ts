@@ -301,24 +301,21 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
 
     async findOneLatestByOperationNumber(params: {
         operationNumber: string;
-    }): Promise<OperationSightingDetailsDto> {
+    }): Promise<OperationSightingDetailsDto | null> {
         const { operationNumber } = params;
 
-        const result = await this.operationSightingRepository.findOne({
-            relations: ['operation', 'formation', 'invalidations'],
-            where: {
-                operation: {
-                    operationNumber,
-                },
-                invalidations: {
-                    id: IsNull(),
-                },
-            },
-            order: {
-                sightingTime: 'DESC',
-                updatedAt: 'DESC',
-            },
-        });
+        const result = await this.operationSightingRepository
+            .createQueryBuilder('sighting')
+            .leftJoinAndSelect('sighting.operation', 'operation')
+            .leftJoinAndSelect('sighting.formation', 'formation')
+            .leftJoin('sighting.invalidations', 'invalidation')
+            .where('operation.operationNumber = :operationNumber', {
+                operationNumber,
+            })
+            .andWhere('invalidation.id IS NULL')
+            .orderBy('sighting.sightingTime', 'DESC')
+            .addOrderBy('sighting.updatedAt', 'DESC')
+            .getOne();
 
         if (!result) return null;
 
@@ -358,28 +355,25 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
         operationNumber: string;
         sightingTimeStart: dayjs.Dayjs;
         sightingTimeEnd: dayjs.Dayjs;
-    }): Promise<OperationSightingDetailsDto> {
+    }): Promise<OperationSightingDetailsDto | null> {
         const { operationNumber, sightingTimeStart, sightingTimeEnd } = params;
 
-        const result = await this.operationSightingRepository.findOne({
-            relations: ['operation', 'formation', 'invalidations'],
-            where: {
-                operation: {
-                    operationNumber,
-                },
-                sightingTime: Between(
-                    sightingTimeStart.toISOString() as unknown as Date,
-                    sightingTimeEnd.toISOString() as unknown as Date,
-                ),
-                invalidations: {
-                    id: IsNull(),
-                },
-            },
-            order: {
-                sightingTime: 'DESC',
-                updatedAt: 'DESC',
-            },
-        });
+        const result = await this.operationSightingRepository
+            .createQueryBuilder('sighting')
+            .leftJoinAndSelect('sighting.operation', 'operation')
+            .leftJoinAndSelect('sighting.formation', 'formation')
+            .leftJoin('sighting.invalidations', 'invalidation')
+            .where('operation.operationNumber = :operationNumber', {
+                operationNumber,
+            })
+            .andWhere('sighting.sightingTime BETWEEN :start AND :end', {
+                start: sightingTimeStart.toISOString(),
+                end: sightingTimeEnd.toISOString(),
+            })
+            .andWhere('invalidation.id IS NULL')
+            .orderBy('sighting.sightingTime', 'DESC')
+            .addOrderBy('sighting.updatedAt', 'DESC')
+            .getOne();
 
         if (!result) return null;
 
@@ -411,24 +405,21 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
 
     async findOneLatestByFormationNumber(params: {
         formationNumber: string;
-    }): Promise<OperationSightingDetailsDto> {
+    }): Promise<OperationSightingDetailsDto | null> {
         const { formationNumber } = params;
 
-        const result = await this.operationSightingRepository.findOne({
-            relations: ['operation', 'formation', 'invalidations'],
-            where: {
-                formation: {
-                    formationNumber,
-                },
-                invalidations: {
-                    id: IsNull(),
-                },
-            },
-            order: {
-                sightingTime: 'DESC',
-                updatedAt: 'DESC',
-            },
-        });
+        const result = await this.operationSightingRepository
+            .createQueryBuilder('sighting')
+            .leftJoinAndSelect('sighting.operation', 'operation')
+            .leftJoinAndSelect('sighting.formation', 'formation')
+            .leftJoin('sighting.invalidations', 'invalidation')
+            .where('formation.formationNumber = :formationNumber', {
+                formationNumber,
+            })
+            .andWhere('invalidation.id IS NULL')
+            .orderBy('sighting.sightingTime', 'DESC')
+            .addOrderBy('sighting.updatedAt', 'DESC')
+            .getOne();
 
         if (!result) return null;
 
@@ -468,28 +459,25 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
         formationNumber: string;
         sightingTimeStart: dayjs.Dayjs;
         sightingTimeEnd: dayjs.Dayjs;
-    }): Promise<OperationSightingDetailsDto> {
+    }): Promise<OperationSightingDetailsDto | null> {
         const { formationNumber, sightingTimeStart, sightingTimeEnd } = params;
 
-        const result = await this.operationSightingRepository.findOne({
-            relations: ['operation', 'formation', 'invalidations'],
-            where: {
-                formation: {
-                    formationNumber,
-                },
-                sightingTime: Between(
-                    sightingTimeStart.toISOString() as unknown as Date,
-                    sightingTimeEnd.toISOString() as unknown as Date,
-                ),
-                invalidations: {
-                    id: IsNull(),
-                },
-            },
-            order: {
-                sightingTime: 'DESC',
-                updatedAt: 'DESC',
-            },
-        });
+        const result = await this.operationSightingRepository
+            .createQueryBuilder('sighting')
+            .leftJoinAndSelect('sighting.operation', 'operation')
+            .leftJoinAndSelect('sighting.formation', 'formation')
+            .leftJoin('sighting.invalidations', 'invalidation')
+            .where('formation.formationNumber = :formationNumber', {
+                formationNumber,
+            })
+            .andWhere('sighting.sightingTime BETWEEN :start AND :end', {
+                start: sightingTimeStart.toISOString(),
+                end: sightingTimeEnd.toISOString(),
+            })
+            .andWhere('invalidation.id IS NULL')
+            .orderBy('sighting.sightingTime', 'DESC')
+            .addOrderBy('sighting.updatedAt', 'DESC')
+            .getOne();
 
         if (!result) return null;
 
