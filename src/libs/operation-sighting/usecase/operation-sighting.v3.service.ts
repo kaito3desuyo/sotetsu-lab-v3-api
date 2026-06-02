@@ -56,10 +56,13 @@ export class OperationSightingV3Service {
         const { operationNumber, searchTime } = params;
 
         if (operationNumber === '100') {
-            throw new UseCaseError('停車中の運用の検索はサポートされていません', {
-                operationNumber,
-                reason: 'suspended_operation',
-            });
+            throw new UseCaseError(
+                '停車中の運用の検索はサポートされていません',
+                {
+                    operationNumber,
+                    reason: 'suspended_operation',
+                },
+            );
         }
 
         const searchTimeInstance = searchTime ? dayjs(searchTime) : dayjs();
@@ -178,7 +181,10 @@ export class OperationSightingV3Service {
             return {
                 latestSighting,
                 expectedSighting: latestSighting.formation
-                    ? { formation: latestSighting.formation, operation: latestOperation }
+                    ? {
+                          formation: latestSighting.formation,
+                          operation: latestOperation,
+                      }
                     : null,
             };
         }
@@ -196,7 +202,10 @@ export class OperationSightingV3Service {
         }
 
         // 最新目撃から今日の鉄道日まで何日経過しているか
-        const daysSinceSighting = searchBaseDate.diff(latestSightingBaseDate, 'day');
+        const daysSinceSighting = searchBaseDate.diff(
+            latestSightingBaseDate,
+            'day',
+        );
 
         // 最新目撃の運用番号から daysSinceSighting 回前進した先の運用番号を計算する
         const circulation = buildCirculationPath(
@@ -255,14 +264,16 @@ export class OperationSightingV3Service {
             startDate: searchDateString,
             endDate: searchDateString,
         });
-        const formation = formations.find(
-            (f) => f.formationNumber === expectedFormationNumber,
-        ) ?? null;
+        const formation =
+            formations.find(
+                (f) => f.formationNumber === expectedFormationNumber,
+            ) ?? null;
         return {
             latestSighting,
-            expectedSighting: formation && latestSighting.operation
-                ? { operation: latestSighting.operation, formation }
-                : null,
+            expectedSighting:
+                formation && latestSighting.operation
+                    ? { operation: latestSighting.operation, formation }
+                    : null,
         };
     }
 
@@ -274,14 +285,16 @@ export class OperationSightingV3Service {
         const operations = await this.operationQuery.findManyByCalendarId({
             calendarId: calendar.id,
         });
-        const operation = operations.find(
-            (o) => o.operationNumber === expectedOperationNumber,
-        ) ?? null;
+        const operation =
+            operations.find(
+                (o) => o.operationNumber === expectedOperationNumber,
+            ) ?? null;
         return {
             latestSighting,
-            expectedSighting: operation && latestSighting.formation
-                ? { formation: latestSighting.formation, operation }
-                : null,
+            expectedSighting:
+                operation && latestSighting.formation
+                    ? { formation: latestSighting.formation, operation }
+                    : null,
         };
     }
 
@@ -328,7 +341,8 @@ export class OperationSightingV3Service {
                 { formationNumber: formation.formationNumber },
             );
         const cacheAction: CacheAction =
-            !currentCache || dayjs(currentCache.sightingTime).isBefore(sightingTimeInstance)
+            !currentCache ||
+            dayjs(currentCache.sightingTime).isBefore(sightingTimeInstance)
                 ? {
                       type: 'upsert',
                       cacheId: currentCache?.id,
@@ -338,8 +352,15 @@ export class OperationSightingV3Service {
                 : { type: 'none' };
 
         return this.dataSource.transaction(async (manager) => {
-            const saved = await this.operationSightingCommand.save(domain, manager);
-            await this.#applyCacheAction(cacheAction, saved.operationSightingId, manager);
+            const saved = await this.operationSightingCommand.save(
+                domain,
+                manager,
+            );
+            await this.#applyCacheAction(
+                cacheAction,
+                saved.operationSightingId,
+                manager,
+            );
             return saved;
         });
     }
@@ -365,7 +386,9 @@ export class OperationSightingV3Service {
         domain.invalidate(userId, reason);
 
         if (!dto.formation?.formationNumber) {
-            throw new UnexpectedError('目撃情報に編成情報が存在しない', { operationSightingId });
+            throw new UnexpectedError('目撃情報に編成情報が存在しない', {
+                operationSightingId,
+            });
         }
         const formationNumber = dto.formation.formationNumber;
 
@@ -387,7 +410,8 @@ export class OperationSightingV3Service {
                     type: 'delete',
                     domain: OperationSightingLatestCache.create(
                         {
-                            operationSightingId: currentCache.operationSightingId,
+                            operationSightingId:
+                                currentCache.operationSightingId,
                             operationNumber: currentCache.operationNumber,
                             formationNumber: currentCache.formationNumber,
                         },
@@ -395,10 +419,13 @@ export class OperationSightingV3Service {
                     ),
                 };
             } else if (!prevSighting.operation?.operationNumber) {
-                throw new UnexpectedError('直前目撃情報に運用情報が存在しない', {
-                    operationSightingId,
-                    prevSightingId: prevSighting.operationSightingId,
-                });
+                throw new UnexpectedError(
+                    '直前目撃情報に運用情報が存在しない',
+                    {
+                        operationSightingId,
+                        prevSightingId: prevSighting.operationSightingId,
+                    },
+                );
             } else {
                 cacheAction = {
                     type: 'rollback',
@@ -411,8 +438,15 @@ export class OperationSightingV3Service {
         }
 
         return this.dataSource.transaction(async (manager) => {
-            const saved = await this.operationSightingCommand.save(domain, manager);
-            await this.#applyCacheAction(cacheAction, saved.operationSightingId, manager);
+            const saved = await this.operationSightingCommand.save(
+                domain,
+                manager,
+            );
+            await this.#applyCacheAction(
+                cacheAction,
+                saved.operationSightingId,
+                manager,
+            );
             return saved;
         });
     }
@@ -438,10 +472,14 @@ export class OperationSightingV3Service {
         domain.restore(userId, reason);
 
         if (!dto.formation?.formationNumber) {
-            throw new UnexpectedError('目撃情報に編成情報が存在しない', { operationSightingId });
+            throw new UnexpectedError('目撃情報に編成情報が存在しない', {
+                operationSightingId,
+            });
         }
         if (!dto.operation?.operationNumber) {
-            throw new UnexpectedError('目撃情報に運用情報が存在しない', { operationSightingId });
+            throw new UnexpectedError('目撃情報に運用情報が存在しない', {
+                operationSightingId,
+            });
         }
         const formationNumber = dto.formation.formationNumber;
         const operationNumber = dto.operation.operationNumber;
@@ -451,7 +489,8 @@ export class OperationSightingV3Service {
                 { formationNumber },
             );
         const cacheAction: CacheAction =
-            !currentCache || dayjs(currentCache.sightingTime).isBefore(dayjs(dto.sightingTime))
+            !currentCache ||
+            dayjs(currentCache.sightingTime).isBefore(dayjs(dto.sightingTime))
                 ? {
                       type: 'upsert',
                       cacheId: currentCache?.id,
@@ -461,8 +500,15 @@ export class OperationSightingV3Service {
                 : { type: 'none' };
 
         return this.dataSource.transaction(async (manager) => {
-            const saved = await this.operationSightingCommand.save(domain, manager);
-            await this.#applyCacheAction(cacheAction, saved.operationSightingId, manager);
+            const saved = await this.operationSightingCommand.save(
+                domain,
+                manager,
+            );
+            await this.#applyCacheAction(
+                cacheAction,
+                saved.operationSightingId,
+                manager,
+            );
             return saved;
         });
     }
@@ -480,7 +526,9 @@ export class OperationSightingV3Service {
                         operationSightingId: savedOperationSightingId,
                         operationNumber: action.operationNumber,
                     },
-                    action.cacheId ? new UniqueEntityId(action.cacheId) : undefined,
+                    action.cacheId
+                        ? new UniqueEntityId(action.cacheId)
+                        : undefined,
                 ),
                 manager,
             );
@@ -509,7 +557,12 @@ export class OperationSightingV3Service {
         sightingTimeInJst: dayjs.Dayjs;
         date: string;
     } {
-        const { agencyId, formationOrVehicleNumber, operationNumber, sightingTime } = params;
+        const {
+            agencyId,
+            formationOrVehicleNumber,
+            operationNumber,
+            sightingTime,
+        } = params;
         if (!/(?:Z|[+-]\d{2}:?\d{2})$/i.test(sightingTime)) {
             throw new UseCaseError('目撃時刻の形式が正しくありません', {
                 agencyId,
@@ -550,7 +603,9 @@ export class OperationSightingV3Service {
     ) {
         const { agencyId, operationNumber, sightingTime } = params;
 
-        const calendar = await this.calendarQuery.findOneBySpecificDate({ date });
+        const calendar = await this.calendarQuery.findOneBySpecificDate({
+            date,
+        });
         if (!calendar) {
             throw new UseCaseError('対象日の運行情報が見つかりません', {
                 date,
@@ -567,19 +622,24 @@ export class OperationSightingV3Service {
                 operationNumber,
             });
         if (!operation) {
-            throw new UseCaseError('指定された運用番号の運用情報が見つかりません', {
-                calendarId: calendar.id,
-                operationNumber,
-                date,
-                reason: 'operation_not_found',
-            });
+            throw new UseCaseError(
+                '指定された運用番号の運用情報が見つかりません',
+                {
+                    calendarId: calendar.id,
+                    operationNumber,
+                    date,
+                    reason: 'operation_not_found',
+                },
+            );
         }
 
         const firstDepartureTime =
-            await this.operationQuery.findOneFirstDepartureTimeByOperationIdAndDate({
-                operationId: operation.id,
-                date,
-            });
+            await this.operationQuery.findOneFirstDepartureTimeByOperationIdAndDate(
+                {
+                    operationId: operation.id,
+                    date,
+                },
+            );
         if (!firstDepartureTime) {
             throw new UseCaseError('対象運用の始発時刻を特定できません', {
                 operationId: operation.id,
@@ -589,19 +649,26 @@ export class OperationSightingV3Service {
             });
         }
 
-        if (sightingTimeInJst.isBefore(firstDepartureTime.subtract(30, 'minute'))) {
+        if (
+            sightingTimeInJst.isBefore(
+                firstDepartureTime.subtract(30, 'minute'),
+            )
+        ) {
             const earliestPostTime = firstDepartureTime
                 .subtract(30, 'minute')
                 .format('YYYY-MM-DD HH:mm');
-            throw new UseCaseError('始発時刻の30分前より前の時刻は投稿できません', {
-                operationId: operation.id,
-                operationNumber,
-                sightingTime,
-                sightingTimeJst: sightingTimeInJst.format(),
-                date,
-                earliestPostTime,
-                reason: 'too_early_post',
-            });
+            throw new UseCaseError(
+                '始発時刻の30分前より前の時刻は投稿できません',
+                {
+                    operationId: operation.id,
+                    operationNumber,
+                    sightingTime,
+                    sightingTimeJst: sightingTimeInJst.format(),
+                    date,
+                    earliestPostTime,
+                    reason: 'too_early_post',
+                },
+            );
         }
 
         return { calendar, operation };
@@ -610,9 +677,20 @@ export class OperationSightingV3Service {
 
 type CacheAction =
     | { type: 'none' }
-    | { type: 'upsert';   cacheId: string | undefined; formationNumber: string; operationNumber: string }
-    | { type: 'rollback'; cacheId: string;             formationNumber: string; operationNumber: string; operationSightingId: string }
-    | { type: 'delete';   domain: OperationSightingLatestCache };
+    | {
+          type: 'upsert';
+          cacheId: string | undefined;
+          formationNumber: string;
+          operationNumber: string;
+      }
+    | {
+          type: 'rollback';
+          cacheId: string;
+          formationNumber: string;
+          operationNumber: string;
+          operationSightingId: string;
+      }
+    | { type: 'delete'; domain: OperationSightingLatestCache };
 
 function selectMostRecentCandidateForOperationNumber(
     caches: OperationSightingLatestCacheDto[],
@@ -620,15 +698,19 @@ function selectMostRecentCandidateForOperationNumber(
     searchBaseDate: dayjs.Dayjs,
 ): OperationSightingLatestCacheDto | null {
     const candidates = caches.filter((row) => {
-        const daysAgo = searchBaseDate.diff(getBaseDate(dayjs(row.sightingTime)), 'day');
+        const daysAgo = searchBaseDate.diff(
+            getBaseDate(dayjs(row.sightingTime)),
+            'day',
+        );
         return (
-            buildCirculationPath(row.operationNumber, daysAgo)?.expectedOperationNumber ===
-            targetOperationNumber
+            buildCirculationPath(row.operationNumber, daysAgo)
+                ?.expectedOperationNumber === targetOperationNumber
         );
     });
     if (candidates.length === 0) return null;
     return candidates.sort(
-        (a, b) => dayjs(b.sightingTime).valueOf() - dayjs(a.sightingTime).valueOf(),
+        (a, b) =>
+            dayjs(b.sightingTime).valueOf() - dayjs(a.sightingTime).valueOf(),
     )[0];
 }
 
@@ -669,7 +751,8 @@ const operationNumberCirculateMap = new Map([
     ['12', '13'],
     ['13', '14'],
     ['14', '15'],
-    ['15', '11'],
+    ['15', '16'],
+    ['16', '11'],
     // 5群
     ['51', '52'],
     ['52', '53'],
