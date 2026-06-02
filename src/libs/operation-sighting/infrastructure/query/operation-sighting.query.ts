@@ -548,8 +548,8 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
         const models = await this.operationSightingRepository
             .createQueryBuilder('s')
             .distinctOn(['"formation"."formation_number"'])
-            .leftJoinAndSelect('s.operation', 'operation')
-            .leftJoinAndSelect('s.formation', 'formation')
+            .innerJoinAndSelect('s.operation', 'operation')
+            .innerJoinAndSelect('s.formation', 'formation')
             .leftJoin('s.invalidations', 'inv')
             .where('inv.id IS NULL')
             .orderBy('"formation"."formation_number"')
