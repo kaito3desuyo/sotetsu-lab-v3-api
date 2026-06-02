@@ -482,6 +482,7 @@ describe('OperationSightingV3Service - findOneTimeCrossSectionByFormationNumber'
         };
         mockOperationSightingQuery.findOneLatestByFormationNumberAndBeforeSightingTime.mockResolvedValue(latestSighting);
         mockCalendarQuery.findOneBySpecificDate.mockResolvedValue({ id: 'cal-1', startDate: '2026-03-13' });
+        mockOperationSightingQuery.findOneLatestByOperationNumberAndBeforeSightingTime.mockResolvedValue(latestSighting);
 
         const result = await service.findOneTimeCrossSectionByFormationNumber({
             formationNumber: '8001',
@@ -492,6 +493,31 @@ describe('OperationSightingV3Service - findOneTimeCrossSectionByFormationNumber'
         expect(
             mockOperationSightingLatestCacheQuery.findManyLatestGroupByFormationByOperationNumbersAndSightingTimeRange,
         ).not.toHaveBeenCalled();
+    });
+
+    it('当日の目撃があっても、その後その運用に別編成が目撃されていた場合は expectedSighting: null を返す', async () => {
+        const latestSighting = {
+            id: 'sighting-1',
+            operation: { id: 'op-38K', operationNumber: '38K' },
+            formation: { id: 'f-3109', formationNumber: '3109' },
+            sightingTime: '2026-05-30T10:00:00.000+09:00',
+        };
+        mockOperationSightingQuery.findOneLatestByFormationNumberAndBeforeSightingTime.mockResolvedValue(latestSighting);
+        mockCalendarQuery.findOneBySpecificDate.mockResolvedValue({ id: 'cal-1', startDate: '2026-03-13' });
+        mockOperationSightingQuery.findOneLatestByOperationNumberAndBeforeSightingTime.mockResolvedValue({
+            id: 'sighting-2',
+            operation: { id: 'op-38K', operationNumber: '38K' },
+            formation: { id: 'f-3104', formationNumber: '3104' },
+            sightingTime: '2026-05-30T11:00:00.000+09:00',
+        });
+
+        const result = await service.findOneTimeCrossSectionByFormationNumber({
+            formationNumber: '3109',
+            searchTime: '2026-05-30T15:00:00+09:00',
+        });
+
+        expect(result.latestSighting).toBe(latestSighting);
+        expect(result.expectedSighting).toBeNull();
     });
 
     it('最新目撃が休車（100番）の場合は operation をそのまま返す', async () => {
