@@ -29,4 +29,9 @@ export const OperationSightingDtoBuilder = {
             transformerOptions,
         );
     },
+    buildFromModels: (
+        models: OperationSightingModel[],
+    ): OperationSightingDetailsDto[] => {
+        return models.map(OperationSightingDtoBuilder.buildFromModel);
+    },
 } as const;

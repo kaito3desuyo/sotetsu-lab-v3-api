@@ -28,7 +28,8 @@
         "migration:create": "npm run dotenv -- npm run typeorm -- migration:create",
         "migration:generate": "npm run dotenv -- npm run typeorm -- migration:generate -d src/core/utils/data-source.ts",
         "migration:run": "npm run dotenv -- npm run typeorm -- migration:run -d src/core/utils/data-source.ts",
-        "migration:revert": "npm run dotenv -- npm run typeorm -- migration:revert -d src/core/utils/data-source.ts"
+        "migration:revert": "npm run dotenv -- npm run typeorm -- migration:revert -d src/core/utils/data-source.ts",
+        "cli": "npm run dotenv -- node -r tsconfig-paths/register -r ts-node/register src/cli.ts"
     },
     "dependencies": {
         "@dataui/crud": "^5.3.4",
@@ -68,6 +69,7 @@
         "@types/compression": "^1.7.5",
         "@types/eslint": "^9.6.0",
         "@types/eslint-config-prettier": "^6.11.3",
+        "@types/jest": "^29.5.14",
         "@types/lodash": "^4.17.7",
         "@types/node": "^22.4.0",
         "@types/pg": "^8.11.6",
@@ -106,6 +108,9 @@
         "testRegex": ".spec.ts$",
         "transform": {
             "^.+\\.(t|j)s$": "ts-jest"
+        },
+        "moduleNameMapper": {
+            "^src/(.*)$": "<rootDir>/$1"
         },
         "coverageDirectory": "../coverage",
         "testEnvironment": "node"
