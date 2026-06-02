@@ -11,6 +11,7 @@ import {
     buildOperationSightingDetailsDto,
     OperationSightingDtoBuilder,
 } from '../builders/operation-sighting-dto.builder';
+import { OperationSightingInvalidationModel } from '../models/operation-sighting-invalidation.model';
 import { OperationSightingModel } from '../models/operation-sighting.model';
 
 @Injectable()
@@ -308,11 +309,19 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
             .createQueryBuilder('sighting')
             .leftJoinAndSelect('sighting.operation', 'operation')
             .leftJoinAndSelect('sighting.formation', 'formation')
-            .leftJoin('sighting.invalidations', 'invalidation')
+
             .where('operation.operationNumber = :operationNumber', {
                 operationNumber,
             })
-            .andWhere('invalidation.id IS NULL')
+            .andWhere((qb) => {
+                const sub = qb
+                    .subQuery()
+                    .select('1')
+                    .from(OperationSightingInvalidationModel, 'inv')
+                    .where('inv.operationSightingId = sighting.id')
+                    .getQuery();
+                return `NOT EXISTS ${sub}`;
+            })
             .orderBy('sighting.sightingTime', 'DESC')
             .addOrderBy('sighting.updatedAt', 'DESC')
             .limit(1)
@@ -333,14 +342,22 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
             .createQueryBuilder('sighting')
             .leftJoinAndSelect('sighting.operation', 'operation')
             .leftJoinAndSelect('sighting.formation', 'formation')
-            .leftJoin('sighting.invalidations', 'invalidation')
+
             .where('operation.operationNumber = :operationNumber', {
                 operationNumber,
             })
             .andWhere('sighting.sightingTime <= :sightingTime', {
                 sightingTime: sightingTime.toISOString(),
             })
-            .andWhere('invalidation.id IS NULL')
+            .andWhere((qb) => {
+                const sub = qb
+                    .subQuery()
+                    .select('1')
+                    .from(OperationSightingInvalidationModel, 'inv')
+                    .where('inv.operationSightingId = sighting.id')
+                    .getQuery();
+                return `NOT EXISTS ${sub}`;
+            })
             .orderBy('sighting.sightingTime', 'DESC')
             .addOrderBy('sighting.updatedAt', 'DESC')
             .limit(1)
@@ -391,7 +408,7 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
             .createQueryBuilder('sighting')
             .leftJoinAndSelect('sighting.operation', 'operation')
             .leftJoinAndSelect('sighting.formation', 'formation')
-            .leftJoin('sighting.invalidations', 'invalidation')
+
             .where('operation.operationNumber = :operationNumber', {
                 operationNumber,
             })
@@ -399,7 +416,15 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
                 start: sightingTimeStart.toISOString(),
                 end: sightingTimeEnd.toISOString(),
             })
-            .andWhere('invalidation.id IS NULL')
+            .andWhere((qb) => {
+                const sub = qb
+                    .subQuery()
+                    .select('1')
+                    .from(OperationSightingInvalidationModel, 'inv')
+                    .where('inv.operationSightingId = sighting.id')
+                    .getQuery();
+                return `NOT EXISTS ${sub}`;
+            })
             .orderBy('sighting.sightingTime', 'DESC')
             .addOrderBy('sighting.updatedAt', 'DESC')
             .limit(1)
@@ -442,11 +467,19 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
             .createQueryBuilder('sighting')
             .leftJoinAndSelect('sighting.operation', 'operation')
             .leftJoinAndSelect('sighting.formation', 'formation')
-            .leftJoin('sighting.invalidations', 'invalidation')
+
             .where('formation.formationNumber = :formationNumber', {
                 formationNumber,
             })
-            .andWhere('invalidation.id IS NULL')
+            .andWhere((qb) => {
+                const sub = qb
+                    .subQuery()
+                    .select('1')
+                    .from(OperationSightingInvalidationModel, 'inv')
+                    .where('inv.operationSightingId = sighting.id')
+                    .getQuery();
+                return `NOT EXISTS ${sub}`;
+            })
             .orderBy('sighting.sightingTime', 'DESC')
             .addOrderBy('sighting.updatedAt', 'DESC')
             .limit(1)
@@ -467,14 +500,22 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
             .createQueryBuilder('sighting')
             .leftJoinAndSelect('sighting.operation', 'operation')
             .leftJoinAndSelect('sighting.formation', 'formation')
-            .leftJoin('sighting.invalidations', 'invalidation')
+
             .where('formation.formationNumber = :formationNumber', {
                 formationNumber,
             })
             .andWhere('sighting.sightingTime <= :sightingTime', {
                 sightingTime: sightingTime.toISOString(),
             })
-            .andWhere('invalidation.id IS NULL')
+            .andWhere((qb) => {
+                const sub = qb
+                    .subQuery()
+                    .select('1')
+                    .from(OperationSightingInvalidationModel, 'inv')
+                    .where('inv.operationSightingId = sighting.id')
+                    .getQuery();
+                return `NOT EXISTS ${sub}`;
+            })
             .orderBy('sighting.sightingTime', 'DESC')
             .addOrderBy('sighting.updatedAt', 'DESC')
             .limit(1)
@@ -525,7 +566,7 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
             .createQueryBuilder('sighting')
             .leftJoinAndSelect('sighting.operation', 'operation')
             .leftJoinAndSelect('sighting.formation', 'formation')
-            .leftJoin('sighting.invalidations', 'invalidation')
+
             .where('formation.formationNumber = :formationNumber', {
                 formationNumber,
             })
@@ -533,7 +574,15 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
                 start: sightingTimeStart.toISOString(),
                 end: sightingTimeEnd.toISOString(),
             })
-            .andWhere('invalidation.id IS NULL')
+            .andWhere((qb) => {
+                const sub = qb
+                    .subQuery()
+                    .select('1')
+                    .from(OperationSightingInvalidationModel, 'inv')
+                    .where('inv.operationSightingId = sighting.id')
+                    .getQuery();
+                return `NOT EXISTS ${sub}`;
+            })
             .orderBy('sighting.sightingTime', 'DESC')
             .addOrderBy('sighting.updatedAt', 'DESC')
             .limit(1)
@@ -550,8 +599,15 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
             .distinctOn(['"formation"."formation_number"'])
             .innerJoinAndSelect('s.operation', 'operation')
             .innerJoinAndSelect('s.formation', 'formation')
-            .leftJoin('s.invalidations', 'inv')
-            .where('inv.id IS NULL')
+            .where((qb) => {
+                const sub = qb
+                    .subQuery()
+                    .select('1')
+                    .from(OperationSightingInvalidationModel, 'inv')
+                    .where('inv.operationSightingId = s.id')
+                    .getQuery();
+                return `NOT EXISTS ${sub}`;
+            })
             .orderBy('"formation"."formation_number"')
             .addOrderBy('"s"."sighting_time"', 'DESC')
             .addOrderBy('"s"."updated_at"', 'DESC')
