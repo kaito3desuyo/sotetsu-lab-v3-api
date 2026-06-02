@@ -297,6 +297,13 @@ describe('OperationSightingV3Service - findOneTimeCrossSectionByOperationNumber'
         };
         mockOperationSightingQuery.findOneLatestByOperationNumberAndBeforeSightingTime.mockResolvedValue(latestSighting);
         mockCalendarQuery.findOneBySpecificDate.mockResolvedValue({ id: 'cal-1', startDate: '2026-03-13' });
+        mockOperationSightingLatestCacheQuery.findOneByFormationNumber.mockResolvedValue({
+            id: 'cache-1',
+            operationSightingId: 'sighting-1',
+            operationNumber: '65',
+            formationNumber: '8001',
+            sightingTime: '2026-05-30T10:00:00.000+09:00',
+        });
 
         const result = await service.findOneTimeCrossSectionByOperationNumber({
             operationNumber: '65',
@@ -308,6 +315,32 @@ describe('OperationSightingV3Service - findOneTimeCrossSectionByOperationNumber'
         expect(
             mockOperationSightingLatestCacheQuery.findManyLatestGroupByFormationByOperationNumbersAndSightingTimeRange,
         ).not.toHaveBeenCalled();
+    });
+
+    it('当日の目撃があっても、その後その編成が別運用で目撃されていた場合は expectedSighting: null を返す', async () => {
+        const latestSighting = {
+            id: 'sighting-1',
+            operation: { operationNumber: '65' },
+            formation: { formationNumber: '8001' },
+            sightingTime: '2026-05-30T10:00:00.000+09:00',
+        };
+        mockOperationSightingQuery.findOneLatestByOperationNumberAndBeforeSightingTime.mockResolvedValue(latestSighting);
+        mockCalendarQuery.findOneBySpecificDate.mockResolvedValue({ id: 'cal-1', startDate: '2026-03-13' });
+        mockOperationSightingLatestCacheQuery.findOneByFormationNumber.mockResolvedValue({
+            id: 'cache-1',
+            operationSightingId: 'sighting-2',
+            operationNumber: '66',
+            formationNumber: '8001',
+            sightingTime: '2026-05-30T11:00:00.000+09:00',
+        });
+
+        const result = await service.findOneTimeCrossSectionByOperationNumber({
+            operationNumber: '65',
+            searchTime: '2026-05-30T15:00:00+09:00',
+        });
+
+        expect(result.latestSighting).toBe(latestSighting);
+        expect(result.expectedSighting).toBeNull();
     });
 
     it('calendar が null の場合は expectedSighting: null を返す', async () => {
