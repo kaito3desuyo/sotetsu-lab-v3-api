@@ -267,7 +267,7 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
     }): Promise<OperationSightingDetailsDto | null> {
         const model = await this.operationSightingRepository.findOne({
             where: { id: params.id },
-            relations: ['invalidations', 'managementLogs'],
+            relations: ['invalidations', 'managementLogs', 'operation', 'formation'],
         });
 
         if (!model) {
