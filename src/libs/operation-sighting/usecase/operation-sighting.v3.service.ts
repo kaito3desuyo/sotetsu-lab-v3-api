@@ -168,13 +168,19 @@ export class OperationSightingV3Service {
         );
 
         if (searchBaseDate.isSame(latestSightingBaseDate)) {
-            // 当日の目撃があれば循環不要。その運用番号をそのまま返す
             const { operation, formation } = latestSighting;
-            return {
-                latestSighting,
-                expectedSighting:
-                    operation && formation ? { operation, formation } : null,
-            };
+            if (!operation || !formation) {
+                return { latestSighting, expectedSighting: null };
+            }
+            // その運用のより新しい目撃が別編成によるものなら、この編成は追い出されている
+            const operationLatestCache =
+                await this.operationSightingQuery.findOneLatestByOperationNumberAndBeforeSightingTime(
+                    { operationNumber: operation.operationNumber, sightingTime: searchTimeInstance },
+                );
+            if (operationLatestCache?.formation?.formationNumber !== formation.formationNumber) {
+                return { latestSighting, expectedSighting: null };
+            }
+            return { latestSighting, expectedSighting: { operation, formation } };
         }
 
         const latestOperation = latestSighting.operation;
