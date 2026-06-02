@@ -86,13 +86,19 @@ export class OperationSightingV3Service {
         );
 
         if (searchBaseDate.isSame(latestSightingBaseDate)) {
-            // 当日の目撃があればキャッシュ検索不要。その編成をそのまま返す
             const { operation, formation } = latestSighting;
-            return {
-                latestSighting,
-                expectedSighting:
-                    operation && formation ? { operation, formation } : null,
-            };
+            if (!operation || !formation) {
+                return { latestSighting, expectedSighting: null };
+            }
+            // 編成の最新目撃キャッシュが別運用を指している場合、この編成は追い出されている
+            const formationLatestCache =
+                await this.operationSightingLatestCacheQuery.findOneByFormationNumber(
+                    { formationNumber: formation.formationNumber },
+                );
+            if (!formationLatestCache || formationLatestCache.operationNumber !== operationNumber) {
+                return { latestSighting, expectedSighting: null };
+            }
+            return { latestSighting, expectedSighting: { operation, formation } };
         }
 
         if (!calendar) {
