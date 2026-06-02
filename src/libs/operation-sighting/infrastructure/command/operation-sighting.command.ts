@@ -2,7 +2,7 @@ import { CrudRequest } from '@dataui/crud';
 import { TypeOrmCrudService } from '@dataui/crud-typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { OperationSighting } from '../../domain/operation-sighting.domain';
 import { OperationSightingDetailsDto } from '../../usecase/dtos/operation-sighting-details.dto';
 import { OperationSightingDtoBuilder } from '../builders/operation-sighting-dto.builder';
@@ -20,9 +20,13 @@ export class OperationSightingCommand extends TypeOrmCrudService<OperationSighti
 
     async save(
         domain: OperationSighting,
+        manager?: EntityManager,
     ): Promise<OperationSightingDetailsDto> {
+        const repo = manager
+            ? manager.getRepository(OperationSightingModel)
+            : this.operationSightingRepository;
         const model = OperationSightingModelBuilder.buildFromDomain(domain);
-        const result = await this.operationSightingRepository.save(model);
+        const result = await repo.save(model);
         return OperationSightingDtoBuilder.buildFromModel(result);
     }
 

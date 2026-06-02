@@ -9,6 +9,7 @@ import utc from 'dayjs/plugin/utc';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { validationPipeOptions } from './core/configs/validator-options';
+import { UnexpectedErrorFilter } from './core/filters/unexpected-error.filter';
 import { UseCaseErrorFilter } from './core/filters/usecase-error.filter';
 import { LoggerService } from './core/modules/logger/logger.service';
 
@@ -32,6 +33,7 @@ export async function createApp(): Promise<INestApplication> {
     app.useGlobalPipes(new ValidationPipe(validationPipeOptions));
     // app.useGlobalFilters(new ErrorFilter());
     // app.useGlobalFilters(new HttpExceptionFilter());
+    app.useGlobalFilters(new UnexpectedErrorFilter());
     app.useGlobalFilters(new UseCaseErrorFilter());
 
     return app;

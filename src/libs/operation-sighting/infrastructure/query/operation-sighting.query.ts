@@ -246,7 +246,7 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
             },
         });
 
-        return model.map((o) => OperationSightingDtoBuilder.buildFromModel(o));
+        return OperationSightingDtoBuilder.buildFromModels(model);
     }
 
     async findOneOperationSighting(
@@ -311,6 +311,34 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
             .leftJoin('sighting.invalidations', 'invalidation')
             .where('operation.operationNumber = :operationNumber', {
                 operationNumber,
+            })
+            .andWhere('invalidation.id IS NULL')
+            .orderBy('sighting.sightingTime', 'DESC')
+            .addOrderBy('sighting.updatedAt', 'DESC')
+            .limit(1)
+            .getOne();
+
+        if (!result) return null;
+
+        return OperationSightingDtoBuilder.buildFromModel(result);
+    }
+
+    async findOneLatestByOperationNumberAndBeforeSightingTime(params: {
+        operationNumber: string;
+        sightingTime: dayjs.Dayjs;
+    }): Promise<OperationSightingDetailsDto | null> {
+        const { operationNumber, sightingTime } = params;
+
+        const result = await this.operationSightingRepository
+            .createQueryBuilder('sighting')
+            .leftJoinAndSelect('sighting.operation', 'operation')
+            .leftJoinAndSelect('sighting.formation', 'formation')
+            .leftJoin('sighting.invalidations', 'invalidation')
+            .where('operation.operationNumber = :operationNumber', {
+                operationNumber,
+            })
+            .andWhere('sighting.sightingTime <= :sightingTime', {
+                sightingTime: sightingTime.toISOString(),
             })
             .andWhere('invalidation.id IS NULL')
             .orderBy('sighting.sightingTime', 'DESC')
@@ -429,6 +457,34 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
         return OperationSightingDtoBuilder.buildFromModel(result);
     }
 
+    async findOneLatestByFormationNumberAndBeforeSightingTime(params: {
+        formationNumber: string;
+        sightingTime: dayjs.Dayjs;
+    }): Promise<OperationSightingDetailsDto | null> {
+        const { formationNumber, sightingTime } = params;
+
+        const result = await this.operationSightingRepository
+            .createQueryBuilder('sighting')
+            .leftJoinAndSelect('sighting.operation', 'operation')
+            .leftJoinAndSelect('sighting.formation', 'formation')
+            .leftJoin('sighting.invalidations', 'invalidation')
+            .where('formation.formationNumber = :formationNumber', {
+                formationNumber,
+            })
+            .andWhere('sighting.sightingTime <= :sightingTime', {
+                sightingTime: sightingTime.toISOString(),
+            })
+            .andWhere('invalidation.id IS NULL')
+            .orderBy('sighting.sightingTime', 'DESC')
+            .addOrderBy('sighting.updatedAt', 'DESC')
+            .limit(1)
+            .getOne();
+
+        if (!result) return null;
+
+        return OperationSightingDtoBuilder.buildFromModel(result);
+    }
+
     async findOneLatestOperationSightingFromFormationNumberAndSightingTimeRange(params: {
         formationNumber: string;
         sightingTimeStart: dayjs.Dayjs;
@@ -486,5 +542,21 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
         if (!result) return null;
 
         return OperationSightingDtoBuilder.buildFromModel(result);
+    }
+
+    async findManyLatestPerFormation(): Promise<OperationSightingDetailsDto[]> {
+        const models = await this.operationSightingRepository
+            .createQueryBuilder('s')
+            .distinctOn(['"formation"."formation_number"'])
+            .innerJoinAndSelect('s.operation', 'operation')
+            .innerJoinAndSelect('s.formation', 'formation')
+            .leftJoin('s.invalidations', 'inv')
+            .where('inv.id IS NULL')
+            .orderBy('"formation"."formation_number"')
+            .addOrderBy('"s"."sighting_time"', 'DESC')
+            .addOrderBy('"s"."updated_at"', 'DESC')
+            .getMany();
+
+        return OperationSightingDtoBuilder.buildFromModels(models);
     }
 }

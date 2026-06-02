@@ -1,21 +1,22 @@
-import {
-    Injectable,
-    Logger,
-    NotFoundException,
-    UnprocessableEntityException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
-import clone from 'just-clone';
-import pick from 'just-pick';
+import { UniqueEntityId } from 'src/core/classes/unique-entity-id';
 import { UseCaseError } from 'src/core/classes/custom-error';
+import { UnexpectedError } from 'src/core/classes/unexpected-error';
 import { getBaseDate } from 'src/core/utils/datetime';
 import { CalendarQuery } from 'src/libs/calendar/infrastructure/queries/calendar.query';
 import { FormationQuery } from 'src/libs/formation/infrastructure/queries/formation.query';
 import { OperationQuery } from 'src/libs/operation/infrastructure/queries/operation.query';
+import { DataSource, EntityManager } from 'typeorm';
+import { OperationSightingLatestCache } from '../domain/operation-sighting-latest-cache.domain';
+import { OperationSightingLatestCacheCommand } from '../infrastructure/command/operation-sighting-latest-cache.command';
 import { OperationSightingCommand } from '../infrastructure/command/operation-sighting.command';
+import { OperationSightingLatestCacheQuery } from '../infrastructure/query/operation-sighting-latest-cache.query';
 import { OperationSightingQuery } from '../infrastructure/query/operation-sighting.query';
 import { OperationSightingDomainBuilder } from './builders/operation-sighting.domain.builder';
 import { InvalidateOperationSightingDto } from './dtos/invalidate-operation-sighting.dto';
+import { OperationSightingLatestCacheDto } from './dtos/operation-sighting-latest-cache.dto';
 import { OperationSightingDetailsDto } from './dtos/operation-sighting-details.dto';
 import { OperationSightingTimeCrossSectionDto } from './dtos/operation-sighting-time-cross-section.dto';
 import { PostOperationSightingDto } from './dtos/post-operation-sighting.dto';
@@ -23,10 +24,11 @@ import { RestoreOperationSightingDto } from './dtos/restore-operation-sighting.d
 
 @Injectable()
 export class OperationSightingV3Service {
-    readonly #logger = new Logger(OperationSightingV3Service.name);
-
     constructor(
+        @InjectDataSource() private readonly dataSource: DataSource,
         private readonly operationSightingCommand: OperationSightingCommand,
+        private readonly operationSightingLatestCacheCommand: OperationSightingLatestCacheCommand,
+        private readonly operationSightingLatestCacheQuery: OperationSightingLatestCacheQuery,
         private readonly operationSightingQuery: OperationSightingQuery,
         private readonly calendarQuery: CalendarQuery,
         private readonly operationQuery: OperationQuery,
@@ -53,128 +55,81 @@ export class OperationSightingV3Service {
     }): Promise<OperationSightingTimeCrossSectionDto> {
         const { operationNumber, searchTime } = params;
 
-        // 休車の場合は422エラーを返す
         if (operationNumber === '100') {
-            throw new UnprocessableEntityException(
-                'Searching for suspended operation is not supported.',
-            );
+            throw new UseCaseError('停車中の運用の検索はサポートされていません', {
+                operationNumber,
+                reason: 'suspended_operation',
+            });
         }
 
-        // 運用番号から最新の目撃情報を取得する
-        const latestSighting =
-            await this.operationSightingQuery.findOneLatestByOperationNumber({
-                operationNumber,
-            });
+        const searchTimeInstance = searchTime ? dayjs(searchTime) : dayjs();
+        const searchBaseDate = getBaseDate(searchTimeInstance);
 
-        // 最新の目撃情報が存在しなかった場合は、最新の目撃情報と期待される目撃情報の両方がnullのDTOを返す
+        const [latestSighting, calendar] = await Promise.all([
+            this.operationSightingQuery.findOneLatestByOperationNumberAndBeforeSightingTime(
+                { operationNumber, sightingTime: searchTimeInstance },
+            ),
+            this.calendarQuery.findOneBySpecificDate({
+                date: searchBaseDate.format('YYYY-MM-DD'),
+            }),
+        ]);
+
         if (!latestSighting) {
+            return { latestSighting: null, expectedSighting: null };
+        }
+
+        const latestSightingBaseDate = getBaseDate(
+            dayjs(latestSighting.sightingTime),
+        );
+
+        if (searchBaseDate.isSame(latestSightingBaseDate)) {
+            // 当日の目撃があればキャッシュ検索不要。その編成をそのまま返す
+            const { operation, formation } = latestSighting;
             return {
-                latestSighting: null,
-                expectedSighting: null,
+                latestSighting,
+                expectedSighting:
+                    operation && formation ? { operation, formation } : null,
             };
         }
 
-        // 検索日時から1日ずつ遡り、現在推測される目撃情報を取得する
-        const searchTimeInstance = searchTime ? dayjs(searchTime) : dayjs();
-        const latestSightingTimeInstance = dayjs(latestSighting.sightingTime);
+        if (!calendar) {
+            return { latestSighting, expectedSighting: null };
+        }
 
-        const diffDays = getBaseDate(searchTimeInstance).diff(
-            getBaseDate(latestSightingTimeInstance),
-            'day',
+        // ダイヤ改正日より前の目撃は群の循環に使えないため除外する下限として使う
+        const calendarStartDate = dayjs(calendar.startDate, 'YYYY-MM-DD');
+        // operationNumber と同じ循環群に属するすべての運用番号を列挙する（逆順マップで群を遡る）
+        const groupOperationNumbers = getGroupMembers(
+            operationNumber,
+            operationNumberCirculateReverseMap,
         );
 
-        let expectedSighting: OperationSightingTimeCrossSectionDto['expectedSighting'] =
-            clone(latestSighting);
-        let targetOperationNumber = operationNumber;
+        // 群メンバー全員の最新キャッシュ行を一括取得（ダイヤ改正日以降 ～ 検索時刻）
+        const groupMemberCaches =
+            await this.operationSightingLatestCacheQuery.findManyLatestGroupByFormationByOperationNumbersAndSightingTimeRange(
+                {
+                    operationNumbers: groupOperationNumbers,
+                    startTime: calendarStartDate,
+                    endTime: searchTimeInstance,
+                },
+            );
 
-        for (let i = 0; i <= diffDays; i++) {
-            // 運用番号を逆送りする
-            if (i > 0) {
-                targetOperationNumber = operationNumberCirculateReverseMap.get(
-                    targetOperationNumber,
-                );
-            }
+        // 各キャッシュ行を「目撃から今日まで k 日分だけ前進させると operationNumber に届くか」で絞り込み、最新を選択
+        const selectedCandidate = selectMostRecentCandidateForOperationNumber(
+            groupMemberCaches,
+            operationNumber,
+            searchBaseDate,
+        );
 
-            // 逆送り先の運用番号が存在しない場合、期待される目撃情報はnullとする
-            if (!targetOperationNumber) {
-                expectedSighting = null;
-                break;
-            }
-
-            // 逆送り先の運用番号で目撃情報を検索する
-            const sightingTimeStart = getBaseDate(searchTimeInstance)
-                .subtract(i, 'day')
-                .hour(4);
-            const sightingTimeEnd = sightingTimeStart.add(1, 'day');
-
-            const targetSighting =
-                await this.operationSightingQuery.findOneLatestByOperationNumberAndSightingTimeRange(
-                    {
-                        operationNumber: targetOperationNumber,
-                        sightingTimeStart,
-                        sightingTimeEnd,
-                    },
-                );
-
-            // 逆送り先の運用番号で目撃情報が存在し、編成番号が異なる場合、期待される目撃情報のIDと編成番号を更新する
-            if (
-                targetSighting &&
-                targetSighting.formation.formationNumber !==
-                    expectedSighting.formation.formationNumber
-            ) {
-                expectedSighting.id = targetSighting.id;
-                expectedSighting.formation.formationNumber =
-                    targetSighting.formation.formationNumber;
-                break;
-            }
+        if (!selectedCandidate) {
+            return { latestSighting, expectedSighting: null };
         }
 
-        if (expectedSighting) {
-            // 期待される目撃情報の編成番号で、最新の目撃情報を再取得する
-            const sightingTimeStart = getBaseDate(searchTimeInstance).hour(4);
-            const sightingTimeEnd = sightingTimeStart.add(1, 'day');
-
-            const targetSighting =
-                await this.operationSightingQuery.findOneLatestByFormationNumberAndSightingTimeRange(
-                    {
-                        formationNumber:
-                            expectedSighting.formation.formationNumber,
-                        sightingTimeStart,
-                        sightingTimeEnd,
-                    },
-                );
-
-            // 期待される目撃情報の編成番号で最新の目撃情報が存在していて、期待される目撃情報のIDと異なる場合、期待される目撃情報はnullとする
-            if (targetSighting && targetSighting.id !== expectedSighting.id) {
-                expectedSighting = null;
-            }
-        }
-
-        // 検索日時時点で有効な編成情報を取得する
-        const startDate = getBaseDate(searchTimeInstance).format('YYYY-MM-DD');
-        const endDate = startDate;
-
-        const formations = await this.formationQuery.findManyBySpecificPeriod({
-            startDate,
-            endDate,
-        });
-
-        expectedSighting = {
-            ...pick(latestSighting, ['operation']),
-            formation:
-                expectedSighting &&
-                (formations.find(
-                    (f) =>
-                        f.formationNumber ===
-                        expectedSighting.formation.formationNumber,
-                ) ??
-                    null),
-        };
-
-        return {
+        return this.#buildResultWithFormation(
             latestSighting,
-            expectedSighting,
-        };
+            selectedCandidate.formationNumber,
+            searchBaseDate,
+        );
     }
 
     async findOneTimeCrossSectionByFormationNumber(params: {
@@ -183,277 +138,172 @@ export class OperationSightingV3Service {
     }): Promise<OperationSightingTimeCrossSectionDto> {
         const { formationNumber, searchTime } = params;
 
-        // 編成番号から最新の目撃情報を取得する
-        const latestSighting =
-            await this.operationSightingQuery.findOneLatestByFormationNumber({
-                formationNumber,
-            });
-
-        // 最新の目撃情報が存在しなかった場合は、最新の目撃情報と期待される目撃情報の両方がnullのDTOを返す
-        if (!latestSighting) {
-            return {
-                latestSighting: null,
-                expectedSighting: null,
-            };
-        }
-
-        // 最新の目撃情報が休車の場合は、期待される目撃情報を休車のまま返す
-        if (latestSighting.operation.operationNumber === '100') {
-            return {
-                latestSighting,
-                expectedSighting: {
-                    ...pick(latestSighting, ['formation']),
-                    operation: pick(latestSighting.operation, [
-                        'operationNumber',
-                    ]),
-                },
-            };
-        }
-
-        // 最新の目撃時刻から1日ずつ進み、現在推測される目撃情報を取得する
         const searchTimeInstance = searchTime ? dayjs(searchTime) : dayjs();
-        const latestSightingTimeInstance = dayjs(latestSighting.sightingTime);
+        const searchBaseDate = getBaseDate(searchTimeInstance);
 
-        const diffDays = getBaseDate(searchTimeInstance).diff(
-            getBaseDate(latestSightingTimeInstance),
-            'day',
+        const [latestSighting, calendar] = await Promise.all([
+            this.operationSightingQuery.findOneLatestByFormationNumberAndBeforeSightingTime(
+                { formationNumber, sightingTime: searchTimeInstance },
+            ),
+            this.calendarQuery.findOneBySpecificDate({
+                date: searchBaseDate.format('YYYY-MM-DD'),
+            }),
+        ]);
+
+        if (!latestSighting) {
+            return { latestSighting: null, expectedSighting: null };
+        }
+
+        const latestSightingBaseDate = getBaseDate(
+            dayjs(latestSighting.sightingTime),
         );
 
-        let expectedSighting: OperationSightingTimeCrossSectionDto['expectedSighting'] =
-            clone(latestSighting);
-        let targetOperationNumber = latestSighting.operation.operationNumber;
-
-        for (let i = 0; i <= diffDays; i++) {
-            // 運用番号を順送りする
-            if (i > 0) {
-                targetOperationNumber = operationNumberCirculateMap.get(
-                    targetOperationNumber,
-                );
-            }
-
-            // 順送り先の運用番号が存在しない場合、期待される目撃情報はnullとする
-            if (!targetOperationNumber) {
-                expectedSighting = null;
-                break;
-            }
-
-            // 順送り先の運用番号で目撃情報を検索する
-            const sightingTimeStart = getBaseDate(latestSightingTimeInstance)
-                .add(i, 'day')
-                .hour(4);
-            const sightingTimeEnd = sightingTimeStart.add(1, 'day');
-
-            const targetSighting =
-                await this.operationSightingQuery.findOneLatestByOperationNumberAndSightingTimeRange(
-                    {
-                        operationNumber: targetOperationNumber,
-                        sightingTimeStart,
-                        sightingTimeEnd,
-                    },
-                );
-
-            // 順送り先の運用番号で目撃情報が存在し、編成番号が異なる場合、期待される目撃情報はnullとする
-            if (
-                targetSighting &&
-                targetSighting.formation.formationNumber !==
-                    expectedSighting.formation.formationNumber
-            ) {
-                expectedSighting = null;
-                break;
-            }
-
-            // 期待される目撃情報の運用番号を更新する
-            expectedSighting.operation.operationNumber = targetOperationNumber;
+        if (searchBaseDate.isSame(latestSightingBaseDate)) {
+            // 当日の目撃があれば循環不要。その運用番号をそのまま返す
+            const { operation, formation } = latestSighting;
+            return {
+                latestSighting,
+                expectedSighting:
+                    operation && formation ? { operation, formation } : null,
+            };
         }
 
-        if (expectedSighting) {
-            // 期待される目撃情報の運用番号で、最新の目撃情報を再取得する
-            const sightingTimeStart = getBaseDate(searchTimeInstance).hour(4);
-            const sightingTimeEnd = sightingTimeStart.add(1, 'day');
-
-            const targetSighting =
-                await this.operationSightingQuery.findOneLatestByOperationNumberAndSightingTimeRange(
-                    {
-                        operationNumber:
-                            expectedSighting.operation.operationNumber,
-                        sightingTimeStart,
-                        sightingTimeEnd,
-                    },
-                );
-
-            // 期待される目撃情報の運用番号で最新の目撃情報が存在していて、期待される目撃情報のIDと異なる場合、期待される目撃情報はnullとする
-            if (targetSighting && targetSighting.id !== expectedSighting.id) {
-                expectedSighting = null;
-            }
+        const latestOperation = latestSighting.operation;
+        if (!latestOperation) {
+            return { latestSighting, expectedSighting: null };
         }
 
-        // 検索日時時点で有効な運用情報を取得する
-        const date = getBaseDate(searchTimeInstance).format('YYYY-MM-DD');
+        // 休車（100番）は循環マップに定義がないため追跡不可、そのまま返す
+        if (latestOperation.operationNumber === '100') {
+            return {
+                latestSighting,
+                expectedSighting: latestSighting.formation
+                    ? { formation: latestSighting.formation, operation: latestOperation }
+                    : null,
+            };
+        }
 
-        const calendar = await this.calendarQuery.findOneBySpecificDate({
-            date,
+        if (!calendar) {
+            return { latestSighting, expectedSighting: null };
+        }
+
+        // ダイヤ改正日（calendar.startDate の鉄道日0時）
+        const calendarStartDate = dayjs(calendar.startDate, 'YYYY-MM-DD');
+
+        // 最新目撃がダイヤ改正より前の鉄道日なら、現在の循環ルールで追跡できないため終了
+        if (latestSightingBaseDate.isBefore(calendarStartDate)) {
+            return { latestSighting, expectedSighting: null };
+        }
+
+        // 最新目撃から今日の鉄道日まで何日経過しているか
+        const daysSinceSighting = searchBaseDate.diff(latestSightingBaseDate, 'day');
+
+        // 最新目撃の運用番号から daysSinceSighting 回前進した先の運用番号を計算する
+        const circulation = buildCirculationPath(
+            latestOperation.operationNumber,
+            daysSinceSighting,
+        );
+
+        if (!circulation) {
+            return { latestSighting, expectedSighting: null };
+        }
+
+        // 期待運用番号に到達しうる群メンバー全員の最新キャッシュを一括取得（運用番号側と対称な構造）
+        const groupOperationNumbers = getGroupMembers(
+            circulation.expectedOperationNumber,
+            operationNumberCirculateReverseMap,
+        );
+        const groupMemberCaches =
+            await this.operationSightingLatestCacheQuery.findManyLatestGroupByFormationByOperationNumbersAndSightingTimeRange(
+                {
+                    operationNumbers: groupOperationNumbers,
+                    startTime: calendarStartDate,
+                    endTime: searchTimeInstance,
+                },
+            );
+
+        // 期待運用番号に今日到達できる候補を絞り込み、最も新しい目撃を持つ行を選択
+        const selectedCandidate = selectMostRecentCandidateForOperationNumber(
+            groupMemberCaches,
+            circulation.expectedOperationNumber,
+            searchBaseDate,
+        );
+
+        if (!selectedCandidate) {
+            return { latestSighting, expectedSighting: null };
+        }
+
+        // 最新候補が自編成でなければ追い出されている
+        if (selectedCandidate.formationNumber !== formationNumber) {
+            return { latestSighting, expectedSighting: null };
+        }
+
+        return this.#buildResultWithOperation(
+            latestSighting,
+            circulation.expectedOperationNumber,
+            calendar,
+        );
+    }
+
+    async #buildResultWithFormation(
+        latestSighting: OperationSightingDetailsDto,
+        expectedFormationNumber: string,
+        searchBaseDate: dayjs.Dayjs,
+    ): Promise<OperationSightingTimeCrossSectionDto> {
+        const searchDateString = searchBaseDate.format('YYYY-MM-DD');
+        const formations = await this.formationQuery.findManyBySpecificPeriod({
+            startDate: searchDateString,
+            endDate: searchDateString,
         });
+        const formation = formations.find(
+            (f) => f.formationNumber === expectedFormationNumber,
+        ) ?? null;
+        return {
+            latestSighting,
+            expectedSighting: formation && latestSighting.operation
+                ? { operation: latestSighting.operation, formation }
+                : null,
+        };
+    }
 
+    async #buildResultWithOperation(
+        latestSighting: OperationSightingDetailsDto,
+        expectedOperationNumber: string,
+        calendar: { id: string },
+    ): Promise<OperationSightingTimeCrossSectionDto> {
         const operations = await this.operationQuery.findManyByCalendarId({
             calendarId: calendar.id,
         });
-
-        expectedSighting = {
-            ...pick(latestSighting, ['formation']),
-            operation:
-                expectedSighting &&
-                (operations.find(
-                    (o) =>
-                        o.operationNumber ===
-                        expectedSighting.operation.operationNumber,
-                ) ??
-                    null),
-        };
-
+        const operation = operations.find(
+            (o) => o.operationNumber === expectedOperationNumber,
+        ) ?? null;
         return {
             latestSighting,
-            expectedSighting,
+            expectedSighting: operation && latestSighting.formation
+                ? { formation: latestSighting.formation, operation }
+                : null,
         };
     }
 
     async post(
         params: PostOperationSightingDto,
     ): Promise<OperationSightingDetailsDto> {
-        const {
-            agencyId,
-            formationOrVehicleNumber,
-            operationNumber,
-            sightingTime,
-        } = params;
-
-        // 目撃時刻はUTCオフセット付きISO8601想定
-        if (!/(?:Z|[+-]\d{2}:?\d{2})$/i.test(sightingTime)) {
-            throw new UseCaseError('目撃時刻の形式が正しくありません', {
-                agencyId,
-                formationOrVehicleNumber,
-                operationNumber,
-                sightingTime,
-                reason: 'offset_missing',
-            });
-        }
-
-        const sightingTimeInstance = dayjs.utc(sightingTime);
-
-        if (!sightingTimeInstance.isValid()) {
-            throw new UseCaseError('目撃時刻の形式が正しくありません', {
-                agencyId,
-                formationOrVehicleNumber,
-                operationNumber,
-                sightingTime,
-                reason: 'invalid_datetime',
-            });
-        }
-
-        if (sightingTimeInstance.isAfter(dayjs.utc())) {
-            throw new UseCaseError('未来の時刻は指定できません', {
-                agencyId,
-                formationOrVehicleNumber,
-                operationNumber,
-                sightingTime,
-                reason: 'future_datetime',
-            });
-        }
-
-        const sightingTimeInJst = sightingTimeInstance.tz();
-        const date = getBaseDate(sightingTimeInJst).format('YYYY-MM-DD');
-
-        const calendar = await this.calendarQuery.findOneBySpecificDate({
+        const { agencyId, formationOrVehicleNumber } = params;
+        const { sightingTimeInstance, sightingTimeInJst, date } =
+            this.#parseSightingTime(params);
+        const { operation } = await this.#resolveOperationContext(
+            params,
             date,
-        });
+            sightingTimeInJst,
+        );
 
-        if (!calendar) {
-            throw new UseCaseError('対象日の運行情報が見つかりません', {
-                date,
-                agencyId,
-                operationNumber,
-                sightingTime,
-                reason: 'calendar_not_found',
-            });
-        }
-
-        const operation =
-            await this.operationQuery.findOneByCalendarIdAndOperationNumber({
-                calendarId: calendar.id,
-                operationNumber,
-            });
-
-        if (!operation) {
-            throw new UseCaseError(
-                '指定された運用番号の運用情報が見つかりません',
-                {
-                    calendarId: calendar.id,
-                    operationNumber,
-                    date,
-                    reason: 'operation_not_found',
-                },
-            );
-        }
-
-        const firstDepartureTime =
-            await this.operationQuery.findOneFirstDepartureTimeByOperationIdAndDate(
-                {
-                    operationId: operation.id,
-                    date,
-                },
-            );
-
-        if (!firstDepartureTime) {
-            throw new UseCaseError('対象運用の始発時刻を特定できません', {
-                operationId: operation.id,
-                operationNumber,
-                date,
-                reason: 'first_departure_not_found',
-            });
-        }
-
-        if (
-            sightingTimeInJst.isBefore(
-                firstDepartureTime.subtract(30, 'minute'),
-            )
-        ) {
-            const earliestPostTime = firstDepartureTime
-                .subtract(30, 'minute')
-                .format('YYYY-MM-DD HH:mm');
-
-            throw new UseCaseError(
-                '始発時刻の30分前より前の時刻は投稿できません',
-                {
-                    operationId: operation.id,
-                    operationNumber,
-                    sightingTime,
-                    sightingTimeJst: sightingTimeInJst.format(),
-                    date,
-                    earliestPostTime,
-                    reason: 'too_early_post',
-                },
-            );
-        }
-
-        let formation =
-            await this.formationQuery.findOneByAgencyIdAndFormationNumberAndDate(
-                {
-                    agencyId,
-                    formationNumber: formationOrVehicleNumber,
-                    date,
-                },
-            );
-
-        if (!formation) {
-            formation =
-                await this.formationQuery.findOneByAgencyIdAndVehicleNumberAndDate(
-                    {
-                        agencyId,
-                        vehicleNumber: formationOrVehicleNumber,
-                        date,
-                    },
-                );
-        }
-
+        const formation =
+            (await this.formationQuery.findOneByAgencyIdAndFormationNumberAndDate(
+                { agencyId, formationNumber: formationOrVehicleNumber, date },
+            )) ??
+            (await this.formationQuery.findOneByAgencyIdAndVehicleNumberAndDate(
+                { agencyId, vehicleNumber: formationOrVehicleNumber, date },
+            ));
         if (!formation) {
             throw new UseCaseError(
                 '入力された編成番号/車両番号に対応する編成が見つかりません',
@@ -473,9 +323,25 @@ export class OperationSightingV3Service {
             sightingTime: sightingTimeInstance.toDate(),
         });
 
-        const result = await this.operationSightingCommand.save(domain);
+        const currentCache =
+            await this.operationSightingLatestCacheQuery.findOneByFormationNumber(
+                { formationNumber: formation.formationNumber },
+            );
+        const cacheAction: CacheAction =
+            !currentCache || dayjs(currentCache.sightingTime).isBefore(sightingTimeInstance)
+                ? {
+                      type: 'upsert',
+                      cacheId: currentCache?.id,
+                      formationNumber: formation.formationNumber,
+                      operationNumber: operation.operationNumber,
+                  }
+                : { type: 'none' };
 
-        return result;
+        return this.dataSource.transaction(async (manager) => {
+            const saved = await this.operationSightingCommand.save(domain, manager);
+            await this.#applyCacheAction(cacheAction, saved.operationSightingId, manager);
+            return saved;
+        });
     }
 
     async invalidate(
@@ -488,18 +354,67 @@ export class OperationSightingV3Service {
         });
 
         if (!dto) {
-            throw new NotFoundException(
-                `OperationSighting with id ${operationSightingId} not found.`,
-            );
+            throw new UseCaseError('目撃情報が見つかりません', {
+                operationSightingId,
+                reason: 'not_found',
+            });
         }
 
         const domain = OperationSightingDomainBuilder.buildByDetailsDto(dto);
 
         domain.invalidate(userId, reason);
 
-        const result = await this.operationSightingCommand.save(domain);
+        if (!dto.formation?.formationNumber) {
+            throw new UnexpectedError('目撃情報に編成情報が存在しない', { operationSightingId });
+        }
+        const formationNumber = dto.formation.formationNumber;
 
-        return result;
+        const currentCache =
+            await this.operationSightingLatestCacheQuery.findOneByFormationNumber(
+                { formationNumber },
+            );
+        let cacheAction: CacheAction = { type: 'none' };
+        if (currentCache?.operationSightingId === operationSightingId) {
+            const prevSighting =
+                await this.operationSightingQuery.findOneLatestByFormationNumberAndBeforeSightingTime(
+                    {
+                        formationNumber,
+                        sightingTime: dayjs(dto.sightingTime).subtract(1, 'ms'),
+                    },
+                );
+            if (!prevSighting) {
+                cacheAction = {
+                    type: 'delete',
+                    domain: OperationSightingLatestCache.create(
+                        {
+                            operationSightingId: currentCache.operationSightingId,
+                            operationNumber: currentCache.operationNumber,
+                            formationNumber: currentCache.formationNumber,
+                        },
+                        new UniqueEntityId(currentCache.id),
+                    ),
+                };
+            } else if (!prevSighting.operation?.operationNumber) {
+                throw new UnexpectedError('直前目撃情報に運用情報が存在しない', {
+                    operationSightingId,
+                    prevSightingId: prevSighting.operationSightingId,
+                });
+            } else {
+                cacheAction = {
+                    type: 'rollback',
+                    cacheId: currentCache.id,
+                    formationNumber,
+                    operationNumber: prevSighting.operation.operationNumber,
+                    operationSightingId: prevSighting.operationSightingId,
+                };
+            }
+        }
+
+        return this.dataSource.transaction(async (manager) => {
+            const saved = await this.operationSightingCommand.save(domain, manager);
+            await this.#applyCacheAction(cacheAction, saved.operationSightingId, manager);
+            return saved;
+        });
     }
 
     async restore(
@@ -512,19 +427,240 @@ export class OperationSightingV3Service {
         });
 
         if (!dto) {
-            throw new NotFoundException(
-                `OperationSighting with id ${operationSightingId} not found.`,
-            );
+            throw new UseCaseError('目撃情報が見つかりません', {
+                operationSightingId,
+                reason: 'not_found',
+            });
         }
 
         const domain = OperationSightingDomainBuilder.buildByDetailsDto(dto);
 
         domain.restore(userId, reason);
 
-        const result = await this.operationSightingCommand.save(domain);
+        if (!dto.formation?.formationNumber) {
+            throw new UnexpectedError('目撃情報に編成情報が存在しない', { operationSightingId });
+        }
+        if (!dto.operation?.operationNumber) {
+            throw new UnexpectedError('目撃情報に運用情報が存在しない', { operationSightingId });
+        }
+        const formationNumber = dto.formation.formationNumber;
+        const operationNumber = dto.operation.operationNumber;
 
-        return result;
+        const currentCache =
+            await this.operationSightingLatestCacheQuery.findOneByFormationNumber(
+                { formationNumber },
+            );
+        const cacheAction: CacheAction =
+            !currentCache || dayjs(currentCache.sightingTime).isBefore(dayjs(dto.sightingTime))
+                ? {
+                      type: 'upsert',
+                      cacheId: currentCache?.id,
+                      formationNumber,
+                      operationNumber,
+                  }
+                : { type: 'none' };
+
+        return this.dataSource.transaction(async (manager) => {
+            const saved = await this.operationSightingCommand.save(domain, manager);
+            await this.#applyCacheAction(cacheAction, saved.operationSightingId, manager);
+            return saved;
+        });
     }
+
+    async #applyCacheAction(
+        action: CacheAction,
+        savedOperationSightingId: string,
+        manager: EntityManager,
+    ): Promise<void> {
+        if (action.type === 'upsert') {
+            await this.operationSightingLatestCacheCommand.save(
+                OperationSightingLatestCache.create(
+                    {
+                        formationNumber: action.formationNumber,
+                        operationSightingId: savedOperationSightingId,
+                        operationNumber: action.operationNumber,
+                    },
+                    action.cacheId ? new UniqueEntityId(action.cacheId) : undefined,
+                ),
+                manager,
+            );
+        } else if (action.type === 'rollback') {
+            await this.operationSightingLatestCacheCommand.save(
+                OperationSightingLatestCache.create(
+                    {
+                        formationNumber: action.formationNumber,
+                        operationSightingId: action.operationSightingId,
+                        operationNumber: action.operationNumber,
+                    },
+                    new UniqueEntityId(action.cacheId),
+                ),
+                manager,
+            );
+        } else if (action.type === 'delete') {
+            await this.operationSightingLatestCacheCommand.remove(
+                action.domain,
+                manager,
+            );
+        }
+    }
+
+    #parseSightingTime(params: PostOperationSightingDto): {
+        sightingTimeInstance: dayjs.Dayjs;
+        sightingTimeInJst: dayjs.Dayjs;
+        date: string;
+    } {
+        const { agencyId, formationOrVehicleNumber, operationNumber, sightingTime } = params;
+        if (!/(?:Z|[+-]\d{2}:?\d{2})$/i.test(sightingTime)) {
+            throw new UseCaseError('目撃時刻の形式が正しくありません', {
+                agencyId,
+                formationOrVehicleNumber,
+                operationNumber,
+                sightingTime,
+                reason: 'offset_missing',
+            });
+        }
+        const sightingTimeInstance = dayjs.utc(sightingTime);
+        if (!sightingTimeInstance.isValid()) {
+            throw new UseCaseError('目撃時刻の形式が正しくありません', {
+                agencyId,
+                formationOrVehicleNumber,
+                operationNumber,
+                sightingTime,
+                reason: 'invalid_datetime',
+            });
+        }
+        if (sightingTimeInstance.isAfter(dayjs.utc())) {
+            throw new UseCaseError('未来の時刻は指定できません', {
+                agencyId,
+                formationOrVehicleNumber,
+                operationNumber,
+                sightingTime,
+                reason: 'future_datetime',
+            });
+        }
+        const sightingTimeInJst = sightingTimeInstance.tz();
+        const date = getBaseDate(sightingTimeInJst).format('YYYY-MM-DD');
+        return { sightingTimeInstance, sightingTimeInJst, date };
+    }
+
+    async #resolveOperationContext(
+        params: PostOperationSightingDto,
+        date: string,
+        sightingTimeInJst: dayjs.Dayjs,
+    ) {
+        const { agencyId, operationNumber, sightingTime } = params;
+
+        const calendar = await this.calendarQuery.findOneBySpecificDate({ date });
+        if (!calendar) {
+            throw new UseCaseError('対象日の運行情報が見つかりません', {
+                date,
+                agencyId,
+                operationNumber,
+                sightingTime,
+                reason: 'calendar_not_found',
+            });
+        }
+
+        const operation =
+            await this.operationQuery.findOneByCalendarIdAndOperationNumber({
+                calendarId: calendar.id,
+                operationNumber,
+            });
+        if (!operation) {
+            throw new UseCaseError('指定された運用番号の運用情報が見つかりません', {
+                calendarId: calendar.id,
+                operationNumber,
+                date,
+                reason: 'operation_not_found',
+            });
+        }
+
+        const firstDepartureTime =
+            await this.operationQuery.findOneFirstDepartureTimeByOperationIdAndDate({
+                operationId: operation.id,
+                date,
+            });
+        if (!firstDepartureTime) {
+            throw new UseCaseError('対象運用の始発時刻を特定できません', {
+                operationId: operation.id,
+                operationNumber,
+                date,
+                reason: 'first_departure_not_found',
+            });
+        }
+
+        if (sightingTimeInJst.isBefore(firstDepartureTime.subtract(30, 'minute'))) {
+            const earliestPostTime = firstDepartureTime
+                .subtract(30, 'minute')
+                .format('YYYY-MM-DD HH:mm');
+            throw new UseCaseError('始発時刻の30分前より前の時刻は投稿できません', {
+                operationId: operation.id,
+                operationNumber,
+                sightingTime,
+                sightingTimeJst: sightingTimeInJst.format(),
+                date,
+                earliestPostTime,
+                reason: 'too_early_post',
+            });
+        }
+
+        return { calendar, operation };
+    }
+}
+
+type CacheAction =
+    | { type: 'none' }
+    | { type: 'upsert';   cacheId: string | undefined; formationNumber: string; operationNumber: string }
+    | { type: 'rollback'; cacheId: string;             formationNumber: string; operationNumber: string; operationSightingId: string }
+    | { type: 'delete';   domain: OperationSightingLatestCache };
+
+function selectMostRecentCandidateForOperationNumber(
+    caches: OperationSightingLatestCacheDto[],
+    targetOperationNumber: string,
+    searchBaseDate: dayjs.Dayjs,
+): OperationSightingLatestCacheDto | null {
+    const candidates = caches.filter((row) => {
+        const daysAgo = searchBaseDate.diff(getBaseDate(dayjs(row.sightingTime)), 'day');
+        return (
+            buildCirculationPath(row.operationNumber, daysAgo)?.expectedOperationNumber ===
+            targetOperationNumber
+        );
+    });
+    if (candidates.length === 0) return null;
+    return candidates.sort(
+        (a, b) => dayjs(b.sightingTime).valueOf() - dayjs(a.sightingTime).valueOf(),
+    )[0];
+}
+
+function buildCirculationPath(
+    startOperationNumber: string,
+    steps: number,
+): { path: string[]; expectedOperationNumber: string } | null {
+    const path: string[] = [];
+    let current = startOperationNumber;
+    for (let i = 0; i < steps; i++) {
+        const next = operationNumberCirculateMap.get(current);
+        if (!next) return null;
+        current = next;
+        path.push(current);
+    }
+    return { path, expectedOperationNumber: current };
+}
+
+function getGroupMembers(
+    start: string,
+    map: Map<string, string>,
+    maxSteps = 9,
+): string[] {
+    const members = new Set<string>([start]);
+    let current = start;
+    for (let i = 0; i < maxSteps; i++) {
+        const next = map.get(current);
+        if (!next || next === start) break;
+        members.add(next);
+        current = next;
+    }
+    return [...members];
 }
 
 const operationNumberCirculateMap = new Map([
@@ -562,10 +698,9 @@ const operationNumberCirculateMap = new Map([
     // 9G群
     ['91G', '92G'],
     ['92G', '93G'],
+    ['93G', '94G'],
     ['94G', '95G'],
     ['95G', '91G'],
-    // 休車
-    ['100', '100'],
 ]);
 const operationNumberCirculateReverseMap = new Map([
     ...Array.from(operationNumberCirculateMap.entries()).map(
