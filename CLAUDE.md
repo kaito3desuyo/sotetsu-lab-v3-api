@@ -122,14 +122,18 @@ npm run deploy               # Serverless Framework でデプロイ
 - Command（書き込み）→ `.command.ts` → ドメインエンティティで操作
 - TypeORM data-source → `src/core/utils/data-source.ts`
 - マイグレーション実行時は dotenvx で `.env.local` を読み込む
+- anti-join は `LEFT JOIN IS NULL` でなく `NOT EXISTS (subQuery)` を使う（sighting_time インデックスと組み合わせることで大幅高速化）
 
 ### テスト戦略
 - ユニットテスト - ソースコードと同じ場所（`.spec.ts`）
 - Jest 設定 - `src/` をルートで `.spec.ts$` マッチ
 - E2E テスト - `test/` フォルダ（別の Jest 設定）
 - カバレッジ - `coverage/`（gitignore 対象）
+- `TypeOrmCrudService` を extends する Query クラスのテストでは、リポジトリモックに `metadata: { connection: { options: { type: 'postgres' } }, columns: [], primaryColumns: [], relations: [], targetName: '...' }` が必要（ないとコンストラクタで即死）
+- usecase 層のモックテストは Query の `relations` 漏れを検知できない — リレーションを追加・参照する際は Query クラス自体の spec も書く
 
 ### Git・コミット
 - Conventional Commits 形式（`:sparkles:` など絵文字を description 前に記載）
 - 複数コミット時 - 機能コミット + 別途 docs/ADR コミットに分割
 - マイグレーション - スキーマ変更は git トラッキングで管理
+- コミットメッセージ中のドメイン名は日本語で書く（例: operation-sighting → 目撃情報、formation → 編成、operation → 運用）
