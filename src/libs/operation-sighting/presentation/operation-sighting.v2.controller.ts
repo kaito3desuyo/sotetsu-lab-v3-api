@@ -9,7 +9,6 @@ import {
     Body,
     Controller,
     Get,
-    Param,
     Post,
     Req,
     Res,
@@ -129,36 +128,6 @@ export class OperationSightingV2Controller {
         res.header('Cache-Control', 'max-age=2592000, must-revalidate');
 
         res.json(operationSightings);
-    }
-
-    @Get('time-cross-section/from-operation-number/:operationNumber')
-    async findOneTimeCrossSectionFromOperationNumber(
-        @Param() params: { operationNumber: string },
-        @Res() res: Response,
-    ): Promise<void> {
-        const timeCrossSections =
-            await this.operationSightingV2Service.findOneTimeCrossSectionFromOperationNumber(
-                params,
-            );
-
-        res.header('Cache-Control', 'max-age=1, must-revalidate');
-
-        res.json(timeCrossSections);
-    }
-
-    @Get('time-cross-section/from-formation-number/:formationNumber')
-    async findOneTimeCrossSectionFromFormationNumber(
-        @Param() params: { formationNumber: string },
-        @Res() res: Response,
-    ): Promise<void> {
-        const timeCrossSections =
-            await this.operationSightingV2Service.findOneTimeCrossSectionFromFormationNumber(
-                params,
-            );
-
-        res.header('Cache-Control', 'max-age=1, must-revalidate');
-
-        res.json(timeCrossSections);
     }
 
     @Override('createOneBase')
