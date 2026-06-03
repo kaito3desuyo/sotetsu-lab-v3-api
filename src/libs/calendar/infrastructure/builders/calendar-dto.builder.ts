@@ -10,7 +10,7 @@ export function buildCalendarDetailsDto(
 }
 
 export const CalendarDtoBuilder = {
-    toDetailsDto: (model: CalendarModel): CalendarDetailsDto => {
+    buildFromModel: (model: CalendarModel): CalendarDetailsDto => {
         return plainToClass(CalendarDetailsDto, model, transformerOptions);
     },
 } as const;

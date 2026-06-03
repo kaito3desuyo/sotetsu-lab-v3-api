@@ -19,4 +19,9 @@ export class CalendarV3Controller {
 
         return result;
     }
+
+    @Get(':id')
+    async findOne(@Param('id') id: string): Promise<CalendarDetailsDto> {
+        return this.calendarV3Service.findOne({ id });
+    }
 }
