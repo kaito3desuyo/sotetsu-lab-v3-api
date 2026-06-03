@@ -61,6 +61,24 @@ export class CalendarQuery extends TypeOrmCrudService<CalendarModel> {
         return buildCalendarDetailsDto(model);
     }
 
+    async findOneById(params: {
+        id: string;
+    }): Promise<CalendarDetailsDto> {
+        const { id } = params;
+
+        const model = await this.calendarRepository
+            .createQueryBuilder('calendar')
+            .select('calendar')
+            .where('calendar.id = :id', { id })
+            .getOne();
+
+        if (!model) {
+            return null;
+        }
+
+        return CalendarDtoBuilder.buildFromModel(model);
+    }
+
     async findOneBySpecificDate(params: {
         date: string;
     }): Promise<CalendarDetailsDto> {
@@ -93,6 +111,6 @@ export class CalendarQuery extends TypeOrmCrudService<CalendarModel> {
             },
         });
 
-        return CalendarDtoBuilder.toDetailsDto(result);
+        return CalendarDtoBuilder.buildFromModel(result);
     }
 }
