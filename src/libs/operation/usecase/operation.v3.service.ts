@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { OperationQuery } from '../infrastructure/queries/operation.query';
 import { OperationCurrentPositionDto } from './dtos/operation-current-position.dto';
 import { OperationDetailsDto } from './dtos/operation-details.dto';
+import { OperationWithTripsDto } from './dtos/operation-with-trips.dto';
 
 @Injectable()
 export class OperationV3Service {
@@ -41,5 +42,11 @@ export class OperationV3Service {
         });
 
         return result;
+    }
+
+    findOneWithTrips(params: {
+        operationId: string;
+    }): Promise<OperationWithTripsDto | null> {
+        return this.operationQuery.findOneWithTrips(params);
     }
 }

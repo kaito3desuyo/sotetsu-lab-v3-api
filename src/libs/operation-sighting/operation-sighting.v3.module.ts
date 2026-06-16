@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AuthModule } from 'src/core/modules/auth/auth.module';
 import { FormationLibsModule } from '../formation/formation.libs.module';
 import { OperationLibsModule } from '../operation/operation.libs.module';
 import { OperationSightingLibsModule } from './operation-sighting.libs.module';

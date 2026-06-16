@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 import { OperationSighting } from '../../domain/operation-sighting.domain';
 import { OperationSightingDetailsDto } from '../../usecase/dtos/operation-sighting-details.dto';
-import { OperationSightingDtoBuilder } from '../builders/operation-sighting-dto.builder';
+import { OperationSightingDtoBuilder } from '../builders/operation-sighting.dto.builder';
 import { OperationSightingModelBuilder } from '../builders/operation-sighting.model.builder';
 import { OperationSightingModel } from '../models/operation-sighting.model';
 

@@ -15,12 +15,12 @@ import {
 } from 'typeorm';
 import { OperationCurrentPositionDto } from '../../usecase/dtos/operation-current-position.dto';
 import { OperationDetailsDto } from '../../usecase/dtos/operation-details.dto';
+import { OperationWithTripsDto } from '../../usecase/dtos/operation-with-trips.dto';
 import { OperationCurrentPositionDtoBuilder } from '../builders/operation-current-position.dto.builder';
 import {
     OperationDtoBuilder,
     OperationsDtoBuilder,
-    buildOperationDetailsDto,
-} from '../builders/operation-dto.builder';
+} from '../builders/operation.dto.builder';
 import { OperationModel } from '../models/operation.model';
 
 @Injectable()
@@ -49,9 +49,9 @@ export class OperationQuery extends TypeOrmCrudService<OperationModel> {
         const models = await this.getMany(query);
 
         if (isArray(models)) {
-            return models.map((o) => buildOperationDetailsDto(o));
+            return OperationsDtoBuilder.buildFromModel(models);
         } else {
-            const data = models.data.map((o) => buildOperationDetailsDto(o));
+            const data = OperationsDtoBuilder.buildFromModel(models.data);
             return {
                 ...models,
                 data,
@@ -72,7 +72,7 @@ export class OperationQuery extends TypeOrmCrudService<OperationModel> {
             return null;
         }
 
-        return OperationsDtoBuilder.toDetailsDto(model);
+        return OperationsDtoBuilder.buildFromModel(model);
     }
 
     async findManyBySpecificPeriod(params: {
@@ -111,7 +111,7 @@ export class OperationQuery extends TypeOrmCrudService<OperationModel> {
             return null;
         }
 
-        return buildOperationDetailsDto(model);
+        return OperationDtoBuilder.buildFromModel(model);
     }
 
     async findOneWithCurrentPosition(params: {
@@ -285,6 +285,40 @@ export class OperationQuery extends TypeOrmCrudService<OperationModel> {
             current,
             next,
         });
+    }
+
+    async findOneWithTrips(params: { operationId: string }): Promise<OperationWithTripsDto | null> {
+        const { operationId } = params;
+
+        const model = await this.operationRepository
+            .createQueryBuilder('operation')
+            .select('operation')
+            .leftJoinAndSelect('operation.calendar', 'calendar')
+            .leftJoinAndSelect(
+                'operation.tripOperationLists',
+                'tripOperationLists',
+            )
+            .leftJoinAndSelect('tripOperationLists.trip', 'trip')
+            .leftJoinAndSelect('trip.tripClass', 'tripClass')
+            .leftJoinAndSelect('tripOperationLists.startTime', 'startTime')
+            .leftJoinAndSelect('tripOperationLists.endTime', 'endTime')
+            .where('operation.id = :operationId', { operationId })
+            .orderBy('startTime.departureDays', 'ASC', 'NULLS LAST')
+            .addOrderBy('startTime.departureTime', 'ASC', 'NULLS LAST')
+            .addOrderBy('endTime.arrivalDays', 'ASC', 'NULLS LAST')
+            .addOrderBy('endTime.arrivalTime', 'ASC', 'NULLS LAST')
+            .getOne();
+
+        if (!model) {
+            return null;
+        }
+
+        const dto = OperationDtoBuilder.buildFromModel(model);
+
+        return {
+            operation: omit(dto, 'tripOperationLists') as OperationDetailsDto,
+            trips: dto.tripOperationLists ?? [],
+        };
     }
 
     async findAllOperationNumbers(calendarId: string): Promise<string[]> {

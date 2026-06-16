@@ -42,6 +42,6 @@ export class ServiceModel {
     @OneToMany(() => TripModel, (trip) => trip.service)
     readonly trips?: TripModel[];
 
-    @OneToMany((type) => TripClassModel, (tripClass) => tripClass.service)
+    @OneToMany((_type) => TripClassModel, (tripClass) => tripClass.service)
     readonly tripClasses?: TripClassModel[];
 }

@@ -7,6 +7,12 @@ import { FormationFindManyBySpecificPeriodParam } from './params/formation-find-
 export class FormationV3Service {
     constructor(private readonly formationQuery: FormationQuery) {}
 
+    findManyBySpecificDate(params: {
+        date: string;
+    }): Promise<FormationDetailsDto[]> {
+        return this.formationQuery.findManyBySpecificDate(params);
+    }
+
     findManyBySpecificPeriod(
         params: FormationFindManyBySpecificPeriodParam,
     ): Promise<FormationDetailsDto[]> {

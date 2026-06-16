@@ -1,4 +1,4 @@
-/// <reference path="./core/types/express.d.ts" />
+import './core/types/express.d';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import timezone from 'dayjs/plugin/timezone';

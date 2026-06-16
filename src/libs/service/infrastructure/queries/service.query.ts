@@ -5,14 +5,19 @@ import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { isArray } from 'lodash';
 import { DataSourceConfig } from 'src/core/configs/database.config';
 import { AgencyModel } from 'src/libs/agency/infrastructure/models/agency.model';
+import { RouteStationListModel } from 'src/libs/route/infrastructure/models/route-station-list.model';
+import { StationsDtoBuilder } from 'src/libs/station/infrastructure/builders/station.dto.builder';
+import { StationModel } from 'src/libs/station/infrastructure/models/station.model';
+import { StationDetailsDto } from 'src/libs/station/usecase/dtos/station-details.dto';
 import { EntityManager, Repository } from 'typeorm';
 import { ServiceDetailsDto } from '../../usecase/dtos/service-details.dto';
 import { ServiceRoutesDto } from '../../usecase/dtos/service-routes.dto';
 import { ServiceAgenciesDtoBuilder } from '../builders/service-agencies.dto.builder';
+import { ServiceRoutesDtoBuilder } from '../builders/service-routes.dto.builder';
 import {
-    buildServiceDetailsDto,
     ServiceDtoBuilder,
-} from '../builders/service-dto.builder';
+    ServicesDtoBuilder,
+} from '../builders/service.dto.builder';
 import { ServiceModel } from '../models/service.model';
 
 @Injectable()
@@ -34,9 +39,9 @@ export class ServiceQuery extends TypeOrmCrudService<ServiceModel> {
         const models = await this.getMany(query);
 
         if (isArray(models)) {
-            return models.map((o) => buildServiceDetailsDto(o));
+            return ServicesDtoBuilder.buildFromModel(models);
         } else {
-            const data = models.data.map((o) => buildServiceDetailsDto(o));
+            const data = ServicesDtoBuilder.buildFromModel(models.data);
             return {
                 ...models,
                 data,
@@ -51,7 +56,7 @@ export class ServiceQuery extends TypeOrmCrudService<ServiceModel> {
             return null;
         }
 
-        return buildServiceDetailsDto(model);
+        return ServiceDtoBuilder.buildFromModel(model);
     }
 
     async findOneWithAgencies(params: { serviceId: string }): Promise<any> {
@@ -107,6 +112,51 @@ export class ServiceQuery extends TypeOrmCrudService<ServiceModel> {
             return null;
         }
 
-        return ServiceDtoBuilder.toRoutesDto(model);
+        return ServiceRoutesDtoBuilder.buildFromModel(model);
+    }
+
+    async findManyByServiceName(params?: {
+        serviceName?: string;
+    }): Promise<ServiceDetailsDto[]> {
+        const { serviceName } = params ?? {};
+
+        let qb = this.serviceRepository
+            .createQueryBuilder('service')
+            .select('service');
+
+        if (serviceName) {
+            qb = qb.where('service.serviceName = :serviceName', { serviceName });
+        }
+
+        const models = await qb.getMany();
+        return ServicesDtoBuilder.buildFromModel(models);
+    }
+
+    async findOneStationsForService(params: {
+        serviceId: string;
+    }): Promise<StationDetailsDto[]> {
+        const { serviceId } = params;
+
+        const models = await this.entityManager
+            .getRepository(StationModel)
+            .createQueryBuilder('station')
+            .leftJoinAndSelect('station.routeStationLists', 'routeStationLists')
+            .leftJoinAndSelect('routeStationLists.route', 'route')
+            .leftJoinAndSelect('station.stops', 'stops')
+            .where((qb) => {
+                const subQuery = qb
+                    .subQuery()
+                    .select('rsl2.stationId')
+                    .from(RouteStationListModel, 'rsl2')
+                    .innerJoin('rsl2.route', 'route2')
+                    .innerJoin('route2.operatingSystems', 'os2')
+                    .where('os2.serviceId = :serviceId')
+                    .getQuery();
+                return `station.id IN ${subQuery}`;
+            })
+            .setParameter('serviceId', serviceId)
+            .getMany();
+
+        return StationsDtoBuilder.buildFromModel(models);
     }
 }

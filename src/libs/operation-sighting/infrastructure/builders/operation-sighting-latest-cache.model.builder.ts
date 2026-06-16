@@ -12,11 +12,14 @@ export const OperationSightingLatestCacheModelBuilder = {
             operationSightingId: domain.props.operationSightingId,
         };
     },
-    buildFromDomains: (
+} as const;
+
+export const OperationSightingLatestCachesModelBuilder = {
+    buildFromDomain: (
         domains: OperationSightingLatestCache[],
     ): OperationSightingLatestCacheModel[] => {
-        return domains.map(
-            OperationSightingLatestCacheModelBuilder.buildFromDomain,
+        return domains.map((domain) =>
+            OperationSightingLatestCacheModelBuilder.buildFromDomain(domain),
         );
     },
 } as const;

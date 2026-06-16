@@ -12,15 +12,21 @@ import { DataSource, EntityManager } from 'typeorm';
 import { OperationSightingLatestCache } from '../domain/operation-sighting-latest-cache.domain';
 import { OperationSightingLatestCacheCommand } from '../infrastructure/command/operation-sighting-latest-cache.command';
 import { OperationSightingCommand } from '../infrastructure/command/operation-sighting.command';
-import { OperationSightingLatestCacheQuery } from '../infrastructure/query/operation-sighting-latest-cache.query';
-import { OperationSightingQuery } from '../infrastructure/query/operation-sighting.query';
+import { OperationSightingLatestCacheQuery } from '../infrastructure/queries/operation-sighting-latest-cache.query';
+import { OperationSightingQuery } from '../infrastructure/queries/operation-sighting.query';
 import { OperationSightingDomainBuilder } from './builders/operation-sighting.domain.builder';
 import { InvalidateOperationSightingDto } from './dtos/invalidate-operation-sighting.dto';
-import { OperationSightingLatestCacheDto } from './dtos/operation-sighting-latest-cache.dto';
 import { OperationSightingDetailsDto } from './dtos/operation-sighting-details.dto';
 import { OperationSightingTimeCrossSectionDto } from './dtos/operation-sighting-time-cross-section.dto';
 import { PostOperationSightingDto } from './dtos/post-operation-sighting.dto';
 import { RestoreOperationSightingDto } from './dtos/restore-operation-sighting.dto';
+import {
+    CacheAction,
+    buildCirculationPath,
+    getGroupMembers,
+    operationNumberCirculateReverseMap,
+    selectMostRecentCandidateForOperationNumber,
+} from './operation-sighting.v3.circulation';
 
 @Injectable()
 export class OperationSightingV3Service {
@@ -341,7 +347,7 @@ export class OperationSightingV3Service {
             );
         }
 
-        const domain = OperationSightingDomainBuilder.buildByCreateDto({
+        const domain = OperationSightingDomainBuilder.buildFromCreateDto({
             id: undefined,
             formationId: formation.id,
             operationId: operation.id,
@@ -393,7 +399,7 @@ export class OperationSightingV3Service {
             });
         }
 
-        const domain = OperationSightingDomainBuilder.buildByDetailsDto(dto);
+        const domain = OperationSightingDomainBuilder.buildFromDetailsDto(dto);
 
         domain.invalidate(userId, reason);
 
@@ -479,7 +485,7 @@ export class OperationSightingV3Service {
             });
         }
 
-        const domain = OperationSightingDomainBuilder.buildByDetailsDto(dto);
+        const domain = OperationSightingDomainBuilder.buildFromDetailsDto(dto);
 
         domain.restore(userId, reason);
 
@@ -686,119 +692,3 @@ export class OperationSightingV3Service {
         return { calendar, operation };
     }
 }
-
-type CacheAction =
-    | { type: 'none' }
-    | {
-          type: 'upsert';
-          cacheId: string | undefined;
-          formationNumber: string;
-          operationNumber: string;
-      }
-    | {
-          type: 'rollback';
-          cacheId: string;
-          formationNumber: string;
-          operationNumber: string;
-          operationSightingId: string;
-      }
-    | { type: 'delete'; domain: OperationSightingLatestCache };
-
-function selectMostRecentCandidateForOperationNumber(
-    caches: OperationSightingLatestCacheDto[],
-    targetOperationNumber: string,
-    searchBaseDate: dayjs.Dayjs,
-): OperationSightingLatestCacheDto | null {
-    const candidates = caches.filter((row) => {
-        const daysAgo = searchBaseDate.diff(
-            getBaseDate(dayjs(row.sightingTime)),
-            'day',
-        );
-        return (
-            buildCirculationPath(row.operationNumber, daysAgo)
-                ?.expectedOperationNumber === targetOperationNumber
-        );
-    });
-    if (candidates.length === 0) return null;
-    return candidates.sort(
-        (a, b) =>
-            dayjs(b.sightingTime).valueOf() - dayjs(a.sightingTime).valueOf(),
-    )[0];
-}
-
-function buildCirculationPath(
-    startOperationNumber: string,
-    steps: number,
-): { path: string[]; expectedOperationNumber: string } | null {
-    const path: string[] = [];
-    let current = startOperationNumber;
-    for (let i = 0; i < steps; i++) {
-        const next = operationNumberCirculateMap.get(current);
-        if (!next) return null;
-        current = next;
-        path.push(current);
-    }
-    return { path, expectedOperationNumber: current };
-}
-
-function getGroupMembers(
-    start: string,
-    map: Map<string, string>,
-    maxSteps = 9,
-): string[] {
-    const members = new Set<string>([start]);
-    let current = start;
-    for (let i = 0; i < maxSteps; i++) {
-        const next = map.get(current);
-        if (!next || next === start) break;
-        members.add(next);
-        current = next;
-    }
-    return [...members];
-}
-
-const operationNumberCirculateMap = new Map([
-    // 1群
-    ['11', '12'],
-    ['12', '13'],
-    ['13', '14'],
-    ['14', '15'],
-    ['15', '16'],
-    ['16', '11'],
-    // 5群
-    ['51', '52'],
-    ['52', '53'],
-    ['53', '54'],
-    ['54', '55'],
-    ['55', '56'],
-    ['56', '57'],
-    ['57', '58'],
-    ['58', '59'],
-    ['59', '51'],
-    // 6群
-    ['61', '62'],
-    ['62', '63'],
-    ['63', '64'],
-    ['64', '65'],
-    ['65', '66'],
-    ['66', '67'],
-    ['67', '68'],
-    ['68', '69'],
-    ['69', '61'],
-    // 7群
-    ['70', '71'],
-    ['71', '72'],
-    ['72', '73'],
-    ['73', '70'],
-    // 9G群
-    ['91G', '92G'],
-    ['92G', '93G'],
-    ['93G', '94G'],
-    ['94G', '95G'],
-    ['95G', '91G'],
-]);
-const operationNumberCirculateReverseMap = new Map([
-    ...Array.from(operationNumberCirculateMap.entries()).map(
-        (arr) => arr.reverse() as [string, string],
-    ),
-]);

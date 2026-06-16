@@ -6,8 +6,8 @@ import { OperationSightingInvalidationModel } from './infrastructure/models/oper
 import { OperationSightingLatestCacheModel } from './infrastructure/models/operation-sighting-latest-cache.model';
 import { OperationSightingManagementLogModel } from './infrastructure/models/operation-sighting-management-log.model';
 import { OperationSightingModel } from './infrastructure/models/operation-sighting.model';
-import { OperationSightingLatestCacheQuery } from './infrastructure/query/operation-sighting-latest-cache.query';
-import { OperationSightingQuery } from './infrastructure/query/operation-sighting.query';
+import { OperationSightingLatestCacheQuery } from './infrastructure/queries/operation-sighting-latest-cache.query';
+import { OperationSightingQuery } from './infrastructure/queries/operation-sighting.query';
 
 @Module({
     imports: [

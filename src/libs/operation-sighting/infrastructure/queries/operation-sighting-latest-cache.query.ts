@@ -3,7 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import * as dayjs from 'dayjs';
 import { Repository } from 'typeorm';
 import { OperationSightingLatestCacheDto } from '../../usecase/dtos/operation-sighting-latest-cache.dto';
-import { OperationSightingLatestCacheDtoBuilder } from '../builders/operation-sighting-latest-cache-dto.builder';
+import {
+    OperationSightingLatestCacheDtoBuilder,
+    OperationSightingLatestCachesDtoBuilder,
+} from '../builders/operation-sighting-latest-cache.dto.builder';
 import { OperationSightingLatestCacheModel } from '../models/operation-sighting-latest-cache.model';
 
 @Injectable()
@@ -45,6 +48,6 @@ export class OperationSightingLatestCacheQuery {
             .andWhere('sighting.sightingTime <= :endTime', { endTime: endTime.toDate() })
             .getMany();
 
-        return OperationSightingLatestCacheDtoBuilder.buildFromModels(models);
+        return OperationSightingLatestCachesDtoBuilder.buildFromModel(models);
     }
 }

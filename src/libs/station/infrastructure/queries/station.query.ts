@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { isArray } from 'lodash';
 import { Repository } from 'typeorm';
 import { StationDetailsDto } from '../../usecase/dtos/station-details.dto';
-import { buildStationDetailsDto } from '../builders/station-dto.builder';
+import { StationDtoBuilder, StationsDtoBuilder } from '../builders/station.dto.builder';
 import { StationModel } from '../models/station.model';
 
 @Injectable()
@@ -25,9 +25,9 @@ export class StationQuery extends TypeOrmCrudService<StationModel> {
         const models = await this.getMany(query);
 
         if (isArray(models)) {
-            return models.map((o) => buildStationDetailsDto(o));
+            return StationsDtoBuilder.buildFromModel(models);
         } else {
-            const data = models.data.map((o) => buildStationDetailsDto(o));
+            const data = StationsDtoBuilder.buildFromModel(models.data);
             return {
                 ...models,
                 data,
@@ -42,6 +42,14 @@ export class StationQuery extends TypeOrmCrudService<StationModel> {
             return null;
         }
 
-        return buildStationDetailsDto(model);
+        return StationDtoBuilder.buildFromModel(model);
+    }
+
+    async findAll(): Promise<StationDetailsDto[]> {
+        const models = await this.stationRepository
+            .createQueryBuilder('station')
+            .select('station')
+            .getMany();
+        return StationsDtoBuilder.buildFromModel(models);
     }
 }

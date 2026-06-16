@@ -11,8 +11,10 @@
         "baseUrl": "./",
         "incremental": true,
         "resolveJsonModule": true,
-        "esModuleInterop": true
+        "esModuleInterop": true,
+        "skipLibCheck": true
     },
+    "exclude": ["db/backup/**", "db/oldSeedMigration/**", "db/seeds/**"],
     "ts-node": {
         "require": ["tsconfig-paths/register"]
     }

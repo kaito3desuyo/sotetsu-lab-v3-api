@@ -1,15 +1,10 @@
 import { plainToClass } from 'class-transformer';
 import { transformerOptions } from 'src/core/configs/transformer-options';
-import { RouteDetailsDto } from '../../usecase/dtos/route-details.dto';
 import { RouteStationsDto } from '../../usecase/dtos/route-stations.dto';
 import { RouteModel } from '../models/route.model';
 
-export function buildRouteDetailsDto(model: RouteModel): RouteDetailsDto {
-    return plainToClass(RouteDetailsDto, model, transformerOptions);
-}
-
-export const RouteDtoBuilder = {
-    toStationsDto: (model: RouteModel) => {
+export const RouteStationsDtoBuilder = {
+    buildFromModel: (model: RouteModel): RouteStationsDto => {
         const sortedStations = [...(model.routeStationLists ?? [])].sort(
             (a, b) => a.stationSequence - b.stationSequence,
         );

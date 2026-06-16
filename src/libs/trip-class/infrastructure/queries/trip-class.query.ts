@@ -5,10 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { isArray } from 'lodash';
 import { Repository } from 'typeorm';
 import { TripClassDetailsDto } from '../../usecase/dtos/trip-class-details.dto';
-import {
-    buildTripClassDetailsDto,
-    TripClassesDtoBuilder,
-} from '../builders/trip-class-dto.builder';
+import { TripClassesDtoBuilder } from '../builders/trip-class.dto.builder';
 import { TripClassModel } from '../models/trip-class.model';
 
 @Injectable()
@@ -20,9 +17,21 @@ export class TripClassQuery extends TypeOrmCrudService<TripClassModel> {
         super(tripClassRepository);
     }
 
-    async findMany(): Promise<TripClassDetailsDto[]> {
-        const models = await this.tripClassRepository.find();
-        return TripClassesDtoBuilder.toDetailsDtos(models);
+    async findMany(params?: {
+        serviceId?: string;
+    }): Promise<TripClassDetailsDto[]> {
+        const { serviceId } = params ?? {};
+
+        let qb = this.tripClassRepository
+            .createQueryBuilder('tripClass')
+            .select('tripClass');
+
+        if (serviceId) {
+            qb = qb.where('tripClass.service_id = :serviceId', { serviceId });
+        }
+
+        const models = await qb.getMany();
+        return TripClassesDtoBuilder.buildFromModel(models);
     }
 
     async findManyTripClasses(
@@ -33,9 +42,9 @@ export class TripClassQuery extends TypeOrmCrudService<TripClassModel> {
         const models = await this.getMany(query);
 
         if (isArray(models)) {
-            return models.map((o) => buildTripClassDetailsDto(o));
+            return TripClassesDtoBuilder.buildFromModel(models);
         } else {
-            const data = models.data.map((o) => buildTripClassDetailsDto(o));
+            const data = TripClassesDtoBuilder.buildFromModel(models.data);
             return {
                 ...models,
                 data,

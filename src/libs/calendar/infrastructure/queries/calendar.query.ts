@@ -19,9 +19,9 @@ import {
 } from 'typeorm';
 import { CalendarDetailsDto } from '../../usecase/dtos/calendar-details.dto';
 import {
-    buildCalendarDetailsDto,
     CalendarDtoBuilder,
-} from '../builders/calendar-dto.builder';
+    CalendarsDtoBuilder,
+} from '../builders/calendar.dto.builder';
 import { CalendarModel } from '../models/calendar.model';
 
 @Injectable()
@@ -41,9 +41,9 @@ export class CalendarQuery extends TypeOrmCrudService<CalendarModel> {
         const models = await this.getMany(query);
 
         if (isArray(models)) {
-            return models.map((o) => buildCalendarDetailsDto(o));
+            return CalendarsDtoBuilder.buildFromModel(models);
         } else {
-            const data = models.data.map((o) => buildCalendarDetailsDto(o));
+            const data = CalendarsDtoBuilder.buildFromModel(models.data);
             return {
                 ...models,
                 data,
@@ -58,7 +58,7 @@ export class CalendarQuery extends TypeOrmCrudService<CalendarModel> {
             return null;
         }
 
-        return buildCalendarDetailsDto(model);
+        return CalendarDtoBuilder.buildFromModel(model);
     }
 
     async findOneById(params: {
@@ -77,6 +77,28 @@ export class CalendarQuery extends TypeOrmCrudService<CalendarModel> {
         }
 
         return CalendarDtoBuilder.buildFromModel(model);
+    }
+
+    async findManyByServiceName(params: {
+        serviceName?: string;
+    }): Promise<CalendarDetailsDto[]> {
+        const { serviceName } = params;
+
+        let qb = this.calendarRepository
+            .createQueryBuilder('calendar')
+            .select('calendar')
+            .innerJoin('calendar.service', 'service')
+            .orderBy('calendar.startDate', 'ASC')
+            .addOrderBy('calendar.monday', 'DESC');
+
+        if (serviceName) {
+            qb = qb.where('service.service_name = :serviceName', {
+                serviceName,
+            });
+        }
+
+        const models = await qb.getMany();
+        return CalendarsDtoBuilder.buildFromModel(models);
     }
 
     async findOneBySpecificDate(params: {

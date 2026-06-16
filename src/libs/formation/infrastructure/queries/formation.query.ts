@@ -13,9 +13,9 @@ import {
 } from 'typeorm';
 import { FormationDetailsDto } from '../../usecase/dtos/formation-details.dto';
 import {
-    buildFormationDetailsDto,
     FormationDtoBuilder,
-} from '../builders/formation-dto.builder';
+    FormationsDtoBuilder,
+} from '../builders/formation.dto.builder';
 import { FormationModel } from '../models/formation.model';
 
 @Injectable()
@@ -52,14 +52,45 @@ export class FormationQuery extends TypeOrmCrudService<FormationModel> {
         );
 
         if (isArray(models)) {
-            return models.map((o) => buildFormationDetailsDto(o));
+            return FormationsDtoBuilder.buildFromModel(models);
         } else {
-            const data = models.data.map((o) => buildFormationDetailsDto(o));
+            const data = FormationsDtoBuilder.buildFromModel(models.data);
             return {
                 ...models,
                 data,
             };
         }
+    }
+
+    async findManyBySpecificDate(params: {
+        date: string;
+    }): Promise<FormationDetailsDto[]> {
+        const { date } = params;
+
+        const models = await this.formationRepository
+            .createQueryBuilder('formation')
+            .select('formation')
+            .leftJoinAndSelect('formation.vehicleFormations', 'vehicleFormations')
+            .leftJoinAndSelect('vehicleFormations.vehicle', 'vehicle')
+            .where(
+                '(formation.start_date <= :date OR formation.start_date IS NULL)',
+                { date },
+            )
+            .andWhere(
+                '(formation.end_date >= :date OR formation.end_date IS NULL)',
+                { date },
+            )
+            .orderBy(
+                "to_number(formation.vehicle_type, '9999999999999999')",
+                'ASC',
+            )
+            .addOrderBy(
+                "to_number(formation.formation_number, '9999999999999999')",
+                'ASC',
+            )
+            .getMany();
+
+        return FormationsDtoBuilder.buildFromModel(models);
     }
 
     async findManyBySpecificPeriod(params: {
@@ -86,7 +117,7 @@ export class FormationQuery extends TypeOrmCrudService<FormationModel> {
             relations: ['agency'],
         });
 
-        return result.map((model) => FormationDtoBuilder.buildFromModel(model));
+        return FormationsDtoBuilder.buildFromModel(result);
     }
 
     async findOneFormation(query: CrudRequest): Promise<FormationDetailsDto> {
@@ -96,7 +127,7 @@ export class FormationQuery extends TypeOrmCrudService<FormationModel> {
             return null;
         }
 
-        return buildFormationDetailsDto(model);
+        return FormationDtoBuilder.buildFromModel(model);
     }
 
     async findOneByAgencyIdAndFormationNumberAndDate(params: {

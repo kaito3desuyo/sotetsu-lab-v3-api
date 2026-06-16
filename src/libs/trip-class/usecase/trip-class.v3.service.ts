@@ -6,7 +6,7 @@ import { TripClassDetailsDto } from './dtos/trip-class-details.dto';
 export class TripClassV3Service {
     constructor(private readonly tripClassQuery: TripClassQuery) {}
 
-    findMany(): Promise<TripClassDetailsDto[]> {
-        return this.tripClassQuery.findMany();
+    findMany(params?: { serviceId?: string }): Promise<TripClassDetailsDto[]> {
+        return this.tripClassQuery.findMany(params);
     }
 }

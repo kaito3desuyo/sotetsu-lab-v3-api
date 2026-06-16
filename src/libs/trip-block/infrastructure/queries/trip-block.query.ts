@@ -111,4 +111,49 @@ export class TripBlockQuery extends TypeOrmCrudService<TripBlockModel> {
         });
         return TripBlockDtoBuilder.buildFromModel(model);
     }
+
+    async findManyByFilter(params: {
+        calendarId: string;
+        tripDirection: number;
+    }): Promise<TripBlockDetailsDto[]> {
+        const { calendarId, tripDirection } = params;
+        const models = await this.tripBlockRepository
+            .createQueryBuilder('tripBlock')
+            .select('tripBlock')
+            .innerJoin(
+                'tripBlock.trips',
+                'filterTrip',
+                'filterTrip.calendarId = :calendarId AND filterTrip.tripDirection = :tripDirection',
+                { calendarId, tripDirection },
+            )
+            .leftJoinAndSelect('tripBlock.trips', 'trips')
+            .leftJoinAndSelect('trips.times', 'times')
+            .leftJoinAndSelect('trips.tripOperationLists', 'tripOperationLists')
+            .leftJoinAndSelect('tripOperationLists.operation', 'operation')
+            .leftJoinAndSelect('trips.tripClass', 'tripClass')
+            .orderBy('times.departureDays', 'ASC', 'NULLS LAST')
+            .addOrderBy('times.departureTime', 'ASC', 'NULLS LAST')
+            .getMany();
+        return TripBlocksDtoBuilder.buildFromModel(models);
+    }
+
+    async findOneById(params: {
+        id: string;
+    }): Promise<TripBlockDetailsDto | null> {
+        const { id } = params;
+        const model = await this.tripBlockRepository
+            .createQueryBuilder('tripBlock')
+            .select('tripBlock')
+            .leftJoinAndSelect('tripBlock.trips', 'trips')
+            .leftJoinAndSelect('trips.times', 'times')
+            .leftJoinAndSelect('trips.tripOperationLists', 'tripOperationLists')
+            .leftJoinAndSelect('tripOperationLists.operation', 'operation')
+            .leftJoinAndSelect('trips.tripClass', 'tripClass')
+            .where('tripBlock.id = :id', { id })
+            .orderBy('times.departureDays', 'ASC', 'NULLS LAST')
+            .addOrderBy('times.departureTime', 'ASC', 'NULLS LAST')
+            .getOne();
+        if (!model) return null;
+        return TripBlockDtoBuilder.buildFromModel(model);
+    }
 }

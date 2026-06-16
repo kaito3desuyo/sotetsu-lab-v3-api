@@ -10,10 +10,24 @@ import { FormationFindManyBySpecificPeriodParam } from '../usecase/params/format
 export class FormationV3Controller {
     constructor(private readonly formationV3Service: FormationV3Service) {}
 
+    @Get('/as/of/:date')
+    async findManyBySpecificDate(
+        @Param('date') date: string,
+    ): Promise<FormationDetailsDto[]> {
+        const result = await this.formationV3Service.findManyBySpecificDate({
+            date,
+        });
+
+        return result;
+    }
+
     @Get('/from/:startDate/to/:endDate')
     async findManyBySpecificPeriod(
         @Param() params: FormationFindManyBySpecificPeriodParam,
     ): Promise<FormationDetailsDto[]> {
-        return this.formationV3Service.findManyBySpecificPeriod(params);
+        const result =
+            await this.formationV3Service.findManyBySpecificPeriod(params);
+
+        return result;
     }
 }

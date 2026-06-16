@@ -6,6 +6,12 @@ import { CalendarDetailsDto } from './dtos/calendar-details.dto';
 export class CalendarV3Service {
     constructor(private readonly calendarQuery: CalendarQuery) {}
 
+    findMany(params: {
+        serviceName?: string;
+    }): Promise<CalendarDetailsDto[]> {
+        return this.calendarQuery.findManyByServiceName(params);
+    }
+
     findOne(params: { id: string }): Promise<CalendarDetailsDto> {
         return this.calendarQuery.findOneById(params);
     }
