@@ -1,10 +1,10 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
-import { StationDetailsDto } from 'src/libs/station/usecase/dtos/station-details.dto';
 import { ServiceAgenciesDto } from '../usecase/dtos/service-agencies.dto';
 import { ServiceDetailsDto } from '../usecase/dtos/service-details.dto';
 import { ServiceRoutesDto } from '../usecase/dtos/service-routes.dto';
+import { ServiceStationsDto } from '../usecase/dtos/service-stations.dto';
 import { ServiceV3Service } from '../usecase/service.v3.service';
 
 @Controller()
@@ -24,7 +24,7 @@ export class ServiceV3Controller {
     @Get('/:id/stations')
     async findOneStations(
         @Param('id') serviceId: string,
-    ): Promise<StationDetailsDto[]> {
+    ): Promise<ServiceStationsDto> {
         const result = await this.serviceV3Service.findOneStations({
             serviceId,
         });

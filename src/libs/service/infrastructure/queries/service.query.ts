@@ -6,14 +6,14 @@ import { isArray } from 'lodash';
 import { DataSourceConfig } from 'src/core/configs/database.config';
 import { AgencyModel } from 'src/libs/agency/infrastructure/models/agency.model';
 import { RouteStationListModel } from 'src/libs/route/infrastructure/models/route-station-list.model';
-import { StationsDtoBuilder } from 'src/libs/station/infrastructure/builders/station.dto.builder';
 import { StationModel } from 'src/libs/station/infrastructure/models/station.model';
-import { StationDetailsDto } from 'src/libs/station/usecase/dtos/station-details.dto';
 import { EntityManager, Repository } from 'typeorm';
 import { ServiceDetailsDto } from '../../usecase/dtos/service-details.dto';
 import { ServiceRoutesDto } from '../../usecase/dtos/service-routes.dto';
+import { ServiceStationsDto } from '../../usecase/dtos/service-stations.dto';
 import { ServiceAgenciesDtoBuilder } from '../builders/service-agencies.dto.builder';
 import { ServiceRoutesDtoBuilder } from '../builders/service-routes.dto.builder';
+import { ServiceStationsDtoBuilder } from '../builders/service-stations.dto.builder';
 import {
     ServiceDtoBuilder,
     ServicesDtoBuilder,
@@ -134,10 +134,18 @@ export class ServiceQuery extends TypeOrmCrudService<ServiceModel> {
 
     async findOneStationsForService(params: {
         serviceId: string;
-    }): Promise<StationDetailsDto[]> {
+    }): Promise<ServiceStationsDto | null> {
         const { serviceId } = params;
 
-        const models = await this.entityManager
+        const service = await this.serviceRepository.findOne({
+            where: { id: serviceId },
+        });
+
+        if (!service) {
+            return null;
+        }
+
+        const stations = await this.entityManager
             .getRepository(StationModel)
             .createQueryBuilder('station')
             .leftJoinAndSelect('station.routeStationLists', 'routeStationLists')
@@ -157,6 +165,6 @@ export class ServiceQuery extends TypeOrmCrudService<ServiceModel> {
             .setParameter('serviceId', serviceId)
             .getMany();
 
-        return StationsDtoBuilder.buildFromModel(models);
+        return ServiceStationsDtoBuilder.buildFromModel({ service, stations });
     }
 }

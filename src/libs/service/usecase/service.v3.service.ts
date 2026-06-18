@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { StationDetailsDto } from 'src/libs/station/usecase/dtos/station-details.dto';
 import { ServiceQuery } from '../infrastructure/queries/service.query';
 import { ServiceDetailsDto } from './dtos/service-details.dto';
 import { ServiceRoutesDto } from './dtos/service-routes.dto';
+import { ServiceStationsDto } from './dtos/service-stations.dto';
 
 @Injectable()
 export class ServiceV3Service {
@@ -14,8 +14,17 @@ export class ServiceV3Service {
 
     async findOneStations(params: {
         serviceId: string;
-    }): Promise<StationDetailsDto[]> {
-        return this.serviceQuery.findOneStationsForService(params);
+    }): Promise<ServiceStationsDto> {
+        const result =
+            await this.serviceQuery.findOneStationsForService(params);
+
+        if (!result) {
+            throw new NotFoundException(
+                `Service with ID "${params.serviceId}" not found.`,
+            );
+        }
+
+        return result;
     }
 
     async findOneWithAgencies(params: { serviceId: string }): Promise<any> {
