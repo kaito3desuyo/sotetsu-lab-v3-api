@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import { isArray, mergeWith } from 'lodash';
 import { crudReqMergeCustomizer } from 'src/core/utils/merge-customizer';
-import { Between, IsNull, Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { OperationSightingDetailsDto } from '../../usecase/dtos/operation-sighting-details.dto';
 import {
     OperationSightingDtoBuilder,
@@ -228,18 +228,29 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
             .second(0)
             .millisecond(0);
 
-        const model = await this.operationSightingRepository.find({
-            relations: ['invalidations', 'managementLogs'],
-            where: {
-                sightingTime: Between(startDate.toDate(), endDate.toDate()),
-                invalidations: includeInvalidated
-                    ? undefined
-                    : { id: IsNull() },
-            },
-            order: {
-                sightingTime: 'ASC',
-            },
-        });
+        let qb = this.operationSightingRepository
+            .createQueryBuilder('sighting')
+            .leftJoinAndSelect('sighting.invalidations', 'invalidations')
+            .leftJoinAndSelect('sighting.managementLogs', 'managementLogs')
+            .where('sighting.sightingTime BETWEEN :start AND :end', {
+                start: startDate.toISOString(),
+                end: endDate.toISOString(),
+            })
+            .orderBy('sighting.sightingTime', 'ASC');
+
+        if (!includeInvalidated) {
+            qb = qb.andWhere((qb) => {
+                const sub = qb
+                    .subQuery()
+                    .select('1')
+                    .from(OperationSightingInvalidationModel, 'inv')
+                    .where('inv.operationSightingId = sighting.id')
+                    .getQuery();
+                return `NOT EXISTS ${sub}`;
+            });
+        }
+
+        const model = await qb.getMany();
 
         return OperationSightingsDtoBuilder.buildFromModel(model);
     }
@@ -259,10 +270,14 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
     async findOneById(params: {
         id: string;
     }): Promise<OperationSightingDetailsDto | null> {
-        const model = await this.operationSightingRepository.findOne({
-            where: { id: params.id },
-            relations: ['invalidations', 'managementLogs', 'operation', 'formation'],
-        });
+        const model = await this.operationSightingRepository
+            .createQueryBuilder('sighting')
+            .leftJoinAndSelect('sighting.invalidations', 'invalidations')
+            .leftJoinAndSelect('sighting.managementLogs', 'managementLogs')
+            .leftJoinAndSelect('sighting.operation', 'operation')
+            .leftJoinAndSelect('sighting.formation', 'formation')
+            .where('sighting.id = :id', { id: params.id })
+            .getOne();
 
         if (!model) {
             return null;

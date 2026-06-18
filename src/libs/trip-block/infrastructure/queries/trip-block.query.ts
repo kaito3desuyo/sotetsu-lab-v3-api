@@ -3,7 +3,7 @@ import { TypeOrmCrudService } from '@dataui/crud-typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { isArray } from 'lodash';
-import { FindManyOptions, FindOneOptions, Repository } from 'typeorm';
+import { FindManyOptions, Repository } from 'typeorm';
 import { TripBlockDetailsDto } from '../../usecase/dtos/trip-block-details.dto';
 import {
     TripBlockDtoBuilder,
@@ -64,51 +64,29 @@ export class TripBlockQuery extends TypeOrmCrudService<TripBlockModel> {
 
     async findOneTripBlockByTripBlockId(
         tripBlockId: string,
-        options?: FindOneOptions<TripBlockModel>,
     ): Promise<TripBlockDetailsDto> {
-        const model = await this.tripBlockRepository.findOne({
-            ...options,
-            join: {
-                alias: 'tripBlock',
-                leftJoinAndSelect: {
-                    trips: 'tripBlock.trips',
-                    times: 'trips.times',
-                    tripOperationLists: 'trips.tripOperationLists',
-                },
-            },
-            where: {
-                id: tripBlockId,
-            },
-            // (qb: SelectQueryBuilder<TripBlockModel>) => {
-            //     qb.where('tripBlock.id = :tripBlockId', { tripBlockId });
-            // },
-        });
+        const model = await this.tripBlockRepository
+            .createQueryBuilder('tripBlock')
+            .select('tripBlock')
+            .leftJoinAndSelect('tripBlock.trips', 'trips')
+            .leftJoinAndSelect('trips.times', 'times')
+            .leftJoinAndSelect('trips.tripOperationLists', 'tripOperationLists')
+            .where('tripBlock.id = :tripBlockId', { tripBlockId })
+            .getOne();
         return TripBlockDtoBuilder.buildFromModel(model);
     }
 
     async findOneTripBlockByTripId(
         tripId: string,
-        options?: FindOneOptions<TripBlockModel>,
     ): Promise<TripBlockDetailsDto> {
-        const model = await this.tripBlockRepository.findOne({
-            ...options,
-            join: {
-                alias: 'tripBlock',
-                leftJoinAndSelect: {
-                    trips: 'tripBlock.trips',
-                    times: 'trips.times',
-                    tripOperationLists: 'trips.tripOperationLists',
-                },
-            },
-            where: {
-                trips: {
-                    id: tripId,
-                },
-            },
-            // (qb: SelectQueryBuilder<TripBlockModel>) => {
-            //     qb.where('trips.id = :tripId', { tripId });
-            // },
-        });
+        const model = await this.tripBlockRepository
+            .createQueryBuilder('tripBlock')
+            .select('tripBlock')
+            .leftJoinAndSelect('tripBlock.trips', 'trips')
+            .leftJoinAndSelect('trips.times', 'times')
+            .leftJoinAndSelect('trips.tripOperationLists', 'tripOperationLists')
+            .where('trips.id = :tripId', { tripId })
+            .getOne();
         return TripBlockDtoBuilder.buildFromModel(model);
     }
 

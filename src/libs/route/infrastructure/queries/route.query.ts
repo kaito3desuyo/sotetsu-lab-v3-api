@@ -53,10 +53,13 @@ export class RouteQuery extends TypeOrmCrudService<RouteModel> {
     }): Promise<RouteStationsDto | null> {
         const { routeId } = params;
 
-        const model = await this.routeRepository.findOne({
-            where: { id: routeId },
-            relations: ['routeStationLists', 'routeStationLists.station'],
-        });
+        const model = await this.routeRepository
+            .createQueryBuilder('route')
+            .select('route')
+            .leftJoinAndSelect('route.routeStationLists', 'routeStationLists')
+            .leftJoinAndSelect('routeStationLists.station', 'station')
+            .where('route.id = :routeId', { routeId })
+            .getOne();
 
         if (!model) {
             return null;

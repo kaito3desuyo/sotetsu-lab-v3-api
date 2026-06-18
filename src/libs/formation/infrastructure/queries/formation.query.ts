@@ -4,13 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import { isArray } from 'lodash';
-import {
-    IsNull,
-    LessThanOrEqual,
-    MoreThanOrEqual,
-    Or,
-    Repository,
-} from 'typeorm';
+import { Repository } from 'typeorm';
 import { FormationDetailsDto } from '../../usecase/dtos/formation-details.dto';
 import {
     FormationDtoBuilder,
@@ -103,19 +97,19 @@ export class FormationQuery extends TypeOrmCrudService<FormationModel> {
         const startDateInstance = dayjs(startDate, format);
         const endDateInstance = dayjs(endDate, format);
 
-        const result = await this.formationRepository.find({
-            where: {
-                startDate: Or(
-                    LessThanOrEqual(endDateInstance.format(format)),
-                    IsNull(),
-                ),
-                endDate: Or(
-                    MoreThanOrEqual(startDateInstance.format(format)),
-                    IsNull(),
-                ),
-            },
-            relations: ['agency'],
-        });
+        const result = await this.formationRepository
+            .createQueryBuilder('formation')
+            .select('formation')
+            .leftJoinAndSelect('formation.agency', 'agency')
+            .where(
+                '(formation.start_date <= :endDate OR formation.start_date IS NULL)',
+                { endDate: endDateInstance.format(format) },
+            )
+            .andWhere(
+                '(formation.end_date >= :startDate OR formation.end_date IS NULL)',
+                { startDate: startDateInstance.format(format) },
+            )
+            .getMany();
 
         return FormationsDtoBuilder.buildFromModel(result);
     }

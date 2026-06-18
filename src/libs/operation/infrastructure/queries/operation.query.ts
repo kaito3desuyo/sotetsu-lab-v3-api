@@ -5,14 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import omit from 'just-omit';
 import { isArray } from 'lodash';
-import {
-    FindManyOptions,
-    IsNull,
-    LessThanOrEqual,
-    MoreThanOrEqual,
-    Or,
-    Repository,
-} from 'typeorm';
+import { FindManyOptions, Repository } from 'typeorm';
 import { OperationCurrentPositionDto } from '../../usecase/dtos/operation-current-position.dto';
 import { OperationDetailsDto } from '../../usecase/dtos/operation-details.dto';
 import { OperationWithTripsDto } from '../../usecase/dtos/operation-with-trips.dto';
@@ -64,15 +57,13 @@ export class OperationQuery extends TypeOrmCrudService<OperationModel> {
     }): Promise<OperationDetailsDto[]> {
         const { calendarId } = params;
 
-        const model = await this.operationRepository.find({
-            where: { calendarId },
-        });
+        const models = await this.operationRepository
+            .createQueryBuilder('operation')
+            .select('operation')
+            .where('operation.calendar_id = :calendarId', { calendarId })
+            .getMany();
 
-        if (!model) {
-            return null;
-        }
-
-        return OperationsDtoBuilder.buildFromModel(model);
+        return OperationsDtoBuilder.buildFromModel(models);
     }
 
     async findManyBySpecificPeriod(params: {
@@ -85,21 +76,19 @@ export class OperationQuery extends TypeOrmCrudService<OperationModel> {
         const startDate = dayjs(start, format);
         const endDate = dayjs(end, format);
 
-        const result = await this.operationRepository.find({
-            relations: ['calendar'],
-            where: {
-                calendar: {
-                    startDate: Or(
-                        LessThanOrEqual(endDate.format(format)),
-                        IsNull(),
-                    ),
-                    endDate: Or(
-                        MoreThanOrEqual(startDate.format(format)),
-                        IsNull(),
-                    ),
-                },
-            },
-        });
+        const result = await this.operationRepository
+            .createQueryBuilder('operation')
+            .select('operation')
+            .leftJoinAndSelect('operation.calendar', 'calendar')
+            .where(
+                '(calendar.start_date <= :endDate OR calendar.start_date IS NULL)',
+                { endDate: endDate.format(format) },
+            )
+            .andWhere(
+                '(calendar.end_date >= :startDate OR calendar.end_date IS NULL)',
+                { startDate: startDate.format(format) },
+            )
+            .getMany();
 
         return OperationsDtoBuilder.buildFromModel(result);
     }

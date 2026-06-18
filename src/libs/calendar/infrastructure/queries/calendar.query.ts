@@ -10,13 +10,7 @@ import {
     isNewYear,
     isSpecialCalendarAvailable,
 } from 'src/core/utils/day-of-week';
-import {
-    IsNull,
-    LessThanOrEqual,
-    MoreThanOrEqual,
-    Or,
-    Repository,
-} from 'typeorm';
+import { Repository } from 'typeorm';
 import { CalendarDetailsDto } from '../../usecase/dtos/calendar-details.dto';
 import {
     CalendarDtoBuilder,
@@ -110,28 +104,30 @@ export class CalendarQuery extends TypeOrmCrudService<CalendarModel> {
         const dateInstance = dayjs(date, format);
         const dateString = dateInstance.format(format);
 
-        const result = await this.calendarRepository.findOne({
-            where: {
-                startDate: Or(LessThanOrEqual(dateString), IsNull()),
-                endDate: Or(MoreThanOrEqual(dateString), IsNull()),
-                ...(isSpecialCalendarAvailable(dateString, format)
-                    ? {
-                          sunday: false,
-                          monday: false,
-                          tuesday: false,
-                          wednesday: false,
-                          thursday: false,
-                          friday: false,
-                          saturday: false,
-                      }
-                    : isHoliday(dateString, format) ||
-                        isNewYear(dateString, format)
-                      ? { sunday: true }
-                      : {
-                            [getDayOfWeek(dateString, format)]: true,
-                        }),
-            },
-        });
+        const qb = this.calendarRepository
+            .createQueryBuilder('calendar')
+            .select('calendar')
+            .where(
+                '(calendar.start_date <= :date OR calendar.start_date IS NULL)',
+                { date: dateString },
+            )
+            .andWhere(
+                '(calendar.end_date >= :date OR calendar.end_date IS NULL)',
+                { date: dateString },
+            );
+
+        if (isSpecialCalendarAvailable(dateString, format)) {
+            qb.andWhere(
+                'calendar.sunday = false AND calendar.monday = false AND calendar.tuesday = false AND calendar.wednesday = false AND calendar.thursday = false AND calendar.friday = false AND calendar.saturday = false',
+            );
+        } else if (isHoliday(dateString, format) || isNewYear(dateString, format)) {
+            qb.andWhere('calendar.sunday = true');
+        } else {
+            const dayOfWeek = getDayOfWeek(dateString, format);
+            qb.andWhere(`calendar.${dayOfWeek} = true`);
+        }
+
+        const result = await qb.getOne();
 
         return CalendarDtoBuilder.buildFromModel(result);
     }

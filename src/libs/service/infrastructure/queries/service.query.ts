@@ -103,10 +103,13 @@ export class ServiceQuery extends TypeOrmCrudService<ServiceModel> {
     }): Promise<ServiceRoutesDto | null> {
         const { serviceId } = params;
 
-        const model = await this.serviceRepository.findOne({
-            where: { id: serviceId },
-            relations: ['operatingSystems', 'operatingSystems.route'],
-        });
+        const model = await this.serviceRepository
+            .createQueryBuilder('service')
+            .select('service')
+            .leftJoinAndSelect('service.operatingSystems', 'operatingSystems')
+            .leftJoinAndSelect('operatingSystems.route', 'route')
+            .where('service.id = :serviceId', { serviceId })
+            .getOne();
 
         if (!model) {
             return null;
