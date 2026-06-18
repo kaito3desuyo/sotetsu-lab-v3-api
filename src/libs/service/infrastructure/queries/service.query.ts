@@ -143,6 +143,11 @@ export class ServiceQuery extends TypeOrmCrudService<ServiceModel> {
             .leftJoinAndSelect('operatingSystems.route', 'route')
             .leftJoinAndSelect('route.routeStationLists', 'routeStationLists')
             .leftJoinAndSelect('routeStationLists.station', 'station')
+            .leftJoinAndSelect(
+                'station.routeStationLists',
+                'stationRouteStationLists',
+            )
+            .leftJoinAndSelect('stationRouteStationLists.route', 'stationRoute')
             .leftJoinAndSelect('station.stops', 'stops')
             .leftJoinAndSelect(
                 'operatingSystems.startRouteStationList',
