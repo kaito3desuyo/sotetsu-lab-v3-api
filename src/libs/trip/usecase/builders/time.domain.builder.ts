@@ -5,7 +5,7 @@ import { ReplaceTimeDto } from '../dtos/replace-time.dto';
 import { TimeDetailsDto } from '../dtos/time-details.dto';
 
 export const TimeDomainBuilder = {
-    buildByDetailsDto: (dto: TimeDetailsDto): Time => {
+    buildFromDetailsDto: (dto: TimeDetailsDto): Time => {
         return Time.create(
             {
                 tripId: dto.tripId,
@@ -22,7 +22,7 @@ export const TimeDomainBuilder = {
             new UniqueEntityId(dto.id),
         );
     },
-    buildByCreateDto: (dto: CreateTimeDto): Time => {
+    buildFromCreateDto: (dto: CreateTimeDto): Time => {
         return Time.create({
             tripId: dto.tripId ?? '',
             stationId: dto.stationId,
@@ -36,7 +36,7 @@ export const TimeDomainBuilder = {
             departureTime: dto.departureTime,
         });
     },
-    buildByReplaceDto: (dto: ReplaceTimeDto): Time => {
+    buildFromReplaceDto: (dto: ReplaceTimeDto): Time => {
         return Time.create(
             {
                 tripId: dto.tripId ?? '',
@@ -56,19 +56,19 @@ export const TimeDomainBuilder = {
 } as const;
 
 export const TimesDomainBuilder = {
-    buildByDetailsDto: (dtos: TimeDetailsDto[]): Times => {
+    buildFromDetailsDto: (dtos: TimeDetailsDto[]): Times => {
         return Times.create(
-            dtos.map((o) => TimeDomainBuilder.buildByDetailsDto(o)),
+            dtos.map((o) => TimeDomainBuilder.buildFromDetailsDto(o)),
         );
     },
-    buildByCreateDto: (dtos: CreateTimeDto[]): Times => {
+    buildFromCreateDto: (dtos: CreateTimeDto[]): Times => {
         return Times.create(
-            dtos.map((o) => TimeDomainBuilder.buildByCreateDto(o)),
+            dtos.map((o) => TimeDomainBuilder.buildFromCreateDto(o)),
         );
     },
-    buildByReplaceDto: (dtos: ReplaceTimeDto[]): Times => {
+    buildFromReplaceDto: (dtos: ReplaceTimeDto[]): Times => {
         return Times.create(
-            dtos.map((o) => TimeDomainBuilder.buildByReplaceDto(o)),
+            dtos.map((o) => TimeDomainBuilder.buildFromReplaceDto(o)),
         );
     },
 } as const;

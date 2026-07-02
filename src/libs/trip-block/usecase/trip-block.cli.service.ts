@@ -52,7 +52,7 @@ export class TripBlockCliService {
             }),
         };
 
-        const tripBlocks = TripBlocksDomainBuilder.buildByCreateDto(
+        const tripBlocks = TripBlocksDomainBuilder.buildFromCreateDto(
             tripBlockDtos as CreateTripBlockDto[],
         );
 

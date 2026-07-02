@@ -4,9 +4,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { isArray } from 'lodash';
 import { Repository } from 'typeorm';
-import { AgencyDetailsDto } from '../../usecase/dtos/agency-details.dto';
-import { buildAgencyDetailsDto } from '../builders/agency-dto.builder';
+import { AgenciesDtoBuilder, AgencyDtoBuilder } from '../builders/agency.dto.builder';
 import { AgencyModel } from '../models/agency.model';
+import { AgencyDetailsDto } from '../../usecase/dtos/agency-details.dto';
 
 @Injectable()
 export class AgencyQuery extends TypeOrmCrudService<AgencyModel> {
@@ -23,9 +23,9 @@ export class AgencyQuery extends TypeOrmCrudService<AgencyModel> {
         const models = await this.getMany(query);
 
         if (isArray(models)) {
-            return models.map((o) => buildAgencyDetailsDto(o));
+            return AgenciesDtoBuilder.buildFromModel(models);
         } else {
-            const data = models.data.map((o) => buildAgencyDetailsDto(o));
+            const data = AgenciesDtoBuilder.buildFromModel(models.data);
             return {
                 ...models,
                 data,
@@ -40,6 +40,14 @@ export class AgencyQuery extends TypeOrmCrudService<AgencyModel> {
             return null;
         }
 
-        return buildAgencyDetailsDto(model);
+        return AgencyDtoBuilder.buildFromModel(model);
+    }
+
+    async findAll(): Promise<AgencyDetailsDto[]> {
+        const models = await this.agencyRepository
+            .createQueryBuilder('agency')
+            .select('agency')
+            .getMany();
+        return AgenciesDtoBuilder.buildFromModel(models);
     }
 }

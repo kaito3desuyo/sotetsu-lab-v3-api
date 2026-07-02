@@ -9,7 +9,7 @@ import { CreateOperationSightingDto } from '../dtos/create-operation-sighting.dt
 import { OperationSightingDetailsDto } from '../dtos/operation-sighting-details.dto';
 
 export const OperationSightingDomainBuilder = {
-    buildByDetailsDto: (
+    buildFromDetailsDto: (
         dto: OperationSightingDetailsDto,
     ): OperationSighting => {
         return OperationSighting.create(
@@ -50,7 +50,7 @@ export const OperationSightingDomainBuilder = {
             new UniqueEntityId(dto.operationSightingId),
         );
     },
-    buildByCreateDto: (dto: CreateOperationSightingDto): OperationSighting => {
+    buildFromCreateDto: (dto: CreateOperationSightingDto): OperationSighting => {
         return OperationSighting.create({
             formationId: dto.formationId,
             operationId: dto.operationId,

@@ -16,10 +16,14 @@ export const OperationSightingLatestCacheDtoBuilder = {
             transformerOptions,
         );
     },
+} as const;
 
-    buildFromModels: (
+export const OperationSightingLatestCachesDtoBuilder = {
+    buildFromModel: (
         models: OperationSightingLatestCacheModel[],
     ): OperationSightingLatestCacheDto[] => {
-        return models.map(OperationSightingLatestCacheDtoBuilder.buildFromModel);
+        return models.map((model) =>
+            OperationSightingLatestCacheDtoBuilder.buildFromModel(model),
+        );
     },
 } as const;

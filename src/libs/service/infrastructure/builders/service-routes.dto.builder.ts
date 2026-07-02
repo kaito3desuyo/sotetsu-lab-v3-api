@@ -1,16 +1,10 @@
 import { plainToClass } from 'class-transformer';
 import { transformerOptions } from 'src/core/configs/transformer-options';
-import { ServiceDetailsDto } from '../../usecase/dtos/service-details.dto';
 import { ServiceRoutesDto } from '../../usecase/dtos/service-routes.dto';
 import { ServiceModel } from '../models/service.model';
 
-export function buildServiceDetailsDto(model: ServiceModel): ServiceDetailsDto {
-    return plainToClass(ServiceDetailsDto, model, transformerOptions);
-}
-
-export const ServiceDtoBuilder = {
-    toRoutesDto: (model: ServiceModel) => {
-        // operating_systemsをsequence順にソートして、routesを構築
+export const ServiceRoutesDtoBuilder = {
+    buildFromModel: (model: ServiceModel): ServiceRoutesDto => {
         const sortedOperatingSystems = [...(model.operatingSystems ?? [])].sort(
             (a, b) => a.sequence - b.sequence,
         );

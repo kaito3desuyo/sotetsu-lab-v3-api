@@ -37,7 +37,7 @@ export class TripBlockV2Service {
         query: CrudRequest,
         dtos: CreateTripBlockDto[],
     ): Promise<TripBlockDetailsDto[]> {
-        const domains = TripBlocksDomainBuilder.buildByCreateDto(dtos);
+        const domains = TripBlocksDomainBuilder.buildFromCreateDto(dtos);
         const result = await this.tripBlockCommand.createManyTripBlocks(
             query,
             domains,
@@ -49,7 +49,7 @@ export class TripBlockV2Service {
         query: CrudRequest,
         dto: ReplaceTripBlockDto,
     ): Promise<TripBlockDetailsDto> {
-        const domain = TripBlockDomainBuilder.buildByReplaceDto(dto);
+        const domain = TripBlockDomainBuilder.buildFromReplaceDto(dto);
         const result = await this.tripBlockCommand.replaceOneTripBlock(
             query,
             domain,
@@ -73,8 +73,8 @@ export class TripBlockV2Service {
         }
 
         const tripBlock = {
-            from: TripBlockDomainBuilder.buildByDetailsDto(tripBlockDto.from),
-            to: TripBlockDomainBuilder.buildByDetailsDto(tripBlockDto.to),
+            from: TripBlockDomainBuilder.buildFromDetailsDto(tripBlockDto.from),
+            to: TripBlockDomainBuilder.buildFromDetailsDto(tripBlockDto.to),
         };
 
         const trip = tripBlock.from.getTripByTripId(dto.tripId);
@@ -107,7 +107,7 @@ export class TripBlockV2Service {
         }
 
         const tripBlock =
-            TripBlockDomainBuilder.buildByDetailsDto(tripBlockDto);
+            TripBlockDomainBuilder.buildFromDetailsDto(tripBlockDto);
 
         const trip = tripBlock.getTripByTripId(dto.tripId);
 

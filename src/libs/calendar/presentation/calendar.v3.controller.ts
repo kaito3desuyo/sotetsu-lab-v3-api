@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
 import { CalendarV3Service } from '../usecase/calendar.v3.service';
@@ -8,6 +8,15 @@ import { CalendarDetailsDto } from '../usecase/dtos/calendar-details.dto';
 @UseGuards(AuthGuard, RBACGuard)
 export class CalendarV3Controller {
     constructor(private readonly calendarV3Service: CalendarV3Service) {}
+
+    @Get('/')
+    async findMany(
+        @Query('serviceName') serviceName?: string,
+    ): Promise<CalendarDetailsDto[]> {
+        const result = await this.calendarV3Service.findMany({ serviceName });
+
+        return result;
+    }
 
     @Get('/as/of/:date')
     async findOneBySpecificDate(
@@ -20,8 +29,10 @@ export class CalendarV3Controller {
         return result;
     }
 
-    @Get(':id')
+    @Get('/:id')
     async findOne(@Param('id') id: string): Promise<CalendarDetailsDto> {
-        return this.calendarV3Service.findOne({ id });
+        const result = await this.calendarV3Service.findOne({ id });
+
+        return result;
     }
 }

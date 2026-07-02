@@ -3,11 +3,11 @@ import { Trip, Trips } from '../../domain/trip.domain';
 import { CreateTripDto } from '../dtos/create-trip.dto';
 import { ReplaceTripDto } from '../dtos/replace-trip.dto';
 import { TimesDomainBuilder } from './time.domain.builder';
-import { TripOperationListsDomainBulder } from './trip-operation-list.domain.builder';
+import { TripOperationListsDomainBuilder } from './trip-operation-list.domain.builder';
 import { TripDetailsDto } from '../dtos/trip-details.dto';
 
 export const TripDomainBuilder = {
-    buildByDetailsDto: (dto: TripDetailsDto): Trip => {
+    buildFromDetailsDto: (dto: TripDetailsDto): Trip => {
         return Trip.create(
             {
                 serviceId: dto.serviceId,
@@ -20,15 +20,15 @@ export const TripDomainBuilder = {
                 depotOut: dto.depotOut,
                 calendarId: dto.calendarId,
                 extraCalendarId: dto.extraCalendarId,
-                times: TimesDomainBuilder.buildByDetailsDto(dto.times),
-                tripOperationLists: TripOperationListsDomainBulder.buildByDetailsDto(
+                times: TimesDomainBuilder.buildFromDetailsDto(dto.times),
+                tripOperationLists: TripOperationListsDomainBuilder.buildFromDetailsDto(
                     dto.tripOperationLists,
                 ),
             },
             new UniqueEntityId(dto.id),
         );
     },
-    buildByCreateDto: (dto: CreateTripDto): Trip => {
+    buildFromCreateDto: (dto: CreateTripDto): Trip => {
         return Trip.create({
             serviceId: dto.serviceId,
             tripNumber: dto.tripNumber,
@@ -40,13 +40,13 @@ export const TripDomainBuilder = {
             depotOut: dto.depotOut,
             calendarId: dto.calendarId,
             extraCalendarId: dto.extraCalendarId,
-            times: TimesDomainBuilder.buildByCreateDto(dto.times),
-            tripOperationLists: TripOperationListsDomainBulder.buildByCreateDto(
+            times: TimesDomainBuilder.buildFromCreateDto(dto.times),
+            tripOperationLists: TripOperationListsDomainBuilder.buildFromCreateDto(
                 dto.tripOperationLists,
             ),
         });
     },
-    buildByReplaceDto: (dto: ReplaceTripDto): Trip => {
+    buildFromReplaceDto: (dto: ReplaceTripDto): Trip => {
         return Trip.create(
             {
                 serviceId: dto.serviceId,
@@ -59,30 +59,30 @@ export const TripDomainBuilder = {
                 depotOut: dto.depotOut,
                 calendarId: dto.calendarId,
                 extraCalendarId: dto.extraCalendarId,
-                times: TimesDomainBuilder.buildByReplaceDto(dto.times),
-                tripOperationLists: TripOperationListsDomainBulder.buildByReplaceDto(
+                times: TimesDomainBuilder.buildFromReplaceDto(dto.times),
+                tripOperationLists: TripOperationListsDomainBuilder.buildFromReplaceDto(
                     dto.tripOperationLists,
                 ),
             },
             new UniqueEntityId(dto.id),
         );
     },
-};
+} as const;
 
 export const TripsDomainBuilder = {
-    buildByDetailsDto: (dtos: TripDetailsDto[]): Trips => {
+    buildFromDetailsDto: (dtos: TripDetailsDto[]): Trips => {
         return Trips.create(
-            dtos.map((o) => TripDomainBuilder.buildByDetailsDto(o)),
+            dtos.map((o) => TripDomainBuilder.buildFromDetailsDto(o)),
         );
     },
-    buildByCreateDto: (dtos: CreateTripDto[]): Trips => {
+    buildFromCreateDto: (dtos: CreateTripDto[]): Trips => {
         return Trips.create(
-            dtos.map((o) => TripDomainBuilder.buildByCreateDto(o)),
+            dtos.map((o) => TripDomainBuilder.buildFromCreateDto(o)),
         );
     },
-    buildByReplaceDto: (dtos: ReplaceTripDto[]): Trips => {
+    buildFromReplaceDto: (dtos: ReplaceTripDto[]): Trips => {
         return Trips.create(
-            dtos.map((o) => TripDomainBuilder.buildByReplaceDto(o)),
+            dtos.map((o) => TripDomainBuilder.buildFromReplaceDto(o)),
         );
     },
 } as const;

@@ -5,12 +5,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import { isArray, mergeWith } from 'lodash';
 import { crudReqMergeCustomizer } from 'src/core/utils/merge-customizer';
-import { Between, IsNull, Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { OperationSightingDetailsDto } from '../../usecase/dtos/operation-sighting-details.dto';
 import {
-    buildOperationSightingDetailsDto,
     OperationSightingDtoBuilder,
-} from '../builders/operation-sighting-dto.builder';
+    OperationSightingsDtoBuilder,
+} from '../builders/operation-sighting.dto.builder';
 import { OperationSightingInvalidationModel } from '../models/operation-sighting-invalidation.model';
 import { OperationSightingModel } from '../models/operation-sighting.model';
 
@@ -32,11 +32,9 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
         const models = await this.getMany(query);
 
         if (isArray(models)) {
-            return models.map((o) => buildOperationSightingDetailsDto(o));
+            return OperationSightingsDtoBuilder.buildFromModel(models);
         } else {
-            const data = models.data.map((o) =>
-                buildOperationSightingDetailsDto(o),
-            );
+            const data = OperationSightingsDtoBuilder.buildFromModel(models.data);
             return {
                 ...models,
                 data,
@@ -117,11 +115,9 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
         );
 
         if (isArray(models)) {
-            return models.map((o) => buildOperationSightingDetailsDto(o));
+            return OperationSightingsDtoBuilder.buildFromModel(models);
         } else {
-            const data = models.data.map((o) =>
-                buildOperationSightingDetailsDto(o),
-            );
+            const data = OperationSightingsDtoBuilder.buildFromModel(models.data);
             return {
                 ...models,
                 data,
@@ -202,11 +198,9 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
         );
 
         if (isArray(models)) {
-            return models.map((o) => buildOperationSightingDetailsDto(o));
+            return OperationSightingsDtoBuilder.buildFromModel(models);
         } else {
-            const data = models.data.map((o) =>
-                buildOperationSightingDetailsDto(o),
-            );
+            const data = OperationSightingsDtoBuilder.buildFromModel(models.data);
             return {
                 ...models,
                 data,
@@ -234,20 +228,31 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
             .second(0)
             .millisecond(0);
 
-        const model = await this.operationSightingRepository.find({
-            relations: ['invalidations', 'managementLogs'],
-            where: {
-                sightingTime: Between(startDate.toDate(), endDate.toDate()),
-                invalidations: includeInvalidated
-                    ? undefined
-                    : { id: IsNull() },
-            },
-            order: {
-                sightingTime: 'ASC',
-            },
-        });
+        let qb = this.operationSightingRepository
+            .createQueryBuilder('sighting')
+            .leftJoinAndSelect('sighting.invalidations', 'invalidations')
+            .leftJoinAndSelect('sighting.managementLogs', 'managementLogs')
+            .where('sighting.sightingTime BETWEEN :start AND :end', {
+                start: startDate.toISOString(),
+                end: endDate.toISOString(),
+            })
+            .orderBy('sighting.sightingTime', 'ASC');
 
-        return OperationSightingDtoBuilder.buildFromModels(model);
+        if (!includeInvalidated) {
+            qb = qb.andWhere((qb) => {
+                const sub = qb
+                    .subQuery()
+                    .select('1')
+                    .from(OperationSightingInvalidationModel, 'inv')
+                    .where('inv.operationSightingId = sighting.id')
+                    .getQuery();
+                return `NOT EXISTS ${sub}`;
+            });
+        }
+
+        const model = await qb.getMany();
+
+        return OperationSightingsDtoBuilder.buildFromModel(model);
     }
 
     async findOneOperationSighting(
@@ -259,16 +264,20 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
             return null;
         }
 
-        return buildOperationSightingDetailsDto(model);
+        return OperationSightingDtoBuilder.buildFromModel(model);
     }
 
     async findOneById(params: {
         id: string;
     }): Promise<OperationSightingDetailsDto | null> {
-        const model = await this.operationSightingRepository.findOne({
-            where: { id: params.id },
-            relations: ['invalidations', 'managementLogs', 'operation', 'formation'],
-        });
+        const model = await this.operationSightingRepository
+            .createQueryBuilder('sighting')
+            .leftJoinAndSelect('sighting.invalidations', 'invalidations')
+            .leftJoinAndSelect('sighting.managementLogs', 'managementLogs')
+            .leftJoinAndSelect('sighting.operation', 'operation')
+            .leftJoinAndSelect('sighting.formation', 'formation')
+            .where('sighting.id = :id', { id: params.id })
+            .getOne();
 
         if (!model) {
             return null;
@@ -297,7 +306,7 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
 
         if (!result) return null;
 
-        return buildOperationSightingDetailsDto(result);
+        return OperationSightingDtoBuilder.buildFromModel(result);
     }
 
     async findOneLatestByOperationNumber(params: {
@@ -394,7 +403,7 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
 
         if (!result) return null;
 
-        return buildOperationSightingDetailsDto(result);
+        return OperationSightingDtoBuilder.buildFromModel(result);
     }
 
     async findOneLatestByOperationNumberAndSightingTimeRange(params: {
@@ -455,7 +464,7 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
 
         if (!result) return null;
 
-        return buildOperationSightingDetailsDto(result);
+        return OperationSightingDtoBuilder.buildFromModel(result);
     }
 
     async findOneLatestByFormationNumber(params: {
@@ -552,7 +561,7 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
 
         if (!result) return null;
 
-        return buildOperationSightingDetailsDto(result);
+        return OperationSightingDtoBuilder.buildFromModel(result);
     }
 
     async findOneLatestByFormationNumberAndSightingTimeRange(params: {
@@ -613,6 +622,6 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
             .addOrderBy('"s"."updated_at"', 'DESC')
             .getMany();
 
-        return OperationSightingDtoBuilder.buildFromModels(models);
+        return OperationSightingsDtoBuilder.buildFromModel(models);
     }
 }

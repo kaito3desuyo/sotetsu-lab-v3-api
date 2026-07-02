@@ -1,8 +1,10 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
 import { ServiceAgenciesDto } from '../usecase/dtos/service-agencies.dto';
+import { ServiceDetailsDto } from '../usecase/dtos/service-details.dto';
 import { ServiceRoutesDto } from '../usecase/dtos/service-routes.dto';
+import { ServiceStationsDto } from '../usecase/dtos/service-stations.dto';
 import { ServiceV3Service } from '../usecase/service.v3.service';
 
 @Controller()
@@ -10,17 +12,45 @@ import { ServiceV3Service } from '../usecase/service.v3.service';
 export class ServiceV3Controller {
     constructor(private readonly serviceV3Service: ServiceV3Service) {}
 
+    @Get('/')
+    async findMany(
+        @Query('serviceName') serviceName?: string,
+    ): Promise<ServiceDetailsDto[]> {
+        const result = await this.serviceV3Service.findMany({ serviceName });
+
+        return result;
+    }
+
+    @Get('/:id/stations')
+    async findOneStations(
+        @Param('id') serviceId: string,
+    ): Promise<ServiceStationsDto> {
+        const result = await this.serviceV3Service.findOneStations({
+            serviceId,
+        });
+
+        return result;
+    }
+
     @Get('/:id/agencies')
     async findOneServiceWithAgencies(
         @Param('id') serviceId: string,
     ): Promise<ServiceAgenciesDto> {
-        return this.serviceV3Service.findOneWithAgencies({ serviceId });
+        const result = await this.serviceV3Service.findOneWithAgencies({
+            serviceId,
+        });
+
+        return result;
     }
 
     @Get('/:id/routes')
     async findOneServiceWithRoutes(
         @Param('id') serviceId: string,
     ): Promise<ServiceRoutesDto> {
-        return this.serviceV3Service.findOneWithRoutes({ serviceId });
+        const result = await this.serviceV3Service.findOneWithRoutes({
+            serviceId,
+        });
+
+        return result;
     }
 }

@@ -1,7 +1,7 @@
 import { CrudRequest, GetManyDefaultResponse } from '@dataui/crud';
 import { Injectable } from '@nestjs/common';
 import { OperationSightingCommand } from '../infrastructure/command/operation-sighting.command';
-import { OperationSightingQuery } from '../infrastructure/query/operation-sighting.query';
+import { OperationSightingQuery } from '../infrastructure/queries/operation-sighting.query';
 import { OperationSightingDomainBuilder } from './builders/operation-sighting.domain.builder';
 import { CreateOperationSightingDto } from './dtos/create-operation-sighting.dto';
 import { OperationSightingDetailsDto } from './dtos/operation-sighting-details.dto';
@@ -52,7 +52,7 @@ export class OperationSightingV2Service {
         query: CrudRequest,
         dto: CreateOperationSightingDto,
     ): Promise<OperationSightingDetailsDto> {
-        const domain = OperationSightingDomainBuilder.buildByCreateDto(dto);
+        const domain = OperationSightingDomainBuilder.buildFromCreateDto(dto);
         const result =
             await this.operationSightingCommand.createOneOperationSighting(
                 query,

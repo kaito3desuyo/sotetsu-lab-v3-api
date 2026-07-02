@@ -13,7 +13,7 @@ export class CopyTripBlocksCommand extends CommandRunner {
 
     async run(
         [fromCalendarId, toCalendarId]: [string, string],
-        options?: Record<string, any>,
+        _options?: Record<string, any>,
     ): Promise<void> {
         await this.tripBlockCliService.copyTripBlocks(
             fromCalendarId,

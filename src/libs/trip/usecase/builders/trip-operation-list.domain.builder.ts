@@ -8,7 +8,7 @@ import { ReplaceTripOperationListDto } from '../dtos/replace-trip-operation-list
 import { TripOperationListDetailsDto } from '../dtos/trip-operation-list-details.dto';
 
 export const TripOperationListDomainBuilder = {
-    buildByDetailsDto: (
+    buildFromDetailsDto: (
         dto: TripOperationListDetailsDto,
     ): TripOperationList => {
         return TripOperationList.create(
@@ -23,7 +23,7 @@ export const TripOperationListDomainBuilder = {
             new UniqueEntityId(dto.id),
         );
     },
-    buildByCreateDto: (dto: CreateTripOperationListDto): TripOperationList => {
+    buildFromCreateDto: (dto: CreateTripOperationListDto): TripOperationList => {
         return TripOperationList.create({
             tripId: dto.tripId ?? '',
             operationId: dto.operationId,
@@ -33,7 +33,7 @@ export const TripOperationListDomainBuilder = {
             endTimeId: dto.endTimeId ?? '',
         });
     },
-    buildByReplaceDto: (
+    buildFromReplaceDto: (
         dto: ReplaceTripOperationListDto,
     ): TripOperationList => {
         return TripOperationList.create(
@@ -50,29 +50,29 @@ export const TripOperationListDomainBuilder = {
     },
 } as const;
 
-export const TripOperationListsDomainBulder = {
-    buildByDetailsDto: (
+export const TripOperationListsDomainBuilder = {
+    buildFromDetailsDto: (
         dtos: TripOperationListDetailsDto[],
     ): TripOperationLists => {
         return TripOperationLists.create(
             dtos.map((o) =>
-                TripOperationListDomainBuilder.buildByDetailsDto(o),
+                TripOperationListDomainBuilder.buildFromDetailsDto(o),
             ),
         );
     },
-    buildByCreateDto: (
+    buildFromCreateDto: (
         dtos: CreateTripOperationListDto[],
     ): TripOperationLists => {
         return TripOperationLists.create(
-            dtos.map((o) => TripOperationListDomainBuilder.buildByCreateDto(o)),
+            dtos.map((o) => TripOperationListDomainBuilder.buildFromCreateDto(o)),
         );
     },
-    buildByReplaceDto: (
+    buildFromReplaceDto: (
         dtos: ReplaceTripOperationListDto[],
     ): TripOperationLists => {
         return TripOperationLists.create(
             dtos.map((o) =>
-                TripOperationListDomainBuilder.buildByReplaceDto(o),
+                TripOperationListDomainBuilder.buildFromReplaceDto(o),
             ),
         );
     },

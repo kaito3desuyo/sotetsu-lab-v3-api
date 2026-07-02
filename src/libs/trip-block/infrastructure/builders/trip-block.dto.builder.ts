@@ -13,4 +13,4 @@ export const TripBlocksDtoBuilder = {
     buildFromModel: (models: TripBlockModel[]): TripBlockDetailsDto[] => {
         return models.map((model) => TripBlockDtoBuilder.buildFromModel(model));
     },
-};
+} as const;

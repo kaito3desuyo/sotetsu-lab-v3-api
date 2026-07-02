@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 import { OperationSightingLatestCache } from '../../domain/operation-sighting-latest-cache.domain';
-import { OperationSightingLatestCacheModelBuilder } from '../builders/operation-sighting-latest-cache.model.builder';
+import {
+    OperationSightingLatestCacheModelBuilder,
+    OperationSightingLatestCachesModelBuilder,
+} from '../builders/operation-sighting-latest-cache.model.builder';
 import { OperationSightingLatestCacheModel } from '../models/operation-sighting-latest-cache.model';
 
 @Injectable()
@@ -32,7 +35,7 @@ export class OperationSightingLatestCacheCommand {
             ? manager.getRepository(OperationSightingLatestCacheModel)
             : this.repository;
         await repo.save(
-            OperationSightingLatestCacheModelBuilder.buildFromDomains(domains),
+            OperationSightingLatestCachesModelBuilder.buildFromDomain(domains),
         );
     }
 

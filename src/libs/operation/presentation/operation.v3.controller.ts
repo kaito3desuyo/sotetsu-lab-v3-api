@@ -3,6 +3,7 @@ import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
 import { OperationCurrentPositionDto } from '../usecase/dtos/operation-current-position.dto';
 import { OperationDetailsDto } from '../usecase/dtos/operation-details.dto';
+import { OperationWithTripsDto } from '../usecase/dtos/operation-with-trips.dto';
 import { OperationV3Service } from '../usecase/operation.v3.service';
 
 @Controller()
@@ -29,6 +30,17 @@ export class OperationV3Controller {
         const result = await this.operationV3Service.findManyBySpecificPeriod({
             start,
             end,
+        });
+
+        return result;
+    }
+
+    @Get('/:id/trips')
+    async findOneWithTrips(
+        @Param('id') operationId: string,
+    ): Promise<OperationWithTripsDto> {
+        const result = await this.operationV3Service.findOneWithTrips({
+            operationId,
         });
 
         return result;
