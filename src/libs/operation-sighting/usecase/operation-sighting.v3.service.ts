@@ -8,6 +8,11 @@ import { getBaseDate } from 'src/core/utils/datetime';
 import { CalendarQuery } from 'src/libs/calendar/infrastructure/queries/calendar.query';
 import { FormationQuery } from 'src/libs/formation/infrastructure/queries/formation.query';
 import { OperationQuery } from 'src/libs/operation/infrastructure/queries/operation.query';
+import {
+    buildCirculationPath,
+    getGroupMembers,
+    operationNumberCirculateReverseMap,
+} from 'src/libs/operation/usecase/operation-number-circulation';
 import { DataSource, EntityManager } from 'typeorm';
 import { OperationSightingLatestCache } from '../domain/operation-sighting-latest-cache.domain';
 import { OperationSightingLatestCacheCommand } from '../infrastructure/command/operation-sighting-latest-cache.command';
@@ -22,9 +27,6 @@ import { PostOperationSightingDto } from './dtos/post-operation-sighting.dto';
 import { RestoreOperationSightingDto } from './dtos/restore-operation-sighting.dto';
 import {
     CacheAction,
-    buildCirculationPath,
-    getGroupMembers,
-    operationNumberCirculateReverseMap,
     selectMostRecentCandidateForOperationNumber,
 } from './operation-sighting.v3.circulation';
 

@@ -3,6 +3,7 @@ import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
 import { OperationCurrentPositionDto } from '../usecase/dtos/operation-current-position.dto';
 import { OperationDetailsDto } from '../usecase/dtos/operation-details.dto';
+import { OperationGroupDto } from '../usecase/dtos/operation-group.dto';
 import { OperationWithTripsDto } from '../usecase/dtos/operation-with-trips.dto';
 import { OperationV3Service } from '../usecase/operation.v3.service';
 
@@ -10,6 +11,11 @@ import { OperationV3Service } from '../usecase/operation.v3.service';
 @UseGuards(AuthGuard, RBACGuard)
 export class OperationV3Controller {
     constructor(private readonly operationV3Service: OperationV3Service) {}
+
+    @Get('/groups')
+    findAllGroups(): OperationGroupDto[] {
+        return this.operationV3Service.findAllGroups();
+    }
 
     @Get('/calendar/:calendarId')
     async findManyByCalendarId(

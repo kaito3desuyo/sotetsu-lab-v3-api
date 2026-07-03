@@ -2,11 +2,17 @@ import { Injectable } from '@nestjs/common';
 import { OperationQuery } from '../infrastructure/queries/operation.query';
 import { OperationCurrentPositionDto } from './dtos/operation-current-position.dto';
 import { OperationDetailsDto } from './dtos/operation-details.dto';
+import { OperationGroupDto } from './dtos/operation-group.dto';
 import { OperationWithTripsDto } from './dtos/operation-with-trips.dto';
+import { getOperationGroups } from './operation-number-circulation';
 
 @Injectable()
 export class OperationV3Service {
     constructor(private readonly operationQuery: OperationQuery) {}
+
+    findAllGroups(): OperationGroupDto[] {
+        return getOperationGroups();
+    }
 
     findManyByCalendarId(params: {
         calendarId: string;

@@ -104,4 +104,21 @@ describe('OperationV3Service', () => {
             expect(result).toBe(expected);
         });
     });
+
+    describe('findAllGroups', () => {
+        it('operationNumberCirculateMap を群ごとに集約して返す', () => {
+            const result = service.findAllGroups();
+
+            expect(result).toContainEqual({
+                groupName: '1群',
+                operationNumbers: ['11', '12', '13', '14', '15', '16'],
+            });
+            expect(result).toContainEqual({
+                groupName: '9G群',
+                operationNumbers: ['91G', '92G', '93G', '94G', '95G'],
+            });
+            // 群の数だけ返る（1群/5群/6群/7群/9G群 の 5 群）
+            expect(result).toHaveLength(5);
+        });
+    });
 });
