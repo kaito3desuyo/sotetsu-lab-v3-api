@@ -1,7 +1,6 @@
 import dayjs from 'dayjs';
 import { getDayOfWeek, newYearDays, specialCalendarDays } from 'src/core/utils/day-of-week';
 import { CalendarDateExceptionType } from '../models/calendar-date.model';
-import { CalendarQuery } from '../queries/calendar.query';
 import { resolveCalendarIdBySpecificDate } from '../queries/resolve-calendar-id-by-specific-date';
 import {
     buildHolidayCalendarDateRows,
@@ -11,36 +10,19 @@ import {
 } from '../seeds/build-holiday-calendar-date-rows';
 import { buildNewYearCalendarDateRows } from '../seeds/build-newyear-calendar-date-rows';
 import { buildSpecialCalendarDateRows } from '../seeds/build-special-calendar-date-rows';
+import { legacyDayOfWeekMatcher } from './legacy-day-of-week-matcher';
 
 const DATE_FORMAT = 'YYYY-MM-DD';
 
-type LegacyDayOfWeekMatcher = (calendar: CalendarValidityRow) => boolean;
-type BuildLegacyDayOfWeekMatcherFn = (
-    dateString: string,
-    format: string,
-) => LegacyDayOfWeekMatcher;
-
 /**
- * CalendarQuery.buildDayOfWeekMatcher（private）をプロトタイプ経由で直接参照する。
+ * 旧経路（撤去済みの3ハードコード判定を凍結した legacyDayOfWeekMatcher）による
+ * 「その日そのカレンダーが運行するか」。calendar_dates は一切参照しない
+ * （v3 CalendarQuery が calendar_dates 単独判定へ撤去される前に行っていた判定と
+ * 同一：有効期間チェック + buildDayOfWeekMatcher の3分岐）。
  *
- * 当該メソッドは `this` を一切参照しない純粋関数（isSpecialCalendarAvailable /
- * isHoliday・isNewYear / getDayOfWeek の3分岐のみで構成される）ため、ロジックを
- * 複製せず本番コードをそのまま呼び出すことで検証の信頼性を担保する
- * （＝旧経路の判定はこの1関数への参照のみで、独自の再実装は行っていない）。
- *
- * 引数の calendar は sunday〜saturday の真偽値プロパティにしかアクセスされないため、
- * CalendarModel の代わりに CalendarValidityRow を渡しても本番と同一の結果になる。
- */
-const legacyBuildDayOfWeekMatcher = (
-    CalendarQuery.prototype as unknown as {
-        buildDayOfWeekMatcher: BuildLegacyDayOfWeekMatcherFn;
-    }
-).buildDayOfWeekMatcher;
-
-/**
- * 旧経路（撤去予定の3ハードコード判定）による「その日そのカレンダーが運行するか」。
- * calendar_dates は一切参照しない（現行 CalendarQuery が calendar_dates 移行前に
- * 行っていた判定と同一：有効期間チェック + buildDayOfWeekMatcher）。
+ * legacyDayOfWeekMatcher は撤去前の CalendarQuery.buildDayOfWeekMatcher の実装を
+ * そのまま切り出した凍結コピーであり、撤去後もこのゲートが「真の旧ロジック」に
+ * 対して検証し続けられるようにするための唯一の参照元。
  */
 export function legacyJudgment(params: {
     date: string;
@@ -52,7 +34,7 @@ export function legacyJudgment(params: {
         return false;
     }
 
-    const matcher = legacyBuildDayOfWeekMatcher(date, DATE_FORMAT);
+    const matcher = legacyDayOfWeekMatcher(date, DATE_FORMAT);
     return matcher(calendar);
 }
 

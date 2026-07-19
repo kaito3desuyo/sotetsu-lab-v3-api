@@ -4,12 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import { isArray } from 'lodash';
-import {
-    getDayOfWeek,
-    isHoliday,
-    isNewYear,
-    isSpecialCalendarAvailable,
-} from 'src/core/utils/day-of-week';
+import { getDayOfWeek } from 'src/core/utils/day-of-week';
 import { Repository } from 'typeorm';
 import { CalendarDetailsDto } from '../../usecase/dtos/calendar-details.dto';
 import {
@@ -158,29 +153,19 @@ export class CalendarQuery extends TypeOrmCrudService<CalendarModel> {
     }
 
     /**
-     * 曜日規則（isSpecialCalendarAvailable / isHoliday・isNewYear / 通常の曜日）を
-     * 判定するマッチャーを構築する。specialCalendarDays 関数はシード移行後に撤去予定
-     * （今回は撤去しない。calendar_dates が空の間は従来と完全一致させるため）。
+     * 素の曜日規則のみを判定するマッチャーを構築する。
+     *
+     * 祝日・年末年始・特別ダイヤといった曜日規則の例外は、
+     * calendar_dates（type1=追加/type2=除外）と resolveCalendarIdBySpecificDate の
+     * 合成に一本化済みのため、ここではハードコードした例外分岐を持たない
+     * （T7.3 でハードコード判定を撤去。旧3分岐ロジックは
+     * verification/legacy-day-of-week-matcher.ts に凍結し、等価ゲートの
+     * 旧経路参照としてのみ残している）。
      */
     private buildDayOfWeekMatcher(
         dateString: string,
         format: string,
     ): (calendar: CalendarModel) => boolean {
-        if (isSpecialCalendarAvailable(dateString, format)) {
-            return (calendar) =>
-                !calendar.sunday &&
-                !calendar.monday &&
-                !calendar.tuesday &&
-                !calendar.wednesday &&
-                !calendar.thursday &&
-                !calendar.friday &&
-                !calendar.saturday;
-        }
-
-        if (isHoliday(dateString, format) || isNewYear(dateString, format)) {
-            return (calendar) => calendar.sunday === true;
-        }
-
         const dayOfWeek = getDayOfWeek(dateString, format);
         return (calendar) =>
             (calendar as unknown as Record<string, boolean>)[dayOfWeek] === true;
