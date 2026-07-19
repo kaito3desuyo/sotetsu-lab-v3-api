@@ -68,6 +68,14 @@ async function main(): Promise<void> {
     const holidays = parseSyukujitsuCsvBuffer(csvBuffer);
     console.log(`祝日 CSV から ${holidays.length} 件の祝日を読み込みました`);
 
+    // 同一日に複数の祝日名が存在する場合は先勝ちとする
+    const holidayNameByDate: Record<string, string> = {};
+    for (const holiday of holidays) {
+        if (holidayNameByDate[holiday.date] === undefined) {
+            holidayNameByDate[holiday.date] = holiday.name;
+        }
+    }
+
     await AppDataSource.initialize();
 
     try {
@@ -81,6 +89,7 @@ async function main(): Promise<void> {
             calendars: calendarValidityRows,
             from,
             to,
+            holidayNameByDate,
         });
 
         console.log(

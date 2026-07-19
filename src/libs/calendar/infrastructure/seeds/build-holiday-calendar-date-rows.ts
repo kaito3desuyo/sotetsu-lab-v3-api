@@ -41,8 +41,10 @@ export function buildHolidayCalendarDateRows(params: {
     calendars: CalendarValidityRow[];
     from?: string;
     to?: string;
+    /** date（YYYY-MM-DD）→ 祝日名。未指定・該当なしの場合は memo が '祝日' にフォールバックする */
+    holidayNameByDate?: Record<string, string>;
 }): CalendarDateSeedRow[] {
-    const { holidayDates, calendars, from, to } = params;
+    const { holidayDates, calendars, from, to, holidayNameByDate } = params;
 
     const filteredHolidays = holidayDates.filter((date) => {
         if (from && date < from) return false;
@@ -53,6 +55,8 @@ export function buildHolidayCalendarDateRows(params: {
     const rows: CalendarDateSeedRow[] = [];
 
     for (const date of filteredHolidays) {
+        const memo = holidayNameByDate?.[date] ?? '祝日';
+
         for (const calendar of calendars) {
             if (!isWithinCalendarValidity(calendar, date)) continue;
 
@@ -61,7 +65,7 @@ export function buildHolidayCalendarDateRows(params: {
                     calendarId: calendar.id,
                     date,
                     exceptionType: CALENDAR_DATE_EXCEPTION_TYPE_ADDED,
-                    memo: '祝日',
+                    memo,
                 });
             } else if (
                 calendar.monday ||
@@ -74,7 +78,7 @@ export function buildHolidayCalendarDateRows(params: {
                     calendarId: calendar.id,
                     date,
                     exceptionType: CALENDAR_DATE_EXCEPTION_TYPE_REMOVED,
-                    memo: '祝日',
+                    memo,
                 });
             }
         }

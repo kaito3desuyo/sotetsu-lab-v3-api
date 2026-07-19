@@ -122,6 +122,65 @@ describe('buildHolidayCalendarDateRows', () => {
         ]);
     });
 
+    it('holidayNameByDate 指定時は memo に具体的な祝日名が入る（type1・type2 両方）', () => {
+        const rows = buildHolidayCalendarDateRows({
+            holidayDates: ['2024-01-01'],
+            calendars: [
+                makeCalendar({ id: 'holiday-calendar', sunday: true }),
+                makeCalendar({ id: 'weekday-calendar', monday: true }),
+            ],
+            holidayNameByDate: { '2024-01-01': '元日' },
+        });
+
+        expect(rows).toEqual([
+            {
+                calendarId: 'holiday-calendar',
+                date: '2024-01-01',
+                exceptionType: CALENDAR_DATE_EXCEPTION_TYPE_ADDED,
+                memo: '元日',
+            },
+            {
+                calendarId: 'weekday-calendar',
+                date: '2024-01-01',
+                exceptionType: CALENDAR_DATE_EXCEPTION_TYPE_REMOVED,
+                memo: '元日',
+            },
+        ]);
+    });
+
+    it('holidayNameByDate に対象日の名前がない場合は memo が「祝日」にフォールバックする', () => {
+        const rows = buildHolidayCalendarDateRows({
+            holidayDates: ['2024-01-01'],
+            calendars: [makeCalendar({ id: 'holiday-calendar', sunday: true })],
+            holidayNameByDate: { '2024-02-11': '建国記念の日' },
+        });
+
+        expect(rows).toEqual([
+            {
+                calendarId: 'holiday-calendar',
+                date: '2024-01-01',
+                exceptionType: CALENDAR_DATE_EXCEPTION_TYPE_ADDED,
+                memo: '祝日',
+            },
+        ]);
+    });
+
+    it('holidayNameByDate 未指定時は memo が「祝日」のまま（非破壊フォールバック）', () => {
+        const rows = buildHolidayCalendarDateRows({
+            holidayDates: ['2024-01-01'],
+            calendars: [makeCalendar({ id: 'holiday-calendar', sunday: true })],
+        });
+
+        expect(rows).toEqual([
+            {
+                calendarId: 'holiday-calendar',
+                date: '2024-01-01',
+                exceptionType: CALENDAR_DATE_EXCEPTION_TYPE_ADDED,
+                memo: '祝日',
+            },
+        ]);
+    });
+
     it('冪等キー（calendarId, date）が同一祝日・同一カレンダーで重複しない', () => {
         const rows = buildHolidayCalendarDateRows({
             holidayDates: ['2024-01-01'],
