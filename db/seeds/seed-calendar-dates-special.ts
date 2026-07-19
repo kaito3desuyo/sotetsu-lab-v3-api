@@ -3,7 +3,10 @@ import { specialCalendarDays } from '../../src/core/utils/day-of-week';
 import { AppDataSource } from '../../src/core/utils/data-source';
 import { CalendarModel } from '../../src/libs/calendar/infrastructure/models/calendar.model';
 import { CalendarDateModel } from '../../src/libs/calendar/infrastructure/models/calendar-date.model';
-import { CalendarValidityRow } from '../../src/libs/calendar/infrastructure/seeds/build-holiday-calendar-date-rows';
+import {
+    CalendarDateSeedRow,
+    CalendarValidityRow,
+} from '../../src/libs/calendar/infrastructure/seeds/build-holiday-calendar-date-rows';
 import { buildSpecialCalendarDateRows } from '../../src/libs/calendar/infrastructure/seeds/build-special-calendar-date-rows';
 
 const INSERT_CHUNK_SIZE = 500;
@@ -79,12 +82,7 @@ async function main(): Promise<void> {
 }
 
 async function insertCalendarDateRows(
-    rows: Array<{
-        calendarId: string;
-        date: string;
-        exceptionType: number;
-        memo: string;
-    }>,
+    rows: CalendarDateSeedRow[],
 ): Promise<void> {
     for (let i = 0; i < rows.length; i += INSERT_CHUNK_SIZE) {
         const chunk = rows.slice(i, i + INSERT_CHUNK_SIZE);

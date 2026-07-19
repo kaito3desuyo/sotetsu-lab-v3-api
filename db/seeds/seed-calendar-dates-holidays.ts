@@ -6,6 +6,7 @@ import { CalendarModel } from '../../src/libs/calendar/infrastructure/models/cal
 import { CalendarDateModel } from '../../src/libs/calendar/infrastructure/models/calendar-date.model';
 import {
     buildHolidayCalendarDateRows,
+    CalendarDateSeedRow,
     CalendarValidityRow,
 } from '../../src/libs/calendar/infrastructure/seeds/build-holiday-calendar-date-rows';
 import { parseSyukujitsuCsvBuffer } from '../../src/libs/calendar/infrastructure/seeds/parse-syukujitsu-csv';
@@ -107,12 +108,7 @@ async function main(): Promise<void> {
 }
 
 async function insertCalendarDateRows(
-    rows: Array<{
-        calendarId: string;
-        date: string;
-        exceptionType: number;
-        memo: string;
-    }>,
+    rows: CalendarDateSeedRow[],
 ): Promise<void> {
     for (let i = 0; i < rows.length; i += INSERT_CHUNK_SIZE) {
         const chunk = rows.slice(i, i + INSERT_CHUNK_SIZE);
