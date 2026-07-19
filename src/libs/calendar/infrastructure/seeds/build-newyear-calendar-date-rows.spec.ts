@@ -149,6 +149,42 @@ describe('buildNewYearCalendarDateRows', () => {
         ]);
     });
 
+    it('endDate が無期限のカレンダーは、他カレンダーの過去の有限 endDate に引っ張られず現在年+1まで年末年始行を生成する（回帰検体）', () => {
+        // 実DBの再現: 2022-03-12 に切り替わった現行カレンダー（endDate=null）と、
+        // それ以前の旧カレンダー（endDate=2022-03-11 で有限）が共存する構成。
+        // 旧カレンダーの endDate に引っ張られて現行カレンダーの未来年が
+        // 欠落しないことを検証する（--to 未指定＝本番シードのデフォルト実行を再現）。
+        const rows = buildNewYearCalendarDateRows({
+            newYearMonthDays: NEW_YEAR_MONTH_DAYS,
+            calendars: [
+                makeCalendar({
+                    id: 'legacy-holiday-calendar',
+                    sunday: true,
+                    startDate: '2013-01-01',
+                    endDate: '2022-03-11',
+                }),
+                makeCalendar({
+                    id: 'current-holiday-calendar',
+                    sunday: true,
+                    startDate: '2022-03-12',
+                    endDate: null,
+                }),
+            ],
+            now: new Date('2026-01-15'),
+        });
+
+        const currentDates = rows
+            .filter((r) => r.calendarId === 'current-holiday-calendar')
+            .map((r) => r.date);
+
+        // 現在年+1（2027）の年末年始まで生成されていること
+        expect(currentDates).toEqual(
+            expect.arrayContaining(['2026-12-31', '2027-01-01']),
+        );
+        // 他カレンダーの有限 endDate（2022年）で頭打ちになっていないこと
+        expect(currentDates.some((d) => d >= '2023-01-01')).toBe(true);
+    });
+
     it('startDate/endDate ともに無期限で from/to も他カレンダーの境界も無い場合はエラーを投げる（無限展開防止）', () => {
         expect(() =>
             buildNewYearCalendarDateRows({

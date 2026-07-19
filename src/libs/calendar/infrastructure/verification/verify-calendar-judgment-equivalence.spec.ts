@@ -1,8 +1,11 @@
 import dayjs from 'dayjs';
-import { isHoliday } from 'src/core/utils/day-of-week';
+import { isHoliday, newYearDays } from 'src/core/utils/day-of-week';
 import { CalendarValidityRow } from '../seeds/build-holiday-calendar-date-rows';
+import { buildNewYearCalendarDateRows } from '../seeds/build-newyear-calendar-date-rows';
 import {
     CalendarJudgmentMismatch,
+    legacyJudgment,
+    newJudgment,
     verifyCalendarJudgmentEquivalence,
 } from './verify-calendar-judgment-equivalence';
 
@@ -127,5 +130,110 @@ describe('verifyCalendarJudgmentEquivalence', () => {
 
     it('全期間（2014-2026）を通して完全一致する（撤去ゲート・総合）', () => {
         expectNoMismatches('2014-01-01', '2026-12-31');
+    });
+
+    describe('無期限カレンダー×未来の年末年始（回帰検体）', () => {
+        /**
+         * 実DBの構成再現: 2022-03-12 に切り替わった現行カレンダー（endDate=null）と、
+         * それ以前の旧カレンダー（endDate=2022-03-11 で有限）が共存する。
+         *
+         * buildNewYearCalendarDateRows の年展開が「endDate=null カレンダーの上限年を
+         * 他カレンダーの最大 endDate に引っ張られて決めてしまう」バグを持つ場合、
+         * 現行カレンダー（endDate=null）の未来（現在年+1）の年末年始行が
+         * 生成されず、legacy（ハードコード newYearDays 判定）と new
+         * （calendar_dates 由来）の判定が食い違う。
+         *
+         * --to は意図的に指定しない（本番シード `seed-calendar-dates-newyear.ts` の
+         * デフォルト実行＝ --to 未指定を再現するため）。
+         */
+        const MIXED_CALENDARS: CalendarValidityRow[] = [
+            {
+                id: 'legacy-weekend-holiday-calendar',
+                startDate: '2013-01-01',
+                endDate: '2022-03-11',
+                sunday: true,
+                monday: false,
+                tuesday: false,
+                wednesday: false,
+                thursday: false,
+                friday: false,
+                saturday: true,
+            },
+            {
+                id: 'current-weekend-holiday-calendar',
+                startDate: '2022-03-12',
+                endDate: null,
+                sunday: true,
+                monday: false,
+                tuesday: false,
+                wednesday: false,
+                thursday: false,
+                friday: false,
+                saturday: true,
+            },
+            {
+                id: 'legacy-weekday-calendar',
+                startDate: '2013-01-01',
+                endDate: '2022-03-11',
+                sunday: false,
+                monday: true,
+                tuesday: true,
+                wednesday: true,
+                thursday: true,
+                friday: true,
+                saturday: false,
+            },
+            {
+                id: 'current-weekday-calendar',
+                startDate: '2022-03-12',
+                endDate: null,
+                sunday: false,
+                monday: true,
+                tuesday: true,
+                wednesday: true,
+                thursday: true,
+                friday: true,
+                saturday: false,
+            },
+        ];
+
+        it('endDate=NULL の現行カレンダーで、未来（現在年+1）の年末年始が旧新一致する', () => {
+            const now = new Date('2026-01-15');
+            const calendarDateRows = buildNewYearCalendarDateRows({
+                newYearMonthDays: newYearDays,
+                calendars: MIXED_CALENDARS,
+                now,
+            });
+
+            const futureNewYearDates = [
+                '2026-12-30',
+                '2026-12-31',
+                '2027-01-01',
+                '2027-01-02',
+                '2027-01-03',
+            ];
+            const currentCalendars = MIXED_CALENDARS.filter((c) =>
+                c.id.startsWith('current-'),
+            );
+
+            const mismatches: string[] = [];
+            for (const date of futureNewYearDates) {
+                for (const calendar of currentCalendars) {
+                    const legacyResult = legacyJudgment({ date, calendar });
+                    const newResult = newJudgment({
+                        date,
+                        calendar,
+                        calendarDateRows,
+                    });
+                    if (legacyResult !== newResult) {
+                        mismatches.push(
+                            `${date} / ${calendar.id}: legacy=${legacyResult} new=${newResult}`,
+                        );
+                    }
+                }
+            }
+
+            expect(mismatches.join('\n')).toBe('');
+        });
     });
 });

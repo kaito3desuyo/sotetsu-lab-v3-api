@@ -23,9 +23,15 @@ import {
  * from/to の交差から対象年範囲をまず決定し、年ごとに MM-DD を展開して
  * YYYY-MM-DD の日付を組み立てる。
  *
- * endDate が null（無期限）のカレンダーは、from/to や他カレンダーの最大 endDate
- * から上限年を求める。startDate が null のカレンダーも同様に from や他カレンダーの
- * 情報から下限年を求める。どちらの上限/下限も一切求まらない場合は、無限展開を
+ * endDate が null（無期限）のカレンダーの上限年は次の優先順で決める:
+ *   1. --to が指定されていればそれを使う
+ *   2. 未指定なら「現在年+1（翌年末まで）」をフロアとしつつ、他カレンダーの
+ *      最大 endDate がそれより未来ならそちらを採用する（過去に頭打ちの
+ *      有限 endDate カレンダーに引っ張られて未来年が欠落しないようにするため。
+ *      再シードのたびにフロアが延伸するので ON CONFLICT DO NOTHING と組み合わせて
+ *      冪等に運用する）
+ * startDate が null のカレンダーは従来どおり from や他カレンダーの最小 startDate
+ * から下限年を求める。どちらの上限/下限も一切求まらない場合は、無限展開を
  * 避けるためエラーとする。
  */
 export function buildNewYearCalendarDateRows(params: {
@@ -33,8 +39,11 @@ export function buildNewYearCalendarDateRows(params: {
     calendars: CalendarValidityRow[];
     from?: string;
     to?: string;
+    /** 「現在年+1」フロアの基準時刻（テスト用に注入可能。既定は `new Date()`） */
+    now?: Date;
 }): CalendarDateSeedRow[] {
-    const { newYearMonthDays, calendars, from, to } = params;
+    const { newYearMonthDays, calendars, from, to, now = new Date() } = params;
+    const currentYear = now.getFullYear();
 
     const rows: CalendarDateSeedRow[] = [];
 
@@ -42,7 +51,13 @@ export function buildNewYearCalendarDateRows(params: {
         const exceptionType = resolveExceptionType(calendar);
         if (exceptionType === null) continue;
 
-        const range = resolveCalendarYearRange(calendar, calendars, from, to);
+        const range = resolveCalendarYearRange(
+            calendar,
+            calendars,
+            from,
+            to,
+            currentYear,
+        );
         if (!range) continue;
 
         for (let year = range.startYear; year <= range.endYear; year++) {
@@ -90,13 +105,14 @@ function resolveCalendarYearRange(
     calendars: CalendarValidityRow[],
     from: string | undefined,
     to: string | undefined,
+    currentYear: number,
 ): { startYear: number; endYear: number } | null {
     const effectiveStart =
         laterDate(calendar.startDate, from ?? null) ?? minStartDate(calendars);
     const effectiveEnd =
         calendar.endDate !== null
             ? earlierDate(calendar.endDate, to ?? null)
-            : (to ?? maxEndDate(calendars));
+            : (to ?? unboundedEndHorizon(calendars, currentYear));
 
     if (!effectiveStart || !effectiveEnd) {
         throw new Error(
@@ -111,6 +127,20 @@ function resolveCalendarYearRange(
     if (startYear > endYear) return null;
 
     return { startYear, endYear };
+}
+
+/**
+ * endDate が null（無期限）のカレンダーに対する年展開の上限日を決める。
+ * 「現在年+1（翌年末）」をフロアとし、他カレンダーの最大 endDate がそれより
+ * 未来であればそちらを採用する。過去に頭打ちの有限 endDate カレンダーに
+ * 引っ張られて無期限カレンダーの未来年が欠落する回帰を防ぐためのフロア。
+ */
+function unboundedEndHorizon(
+    calendars: CalendarValidityRow[],
+    currentYear: number,
+): string {
+    const defaultHorizon = `${currentYear + 1}-12-31`;
+    return laterDate(defaultHorizon, maxEndDate(calendars)) ?? defaultHorizon;
 }
 
 function laterDate(a: string | null, b: string | null): string | null {
