@@ -6,9 +6,24 @@ import { OperationSightingQuery } from './operation-sighting.query';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
 
-const mockFindOne: AnyMock = jest.fn();
+const mockGetOne: AnyMock = jest.fn();
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildChainableQueryBuilder(): any {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const qb: any = {};
+    for (const method of ['leftJoinAndSelect', 'where']) {
+        qb[method] = jest.fn().mockReturnValue(qb);
+    }
+    qb.getOne = mockGetOne;
+    return qb;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let currentQueryBuilder: any;
+const mockCreateQueryBuilder: AnyMock = jest.fn();
 const mockRepository = {
-    findOne: mockFindOne,
+    createQueryBuilder: mockCreateQueryBuilder,
     metadata: {
         connection: { options: { type: 'postgres' } },
         columns: [],
@@ -34,29 +49,33 @@ async function buildQuery(): Promise<OperationSightingQuery> {
 describe('OperationSightingQuery - findOneById', () => {
     let query: OperationSightingQuery;
 
-    beforeAll(async () => {
+    beforeEach(async () => {
+        jest.clearAllMocks();
+        currentQueryBuilder = buildChainableQueryBuilder();
+        mockCreateQueryBuilder.mockReturnValue(currentQueryBuilder);
+        mockGetOne.mockResolvedValue(null);
         query = await buildQuery();
     });
 
-    beforeEach(() => {
-        mockFindOne.mockReset();
-    });
-
-    it('operation と formation リレーションを含めて findOne を呼ぶ（リグレッション）', async () => {
-        mockFindOne.mockResolvedValue(null);
-
+    it('operation と formation リレーションを含めて取得する（リグレッション）', async () => {
         await query.findOneById({ id: 'test-id' });
 
-        expect(mockFindOne).toHaveBeenCalledWith(
-            expect.objectContaining({
-                where: { id: 'test-id' },
-                relations: expect.arrayContaining(['operation', 'formation']),
-            }),
+        expect(currentQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
+            'sighting.operation',
+            'operation',
+        );
+        expect(currentQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
+            'sighting.formation',
+            'formation',
+        );
+        expect(currentQueryBuilder.where).toHaveBeenCalledWith(
+            'sighting.id = :id',
+            { id: 'test-id' },
         );
     });
 
     it('モデルが存在しない場合は null を返す', async () => {
-        mockFindOne.mockResolvedValue(null);
+        mockGetOne.mockResolvedValue(null);
 
         const result = await query.findOneById({ id: 'test-id' });
 
@@ -72,7 +91,7 @@ describe('OperationSightingQuery - findOneById', () => {
             invalidations: [],
             managementLogs: [],
         };
-        mockFindOne.mockResolvedValue(mockModel);
+        mockGetOne.mockResolvedValue(mockModel);
 
         const result = await query.findOneById({ id: 'sighting-uuid' });
 
