@@ -106,6 +106,7 @@
         ],
         "rootDir": "src",
         "testRegex": ".spec.ts$",
+        "globalSetup": "<rootDir>/test-setup.ts",
         "transform": {
             "^.+\\.(t|j)s$": "ts-jest"
         },

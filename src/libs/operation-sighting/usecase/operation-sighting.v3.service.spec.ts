@@ -1,4 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+import timezone from 'dayjs/plugin/timezone';
+import utc from 'dayjs/plugin/utc';
 import { DataSource } from 'typeorm';
 import { OperationSightingLatestCacheCommand } from '../infrastructure/command/operation-sighting-latest-cache.command';
 import { OperationSightingCommand } from '../infrastructure/command/operation-sighting.command';
@@ -8,6 +12,11 @@ import { CalendarQuery } from 'src/libs/calendar/infrastructure/queries/calendar
 import { FormationQuery } from 'src/libs/formation/infrastructure/queries/formation.query';
 import { OperationQuery } from 'src/libs/operation/infrastructure/queries/operation.query';
 import { OperationSightingV3Service } from './operation-sighting.v3.service';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(customParseFormat);
+dayjs.tz.setDefault('Asia/Tokyo');
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
@@ -722,5 +731,101 @@ describe('OperationSightingV3Service - findOneTimeCrossSectionByFormationNumber'
 
         expect(result.latestSighting).toBe(latestSighting);
         expect(result.expectedSighting).toBeNull();
+    });
+});
+
+describe('OperationSightingV3Service - post', () => {
+    let service: OperationSightingV3Service;
+
+    const baseParams = {
+        agencyId: 'agency-uuid',
+        formationOrVehicleNumber: '10708',
+        operationNumber: '100',
+        sightingTime: '2026-05-01T10:00:00+09:00',
+    };
+
+    beforeEach(async () => {
+        jest.clearAllMocks();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        mockDataSource.transaction.mockImplementation(async (fn: any) =>
+            fn(mockManager),
+        );
+        service = await buildService();
+
+        mockCalendarQuery.findOneBySpecificDate.mockResolvedValue({
+            id: 'cal-1',
+        });
+        mockFormationQuery.findOneByAgencyIdAndFormationNumberAndDate.mockResolvedValue(
+            { id: 'f-1', formationNumber: '10708' },
+        );
+        mockOperationSightingLatestCacheQuery.findOneByFormationNumber.mockResolvedValue(
+            null,
+        );
+        mockSave.mockResolvedValue({
+            operationSightingId: 'new-sighting-uuid',
+        });
+    });
+
+    it('休車（100番）は始発時刻を持たないため、始発時刻の検証を行わずに投稿できる', async () => {
+        mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
+            { id: 'op-100', operationNumber: '100' },
+        );
+        mockOperationQuery.findOneFirstDepartureTimeByOperationIdAndDate.mockResolvedValue(
+            null,
+        );
+
+        const result = await service.post({ ...baseParams });
+
+        expect(result.operationSightingId).toBe('new-sighting-uuid');
+        expect(mockSave).toHaveBeenCalled();
+        expect(
+            mockOperationQuery.findOneFirstDepartureTimeByOperationIdAndDate,
+        ).not.toHaveBeenCalled();
+    });
+
+    it('休車（100番）は早朝の時刻でも投稿できる', async () => {
+        mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
+            { id: 'op-100', operationNumber: '100' },
+        );
+        mockOperationQuery.findOneFirstDepartureTimeByOperationIdAndDate.mockResolvedValue(
+            null,
+        );
+
+        const result = await service.post({
+            ...baseParams,
+            sightingTime: '2026-05-01T04:10:00+09:00',
+        });
+
+        expect(result.operationSightingId).toBe('new-sighting-uuid');
+    });
+
+    it('通常運用で始発時刻が特定できない場合はエラーになる', async () => {
+        mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
+            { id: 'op-11', operationNumber: '11' },
+        );
+        mockOperationQuery.findOneFirstDepartureTimeByOperationIdAndDate.mockResolvedValue(
+            null,
+        );
+
+        await expect(
+            service.post({ ...baseParams, operationNumber: '11' }),
+        ).rejects.toThrow('対象運用の始発時刻を特定できません');
+    });
+
+    it('通常運用で始発時刻の30分前より早い場合はエラーになる', async () => {
+        mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
+            { id: 'op-11', operationNumber: '11' },
+        );
+        mockOperationQuery.findOneFirstDepartureTimeByOperationIdAndDate.mockResolvedValue(
+            dayjs('2026-05-01T10:00:00+09:00'),
+        );
+
+        await expect(
+            service.post({
+                ...baseParams,
+                operationNumber: '11',
+                sightingTime: '2026-05-01T09:00:00+09:00',
+            }),
+        ).rejects.toThrow('始発時刻の30分前より前の時刻は投稿できません');
     });
 });
