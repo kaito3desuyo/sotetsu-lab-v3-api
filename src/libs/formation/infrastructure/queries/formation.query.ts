@@ -64,7 +64,10 @@ export class FormationQuery extends TypeOrmCrudService<FormationModel> {
         const models = await this.formationRepository
             .createQueryBuilder('formation')
             .select('formation')
-            .leftJoinAndSelect('formation.vehicleFormations', 'vehicleFormations')
+            .leftJoinAndSelect(
+                'formation.vehicleFormations',
+                'vehicleFormations',
+            )
             .leftJoinAndSelect('vehicleFormations.vehicle', 'vehicle')
             .where(
                 '(formation.start_date <= :date OR formation.start_date IS NULL)',

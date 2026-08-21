@@ -1,6 +1,6 @@
 {
     "name": "sotetsu-lab-v3-api",
-    "version": "3.8.0",
+    "version": "3.8.1",
     "description": "",
     "author": "kaito3desuyo",
     "license": "MIT",
@@ -109,6 +109,7 @@
         ],
         "rootDir": "src",
         "testRegex": ".spec.ts$",
+        "globalSetup": "<rootDir>/test-setup.ts",
         "transform": {
             "^.+\\.(t|j)s$": "ts-jest"
         },

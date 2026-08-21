@@ -653,6 +653,11 @@ export class OperationSightingV3Service {
             );
         }
 
+        // 休車（100番）は列車を持たず始発時刻が存在しないため、時刻の検証対象外とする
+        if (operationNumber === '100') {
+            return { calendar, operation };
+        }
+
         const firstDepartureTime =
             await this.operationQuery.findOneFirstDepartureTimeByOperationIdAndDate(
                 {
