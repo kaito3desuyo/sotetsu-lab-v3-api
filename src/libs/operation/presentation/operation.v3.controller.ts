@@ -28,6 +28,18 @@ export class OperationV3Controller {
         return result;
     }
 
+    /** ダイヤ内の全運用を列車つきで返す（運用表用。運用ごとの /:id/trips を束ねる） */
+    @Get('/calendar/:calendarId/trips')
+    async findManyWithTrips(
+        @Param('calendarId') calendarId: string,
+    ): Promise<OperationWithTripsDto[]> {
+        const result = await this.operationV3Service.findManyWithTrips({
+            calendarId,
+        });
+
+        return result;
+    }
+
     @Get('/from/:start/to/:end')
     async findManyBySpecificPeriod(
         @Param('start') start: string,

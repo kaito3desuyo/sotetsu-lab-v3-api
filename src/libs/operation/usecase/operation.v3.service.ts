@@ -50,6 +50,12 @@ export class OperationV3Service {
         return result;
     }
 
+    findManyWithTrips(params: {
+        calendarId: string;
+    }): Promise<OperationWithTripsDto[]> {
+        return this.operationQuery.findManyWithTrips(params);
+    }
+
     findOneWithTrips(params: {
         operationId: string;
     }): Promise<OperationWithTripsDto | null> {
