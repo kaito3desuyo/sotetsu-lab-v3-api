@@ -3,8 +3,11 @@ import { TypeOrmCrudService } from '@dataui/crud-typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { isArray } from 'lodash';
+import { SparseFieldsets } from 'src/core/utils/sparse-fieldsets';
 import { FindManyOptions, Repository } from 'typeorm';
 import { TripBlockDetailsDto } from '../../usecase/dtos/trip-block-details.dto';
+import { TripBlockSparseDto } from '../../usecase/dtos/trip-block-sparse.dto';
+import { TripBlockSparseDtoBuilder } from '../builders/trip-block-sparse.dto.builder';
 import {
     TripBlockDtoBuilder,
     TripBlocksDtoBuilder,
@@ -113,6 +116,68 @@ export class TripBlockQuery extends TypeOrmCrudService<TripBlockModel> {
             .addOrderBy('times.departureTime', 'ASC', 'NULLS LAST')
             .getMany();
         return TripBlocksDtoBuilder.buildFromModel(models);
+    }
+
+    /**
+     * `findManyByFilter` と同じ条件で、`fields` で指定した資源・列だけを返す
+     * （docs/adr/0002-v3-sparse-fieldsets.md）。指定の無い関連は結合しない。
+     * 関連を組み立てるため、結合した資源の主キーは常に選ぶ（応答には指定したときだけ出す）。
+     */
+    async findManyByFilterWithFields(
+        params: { calendarId: string; tripDirection: number },
+        fieldsets: SparseFieldsets,
+    ): Promise<TripBlockSparseDto[]> {
+        const { calendarId, tripDirection } = params;
+        const columns = (alias: string, resource: string): string[] => [
+            `${alias}.id`,
+            ...[...(fieldsets.get(resource) ?? [])]
+                .filter((field) => field !== 'id')
+                .map((field) => `${alias}.${field}`),
+        ];
+
+        const qb = this.tripBlockRepository
+            .createQueryBuilder('tripBlock')
+            .select(['tripBlock.id'])
+            .innerJoin(
+                'tripBlock.trips',
+                'filterTrip',
+                'filterTrip.calendarId = :calendarId AND filterTrip.tripDirection = :tripDirection',
+                { calendarId, tripDirection },
+            )
+            .leftJoin('tripBlock.trips', 'trips')
+            .addSelect(columns('trips', 'trip'));
+
+        if (fieldsets.has('time')) {
+            qb.leftJoin('trips.times', 'times').addSelect(
+                columns('times', 'time'),
+            );
+        }
+        if (fieldsets.has('tripOperationList')) {
+            qb.leftJoin(
+                'trips.tripOperationLists',
+                'tripOperationLists',
+            ).addSelect(columns('tripOperationLists', 'tripOperationList'));
+        }
+        if (fieldsets.has('operation')) {
+            qb.leftJoin('tripOperationLists.operation', 'operation').addSelect(
+                columns('operation', 'operation'),
+            );
+        }
+        if (fieldsets.has('tripClass')) {
+            qb.leftJoin('trips.tripClass', 'tripClass').addSelect(
+                columns('tripClass', 'tripClass'),
+            );
+        }
+        if (fieldsets.has('time')) {
+            qb.orderBy('times.departureDays', 'ASC', 'NULLS LAST').addOrderBy(
+                'times.departureTime',
+                'ASC',
+                'NULLS LAST',
+            );
+        }
+
+        const models = await qb.getMany();
+        return TripBlockSparseDtoBuilder.buildFromModel(models, fieldsets);
     }
 
     async findOneById(params: {

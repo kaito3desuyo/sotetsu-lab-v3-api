@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { parseSparseFieldsets } from 'src/core/utils/sparse-fieldsets';
 import { Trips } from 'src/libs/trip/domain/trip.domain';
 import { TripBlock } from '../domain/trip-block.domain';
 import { TripBlockCommand } from '../infrastructure/commands/trip-block.command';
@@ -12,6 +13,11 @@ import { CreateTripBlockDto } from './dtos/create-trip-block.dto';
 import { DeleteTripFromTripBlockDto } from './dtos/delete-trip-from-trip-block.dto';
 import { ReplaceTripBlockDto } from './dtos/replace-trip-block.dto';
 import { TripBlockDetailsDto } from './dtos/trip-block-details.dto';
+import { TripBlockSparseDto } from './dtos/trip-block-sparse.dto';
+import {
+    TRIP_BLOCK_FIELDSET_REQUIRES,
+    TRIP_BLOCK_FIELDSET_WHITELIST,
+} from './trip-block-fieldsets';
 
 @Injectable()
 export class TripBlockV3Service {
@@ -20,11 +26,31 @@ export class TripBlockV3Service {
         private readonly tripBlockQuery: TripBlockQuery,
     ) {}
 
-    findManyByFilter(params: {
+    /**
+     * `fields` が無ければ全項目、あれば許可リストで検めて指定の項目だけを返す
+     * （docs/adr/0002-v3-sparse-fieldsets.md）。
+     */
+    async findManyByFilter(params: {
         calendarId: string;
         tripDirection: number;
-    }): Promise<TripBlockDetailsDto[]> {
-        return this.tripBlockQuery.findManyByFilter(params);
+        fields?: unknown;
+    }): Promise<TripBlockDetailsDto[] | TripBlockSparseDto[]> {
+        const { calendarId, tripDirection, fields } = params;
+        const fieldsets = parseSparseFieldsets(
+            fields,
+            TRIP_BLOCK_FIELDSET_WHITELIST,
+            TRIP_BLOCK_FIELDSET_REQUIRES,
+        );
+        if (!fieldsets) {
+            return this.tripBlockQuery.findManyByFilter({
+                calendarId,
+                tripDirection,
+            });
+        }
+        return this.tripBlockQuery.findManyByFilterWithFields(
+            { calendarId, tripDirection },
+            fieldsets,
+        );
     }
 
     findOneById(params: { id: string }): Promise<TripBlockDetailsDto | null> {
