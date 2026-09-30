@@ -12,6 +12,7 @@ const mockOperationQuery = {
     findManyByCalendarId: jest.fn() as AnyMock,
     findManyBySpecificPeriod: jest.fn() as AnyMock,
     findOneWithCurrentPosition: jest.fn() as AnyMock,
+    findManyWithCurrentPosition: jest.fn() as AnyMock,
     findManyWithTrips: jest.fn() as AnyMock,
 };
 
@@ -139,6 +140,32 @@ describe('OperationV3Service', () => {
             });
             // 群の数だけ返る（1群/5群/6群/7群/9G群 の 5 群）
             expect(result).toHaveLength(5);
+        });
+    });
+
+    describe('findManyWithCurrentPosition', () => {
+        it('運用 id と時刻を OperationQuery にまとめて渡してそのまま返す', async () => {
+            const expected = [{ operation: { operationId: 'op-1' } } as OperationCurrentPositionDto];
+            mockOperationQuery.findManyWithCurrentPosition.mockResolvedValue(expected);
+
+            const result = await service.findManyWithCurrentPosition({
+                operationIds: ['op-1', 'op-2'],
+                searchTime: '2026-05-30T15:00:00+09:00',
+            });
+
+            expect(mockOperationQuery.findManyWithCurrentPosition).toHaveBeenCalledWith({
+                operationIds: ['op-1', 'op-2'],
+                searchTime: '2026-05-30T15:00:00+09:00',
+            });
+            expect(result).toBe(expected);
+        });
+
+        it('時刻を指定しなければその瞬間の時刻を 1 つ決めて渡す', async () => {
+            mockOperationQuery.findManyWithCurrentPosition.mockResolvedValue([]);
+
+            await service.findManyWithCurrentPosition({ operationIds: ['op-1'] });
+
+            expect(mockOperationQuery.findManyWithCurrentPosition.mock.calls[0][0].searchTime).toEqual(expect.any(String));
         });
     });
 });

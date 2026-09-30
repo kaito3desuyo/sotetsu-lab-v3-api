@@ -5,7 +5,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import { isArray, mergeWith } from 'lodash';
 import { crudReqMergeCustomizer } from 'src/core/utils/merge-customizer';
-import { Between, Repository } from 'typeorm';
+import { Between, In, Repository } from 'typeorm';
+import { FormationModel } from 'src/libs/formation/infrastructure/models/formation.model';
+import { OperationModel } from 'src/libs/operation/infrastructure/models/operation.model';
 import { OperationSightingDetailsDto } from '../../usecase/dtos/operation-sighting-details.dto';
 import {
     OperationSightingDtoBuilder,
@@ -375,6 +377,89 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
         if (!result) return null;
 
         return OperationSightingDtoBuilder.buildFromModel(result);
+    }
+
+    /**
+     * findOneLatestByOperationNumberAndBeforeSightingTime の複数版（時刻断面をまとめて返す口用）。
+     * 運用番号ごとの最新の有効な目撃を 1 回の問い合わせ（DISTINCT ON）で取る。キーは運用番号。
+     */
+    async findManyLatestByOperationNumbersAndBeforeSightingTime(params: {
+        operationNumbers: string[];
+        sightingTime: dayjs.Dayjs;
+    }): Promise<Map<string, OperationSightingDetailsDto>> {
+        return this.#findManyLatestBeforeSightingTime(
+            'operation.operationNumber',
+            params.operationNumbers,
+            params.sightingTime,
+            (model) => model.operation?.operationNumber,
+        );
+    }
+
+    /** findOneLatestByFormationNumberAndBeforeSightingTime の複数版。キーは編成番号。 */
+    async findManyLatestByFormationNumbersAndBeforeSightingTime(params: {
+        formationNumbers: string[];
+        sightingTime: dayjs.Dayjs;
+    }): Promise<Map<string, OperationSightingDetailsDto>> {
+        return this.#findManyLatestBeforeSightingTime(
+            'formation.formationNumber',
+            params.formationNumbers,
+            params.sightingTime,
+            (model) => model.formation?.formationNumber,
+        );
+    }
+
+    /**
+     * 番号ごとに「その時刻以前の最新の有効な目撃」を 1 回の問い合わせで引く。
+     * 1 件ずつの口と同じ「時刻の降順に 1 件」を LATERAL で番号ごとに回すので、
+     * (operation_id|formation_id, sighting_time) の索引がそのまま効く（DISTINCT ON だと全履歴を読む）。
+     */
+    async #findManyLatestBeforeSightingTime(
+        keyColumn: 'operation.operationNumber' | 'formation.formationNumber',
+        keys: string[],
+        sightingTime: dayjs.Dayjs,
+        keyOf: (model: OperationSightingModel) => string | undefined,
+    ): Promise<Map<string, OperationSightingDetailsDto>> {
+        const result = new Map<string, OperationSightingDetailsDto>();
+        if (keys.length === 0) return result;
+
+        const connection = this.operationSightingRepository.manager.connection;
+        const sightings = this.operationSightingRepository.metadata.tableName;
+        const invalidations = connection.getMetadata(OperationSightingInvalidationModel).tableName;
+        const [joinTable, joinColumn, numberColumn] =
+            keyColumn === 'operation.operationNumber'
+                ? [connection.getMetadata(OperationModel).tableName, 'operation_id', 'operation_number']
+                : [connection.getMetadata(FormationModel).tableName, 'formation_id', 'formation_number'];
+
+        const rows: { id: string }[] = await this.operationSightingRepository.query(
+            `SELECT latest.id
+               FROM unnest($1::text[]) AS k(key)
+               CROSS JOIN LATERAL (
+                   SELECT s.id
+                     FROM "${sightings}" s
+                     JOIN "${joinTable}" j ON j.id = s.${joinColumn}
+                    WHERE j.${numberColumn} = k.key
+                      AND s.sighting_time <= $2
+                      AND NOT EXISTS (
+                          SELECT 1 FROM "${invalidations}" inv WHERE inv.operation_sighting_id = s.id
+                      )
+                    ORDER BY s.sighting_time DESC, s.updated_at DESC
+                    LIMIT 1
+               ) latest`,
+            [keys, sightingTime.toISOString()],
+        );
+        if (rows.length === 0) return result;
+
+        const models = await this.operationSightingRepository.find({
+            where: { id: In(rows.map((row) => row.id)) },
+            relations: ['operation', 'formation'],
+        });
+        for (const model of models) {
+            const key = keyOf(model);
+            if (key !== undefined && !result.has(key)) {
+                result.set(key, OperationSightingDtoBuilder.buildFromModel(model));
+            }
+        }
+        return result;
     }
 
     async findOneLatestOperationSightingFromOperationNumberAndSightingTimeRange(params: {

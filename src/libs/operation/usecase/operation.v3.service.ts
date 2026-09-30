@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import dayjs from 'dayjs';
 import { OperationQuery } from '../infrastructure/queries/operation.query';
 import { OperationCurrentPositionDto } from './dtos/operation-current-position.dto';
 import { OperationDetailsDto } from './dtos/operation-details.dto';
@@ -48,6 +49,20 @@ export class OperationV3Service {
         });
 
         return result;
+    }
+
+    /**
+     * 複数の運用の現在位置をまとめて返す（リアルタイム運用情報用。運用ごとの
+     * /:id/current-position を束ねる）。時刻は全件で同じ瞬間にそろえる。
+     */
+    findManyWithCurrentPosition(params: {
+        operationIds: string[];
+        searchTime?: string;
+    }): Promise<OperationCurrentPositionDto[]> {
+        return this.operationQuery.findManyWithCurrentPosition({
+            operationIds: params.operationIds,
+            searchTime: params.searchTime ?? dayjs().toISOString(),
+        });
     }
 
     findManyWithTrips(params: {

@@ -32,6 +32,28 @@ export class OperationSightingLatestCacheQuery {
             : null;
     }
 
+    /** findOneByFormationNumber の複数版（時刻断面をまとめて返す口用）。キーは編成番号。 */
+    async findManyByFormationNumbers(params: {
+        formationNumbers: string[];
+    }): Promise<Map<string, OperationSightingLatestCacheDto>> {
+        const { formationNumbers } = params;
+        const result = new Map<string, OperationSightingLatestCacheDto>();
+        if (formationNumbers.length === 0) return result;
+
+        const models = await this.repository
+            .createQueryBuilder('cache')
+            .innerJoinAndSelect('cache.operationSighting', 'sighting')
+            .where('cache.formationNumber IN (:...formationNumbers)', { formationNumbers })
+            .getMany();
+
+        for (const model of models) {
+            if (!result.has(model.formationNumber)) {
+                result.set(model.formationNumber, OperationSightingLatestCacheDtoBuilder.buildFromModel(model));
+            }
+        }
+        return result;
+    }
+
     async findManyLatestGroupByFormationByOperationNumbersAndSightingTimeRange(params: {
         operationNumbers: string[];
         startTime: dayjs.Dayjs;

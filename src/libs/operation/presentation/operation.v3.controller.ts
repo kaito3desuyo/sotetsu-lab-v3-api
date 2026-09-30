@@ -1,6 +1,7 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/core/modules/auth/auth.guard';
 import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
+import { parseCommaList } from 'src/core/utils/comma-list';
 import { OperationCurrentPositionDto } from '../usecase/dtos/operation-current-position.dto';
 import { OperationDetailsDto } from '../usecase/dtos/operation-details.dto';
 import { OperationGroupDto } from '../usecase/dtos/operation-group.dto';
@@ -35,6 +36,23 @@ export class OperationV3Controller {
     ): Promise<OperationWithTripsDto[]> {
         const result = await this.operationV3Service.findManyWithTrips({
             calendarId,
+        });
+
+        return result;
+    }
+
+    /**
+     * 複数の運用の現在位置をまとめて返す（リアルタイム運用情報用。運用ごとの
+     * /:id/current-position を束ねる）。`operationIds=a,b,c`
+     */
+    @Get('/current-positions')
+    async findManyWithCurrentPosition(
+        @Query('operationIds') operationIds: string,
+        @Query('searchTime') searchTime?: string,
+    ): Promise<OperationCurrentPositionDto[]> {
+        const result = await this.operationV3Service.findManyWithCurrentPosition({
+            operationIds: parseCommaList(operationIds),
+            searchTime,
         });
 
         return result;

@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import omit from 'just-omit';
 import { isArray } from 'lodash';
-import { FindManyOptions, Repository } from 'typeorm';
+import { FindManyOptions, In, Repository } from 'typeorm';
 import { OperationCurrentPositionDto } from '../../usecase/dtos/operation-current-position.dto';
 import { OperationDetailsDto } from '../../usecase/dtos/operation-details.dto';
 import { OperationWithTripsDto } from '../../usecase/dtos/operation-with-trips.dto';
@@ -103,6 +103,26 @@ export class OperationQuery extends TypeOrmCrudService<OperationModel> {
         return OperationDtoBuilder.buildFromModel(model);
     }
 
+    private static readonly CURRENT_POSITION_RELATIONS = [
+        'tripOperationLists',
+        'tripOperationLists.trip',
+        'tripOperationLists.startTime',
+        'tripOperationLists.endTime',
+    ];
+
+    private static readonly CURRENT_POSITION_ORDER = {
+        tripOperationLists: {
+            startTime: {
+                departureDays: 'ASC',
+                departureTime: 'ASC',
+            },
+            endTime: {
+                arrivalDays: 'ASC',
+                arrivalTime: 'ASC',
+            },
+        },
+    } as const;
+
     async findOneWithCurrentPosition(params: {
         operationId: string;
         searchTime?: string;
@@ -111,33 +131,45 @@ export class OperationQuery extends TypeOrmCrudService<OperationModel> {
 
         const model = await this.operationRepository.findOne({
             where: { id: operationId },
-            relations: [
-                'tripOperationLists',
-                'tripOperationLists.trip',
-                // 'tripOperationLists.trip.tripClass',
-                'tripOperationLists.startTime',
-                // 'tripOperationLists.startTime.station',
-                'tripOperationLists.endTime',
-                // 'tripOperationLists.endTime.station',
-            ],
-            order: {
-                tripOperationLists: {
-                    startTime: {
-                        departureDays: 'ASC',
-                        departureTime: 'ASC',
-                    },
-                    endTime: {
-                        arrivalDays: 'ASC',
-                        arrivalTime: 'ASC',
-                    },
-                },
-            },
+            relations: OperationQuery.CURRENT_POSITION_RELATIONS,
+            order: OperationQuery.CURRENT_POSITION_ORDER,
         });
 
         if (!model) {
             return null;
         }
 
+        return this.#toCurrentPosition(model, searchTime);
+    }
+
+    /**
+     * findOneWithCurrentPosition の複数版（リアルタイム運用情報用）。運用は 1 回の問い合わせでまとめて引き、
+     * 位置の計算は 1 件ずつの口と同じ。入力の順で返し、見つからない運用は省く。
+     */
+    async findManyWithCurrentPosition(params: {
+        operationIds: string[];
+        searchTime?: string;
+    }): Promise<OperationCurrentPositionDto[]> {
+        const { operationIds, searchTime } = params;
+        if (operationIds.length === 0) return [];
+
+        const models = await this.operationRepository.find({
+            where: { id: In(operationIds) },
+            relations: OperationQuery.CURRENT_POSITION_RELATIONS,
+            order: OperationQuery.CURRENT_POSITION_ORDER,
+        });
+        const byId = new Map(models.map((model) => [model.id, model]));
+
+        return operationIds
+            .map((operationId) => byId.get(operationId))
+            .filter((model) => model !== undefined)
+            .map((model) => this.#toCurrentPosition(model, searchTime));
+    }
+
+    #toCurrentPosition(
+        model: OperationModel,
+        searchTime: string | undefined,
+    ): OperationCurrentPositionDto {
         let prev = null;
         let current = null;
         let next = null;

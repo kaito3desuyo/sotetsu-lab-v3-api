@@ -32,11 +32,14 @@ const mockOperationSightingLatestCacheCommand = {
 const mockOperationSightingLatestCacheQuery = {
     findOneByFormationNumber: jest.fn() as AnyMock,
     findManyLatestGroupByFormationByOperationNumbersAndSightingTimeRange: jest.fn() as AnyMock,
+    findManyByFormationNumbers: jest.fn() as AnyMock,
 };
 const mockOperationSightingQuery = {
     findOneById: jest.fn() as AnyMock,
     findOneLatestByOperationNumberAndBeforeSightingTime: jest.fn() as AnyMock,
     findOneLatestByFormationNumberAndBeforeSightingTime: jest.fn() as AnyMock,
+    findManyLatestByOperationNumbersAndBeforeSightingTime: jest.fn() as AnyMock,
+    findManyLatestByFormationNumbersAndBeforeSightingTime: jest.fn() as AnyMock,
 };
 const mockDataSource = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -827,5 +830,127 @@ describe('OperationSightingV3Service - post', () => {
                 sightingTime: '2026-05-01T09:00:00+09:00',
             }),
         ).rejects.toThrow('始発時刻の30分前より前の時刻は投稿できません');
+    });
+});
+
+describe('OperationSightingV3Service - 時刻断面をまとめて返す', () => {
+    let service: OperationSightingV3Service;
+    const searchTime = '2026-05-30T15:00:00+09:00';
+
+    beforeEach(async () => {
+        jest.clearAllMocks();
+        service = await buildService();
+        mockCalendarQuery.findOneBySpecificDate.mockResolvedValue({ id: 'cal-1', startDate: '2026-03-13' });
+    });
+
+    it('運用番号: 最新目撃は 1 回でまとめて引き、1 件ずつの口は使わず、休車の 100 は省く', async () => {
+        // 65 は前日の目撃 → 群のキャッシュから 8001 を前進投影（1 件ずつの口のテストと同じ場面）
+        mockOperationSightingQuery.findManyLatestByOperationNumbersAndBeforeSightingTime.mockResolvedValue(
+            new Map([
+                ['65', {
+                    id: 'sighting-1',
+                    operation: { operationNumber: '65' },
+                    formation: { formationNumber: '7001' },
+                    sightingTime: '2026-05-29T15:00:00.000+09:00',
+                }],
+            ]),
+        );
+        mockOperationSightingLatestCacheQuery.findManyByFormationNumbers.mockResolvedValue(new Map());
+        mockOperationSightingLatestCacheQuery.findManyLatestGroupByFormationByOperationNumbersAndSightingTimeRange.mockResolvedValue([
+            {
+                id: 'cache-1',
+                operationNumber: '63',
+                formationNumber: '8001',
+                operationSightingId: 'sighting-2',
+                sightingTime: '2026-05-28T15:00:00.000+09:00',
+            },
+        ]);
+        mockFormationQuery.findManyBySpecificPeriod.mockResolvedValue([{ id: 'f-1', formationNumber: '8001' }]);
+
+        const result = await service.findManyTimeCrossSectionsByOperationNumbers({
+            operationNumbers: ['65', '100', '61'],
+            searchTime,
+        });
+
+        expect(Object.keys(result).sort()).toEqual(['61', '65']);
+        expect(result['65'].expectedSighting?.formation?.formationNumber).toBe('8001');
+        expect(result['61']).toEqual({ latestSighting: null, expectedSighting: null });
+        expect(mockOperationSightingQuery.findManyLatestByOperationNumbersAndBeforeSightingTime).toHaveBeenCalledTimes(1);
+        expect(mockOperationSightingQuery.findManyLatestByOperationNumbersAndBeforeSightingTime.mock.calls[0][0].operationNumbers).toEqual(['65', '61']);
+        expect(mockOperationSightingQuery.findOneLatestByOperationNumberAndBeforeSightingTime).not.toHaveBeenCalled();
+        expect(mockCalendarQuery.findOneBySpecificDate).toHaveBeenCalledTimes(1);
+    });
+
+    it('運用番号: 同じ群の番号が並んでも群のキャッシュ・編成一覧は 1 回だけ引く', async () => {
+        const sighting = (operationNumber: string) => ({
+            id: `s-${operationNumber}`,
+            operation: { operationNumber },
+            formation: { formationNumber: '7001' },
+            sightingTime: '2026-05-29T15:00:00.000+09:00',
+        });
+        mockOperationSightingQuery.findManyLatestByOperationNumbersAndBeforeSightingTime.mockResolvedValue(
+            new Map([['63', sighting('63')], ['65', sighting('65')]]),
+        );
+        mockOperationSightingLatestCacheQuery.findManyByFormationNumbers.mockResolvedValue(new Map());
+        mockOperationSightingLatestCacheQuery.findManyLatestGroupByFormationByOperationNumbersAndSightingTimeRange.mockResolvedValue([
+            { id: 'c', operationNumber: '63', formationNumber: '8001', operationSightingId: 's', sightingTime: '2026-05-28T15:00:00.000+09:00' },
+        ]);
+        mockFormationQuery.findManyBySpecificPeriod.mockResolvedValue([{ id: 'f-1', formationNumber: '8001' }]);
+
+        await service.findManyTimeCrossSectionsByOperationNumbers({ operationNumbers: ['63', '65'], searchTime });
+
+        expect(mockOperationSightingLatestCacheQuery.findManyLatestGroupByFormationByOperationNumbersAndSightingTimeRange).toHaveBeenCalledTimes(1);
+        expect(mockFormationQuery.findManyBySpecificPeriod).toHaveBeenCalledTimes(1);
+    });
+
+    it('運用番号: 当日の目撃の追い出し判定は、まとめて引いた編成のキャッシュを使う', async () => {
+        mockOperationSightingQuery.findManyLatestByOperationNumbersAndBeforeSightingTime.mockResolvedValue(
+            new Map([
+                ['61', { id: 's', operation: { operationNumber: '61' }, formation: { formationNumber: '10701' }, sightingTime: '2026-05-30T10:00:00.000+09:00' }],
+            ]),
+        );
+        mockOperationSightingLatestCacheQuery.findManyByFormationNumbers.mockResolvedValue(
+            new Map([['10701', { operationNumber: '62', formationNumber: '10701' }]]),
+        );
+
+        const result = await service.findManyTimeCrossSectionsByOperationNumbers({ operationNumbers: ['61'], searchTime });
+
+        expect(mockOperationSightingLatestCacheQuery.findManyByFormationNumbers).toHaveBeenCalledWith({ formationNumbers: ['10701'] });
+        expect(mockOperationSightingLatestCacheQuery.findOneByFormationNumber).not.toHaveBeenCalled();
+        expect(result['61'].expectedSighting).toBeNull();
+    });
+
+    it('編成番号: 最新目撃をまとめて引き、追い出し判定に要る運用側の最新目撃もまとめて引く', async () => {
+        mockOperationSightingQuery.findManyLatestByFormationNumbersAndBeforeSightingTime.mockResolvedValue(
+            new Map([
+                ['10701', { id: 's1', operation: { operationNumber: '61' }, formation: { formationNumber: '10701' }, sightingTime: '2026-05-30T10:00:00.000+09:00' }],
+            ]),
+        );
+        mockOperationSightingQuery.findManyLatestByOperationNumbersAndBeforeSightingTime.mockResolvedValue(
+            new Map([
+                ['61', { id: 's1', operation: { operationNumber: '61' }, formation: { formationNumber: '10701' }, sightingTime: '2026-05-30T10:00:00.000+09:00' }],
+            ]),
+        );
+
+        const result = await service.findManyTimeCrossSectionsByFormationNumbers({
+            formationNumbers: ['10701', '10702'],
+            searchTime,
+        });
+
+        expect(mockOperationSightingQuery.findManyLatestByOperationNumbersAndBeforeSightingTime.mock.calls[0][0].operationNumbers).toEqual(['61']);
+        expect(mockOperationSightingQuery.findOneLatestByOperationNumberAndBeforeSightingTime).not.toHaveBeenCalled();
+        expect(result['10701'].expectedSighting?.operation?.operationNumber).toBe('61');
+        expect(result['10702']).toEqual({ latestSighting: null, expectedSighting: null });
+    });
+
+    it('時刻を指定しなければ全件で同じ瞬間を使う', async () => {
+        mockOperationSightingQuery.findManyLatestByFormationNumbersAndBeforeSightingTime.mockResolvedValue(new Map());
+        mockOperationSightingQuery.findManyLatestByOperationNumbersAndBeforeSightingTime.mockResolvedValue(new Map());
+
+        await service.findManyTimeCrossSectionsByFormationNumbers({ formationNumbers: ['10701', '10702'] });
+
+        const [formationCall] = mockOperationSightingQuery.findManyLatestByFormationNumbersAndBeforeSightingTime.mock.calls[0];
+        const [operationCall] = mockOperationSightingQuery.findManyLatestByOperationNumbersAndBeforeSightingTime.mock.calls[0];
+        expect(formationCall.sightingTime.valueOf()).toBe(operationCall.sightingTime.valueOf());
     });
 });

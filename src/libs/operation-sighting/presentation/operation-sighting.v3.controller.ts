@@ -14,6 +14,7 @@ import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
 import { Role } from 'src/core/modules/rbac/role.enum';
 import { InvalidateOperationSightingDto } from '../usecase/dtos/invalidate-operation-sighting.dto';
 import { OperationSightingDetailsDto } from '../usecase/dtos/operation-sighting-details.dto';
+import { parseCommaList } from 'src/core/utils/comma-list';
 import { OperationSightingTimeCrossSectionDto } from '../usecase/dtos/operation-sighting-time-cross-section.dto';
 import { PostOperationSightingDto } from '../usecase/dtos/post-operation-sighting.dto';
 import { RestoreOperationSightingDto } from '../usecase/dtos/restore-operation-sighting.dto';
@@ -38,6 +39,40 @@ export class OperationSightingV3Controller {
                 end,
                 includeInvalidated,
             });
+
+        return result;
+    }
+
+    /** 複数の運用番号の時刻断面をまとめて返す。`operationNumbers=11,12,…`。キーは運用番号 */
+    @Get('/time-cross-section/operation-numbers')
+    async findManyTimeCrossSectionsByOperationNumbers(
+        @Query('operationNumbers') operationNumbers: string,
+        @Query('searchTime') searchTime?: string,
+    ): Promise<Record<string, OperationSightingTimeCrossSectionDto>> {
+        const result =
+            await this.operationSightingV3Service.findManyTimeCrossSectionsByOperationNumbers(
+                {
+                    operationNumbers: parseCommaList(operationNumbers),
+                    searchTime,
+                },
+            );
+
+        return result;
+    }
+
+    /** 複数の編成番号の時刻断面をまとめて返す。`formationNumbers=10701,…`。キーは編成番号 */
+    @Get('/time-cross-section/formation-numbers')
+    async findManyTimeCrossSectionsByFormationNumbers(
+        @Query('formationNumbers') formationNumbers: string,
+        @Query('searchTime') searchTime?: string,
+    ): Promise<Record<string, OperationSightingTimeCrossSectionDto>> {
+        const result =
+            await this.operationSightingV3Service.findManyTimeCrossSectionsByFormationNumbers(
+                {
+                    formationNumbers: parseCommaList(formationNumbers),
+                    searchTime,
+                },
+            );
 
         return result;
     }
