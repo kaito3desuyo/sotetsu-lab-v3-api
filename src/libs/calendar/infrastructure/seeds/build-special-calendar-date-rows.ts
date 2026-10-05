@@ -9,16 +9,14 @@ import {
     isWithinCalendarValidity,
 } from './build-holiday-calendar-date-rows';
 
-const WEEKDAY_KEYS = [
-    'sunday',
-    'monday',
-    'tuesday',
-    'wednesday',
-    'thursday',
-    'friday',
-    'saturday',
-] as const;
-type WeekdayKey = (typeof WEEKDAY_KEYS)[number];
+type WeekdayKey =
+    | 'sunday'
+    | 'monday'
+    | 'tuesday'
+    | 'wednesday'
+    | 'thursday'
+    | 'friday'
+    | 'saturday';
 
 /**
  * 既存の `specialCalendarDays`（api `core/utils/day-of-week.ts`）の日付を calendar_dates へ移行する純関数。
