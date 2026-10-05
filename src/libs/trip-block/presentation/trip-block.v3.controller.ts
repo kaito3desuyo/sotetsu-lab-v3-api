@@ -16,6 +16,7 @@ import { CreateTripBlockDto } from '../usecase/dtos/create-trip-block.dto';
 import { DeleteTripFromTripBlockDto } from '../usecase/dtos/delete-trip-from-trip-block.dto';
 import { ReplaceTripBlockDto } from '../usecase/dtos/replace-trip-block.dto';
 import { TripBlockDetailsDto } from '../usecase/dtos/trip-block-details.dto';
+import { TripBlockSparseDto } from '../usecase/dtos/trip-block-sparse.dto';
 import { AddTripToTripBlockParam } from '../usecase/params/add-trip-to-trip-block.param';
 import { DeleteTripFromTripBlockParam } from '../usecase/params/delete-trip-from-trip-block.param';
 import { ReplaceTripBlockParam } from '../usecase/params/replace-trip-block.param';
@@ -27,13 +28,15 @@ import { TripBlockV3Service } from '../usecase/trip-block.v3.service';
 export class TripBlockV3Controller {
     constructor(private readonly tripBlockV3Service: TripBlockV3Service) {}
 
+    /** `fields[資源]=項目,項目` で返す項目を選べる（docs/adr/0002-v3-sparse-fieldsets.md） */
     @Get('/')
     async findManyByFilter(
         @Query() query: TripBlockFindManyByFilterQuery,
-    ): Promise<TripBlockDetailsDto[]> {
+    ): Promise<TripBlockDetailsDto[] | TripBlockSparseDto[]> {
         const result = await this.tripBlockV3Service.findManyByFilter({
             calendarId: query.calendarId,
             tripDirection: query.tripDirection,
+            fields: query.fields,
         });
 
         return result;

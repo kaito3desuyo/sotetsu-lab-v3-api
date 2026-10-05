@@ -64,7 +64,10 @@ export class FormationQuery extends TypeOrmCrudService<FormationModel> {
         const models = await this.formationRepository
             .createQueryBuilder('formation')
             .select('formation')
-            .leftJoinAndSelect('formation.vehicleFormations', 'vehicleFormations')
+            .leftJoinAndSelect(
+                'formation.vehicleFormations',
+                'vehicleFormations',
+            )
             .leftJoinAndSelect('vehicleFormations.vehicle', 'vehicle')
             .where(
                 '(formation.start_date <= :date OR formation.start_date IS NULL)',
@@ -109,6 +112,9 @@ export class FormationQuery extends TypeOrmCrudService<FormationModel> {
                 '(formation.end_date >= :startDate OR formation.end_date IS NULL)',
                 { startDate: startDateInstance.format(format) },
             )
+            // findManyBySpecificDate と揃える。orderBy 不在だと返却順が非決定的で
+            // クライアント側の会社内並び順（東急・相鉄の一部）が崩れるため、
+            // 系式→編成番号の数値順で安定化する。
             .orderBy(
                 "to_number(formation.vehicle_type, '9999999999999999')",
                 'ASC',

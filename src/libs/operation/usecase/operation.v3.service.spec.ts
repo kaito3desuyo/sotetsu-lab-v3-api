@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { OperationQuery } from '../infrastructure/queries/operation.query';
 import { OperationCurrentPositionDto } from './dtos/operation-current-position.dto';
 import { OperationDetailsDto } from './dtos/operation-details.dto';
+import { OperationWithTripsDto } from './dtos/operation-with-trips.dto';
 import { OperationV3Service } from './operation.v3.service';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -11,6 +12,8 @@ const mockOperationQuery = {
     findManyByCalendarId: jest.fn() as AnyMock,
     findManyBySpecificPeriod: jest.fn() as AnyMock,
     findOneWithCurrentPosition: jest.fn() as AnyMock,
+    findManyWithCurrentPosition: jest.fn() as AnyMock,
+    findManyWithTrips: jest.fn() as AnyMock,
 };
 
 async function buildService(): Promise<OperationV3Service> {
@@ -102,6 +105,67 @@ describe('OperationV3Service', () => {
                 searchTime: undefined,
             });
             expect(result).toBe(expected);
+        });
+    });
+
+    describe('findManyWithTrips', () => {
+        it('calendarId を OperationQuery に渡し、全運用の列車つきをそのまま返す', async () => {
+            const expected = [
+                { operation: { operationId: 'op-5' }, trips: [] },
+            ] as unknown as OperationWithTripsDto[];
+            mockOperationQuery.findManyWithTrips.mockResolvedValue(expected);
+
+            const result = await service.findManyWithTrips({
+                calendarId: 'cal-2',
+            });
+
+            expect(mockOperationQuery.findManyWithTrips).toHaveBeenCalledWith({
+                calendarId: 'cal-2',
+            });
+            expect(result).toBe(expected);
+        });
+    });
+
+    describe('findAllGroups', () => {
+        it('operationNumberCirculateMap を群ごとに集約して返す', () => {
+            const result = service.findAllGroups();
+
+            expect(result).toContainEqual({
+                groupName: '1群',
+                operationNumbers: ['11', '12', '13', '14', '15', '16'],
+            });
+            expect(result).toContainEqual({
+                groupName: '9G群',
+                operationNumbers: ['91G', '92G', '93G', '94G', '95G'],
+            });
+            // 群の数だけ返る（1群/5群/6群/7群/9G群 の 5 群）
+            expect(result).toHaveLength(5);
+        });
+    });
+
+    describe('findManyWithCurrentPosition', () => {
+        it('運用 id と時刻を OperationQuery にまとめて渡してそのまま返す', async () => {
+            const expected = [{ operation: { operationId: 'op-1' } } as OperationCurrentPositionDto];
+            mockOperationQuery.findManyWithCurrentPosition.mockResolvedValue(expected);
+
+            const result = await service.findManyWithCurrentPosition({
+                operationIds: ['op-1', 'op-2'],
+                searchTime: '2026-05-30T15:00:00+09:00',
+            });
+
+            expect(mockOperationQuery.findManyWithCurrentPosition).toHaveBeenCalledWith({
+                operationIds: ['op-1', 'op-2'],
+                searchTime: '2026-05-30T15:00:00+09:00',
+            });
+            expect(result).toBe(expected);
+        });
+
+        it('時刻を指定しなければその瞬間の時刻を 1 つ決めて渡す', async () => {
+            mockOperationQuery.findManyWithCurrentPosition.mockResolvedValue([]);
+
+            await service.findManyWithCurrentPosition({ operationIds: ['op-1'] });
+
+            expect(mockOperationQuery.findManyWithCurrentPosition.mock.calls[0][0].searchTime).toEqual(expect.any(String));
         });
     });
 });

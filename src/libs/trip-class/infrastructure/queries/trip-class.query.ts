@@ -30,7 +30,8 @@ export class TripClassQuery extends TypeOrmCrudService<TripClassModel> {
             qb = qb.where('tripClass.service_id = :serviceId', { serviceId });
         }
 
-        const models = await qb.getMany();
+        // 並べないと物理順になり、更新した行から崩れる（相鉄→直通先→回送・不明の順が sequence）
+        const models = await qb.orderBy('tripClass.sequence', 'ASC').getMany();
         return TripClassesDtoBuilder.buildFromModel(models);
     }
 

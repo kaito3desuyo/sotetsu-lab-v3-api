@@ -273,9 +273,11 @@ const holidays = [
     '2026-11-23',
 ];
 
-const newYearDays = ['12-30', '12-31', '01-01', '01-02', '01-03'];
+export const newYearDays = ['12-30', '12-31', '01-01', '01-02', '01-03'];
 
-const specialCalendarDays = [
+// calendar_dates シード移行（seed-calendar-dates-special.ts）で参照するため export する。
+// シード移行後、v3 経路（CalendarQuery）撤去時にこのファイル自体も削除予定（D-13）。
+export const specialCalendarDays = [
     // 2021年10月JR渋谷駅工事臨時ダイヤ
     '2021-10-23',
     '2021-10-24',

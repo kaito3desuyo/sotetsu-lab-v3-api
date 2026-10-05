@@ -29,7 +29,10 @@
         "migration:generate": "npm run dotenv -- npm run typeorm -- migration:generate -d src/core/utils/data-source.ts",
         "migration:run": "npm run dotenv -- npm run typeorm -- migration:run -d src/core/utils/data-source.ts",
         "migration:revert": "npm run dotenv -- npm run typeorm -- migration:revert -d src/core/utils/data-source.ts",
-        "cli": "npm run dotenv -- node -r tsconfig-paths/register -r ts-node/register src/cli.ts"
+        "cli": "npm run dotenv -- node -r tsconfig-paths/register -r ts-node/register src/cli.ts",
+        "seed:calendar-dates:holidays": "npm run dotenv -- node -r tsconfig-paths/register -r ts-node/register db/seeds/seed-calendar-dates-holidays.ts",
+        "seed:calendar-dates:special": "npm run dotenv -- node -r tsconfig-paths/register -r ts-node/register db/seeds/seed-calendar-dates-special.ts",
+        "seed:calendar-dates:newyear": "npm run dotenv -- node -r tsconfig-paths/register -r ts-node/register db/seeds/seed-calendar-dates-newyear.ts"
     },
     "dependencies": {
         "@dataui/crud": "^5.3.4",
