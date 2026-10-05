@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import { isArray, mergeWith } from 'lodash';
 import { crudReqMergeCustomizer } from 'src/core/utils/merge-customizer';
-import { Between, In, Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { FormationModel } from 'src/libs/formation/infrastructure/models/formation.model';
 import { OperationModel } from 'src/libs/operation/infrastructure/models/operation.model';
 import { OperationSightingDetailsDto } from '../../usecase/dtos/operation-sighting-details.dto';
@@ -449,10 +449,12 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
         );
         if (rows.length === 0) return result;
 
-        const models = await this.operationSightingRepository.find({
-            where: { id: In(rows.map((row) => row.id)) },
-            relations: ['operation', 'formation'],
-        });
+        const models = await this.operationSightingRepository
+            .createQueryBuilder('sighting')
+            .leftJoinAndSelect('sighting.operation', 'operation')
+            .leftJoinAndSelect('sighting.formation', 'formation')
+            .where('sighting.id IN (:...ids)', { ids: rows.map((row) => row.id) })
+            .getMany();
         for (const model of models) {
             const key = keyOf(model);
             if (key !== undefined && !result.has(key)) {

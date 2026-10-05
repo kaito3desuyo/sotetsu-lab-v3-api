@@ -119,6 +119,7 @@ npm run deploy               # Serverless Framework でデプロイ
 
 ### DB アクセスパターン
 - Query（読み取り）→ `.query.ts` → DTO を返却
+- Query の実装は TypeORM の `createQueryBuilder` で書く。`repository.find` / `findOne`（`relations` 付き）や `TypeOrmCrudService` の `getMany` / `getOne` は新たに使わない（v2 用に残っているものを真似ない）。`findOne` に `relations` を付けると、`DISTINCT` の問い合わせが余分に 1 本走る
 - Command（書き込み）→ `.command.ts` → ドメインエンティティで操作
 - TypeORM data-source → `src/core/utils/data-source.ts`
 - マイグレーション実行時は dotenvx で `.env.local` を読み込む

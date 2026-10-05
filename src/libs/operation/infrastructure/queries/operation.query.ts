@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import omit from 'just-omit';
 import { isArray } from 'lodash';
-import { FindManyOptions, In, Repository } from 'typeorm';
+import { FindManyOptions, Repository } from 'typeorm';
 import { OperationCurrentPositionDto } from '../../usecase/dtos/operation-current-position.dto';
 import { OperationDetailsDto } from '../../usecase/dtos/operation-details.dto';
 import { OperationWithTripsDto } from '../../usecase/dtos/operation-with-trips.dto';
@@ -103,25 +103,23 @@ export class OperationQuery extends TypeOrmCrudService<OperationModel> {
         return OperationDtoBuilder.buildFromModel(model);
     }
 
-    private static readonly CURRENT_POSITION_RELATIONS = [
-        'tripOperationLists',
-        'tripOperationLists.trip',
-        'tripOperationLists.startTime',
-        'tripOperationLists.endTime',
-    ];
-
-    private static readonly CURRENT_POSITION_ORDER = {
-        tripOperationLists: {
-            startTime: {
-                departureDays: 'ASC',
-                departureTime: 'ASC',
-            },
-            endTime: {
-                arrivalDays: 'ASC',
-                arrivalTime: 'ASC',
-            },
-        },
-    } as const;
+    /** 現在位置の計算に要る列車と始終着の時刻を結合し、出発 → 到着の時刻順に並べる。 */
+    #currentPositionQueryBuilder() {
+        return this.operationRepository
+            .createQueryBuilder('operation')
+            .select('operation')
+            .leftJoinAndSelect(
+                'operation.tripOperationLists',
+                'tripOperationLists',
+            )
+            .leftJoinAndSelect('tripOperationLists.trip', 'trip')
+            .leftJoinAndSelect('tripOperationLists.startTime', 'startTime')
+            .leftJoinAndSelect('tripOperationLists.endTime', 'endTime')
+            .orderBy('startTime.departureDays', 'ASC', 'NULLS LAST')
+            .addOrderBy('startTime.departureTime', 'ASC', 'NULLS LAST')
+            .addOrderBy('endTime.arrivalDays', 'ASC', 'NULLS LAST')
+            .addOrderBy('endTime.arrivalTime', 'ASC', 'NULLS LAST');
+    }
 
     async findOneWithCurrentPosition(params: {
         operationId: string;
@@ -129,11 +127,9 @@ export class OperationQuery extends TypeOrmCrudService<OperationModel> {
     }): Promise<OperationCurrentPositionDto> {
         const { operationId, searchTime } = params;
 
-        const model = await this.operationRepository.findOne({
-            where: { id: operationId },
-            relations: OperationQuery.CURRENT_POSITION_RELATIONS,
-            order: OperationQuery.CURRENT_POSITION_ORDER,
-        });
+        const model = await this.#currentPositionQueryBuilder()
+            .where('operation.id = :operationId', { operationId })
+            .getOne();
 
         if (!model) {
             return null;
@@ -153,11 +149,9 @@ export class OperationQuery extends TypeOrmCrudService<OperationModel> {
         const { operationIds, searchTime } = params;
         if (operationIds.length === 0) return [];
 
-        const models = await this.operationRepository.find({
-            where: { id: In(operationIds) },
-            relations: OperationQuery.CURRENT_POSITION_RELATIONS,
-            order: OperationQuery.CURRENT_POSITION_ORDER,
-        });
+        const models = await this.#currentPositionQueryBuilder()
+            .where('operation.id IN (:...operationIds)', { operationIds })
+            .getMany();
         const byId = new Map(models.map((model) => [model.id, model]));
 
         return operationIds
