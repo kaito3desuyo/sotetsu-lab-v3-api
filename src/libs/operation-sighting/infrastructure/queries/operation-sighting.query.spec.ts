@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import dayjs from 'dayjs';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { OperationSightingModel } from '../models/operation-sighting.model';
 import { OperationSightingQuery } from './operation-sighting.query';
@@ -7,6 +8,7 @@ import { OperationSightingQuery } from './operation-sighting.query';
 type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
 
 const mockGetOne: AnyMock = jest.fn();
+const mockGetMany: AnyMock = jest.fn();
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildChainableQueryBuilder(): any {
@@ -16,15 +18,28 @@ function buildChainableQueryBuilder(): any {
         qb[method] = jest.fn().mockReturnValue(qb);
     }
     qb.getOne = mockGetOne;
+    qb.getMany = mockGetMany;
     return qb;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let currentQueryBuilder: any;
 const mockCreateQueryBuilder: AnyMock = jest.fn();
+const mockRawQuery: AnyMock = jest.fn();
+const mockFind: AnyMock = jest.fn();
 const mockRepository = {
     createQueryBuilder: mockCreateQueryBuilder,
+    query: mockRawQuery,
+    find: mockFind,
+    manager: {
+        connection: {
+            getMetadata: (target: { name: string }) => ({
+                tableName: target.name,
+            }),
+        },
+    },
     metadata: {
+        tableName: 'operation_sightings',
         connection: { options: { type: 'postgres' } },
         columns: [],
         primaryColumns: [],
@@ -97,5 +112,59 @@ describe('OperationSightingQuery - findOneById', () => {
 
         expect(result).not.toBeNull();
         expect(result?.operationSightingId).toBe('sighting-uuid');
+    });
+});
+
+describe('OperationSightingQuery - findManyLatestByOperationNumbersAndBeforeSightingTime', () => {
+    let query: OperationSightingQuery;
+
+    beforeEach(async () => {
+        jest.clearAllMocks();
+        currentQueryBuilder = buildChainableQueryBuilder();
+        mockCreateQueryBuilder.mockReturnValue(currentQueryBuilder);
+        query = await buildQuery();
+    });
+
+    it('番号ごとの最新の ID を引いたあと、本体はクエリビルダーで運用・編成と結合して引く', async () => {
+        mockRawQuery.mockResolvedValue([{ id: 's-1' }, { id: 's-2' }]);
+        mockGetMany.mockResolvedValue([
+            { id: 's-1', operation: { operationNumber: '11' } },
+            { id: 's-2', operation: { operationNumber: '51' } },
+        ]);
+
+        const result =
+            await query.findManyLatestByOperationNumbersAndBeforeSightingTime({
+                operationNumbers: ['11', '51'],
+                sightingTime: dayjs('2026-10-05T13:00:00+09:00'),
+            });
+
+        expect(mockCreateQueryBuilder).toHaveBeenCalledWith('sighting');
+        expect(currentQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
+            'sighting.operation',
+            'operation',
+        );
+        expect(currentQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
+            'sighting.formation',
+            'formation',
+        );
+        expect(currentQueryBuilder.where).toHaveBeenCalledWith(
+            'sighting.id IN (:...ids)',
+            { ids: ['s-1', 's-2'] },
+        );
+        expect(mockFind).not.toHaveBeenCalled();
+        expect([...result.keys()]).toEqual(['11', '51']);
+    });
+
+    it('該当が無ければ本体を引かずに空を返す', async () => {
+        mockRawQuery.mockResolvedValue([]);
+
+        const result =
+            await query.findManyLatestByOperationNumbersAndBeforeSightingTime({
+                operationNumbers: ['11'],
+                sightingTime: dayjs('2026-10-05T13:00:00+09:00'),
+            });
+
+        expect(result.size).toBe(0);
+        expect(mockCreateQueryBuilder).not.toHaveBeenCalled();
     });
 });
