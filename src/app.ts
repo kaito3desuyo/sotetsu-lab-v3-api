@@ -8,6 +8,7 @@ import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { corsOptions } from './core/configs/cors-options';
 import { validationPipeOptions } from './core/configs/validator-options';
 import { UnexpectedErrorFilter } from './core/filters/unexpected-error.filter';
 import { UseCaseErrorFilter } from './core/filters/usecase-error.filter';
@@ -26,9 +27,7 @@ export async function createApp(): Promise<INestApplication> {
     app.enableShutdownHooks();
     // app.use(compression());
     app.use(helmet());
-    app.enableCors({
-        origin: process.env.CORS_HEADER_ORIGIN || '*',
-    });
+    app.enableCors(corsOptions(process.env.CORS_HEADER_ORIGIN));
     app.useLogger(app.get(LoggerService));
     app.useGlobalPipes(new ValidationPipe(validationPipeOptions));
     // app.useGlobalFilters(new ErrorFilter());
