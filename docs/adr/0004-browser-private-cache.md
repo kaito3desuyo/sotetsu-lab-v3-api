@@ -17,7 +17,7 @@
 
 - クライアントが使っている v3 の GET 28 本に、成功した返答にだけ `Cache-Control` を付ける。値は `CACHE_CONTROL` の 3 種類だけ。
   - マスタ・日付つきマスタ: `private, max-age=3600`
-  - 時刻表（trip-blocks・運用の時刻表系）: `private, max-age=600`
+  - 時刻表（trip-blocks・運用の時刻表系）: `private, max-age=3600`（当初は 600。追記を参照）
   - リアルタイム（目撃・時刻断面・現在位置）: `no-store`
 - 部品は RBAC と同じく `src/core/modules/cache-control/` にまとめ、`CacheControlModule` を `AppModule` で読み込む。モジュールが interceptor（`APP_INTERCEPTOR`）とミドルウェア（`forRoutes('*')`）を自分で掛けるので、`app.ts` は触らない。
 - 付け方は `@CacheControl(value)` でメタデータを付け、`CacheControlInterceptor` が書く。
@@ -43,7 +43,13 @@
 ## 結果
 
 - 返答は `private` なので、利用者本人のブラウザにだけ置かれる。GET の返答は利用者ごとに変わらない（`@RBAC` も JWT の中身を読む所も無い）ので、他人のデータが混ざることはない。
-- 列車情報を書いた本人の鮮度は、クライアント側で担保する。書き込みが成功したら画面内キャッシュを捨て、10 分間は時刻表系の GET を `cache: 'reload'` で取る（sotetsu-lab-v3-client の `docs/superpowers/specs/2026-10-07-browser-private-cache-design.md`・ADR-0002）。他の利用者は最大 10 分遅れる。
+- 列車情報を書いた本人の鮮度は、クライアント側で担保する。書き込みが成功したら画面内キャッシュを捨て、1 時間は時刻表系の GET を `cache: 'reload'` で取る（sotetsu-lab-v3-client の `docs/superpowers/specs/2026-10-07-browser-private-cache-design.md`・ADR-0002）。他の利用者は最大 1 時間遅れる。
 - そのため、出す順はクライアントが先で、API が後。
-- 時刻表の 600 秒は、クライアントの `RELOAD_WINDOW_MS.timetable` と同じでなければならない。
+- 時刻表の 3600 秒は、クライアントの `RELOAD_WINDOW_MS.timetable` と同じでなければならない。
 - 塞がるのは v3 だけ。v2 の GET は AuthGuard を通すのに `private` の無い `max-age=2592000` / `max-age=1` を返しており、`MaxTTL` を残すので、CloudFront は引き続き URL だけをキーに最長 30 日置いて、認証なしで返す。2026-10-07 時点の client は v2 を呼んでいない。v2 の扱い（`private` を足す・v2 をやめる）は別の PR で決める。
+
+## 追記（2026-10-07）: 時刻表を `private, max-age=3600` に延ばした
+
+- v3.10.0 のデプロイ後 3.6 時間で、DB に届く trip-blocks の 19 列の組は約 25 回/時だった。デプロイ前の約 20 回/時から減っていない。利用者の HAR では、開き直したときの trip-blocks（各 1.8MB）はブラウザのキャッシュから返っていた。だから減らない分は、初めて来た人と、10 分を過ぎてから戻った人の分だと考えた。
+- 時刻表が書き換わるのは、ほとんどが年 1 回のダイヤ改正だ。改正では新しい calendar ができ、URL の `calendarId` ごと変わるので、古いキャッシュは出ない。遅れが出るのは今のダイヤを後から直したときだけで、それも他の利用者に最長 1 時間残るだけだ。これなら許せると、ユーザーが判断した。
+- `CACHE_CONTROL.TIMETABLE` をマスタと同じ `private, max-age=3600` にする。分類はマスタと分けたまま残し、あとで別々に調整できるようにする。クライアントの `RELOAD_WINDOW_MS.timetable` も `3_600_000` にそろえ、クライアントを先に出す。

@@ -86,7 +86,7 @@ describe('CacheControlInterceptor', () => {
         const res = await request(app.getHttpServer()).get('/async');
 
         expect(res.status).toBe(200);
-        expect(res.headers['cache-control']).toBe('private, max-age=600');
+        expect(res.headers['cache-control']).toBe('private, max-age=3600');
     });
 
     it('@CacheControl の無い handler には付けない', async () => {
@@ -119,7 +119,7 @@ describe('CacheControlInterceptor', () => {
     it('値は 3 種類だけ', () => {
         expect(CACHE_CONTROL).toEqual({
             MASTER: 'private, max-age=3600',
-            TIMETABLE: 'private, max-age=600',
+            TIMETABLE: 'private, max-age=3600',
             REALTIME: 'no-store',
         });
     });
