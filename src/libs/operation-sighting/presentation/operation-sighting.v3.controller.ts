@@ -9,6 +9,8 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from 'src/core/modules/auth/auth.guard';
+import { CACHE_CONTROL } from 'src/core/modules/cache-control/cache-control.constants';
+import { CacheControl } from 'src/core/modules/cache-control/cache-control.decorator';
 import { RBAC } from 'src/core/modules/rbac/rbac.decorator';
 import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
 import { Role } from 'src/core/modules/rbac/role.enum';
@@ -28,6 +30,7 @@ export class OperationSightingV3Controller {
     ) {}
 
     @Get('/from/:start/to/:end')
+    @CacheControl(CACHE_CONTROL.REALTIME)
     async findManyBySpecificPeriod(
         @Param('start') start: string,
         @Param('end') end: string,
@@ -45,6 +48,7 @@ export class OperationSightingV3Controller {
 
     /** 複数の運用番号の時刻断面をまとめて返す。`operationNumbers=11,12,…`。キーは運用番号 */
     @Get('/time-cross-section/operation-numbers')
+    @CacheControl(CACHE_CONTROL.REALTIME)
     async findManyTimeCrossSectionsByOperationNumbers(
         @Query('operationNumbers') operationNumbers: string,
         @Query('searchTime') searchTime?: string,
@@ -62,6 +66,7 @@ export class OperationSightingV3Controller {
 
     /** 複数の編成番号の時刻断面をまとめて返す。`formationNumbers=10701,…`。キーは編成番号 */
     @Get('/time-cross-section/formation-numbers')
+    @CacheControl(CACHE_CONTROL.REALTIME)
     async findManyTimeCrossSectionsByFormationNumbers(
         @Query('formationNumbers') formationNumbers: string,
         @Query('searchTime') searchTime?: string,
@@ -78,6 +83,7 @@ export class OperationSightingV3Controller {
     }
 
     @Get('/time-cross-section/operation-number/:operationNumber')
+    @CacheControl(CACHE_CONTROL.REALTIME)
     async findOneTimeCrossSectionByOperationNumber(
         @Param('operationNumber') operationNumber: string,
         @Query('searchTime') searchTime?: string,
