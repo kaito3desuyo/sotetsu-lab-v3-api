@@ -1,5 +1,7 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/core/modules/auth/auth.guard';
+import { CACHE_CONTROL } from 'src/core/modules/cache-control/cache-control.constants';
+import { CacheControl } from 'src/core/modules/cache-control/cache-control.decorator';
 import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
 import { TripClassDetailsDto } from '../usecase/dtos/trip-class-details.dto';
 import { TripClassV3Service } from '../usecase/trip-class.v3.service';
@@ -10,6 +12,7 @@ export class TripClassV3Controller {
     constructor(private readonly tripClassV3Service: TripClassV3Service) {}
 
     @Get()
+    @CacheControl(CACHE_CONTROL.MASTER)
     async findMany(
         @Query('serviceId') serviceId?: string,
     ): Promise<TripClassDetailsDto[]> {

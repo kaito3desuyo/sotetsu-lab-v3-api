@@ -10,6 +10,8 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from 'src/core/modules/auth/auth.guard';
+import { CACHE_CONTROL } from 'src/core/modules/cache-control/cache-control.constants';
+import { CacheControl } from 'src/core/modules/cache-control/cache-control.decorator';
 import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
 import { AddTripToTripBlockDto } from '../usecase/dtos/add-trip-to-trip-block.dto';
 import { CreateTripBlockDto } from '../usecase/dtos/create-trip-block.dto';
@@ -30,6 +32,7 @@ export class TripBlockV3Controller {
 
     /** `fields[資源]=項目,項目` で返す項目を選べる（docs/adr/0002-v3-sparse-fieldsets.md） */
     @Get('/')
+    @CacheControl(CACHE_CONTROL.TIMETABLE)
     async findManyByFilter(
         @Query() query: TripBlockFindManyByFilterQuery,
     ): Promise<TripBlockDetailsDto[] | TripBlockSparseDto[]> {
@@ -43,6 +46,7 @@ export class TripBlockV3Controller {
     }
 
     @Get('/:id')
+    @CacheControl(CACHE_CONTROL.TIMETABLE)
     async findOneById(@Param('id') id: string): Promise<TripBlockDetailsDto> {
         const result = await this.tripBlockV3Service.findOneById({ id });
 

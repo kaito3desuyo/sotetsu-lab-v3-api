@@ -1,5 +1,7 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/core/modules/auth/auth.guard';
+import { CACHE_CONTROL } from 'src/core/modules/cache-control/cache-control.constants';
+import { CacheControl } from 'src/core/modules/cache-control/cache-control.decorator';
 import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
 import { parseCommaList } from 'src/core/utils/comma-list';
 import { OperationCurrentPositionDto } from '../usecase/dtos/operation-current-position.dto';
@@ -14,11 +16,13 @@ export class OperationV3Controller {
     constructor(private readonly operationV3Service: OperationV3Service) {}
 
     @Get('/groups')
+    @CacheControl(CACHE_CONTROL.MASTER)
     findAllGroups(): OperationGroupDto[] {
         return this.operationV3Service.findAllGroups();
     }
 
     @Get('/calendar/:calendarId')
+    @CacheControl(CACHE_CONTROL.TIMETABLE)
     async findManyByCalendarId(
         @Param('calendarId') calendarId: string,
     ): Promise<OperationDetailsDto[]> {
@@ -31,6 +35,7 @@ export class OperationV3Controller {
 
     /** ダイヤ内の全運用を列車つきで返す（運用表用。運用ごとの /:id/trips を束ねる） */
     @Get('/calendar/:calendarId/trips')
+    @CacheControl(CACHE_CONTROL.TIMETABLE)
     async findManyWithTrips(
         @Param('calendarId') calendarId: string,
     ): Promise<OperationWithTripsDto[]> {
@@ -46,19 +51,22 @@ export class OperationV3Controller {
      * /:id/current-position を束ねる）。`operationIds=a,b,c`
      */
     @Get('/current-positions')
+    @CacheControl(CACHE_CONTROL.REALTIME)
     async findManyWithCurrentPosition(
         @Query('operationIds') operationIds: string,
         @Query('searchTime') searchTime?: string,
     ): Promise<OperationCurrentPositionDto[]> {
-        const result = await this.operationV3Service.findManyWithCurrentPosition({
-            operationIds: parseCommaList(operationIds),
-            searchTime,
-        });
+        const result =
+            await this.operationV3Service.findManyWithCurrentPosition({
+                operationIds: parseCommaList(operationIds),
+                searchTime,
+            });
 
         return result;
     }
 
     @Get('/from/:start/to/:end')
+    @CacheControl(CACHE_CONTROL.TIMETABLE)
     async findManyBySpecificPeriod(
         @Param('start') start: string,
         @Param('end') end: string,
@@ -72,6 +80,7 @@ export class OperationV3Controller {
     }
 
     @Get('/:id/trips')
+    @CacheControl(CACHE_CONTROL.TIMETABLE)
     async findOneWithTrips(
         @Param('id') operationId: string,
     ): Promise<OperationWithTripsDto> {
@@ -83,6 +92,7 @@ export class OperationV3Controller {
     }
 
     @Get('/:id/current-position')
+    @CacheControl(CACHE_CONTROL.REALTIME)
     async findOneWithCurrentPosition(
         @Param('id') operationId: string,
         @Query('searchTime') searchTime?: string,

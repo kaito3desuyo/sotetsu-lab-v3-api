@@ -1,5 +1,7 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/core/modules/auth/auth.guard';
+import { CACHE_CONTROL } from 'src/core/modules/cache-control/cache-control.constants';
+import { CacheControl } from 'src/core/modules/cache-control/cache-control.decorator';
 import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
 import { ServiceAgenciesDto } from '../usecase/dtos/service-agencies.dto';
 import { ServiceDetailsDto } from '../usecase/dtos/service-details.dto';
@@ -13,6 +15,7 @@ export class ServiceV3Controller {
     constructor(private readonly serviceV3Service: ServiceV3Service) {}
 
     @Get('/')
+    @CacheControl(CACHE_CONTROL.MASTER)
     async findMany(
         @Query('serviceName') serviceName?: string,
     ): Promise<ServiceDetailsDto[]> {
@@ -22,6 +25,7 @@ export class ServiceV3Controller {
     }
 
     @Get('/:id/stations')
+    @CacheControl(CACHE_CONTROL.MASTER)
     async findOneStations(
         @Param('id') serviceId: string,
     ): Promise<ServiceStationsDto> {
@@ -33,6 +37,7 @@ export class ServiceV3Controller {
     }
 
     @Get('/:id/agencies')
+    @CacheControl(CACHE_CONTROL.MASTER)
     async findOneServiceWithAgencies(
         @Param('id') serviceId: string,
     ): Promise<ServiceAgenciesDto> {
@@ -44,6 +49,7 @@ export class ServiceV3Controller {
     }
 
     @Get('/:id/routes')
+    @CacheControl(CACHE_CONTROL.MASTER)
     async findOneServiceWithRoutes(
         @Param('id') serviceId: string,
     ): Promise<ServiceRoutesDto> {

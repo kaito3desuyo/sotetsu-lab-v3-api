@@ -11,6 +11,8 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from 'src/core/modules/auth/auth.guard';
+import { CACHE_CONTROL } from 'src/core/modules/cache-control/cache-control.constants';
+import { CacheControl } from 'src/core/modules/cache-control/cache-control.decorator';
 import { RBAC } from 'src/core/modules/rbac/rbac.decorator';
 import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
 import { Role } from 'src/core/modules/rbac/role.enum';
@@ -26,6 +28,7 @@ export class CalendarDateV3Controller {
     ) {}
 
     @Get('/')
+    @CacheControl(CACHE_CONTROL.MASTER)
     async findMany(
         @Query('calendarId') calendarId?: string,
         @Query('from') from?: string,
