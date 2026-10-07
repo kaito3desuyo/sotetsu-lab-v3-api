@@ -244,9 +244,11 @@ const serverlessConfiguration: AWS = {
                 Properties: {
                     CachePolicyConfig: {
                         Name: 'Sotetsu_Lab_v3_API_CloudFront_Cache_Policy',
-                        DefaultTTL: 1,
+                        // MinTTL が 0 より大きいと、private / no-store の返答でも CloudFront が
+                        // その秒数キャッシュし、認証を通らずに返してしまう（2026-10-07）。
+                        DefaultTTL: 0,
                         MaxTTL: 31536000,
-                        MinTTL: 1,
+                        MinTTL: 0,
                         ParametersInCacheKeyAndForwardedToOrigin: {
                             HeadersConfig: {
                                 HeaderBehavior: 'none',
