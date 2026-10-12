@@ -24,4 +24,6 @@ export class CreateTripOperationListDto extends ValidatableTripOperationListDto 
     @IsOptional()
     @Exclude()
     endTimeId: undefined;
+
+    nextTripOperationListId?: string | null;
 }

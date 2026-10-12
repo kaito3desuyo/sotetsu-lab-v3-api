@@ -9,6 +9,8 @@ interface ITripOperationListProps {
     endStationId: string;
     startTimeId: string;
     endTimeId: string;
+    /** undefined は「送られていない（今の値を残す）」、null は「つながりなし」 */
+    nextTripOperationListId?: string | null;
 }
 
 export class TripOperationList extends Entity<ITripOperationListProps> {

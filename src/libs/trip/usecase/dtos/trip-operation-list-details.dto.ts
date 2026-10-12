@@ -27,6 +27,9 @@ export class TripOperationListDetailsDto extends BaseTripOperationListDto {
     endStationId: string;
 
     @Expose()
+    nextTripOperationListId: string | null;
+
+    @Expose()
     createdAt: Date;
 
     @Expose()

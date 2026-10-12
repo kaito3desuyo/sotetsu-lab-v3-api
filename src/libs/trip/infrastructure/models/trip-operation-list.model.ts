@@ -1,6 +1,7 @@
 import { OperationModel } from 'src/libs/operation/infrastructure/models/operation.model';
 import { StationModel } from 'src/libs/station/infrastructure/models/station.model';
 import {
+    Check,
     Column,
     CreateDateColumn,
     Entity,
@@ -18,6 +19,9 @@ import { TripModel } from './trip.model';
 })
 @Index(['operationId', 'startTimeId'])
 @Index(['operationId', 'endTimeId'])
+@Check(
+    `"next_trip_operation_list_id" IS NULL OR "next_trip_operation_list_id" <> "id"`,
+)
 export class TripOperationListModel {
     @PrimaryGeneratedColumn('uuid')
     id: string;
@@ -45,6 +49,11 @@ export class TripOperationListModel {
     @Column('uuid', { nullable: true })
     @Index()
     endTimeId: string;
+
+    /** この区間のあと、車両が移る区間（spec 3.6 決まり 2）。同じカレンダーの運用の区間に限る */
+    @Column('uuid', { nullable: true })
+    @Index({ unique: true })
+    nextTripOperationListId?: string | null;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
     readonly createdAt?: Date;
@@ -80,4 +89,8 @@ export class TripOperationListModel {
     @ManyToOne(() => StationModel, (station) => station)
     @JoinColumn({ name: 'end_station_id' })
     readonly endStation?: StationModel;
+
+    @ManyToOne(() => TripOperationListModel, { onDelete: 'SET NULL' })
+    @JoinColumn({ name: 'next_trip_operation_list_id' })
+    readonly nextTripOperationList?: TripOperationListModel;
 }
