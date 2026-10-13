@@ -1,5 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { secondsOfServiceDay } from 'src/core/utils/datetime';
+import { UseCaseError } from 'src/core/classes/custom-error';
 import { parseSparseFieldsets } from 'src/core/utils/sparse-fieldsets';
+import { NextOperationPolicy } from 'src/libs/operation/domain/next-operation-policy.domain';
+import { ItinerarySegmentQuery } from 'src/libs/operation/infrastructure/queries/itinerary-segment.query';
 import { Trips } from 'src/libs/trip/domain/trip.domain';
 import { TripBlock } from '../domain/trip-block.domain';
 import { TripBlockCommand } from '../infrastructure/commands/trip-block.command';
@@ -19,12 +23,129 @@ import {
     TRIP_BLOCK_FIELDSET_WHITELIST,
 } from './trip-block-fieldsets';
 
+interface TripLike {
+    id?: string;
+    calendarId: string | null;
+    times?: {
+        stationId: string;
+        arrivalDays: number | null;
+        arrivalTime: string | null;
+        departureDays: number | null;
+        departureTime: string | null;
+    }[];
+    tripOperationLists?: {
+        id?: string;
+        operationId: string;
+        startStationId: string;
+        endStationId: string;
+        nextTripOperationListId?: string | null;
+    }[];
+}
+
+/** 「次の運用」が 1 つでも設定されているか（null だけなら規則に触れない） */
+function hasNextLink(
+    trips: {
+        tripOperationLists?: { nextTripOperationListId?: string | null }[];
+    }[],
+): boolean {
+    return trips.some((t) =>
+        (t.tripOperationLists ?? []).some((o) => !!o.nextTripOperationListId),
+    );
+}
+
 @Injectable()
 export class TripBlockV3Service {
     constructor(
         private readonly tripBlockCommand: TripBlockCommand,
         private readonly tripBlockQuery: TripBlockQuery,
+        private readonly itinerarySegmentQuery: ItinerarySegmentQuery,
     ) {}
+
+    /**
+     * 書き込む区間の「次の運用」を、そのダイヤの区間と突き合わせて検める。
+     * 決まり 1 の判定は、送られた区間（運番・駅・時刻・列車のまとまり）で組み直す。
+     * blockKeys は trips と同じ並びで、各列車が属するまとまりの id（新しいまとまりは仮の名前）
+     */
+    async #validateNextSegments(
+        trips: TripLike[],
+        blockKeys: string[],
+        removedIds: string[] = [],
+    ): Promise<void> {
+        if (!hasNextLink(trips)) return;
+        const byCalendar = new Map<
+            string,
+            { trip: TripLike; block: string }[]
+        >();
+        trips.forEach((trip, i) => {
+            const lists = trip.tripOperationLists ?? [];
+            if (!trip.calendarId) {
+                if (lists.some((o) => o.nextTripOperationListId)) {
+                    throw new UseCaseError(
+                        'ダイヤのない列車には次の運用を設定できません',
+                        { reason: 'next_segment_without_calendar' },
+                    );
+                }
+                return;
+            }
+            byCalendar.set(trip.calendarId, [
+                ...(byCalendar.get(trip.calendarId) ?? []),
+                { trip, block: blockKeys[i] },
+            ]);
+        });
+        for (const [calendarId, items] of byCalendar) {
+            const existing =
+                await this.itinerarySegmentQuery.findManyByCalendarId({
+                    calendarId,
+                });
+            const operationNumbers = new Map(
+                existing.map((o) => [o.operationId, o.operationNumber]),
+            );
+            NextOperationPolicy.validate({
+                segments: existing,
+                removedIds,
+                proposed: items.flatMap(({ trip, block }) =>
+                    (trip.tripOperationLists ?? []).map((o) => {
+                        const departure = trip.times?.find(
+                            (x) => x.stationId === o.startStationId,
+                        );
+                        const arrival = trip.times?.find(
+                            (x) => x.stationId === o.endStationId,
+                        );
+                        const startSeconds = secondsOfServiceDay(
+                            departure?.departureDays ?? null,
+                            departure?.departureTime ?? null,
+                        );
+                        const endSeconds = secondsOfServiceDay(
+                            arrival?.arrivalDays ?? null,
+                            arrival?.arrivalTime ?? null,
+                        );
+                        return {
+                            id: o.id,
+                            nextTripOperationListId: o.nextTripOperationListId,
+                            segment:
+                                o.operationId &&
+                                startSeconds !== null &&
+                                endSeconds !== null
+                                    ? {
+                                          tripId: trip.id ?? block,
+                                          tripBlockId: block,
+                                          operationId: o.operationId,
+                                          operationNumber:
+                                              operationNumbers.get(
+                                                  o.operationId,
+                                              ) ?? o.operationId,
+                                          startStationId: o.startStationId,
+                                          endStationId: o.endStationId,
+                                          startSeconds,
+                                          endSeconds,
+                                      }
+                                    : undefined,
+                        };
+                    }),
+                ),
+            });
+        }
+    }
 
     /**
      * `fields` が無ければ全項目、あれば許可リストで検めて指定の項目だけを返す
@@ -60,6 +181,10 @@ export class TripBlockV3Service {
     async createManyTripBlocks(
         dtos: CreateTripBlockDto[],
     ): Promise<TripBlockDetailsDto[]> {
+        await this.#validateNextSegments(
+            dtos.flatMap((o) => o.trips),
+            dtos.flatMap((o, i) => o.trips.map(() => `new-block-${i}`)),
+        );
         const domains = TripBlocksDomainBuilder.buildFromCreateDto(dtos);
         return this.tripBlockCommand.bulkCreate(domains);
     }
@@ -70,6 +195,23 @@ export class TripBlockV3Service {
     }): Promise<TripBlockDetailsDto> {
         const { id, dto } = params;
 
+        const current = hasNextLink(dto.trips)
+            ? await this.tripBlockQuery.findOneTripBlockByTripBlockId(id)
+            : null;
+        const sentIds = new Set(
+            dto.trips.flatMap((t) =>
+                (t.tripOperationLists ?? []).map((o) => o.id),
+            ),
+        );
+        const removedIds = (current?.trips ?? [])
+            .flatMap((t) => t.tripOperationLists ?? [])
+            .map((o) => o.id)
+            .filter((x) => !sentIds.has(x));
+        await this.#validateNextSegments(
+            dto.trips,
+            dto.trips.map(() => id),
+            removedIds,
+        );
         const domain = TripBlockDomainBuilder.buildFromReplaceDto({
             ...dto,
             id,

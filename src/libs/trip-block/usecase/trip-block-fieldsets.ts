@@ -45,6 +45,7 @@ export const TRIP_BLOCK_FIELDSET_WHITELIST = {
         'endStationId',
         'startTimeId',
         'endTimeId',
+        'nextTripOperationListId',
         'createdAt',
         'updatedAt',
     ],
