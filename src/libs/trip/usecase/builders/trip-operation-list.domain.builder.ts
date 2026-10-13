@@ -19,6 +19,7 @@ export const TripOperationListDomainBuilder = {
                 endStationId: dto.endStationId,
                 startTimeId: dto.startTimeId,
                 endTimeId: dto.endTimeId,
+                nextTripOperationListId: dto.nextTripOperationListId,
             },
             new UniqueEntityId(dto.id),
         );
@@ -31,6 +32,7 @@ export const TripOperationListDomainBuilder = {
             endStationId: dto.endStationId,
             startTimeId: dto.startTimeId ?? '',
             endTimeId: dto.endTimeId ?? '',
+            nextTripOperationListId: dto.nextTripOperationListId,
         });
     },
     buildFromReplaceDto: (
@@ -44,6 +46,7 @@ export const TripOperationListDomainBuilder = {
                 endStationId: dto.endStationId,
                 startTimeId: dto.startTimeId ?? '',
                 endTimeId: dto.endTimeId ?? '',
+                nextTripOperationListId: dto.nextTripOperationListId,
             },
             new UniqueEntityId(dto.id),
         );

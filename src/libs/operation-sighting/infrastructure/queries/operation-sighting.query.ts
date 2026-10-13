@@ -257,6 +257,35 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
         return OperationSightingsDtoBuilder.buildFromModel(model);
     }
 
+    /** 期間内の有効な目撃を、運用・編成つきで新しい順に（目撃の引き継ぎ用） */
+    async findManyValidBySightingTimeRange(params: {
+        start: dayjs.Dayjs;
+        end: dayjs.Dayjs;
+    }): Promise<OperationSightingDetailsDto[]> {
+        const models = await this.operationSightingRepository
+            .createQueryBuilder('sighting')
+            .leftJoinAndSelect('sighting.operation', 'operation')
+            .leftJoinAndSelect('sighting.formation', 'formation')
+            .where('sighting.sightingTime BETWEEN :start AND :end', {
+                start: params.start.toISOString(),
+                end: params.end.toISOString(),
+            })
+            .andWhere((qb) => {
+                const sub = qb
+                    .subQuery()
+                    .select('1')
+                    .from(OperationSightingInvalidationModel, 'inv')
+                    .where('inv.operationSightingId = sighting.id')
+                    .getQuery();
+                return `NOT EXISTS ${sub}`;
+            })
+            .orderBy('sighting.sightingTime', 'DESC')
+            .addOrderBy('sighting.updatedAt', 'DESC')
+            .getMany();
+
+        return OperationSightingsDtoBuilder.buildFromModel(models);
+    }
+
     async findOneOperationSighting(
         query: CrudRequest,
     ): Promise<OperationSightingDetailsDto | null> {

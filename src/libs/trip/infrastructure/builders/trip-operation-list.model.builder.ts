@@ -6,7 +6,7 @@ import { TripOperationListModel } from '../models/trip-operation-list.model';
 
 export const TripOperationListModelBuilder = {
     buildFromDomain: (domain: TripOperationList): TripOperationListModel => {
-        return {
+        const model: TripOperationListModel = {
             id: domain.id.value,
             tripId: domain.props.tripId,
             operationId: domain.props.operationId,
@@ -14,7 +14,12 @@ export const TripOperationListModelBuilder = {
             endStationId: domain.props.endStationId,
             startTimeId: domain.props.startTimeId,
             endTimeId: domain.props.endTimeId,
-        };
+        } as TripOperationListModel;
+        // undefined のときはキーごと置かない。TypeORM の save は無いキーの列を更新しない
+        if (domain.props.nextTripOperationListId !== undefined) {
+            model.nextTripOperationListId = domain.props.nextTripOperationListId;
+        }
+        return model;
     },
 } as const;
 

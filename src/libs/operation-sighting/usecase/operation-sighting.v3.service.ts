@@ -7,6 +7,8 @@ import { UnexpectedError } from 'src/core/classes/unexpected-error';
 import { getBaseDate } from 'src/core/utils/datetime';
 import { CalendarQuery } from 'src/libs/calendar/infrastructure/queries/calendar.query';
 import { FormationQuery } from 'src/libs/formation/infrastructure/queries/formation.query';
+import { VehicleItineraryReadModel } from 'src/libs/operation/usecase/read-models/vehicle-itinerary.read-model';
+import { ItinerarySegmentQuery } from 'src/libs/operation/infrastructure/queries/itinerary-segment.query';
 import { OperationQuery } from 'src/libs/operation/infrastructure/queries/operation.query';
 import {
     buildCirculationPath,
@@ -30,6 +32,7 @@ import {
     CacheAction,
     selectMostRecentCandidateForOperationNumber,
 } from './operation-sighting.v3.circulation';
+import { SightingCarryOver } from './read-models/sighting-carry-over.read-model';
 
 /** 時刻断面の判定が読む DB の口。1 件ずつの口とまとめて返す口とで読み方だけを替える。 */
 interface TimeCrossSectionSource {
@@ -40,6 +43,9 @@ interface TimeCrossSectionSource {
     groupMemberCaches(operationNumbers: string[], startTime: dayjs.Dayjs): Promise<OperationSightingLatestCacheDto[]>;
     formationsOn(date: string): ReturnType<FormationQuery['findManyBySpecificPeriod']>;
     operationsOf(calendarId: string): ReturnType<OperationQuery['findManyByCalendarId']>;
+    itineraries(calendarId: string): Promise<VehicleItineraryReadModel>;
+    /** その鉄道日の 4 時から検索時刻までの有効な目撃 */
+    todaySightings(): Promise<OperationSightingDetailsDto[]>;
 }
 
 @Injectable()
@@ -53,20 +59,58 @@ export class OperationSightingV3Service {
         private readonly calendarQuery: CalendarQuery,
         private readonly operationQuery: OperationQuery,
         private readonly formationQuery: FormationQuery,
+        private readonly itinerarySegmentQuery: ItinerarySegmentQuery,
     ) {}
 
     async findManyBySpecificPeriod(params: {
         start: string;
         end: string;
         includeInvalidated?: boolean;
+        includeCarriedOver?: boolean;
     }): Promise<OperationSightingDetailsDto[]> {
-        const { start, end, includeInvalidated = false } = params;
+        const { start, end, includeInvalidated = false, includeCarriedOver = false } = params;
 
-        return this.operationSightingQuery.findManyBySpecificPeriod({
+        const direct = await this.operationSightingQuery.findManyBySpecificPeriod({
             start,
             end,
             includeInvalidated,
         });
+        if (!includeCarriedOver) return direct;
+
+        // 引き継ぎの材料は、直接の一覧と同じ範囲の有効な目撃（operation・formation 付き）を別に引く
+        const format = 'YYYY-MM-DD';
+        const material = await this.operationSightingQuery.findManyValidBySightingTimeRange({
+            start: dayjs(start, format).hour(4).minute(0).second(0).millisecond(0),
+            end: dayjs(end, format).add(1, 'day').hour(4).minute(0).second(0).millisecond(0),
+        });
+        const byDay = new Map<string, OperationSightingDetailsDto[]>();
+        for (const o of material) {
+            const day = getBaseDate(dayjs(o.sightingTime)).format(format);
+            byDay.set(day, [...(byDay.get(day) ?? []), o]);
+        }
+
+        const itineraryCache = new Map<string, Promise<VehicleItineraryReadModel>>();
+        const operationCache = new Map<string, ReturnType<OperationQuery['findManyByCalendarId']>>();
+        const carried: OperationSightingDetailsDto[] = [];
+        for (const [day, sightings] of byDay) {
+            const calendar = await this.calendarQuery.findOneBySpecificDate({ date: day });
+            if (!calendar) continue;
+            if (!itineraryCache.has(calendar.id)) {
+                itineraryCache.set(calendar.id, this.itinerarySegmentQuery.findManyByCalendarId({ calendarId: calendar.id }).then((segments) => VehicleItineraryReadModel.create(segments)));
+            }
+            if (!operationCache.has(calendar.id)) {
+                operationCache.set(calendar.id, this.operationQuery.findManyByCalendarId({ calendarId: calendar.id }));
+            }
+            carried.push(
+                ...SightingCarryOver.create(await itineraryCache.get(calendar.id)!).buildCarried({
+                    sightings,
+                    operations: await operationCache.get(calendar.id)!,
+                }),
+            );
+        }
+        return [...direct, ...carried].sort(
+            (a, b) => dayjs(a.sightingTime).valueOf() - dayjs(b.sightingTime).valueOf(),
+        );
     }
 
     /**
@@ -162,6 +206,32 @@ export class OperationSightingV3Service {
             source.calendar(),
         ]);
 
+        if (calendar) {
+            const [itineraries, sightings] = await Promise.all([
+                source.itineraries(calendar.id),
+                source.todaySightings(),
+            ]);
+            const carried = SightingCarryOver.create(itineraries).resolveForOperation({
+                sightings,
+                operationNumber,
+                searchTime: searchTimeInstance,
+            });
+            if (carried) {
+                const { sighting, sightedAsOperation } = carried;
+                const operations = await source.operationsOf(calendar.id);
+                const operation = operations.find((o) => o.operationNumber === operationNumber);
+                return {
+                    latestSighting: sighting,
+                    expectedSighting: sighting.formation && operation ? { operation, formation: sighting.formation } : null,
+                    sightedAsOperation,
+                };
+            }
+            // 今日の行程表で判定でき、該当なし（別の車両・追い出し）。今日の直接の目撃が別の車両のものなら出さない
+            if (carried === null && latestSighting && searchBaseDate.isSame(getBaseDate(dayjs(latestSighting.sightingTime)))) {
+                return { latestSighting, expectedSighting: null, sightedAsOperation: null };
+            }
+        }
+
         if (!latestSighting) {
             return { latestSighting: null, expectedSighting: null };
         }
@@ -241,6 +311,30 @@ export class OperationSightingV3Service {
             source.latestByFormationNumber(formationNumber),
             source.calendar(),
         ]);
+
+        if (calendar) {
+            const [itineraries, sightings] = await Promise.all([
+                source.itineraries(calendar.id),
+                source.todaySightings(),
+            ]);
+            const carried = SightingCarryOver.create(itineraries).resolveForFormation({
+                sightings,
+                formationNumber,
+                searchTime: searchTimeInstance,
+            });
+            if (carried) {
+                const operations = await source.operationsOf(calendar.id);
+                const operation = operations.find((o) => o.operationNumber === carried.operationNumber) ?? null;
+                return {
+                    latestSighting: carried.sighting,
+                    expectedSighting: operation && carried.sighting.formation ? { operation, formation: carried.sighting.formation } : null,
+                    sightedAsOperation: carried.sightedAsOperation,
+                };
+            }
+            if (carried === null) {
+                return { latestSighting, expectedSighting: null, sightedAsOperation: null };
+            }
+        }
 
         if (!latestSighting) {
             return { latestSighting: null, expectedSighting: null };
@@ -375,6 +469,12 @@ export class OperationSightingV3Service {
             formationsOn: (date) =>
                 this.formationQuery.findManyBySpecificPeriod({ startDate: date, endDate: date }),
             operationsOf: (calendarId) => this.operationQuery.findManyByCalendarId({ calendarId }),
+            itineraries: (calendarId) => this.itinerarySegmentQuery.findManyByCalendarId({ calendarId }).then((segments) => VehicleItineraryReadModel.create(segments)),
+            todaySightings: () =>
+                this.operationSightingQuery.findManyValidBySightingTimeRange({
+                    start: getBaseDate(searchTimeInstance).hour(4),
+                    end: searchTimeInstance,
+                }),
         };
     }
 
@@ -438,6 +538,8 @@ export class OperationSightingV3Service {
         const groups = new Map<string, Promise<OperationSightingLatestCacheDto[]>>();
         const formations = new Map<string, ReturnType<TimeCrossSectionSource['formationsOn']>>();
         const operations = new Map<string, ReturnType<TimeCrossSectionSource['operationsOf']>>();
+        const itineraryCache = new Map<string, Promise<VehicleItineraryReadModel>>();
+        const todayCache = new Map<string, Promise<OperationSightingDetailsDto[]>>();
 
         return {
             latestByOperationNumber: (n) => memo(opLatest, n, () => direct.latestByOperationNumber(n)),
@@ -451,6 +553,8 @@ export class OperationSightingV3Service {
                 ),
             formationsOn: (date) => memo(formations, date, () => direct.formationsOn(date)),
             operationsOf: (calendarId) => memo(operations, calendarId, () => direct.operationsOf(calendarId)),
+            itineraries: (calendarId) => memo(itineraryCache, calendarId, () => direct.itineraries(calendarId)),
+            todaySightings: () => memo(todayCache, '', () => direct.todaySightings()),
         };
     }
 

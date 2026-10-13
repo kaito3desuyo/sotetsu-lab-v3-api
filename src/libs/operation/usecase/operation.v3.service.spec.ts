@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ItinerarySegmentQuery } from 'src/libs/operation/infrastructure/queries/itinerary-segment.query';
 import { OperationQuery } from '../infrastructure/queries/operation.query';
 import { OperationCurrentPositionDto } from './dtos/operation-current-position.dto';
 import { OperationDetailsDto } from './dtos/operation-details.dto';
@@ -21,6 +22,7 @@ async function buildService(): Promise<OperationV3Service> {
         providers: [
             OperationV3Service,
             { provide: OperationQuery, useValue: mockOperationQuery },
+            { provide: ItinerarySegmentQuery, useValue: {} },
         ],
     }).compile();
 

@@ -1,4 +1,4 @@
-import { IsUUID } from 'class-validator';
+import { IsOptional, IsUUID } from 'class-validator';
 
 export abstract class ValidatableTripOperationListDto {
     @IsUUID()
@@ -21,4 +21,8 @@ export abstract class ValidatableTripOperationListDto {
 
     @IsUUID()
     endTimeId: string;
+
+    @IsOptional()
+    @IsUUID()
+    nextTripOperationListId?: string | null;
 }

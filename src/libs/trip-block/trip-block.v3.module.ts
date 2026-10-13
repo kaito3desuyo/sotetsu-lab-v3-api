@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
+import { OperationLibsModule } from '../operation/operation.libs.module';
 import { TripBlockLibsModule } from './trip-block.libs.module';
 import { TripBlockV3Controller } from './presentation/trip-block.v3.controller';
 import { TripBlockV3Service } from './usecase/trip-block.v3.service';
 
 @Module({
-    imports: [TripBlockLibsModule],
+    imports: [TripBlockLibsModule, OperationLibsModule],
     controllers: [TripBlockV3Controller],
     providers: [TripBlockV3Service],
 })

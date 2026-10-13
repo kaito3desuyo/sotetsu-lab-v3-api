@@ -23,4 +23,6 @@ export class ReplaceTripOperationListDto extends ValidatableTripOperationListDto
     @IsOptional()
     @Exclude()
     endTimeId: undefined;
+
+    nextTripOperationListId?: string | null;
 }

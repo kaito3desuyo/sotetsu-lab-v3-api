@@ -21,4 +21,8 @@ export class OperationSightingTimeCrossSectionDto {
                   | null;
           })
         | null;
+
+    /** 引き継いだ目撃のとき、目撃されたときの運用（例: 12K の断面で 11K として目撃）。直接の目撃は null */
+    @Expose()
+    sightedAsOperation?: { operationId: string; operationNumber: string } | null;
 }

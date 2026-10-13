@@ -35,12 +35,14 @@ export class OperationSightingV3Controller {
         @Param('start') start: string,
         @Param('end') end: string,
         @Query('includeInvalidated') includeInvalidated?: boolean,
+        @Query('includeCarriedOver') includeCarriedOver?: string,
     ): Promise<OperationSightingDetailsDto[]> {
         const result =
             await this.operationSightingV3Service.findManyBySpecificPeriod({
                 start,
                 end,
                 includeInvalidated,
+                includeCarriedOver: includeCarriedOver === 'true',
             });
 
         return result;
