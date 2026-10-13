@@ -118,6 +118,15 @@ describe('SightingCarryOver.resolveForOperation', () => {
         });
         expect(r?.sightedAsOperation?.operationNumber).toBe('12K');
     });
+    it('11K を走っている時刻に 12K と入力された目撃は、11K では元の運番を付けない', () => {
+        const r = SightingCarryOver.create(ebina).resolveForOperation({
+            sightings: [sighting('s1', '12K', '10701', '08:02')],
+            operationNumber: '11K',
+            searchTime: at('13:00'),
+        });
+        expect(r?.sighting.id).toBe('s1');
+        expect(r?.sightedAsOperation).toBeNull();
+    });
     it('直接の目撃には元の運番を付けない', () => {
         const r = SightingCarryOver.create(ebina).resolveForOperation({
             sightings: [sighting('s1', '12K', '10701', '09:00')],
@@ -203,6 +212,15 @@ describe('SightingCarryOver.resolveForFormation', () => {
         expect(r?.operationNumber).toBe('12K');
         expect(r?.sightedAsOperation?.operationNumber).toBe('11K');
     });
+    it('12K を走っている時刻に 11K と入力された目撃は、12K にいるとき元の運番を付けない', () => {
+        const r = SightingCarryOver.create(ebina).resolveForFormation({
+            sightings: [sighting('s1', '11K', '10701', '08:40')],
+            formationNumber: '10701',
+            searchTime: at('09:00'),
+        });
+        expect(r?.operationNumber).toBe('12K');
+        expect(r?.sightedAsOperation).toBeNull();
+    });
     it('同じ行程表でほかの編成があとから目撃されていれば追い出されている', () => {
         const sightings = [
             sighting('s2', '12K', '10702', '09:00'),
@@ -246,6 +264,19 @@ describe('SightingCarryOver.buildCarried', () => {
                     operationId: 'op-11K',
                     operationNumber: '11K',
                 },
+            }),
+        ]);
+    });
+    it('11K を走っている時刻に 12K と入力された目撃から作る 11K の目撃には、元の運番を付けない', () => {
+        const out = SightingCarryOver.create(ebina).buildCarried({
+            sightings: [sighting('a', '12K', '10701', '08:02')],
+            operations,
+        });
+        expect(out).toEqual([
+            expect.objectContaining({
+                id: 'a#11K',
+                operationId: 'op-11K',
+                sightedAsOperation: null,
             }),
         ]);
     });
