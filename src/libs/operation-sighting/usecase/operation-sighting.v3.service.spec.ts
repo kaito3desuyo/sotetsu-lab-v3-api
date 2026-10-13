@@ -11,6 +11,8 @@ import { OperationSightingQuery } from '../infrastructure/queries/operation-sigh
 import { CalendarQuery } from 'src/libs/calendar/infrastructure/queries/calendar.query';
 import { FormationQuery } from 'src/libs/formation/infrastructure/queries/formation.query';
 import { OperationQuery } from 'src/libs/operation/infrastructure/queries/operation.query';
+import { ItinerarySegmentQuery } from 'src/libs/operation/infrastructure/queries/itinerary-segment.query';
+import { ItinerarySegment } from 'src/libs/operation/domain/itinerary-link-rule.domain';
 import { OperationSightingV3Service } from './operation-sighting.v3.service';
 
 dayjs.extend(utc);
@@ -40,7 +42,10 @@ const mockOperationSightingQuery = {
     findOneLatestByFormationNumberAndBeforeSightingTime: jest.fn() as AnyMock,
     findManyLatestByOperationNumbersAndBeforeSightingTime: jest.fn() as AnyMock,
     findManyLatestByFormationNumbersAndBeforeSightingTime: jest.fn() as AnyMock,
+    findManyValidBySightingTimeRange: jest.fn() as AnyMock,
+    findManyBySpecificPeriod: jest.fn() as AnyMock,
 };
+const mockItinerarySegmentQuery = { findManyByCalendarId: jest.fn() as AnyMock };
 const mockDataSource = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     transaction: jest.fn().mockImplementation(async (fn: any) => fn(mockManager)) as AnyMock,
@@ -58,6 +63,9 @@ const mockOperationQuery = {
 };
 
 async function buildService(): Promise<OperationSightingV3Service> {
+    // 既定は区間なし・今日の目撃なし（今の判定の経路を使う）
+    mockItinerarySegmentQuery.findManyByCalendarId.mockResolvedValue([]);
+    mockOperationSightingQuery.findManyValidBySightingTimeRange.mockResolvedValue([]);
     const module: TestingModule = await Test.createTestingModule({
         providers: [
             OperationSightingV3Service,
@@ -81,6 +89,7 @@ async function buildService(): Promise<OperationSightingV3Service> {
             { provide: CalendarQuery, useValue: mockCalendarQuery },
             { provide: FormationQuery, useValue: mockFormationQuery },
             { provide: OperationQuery, useValue: mockOperationQuery },
+            { provide: ItinerarySegmentQuery, useValue: mockItinerarySegmentQuery },
         ],
     }).compile();
     return module.get(OperationSightingV3Service);
@@ -952,5 +961,221 @@ describe('OperationSightingV3Service - 時刻断面をまとめて返す', () =>
         const [formationCall] = mockOperationSightingQuery.findManyLatestByFormationNumbersAndBeforeSightingTime.mock.calls[0];
         const [operationCall] = mockOperationSightingQuery.findManyLatestByOperationNumbersAndBeforeSightingTime.mock.calls[0];
         expect(formationCall.sightingTime.valueOf()).toBe(operationCall.sightingTime.valueOf());
+    });
+});
+
+describe('OperationSightingV3Service - 目撃の引き継ぎ', () => {
+    let service: OperationSightingV3Service;
+    const t = (hhmm: string) => {
+        const [h, m] = hhmm.split(':').map(Number);
+        return h * 3600 + m * 60;
+    };
+    const seg = (p: Partial<ItinerarySegment> & Pick<ItinerarySegment, 'id' | 'operationNumber'>): ItinerarySegment => ({
+        tripId: p.id, tripBlockId: `b-${p.id}`, operationId: `op-${p.operationNumber}`,
+        startStationId: 'X', endStationId: 'Y', startSeconds: 0, endSeconds: 0, nextTripOperationListId: null, ...p,
+    });
+    const ebina = [
+        seg({ id: 'k11', operationNumber: '11K', startSeconds: t('06:00'), endSeconds: t('08:22'), nextTripOperationListId: 'k12' }),
+        seg({ id: 'k12', operationNumber: '12K', startSeconds: t('08:30'), endSeconds: t('20:00') }),
+    ];
+    const sighting11K = {
+        id: 's1',
+        operationSightingId: 's1',
+        operationId: 'op-11K',
+        sightingTime: dayjs('2026-10-12T07:00:00+09:00').toDate(),
+        operation: { operationId: 'op-11K', operationNumber: '11K' },
+        formation: { formationId: 'f-10701', formationNumber: '10701' },
+    };
+    const searchTime = '2026-10-12T09:00:00+09:00';
+
+    beforeEach(async () => {
+        jest.clearAllMocks();
+        service = await buildService();
+        mockCalendarQuery.findOneBySpecificDate.mockResolvedValue({ id: 'cal-1', startDate: '2026-03-13' });
+        mockItinerarySegmentQuery.findManyByCalendarId.mockResolvedValue(ebina);
+        mockOperationSightingQuery.findManyValidBySightingTimeRange.mockResolvedValue([sighting11K]);
+        mockOperationSightingQuery.findOneLatestByOperationNumberAndBeforeSightingTime.mockResolvedValue(null);
+        mockOperationQuery.findManyByCalendarId.mockResolvedValue([
+            { operationId: 'op-11K', operationNumber: '11K' },
+            { operationId: 'op-12K', operationNumber: '12K' },
+        ]);
+    });
+
+    it('12K の断面に 11K の目撃を出し、元の運番を添える', async () => {
+        const result = await service.findOneTimeCrossSectionByOperationNumber({ operationNumber: '12K', searchTime });
+        expect(result.expectedSighting?.formation?.formationNumber).toBe('10701');
+        expect(result.sightedAsOperation).toEqual({ operationId: 'op-11K', operationNumber: '11K' });
+    });
+
+    it('まとめて返す口でも、行程表と今日の目撃は 1 回ずつしか引かない', async () => {
+        mockOperationSightingQuery.findManyLatestByOperationNumbersAndBeforeSightingTime.mockResolvedValue(new Map());
+        mockOperationSightingLatestCacheQuery.findManyByFormationNumbers.mockResolvedValue(new Map());
+        await service.findManyTimeCrossSectionsByOperationNumbers({ operationNumbers: ['11K', '12K', '02K'], searchTime });
+        expect(mockItinerarySegmentQuery.findManyByCalendarId).toHaveBeenCalledTimes(1);
+        expect(mockOperationSightingQuery.findManyValidBySightingTimeRange).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('OperationSightingV3Service - 目撃の引き継ぎで出さない場合', () => {
+    let service: OperationSightingV3Service;
+    const t = (hhmm: string) => {
+        const [h, m] = hhmm.split(':').map(Number);
+        return h * 3600 + m * 60;
+    };
+    const seg = (p: Partial<ItinerarySegment> & Pick<ItinerarySegment, 'id' | 'operationNumber'>): ItinerarySegment => ({
+        tripId: p.id, tripBlockId: `b-${p.id}`, operationId: `op-${p.operationNumber}`,
+        startStationId: 'X', endStationId: 'Y', startSeconds: 0, endSeconds: 0, nextTripOperationListId: null, ...p,
+    });
+    const ebinaSegs = [
+        seg({ id: 'k11', operationNumber: '11K', startSeconds: t('06:00'), endSeconds: t('08:22'), nextTripOperationListId: 'k12' }),
+        seg({ id: 'k12', operationNumber: '12K', startSeconds: t('08:30'), endSeconds: t('20:00') }),
+    ];
+    const akabaneSegs = [
+        seg({ id: 'P02', operationNumber: '02K', startSeconds: t('06:00'), endSeconds: t('07:00') }),
+        seg({ id: 'B02', tripBlockId: 'bB', operationNumber: '02K', endStationId: 'ak', startSeconds: t('18:10'), endSeconds: t('18:32') }),
+        seg({ id: 'B18', tripBlockId: 'bB', operationNumber: '18K', startStationId: 'ak', startSeconds: t('18:32'), endSeconds: t('19:40') }),
+        seg({ id: 'A18', tripBlockId: 'bA', operationNumber: '18K', endStationId: 'ak', startSeconds: t('17:00'), endSeconds: t('18:32') }),
+        seg({ id: 'A02', tripBlockId: 'bA', operationNumber: '02K', startStationId: 'ak', startSeconds: t('18:32'), endSeconds: t('18:50') }),
+    ];
+    const sighting = (id: string, operationNumber: string, formationNumber: string, hhmm: string) => ({
+        id,
+        operationSightingId: id,
+        operationId: `op-${operationNumber}`,
+        sightingTime: dayjs(`2026-10-12T${hhmm}:00+09:00`).toDate(),
+        operation: { operationId: `op-${operationNumber}`, operationNumber },
+        formation: { formationId: `f-${formationNumber}`, formationNumber },
+    });
+    const setup = (segs: ItinerarySegment[], sightings: ReturnType<typeof sighting>[]) => {
+        mockItinerarySegmentQuery.findManyByCalendarId.mockResolvedValue(segs);
+        mockOperationSightingQuery.findManyValidBySightingTimeRange.mockResolvedValue(sightings);
+    };
+
+    beforeEach(async () => {
+        jest.clearAllMocks();
+        service = await buildService();
+        mockCalendarQuery.findOneBySpecificDate.mockResolvedValue({ id: 'cal-1', startDate: '2026-03-13' });
+        mockOperationSightingQuery.findOneLatestByOperationNumberAndBeforeSightingTime.mockResolvedValue(null);
+        mockOperationSightingQuery.findOneLatestByFormationNumberAndBeforeSightingTime.mockResolvedValue(null);
+        mockOperationQuery.findManyByCalendarId.mockResolvedValue(
+            ['11K', '12K', '02K', '18K', '21K'].map((n) => ({ operationId: `op-${n}`, operationNumber: n })),
+        );
+    });
+
+    it('朝の 02K の目撃は、18:32 以降の 02K（別の車両）には出さない', async () => {
+        const s = sighting('s1', '02K', '10701', '06:30');
+        setup(akabaneSegs, [s]);
+        mockOperationSightingQuery.findOneLatestByOperationNumberAndBeforeSightingTime.mockResolvedValue(s);
+        const result = await service.findOneTimeCrossSectionByOperationNumber({ operationNumber: '02K', searchTime: '2026-10-12T18:40:00+09:00' });
+        expect(result.expectedSighting).toBeNull();
+        expect(result.sightedAsOperation).toBeNull();
+    });
+
+    it('編成があとで別の行程表で目撃されていれば、12K の断面には出さない', async () => {
+        setup([...ebinaSegs, seg({ id: 'u21', operationNumber: '21K', startSeconds: t('06:00'), endSeconds: t('20:00') })], [
+            sighting('s2', '21K', '10701', '08:00'),
+            sighting('s1', '11K', '10701', '07:00'),
+        ]);
+        const result = await service.findOneTimeCrossSectionByOperationNumber({ operationNumber: '12K', searchTime: '2026-10-12T09:00:00+09:00' });
+        expect(result.expectedSighting).toBeNull();
+    });
+
+    it('同じ行程表でほかの編成があとから目撃されていれば、編成側は出さない', async () => {
+        setup(ebinaSegs, [sighting('s2', '12K', '10702', '09:00'), sighting('s1', '11K', '10701', '07:00')]);
+        const result = await service.findOneTimeCrossSectionByFormationNumber({ formationNumber: '10701', searchTime: '2026-10-12T09:30:00+09:00' });
+        expect(result.expectedSighting).toBeNull();
+    });
+
+    it('編成番号をまとめて返す口でも、行程表と今日の目撃は 1 回ずつしか引かない', async () => {
+        setup(ebinaSegs, [sighting('s1', '11K', '10701', '07:00')]);
+        mockOperationSightingQuery.findManyLatestByFormationNumbersAndBeforeSightingTime.mockResolvedValue(new Map());
+        mockOperationSightingQuery.findManyLatestByOperationNumbersAndBeforeSightingTime.mockResolvedValue(new Map());
+        const result = await service.findManyTimeCrossSectionsByFormationNumbers({
+            formationNumbers: ['10701', '10702', '10703'],
+            searchTime: '2026-10-12T09:00:00+09:00',
+        });
+        expect(result['10701'].expectedSighting?.operation?.operationNumber).toBe('12K');
+        expect(mockItinerarySegmentQuery.findManyByCalendarId).toHaveBeenCalledTimes(1);
+        expect(mockOperationSightingQuery.findManyValidBySightingTimeRange).toHaveBeenCalledTimes(1);
+    });
+
+    it('今日の区間が無い運用は、今の同日判定の答えを返す', async () => {
+        const s = sighting('s1', '65', '8001', '10:00');
+        setup([], [s]);
+        mockOperationSightingQuery.findOneLatestByOperationNumberAndBeforeSightingTime.mockResolvedValue(s);
+        mockOperationSightingLatestCacheQuery.findOneByFormationNumber.mockResolvedValue({ operationNumber: '65', formationNumber: '8001' });
+        const result = await service.findOneTimeCrossSectionByOperationNumber({ operationNumber: '65', searchTime: '2026-10-12T15:00:00+09:00' });
+        expect(result.expectedSighting?.formation?.formationNumber).toBe('8001');
+        expect(result.sightedAsOperation ?? null).toBeNull();
+    });
+
+    it('運用一覧に対象の運番が無ければ expectedSighting は null（目撃は引き継いだまま）', async () => {
+        setup(ebinaSegs, [sighting('s1', '11K', '10701', '07:00')]);
+        mockOperationQuery.findManyByCalendarId.mockResolvedValue([{ operationId: 'op-11K', operationNumber: '11K' }]);
+        const result = await service.findOneTimeCrossSectionByOperationNumber({ operationNumber: '12K', searchTime: '2026-10-12T09:00:00+09:00' });
+        expect(result.latestSighting?.id).toBe('s1');
+        expect(result.expectedSighting).toBeNull();
+        expect(result.sightedAsOperation).toEqual({ operationId: 'op-11K', operationNumber: '11K' });
+    });
+});
+
+describe('OperationSightingV3Service - findManyBySpecificPeriod includeCarriedOver', () => {
+    let service: OperationSightingV3Service;
+    const at = (hhmm: string) => dayjs(`2026-10-12 ${hhmm}`).toDate();
+    const sighting = (id: string, op: string, f: string, hhmm: string) =>
+        ({
+            id, operationSightingId: id, operationId: `op-${op}`, formationId: `f-${f}`, sightingTime: at(hhmm),
+            operation: { operationId: `op-${op}`, operationNumber: op },
+            formation: { formationId: `f-${f}`, formationNumber: f },
+        }) as never;
+    const seg = (id: string, operationNumber: string, startSeconds: number, endSeconds: number, next: string | null) => ({
+        id, operationNumber, tripId: id, tripBlockId: `b-${id}`, operationId: `op-${operationNumber}`,
+        startStationId: 'X', endStationId: 'Y', startSeconds, endSeconds, nextTripOperationListId: next,
+    });
+    const itineraries = [
+        seg('k11', '11K', 6 * 3600, 8 * 3600 + 22 * 60, 'k12'),
+        seg('k12', '12K', 8 * 3600 + 30 * 60, 20 * 3600, null),
+    ];
+    const direct = [sighting('a', '11K', '10701', '07:00')];
+
+    beforeEach(async () => {
+        jest.clearAllMocks();
+        service = await buildService();
+        mockOperationSightingQuery.findManyBySpecificPeriod.mockResolvedValue(direct);
+        mockOperationSightingQuery.findManyValidBySightingTimeRange.mockResolvedValue(direct);
+        mockCalendarQuery.findOneBySpecificDate.mockResolvedValue({ id: 'cal-1' });
+        mockItinerarySegmentQuery.findManyByCalendarId.mockResolvedValue(itineraries);
+        mockOperationQuery.findManyByCalendarId.mockResolvedValue([
+            { operationId: 'op-11K', operationNumber: '11K' },
+            { operationId: 'op-12K', operationNumber: '12K' },
+        ]);
+    });
+
+    it('指定しないときは今と同じ応答で、引き継ぎの材料を引かない', async () => {
+        const result = await service.findManyBySpecificPeriod({ start: '2026-10-12', end: '2026-10-12' });
+        expect(result).toBe(direct);
+        expect(mockOperationSightingQuery.findManyValidBySightingTimeRange).not.toHaveBeenCalled();
+        expect(mockItinerarySegmentQuery.findManyByCalendarId).not.toHaveBeenCalled();
+    });
+
+    it('指定すると引き継いだ目撃が足され、目撃時刻の古い順になる', async () => {
+        mockOperationSightingQuery.findManyBySpecificPeriod.mockResolvedValue([
+            sighting('a', '11K', '10701', '07:00'),
+            sighting('z', '99X', '10999', '12:00'),
+        ]);
+        const result = await service.findManyBySpecificPeriod({
+            start: '2026-10-12', end: '2026-10-12', includeCarriedOver: true,
+        });
+        expect(result.map((o) => o.id)).toEqual(['a', 'a#12K', 'z']);
+        expect(result[1].sightedAsOperation).toEqual({ operationId: 'op-11K', operationNumber: '11K' });
+        expect(result[0].sightedAsOperation).toBeUndefined();
+        const range = mockOperationSightingQuery.findManyValidBySightingTimeRange.mock.calls[0][0];
+        expect(dayjs(range.start).format('YYYY-MM-DD HH:mm')).toBe('2026-10-12 04:00');
+        expect(dayjs(range.end).format('YYYY-MM-DD HH:mm')).toBe('2026-10-13 04:00');
+    });
+
+    it('同じカレンダーの行程表と運用は 1 回だけ引く', async () => {
+        await service.findManyBySpecificPeriod({ start: '2026-10-12', end: '2026-10-13', includeCarriedOver: true });
+        expect(mockItinerarySegmentQuery.findManyByCalendarId).toHaveBeenCalledTimes(1);
+        expect(mockOperationQuery.findManyByCalendarId).toHaveBeenCalledTimes(1);
     });
 });

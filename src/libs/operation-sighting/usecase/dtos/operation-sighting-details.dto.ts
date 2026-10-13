@@ -45,4 +45,8 @@ export class OperationSightingDetailsDto extends BaseOperationSightingDto {
     @Expose()
     @Type(() => OperationSightingManagementLogDetailsDto)
     managementLogs?: OperationSightingManagementLogDetailsDto[];
+
+    /** 引き継いだ目撃のとき、目撃されたときの運用。直接の目撃には無い */
+    @Expose()
+    sightedAsOperation?: { operationId: string; operationNumber: string };
 }

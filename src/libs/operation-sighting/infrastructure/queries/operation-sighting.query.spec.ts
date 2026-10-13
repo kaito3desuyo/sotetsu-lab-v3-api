@@ -14,7 +14,7 @@ const mockGetMany: AnyMock = jest.fn();
 function buildChainableQueryBuilder(): any {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const qb: any = {};
-    for (const method of ['leftJoinAndSelect', 'where']) {
+    for (const method of ['leftJoinAndSelect', 'where', 'andWhere', 'orderBy', 'addOrderBy']) {
         qb[method] = jest.fn().mockReturnValue(qb);
     }
     qb.getOne = mockGetOne;
@@ -166,5 +166,41 @@ describe('OperationSightingQuery - findManyLatestByOperationNumbersAndBeforeSigh
 
         expect(result.size).toBe(0);
         expect(mockCreateQueryBuilder).not.toHaveBeenCalled();
+    });
+});
+
+describe('OperationSightingQuery - findManyValidBySightingTimeRange', () => {
+    let query: OperationSightingQuery;
+
+    beforeEach(async () => {
+        jest.clearAllMocks();
+        currentQueryBuilder = buildChainableQueryBuilder();
+        mockCreateQueryBuilder.mockReturnValue(currentQueryBuilder);
+        mockGetMany.mockResolvedValue([]);
+        query = await buildQuery();
+    });
+
+    it('無効化を NOT EXISTS で除き、運用・編成つきで新しい順に引く', async () => {
+        await query.findManyValidBySightingTimeRange({
+            start: dayjs('2026-10-12T04:00:00+09:00'),
+            end: dayjs('2026-10-12T09:00:00+09:00'),
+        });
+
+        expect(currentQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('sighting.operation', 'operation');
+        expect(currentQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('sighting.formation', 'formation');
+        expect(currentQueryBuilder.where).toHaveBeenCalledWith(
+            'sighting.sightingTime BETWEEN :start AND :end',
+            expect.any(Object),
+        );
+        const subQuery = {
+            select: jest.fn().mockReturnThis(),
+            from: jest.fn().mockReturnThis(),
+            where: jest.fn().mockReturnThis(),
+            getQuery: jest.fn().mockReturnValue('(SELECT 1)'),
+        };
+        const callback = currentQueryBuilder.andWhere.mock.calls[0][0];
+        expect(callback({ subQuery: () => subQuery })).toBe('NOT EXISTS (SELECT 1)');
+        expect(currentQueryBuilder.orderBy).toHaveBeenCalledWith('sighting.sightingTime', 'DESC');
+        expect(currentQueryBuilder.addOrderBy).toHaveBeenCalledWith('sighting.updatedAt', 'DESC');
     });
 });
