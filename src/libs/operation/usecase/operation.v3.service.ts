@@ -1,6 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import dayjs from 'dayjs';
+import { VehicleItineraryReadModel } from './read-models/vehicle-itinerary.read-model';
+import { ItinerarySegmentQuery } from 'src/libs/operation/infrastructure/queries/itinerary-segment.query';
 import { OperationQuery } from '../infrastructure/queries/operation.query';
+import {
+    buildNextSegmentCandidates,
+    buildOperationItineraryLinks,
+} from './build-operation-itinerary-links';
+import { NextSegmentCandidateDto } from './dtos/next-segment-candidate.dto';
+import { OperationItineraryLinkDto } from './dtos/operation-itinerary-link.dto';
 import { OperationCurrentPositionDto } from './dtos/operation-current-position.dto';
 import { OperationDetailsDto } from './dtos/operation-details.dto';
 import { OperationGroupDto } from './dtos/operation-group.dto';
@@ -9,7 +17,10 @@ import { getOperationGroups } from './operation-number-circulation';
 
 @Injectable()
 export class OperationV3Service {
-    constructor(private readonly operationQuery: OperationQuery) {}
+    constructor(
+        private readonly operationQuery: OperationQuery,
+        private readonly itinerarySegmentQuery: ItinerarySegmentQuery,
+    ) {}
 
     findAllGroups(): OperationGroupDto[] {
         return getOperationGroups();
@@ -75,5 +86,29 @@ export class OperationV3Service {
         operationId: string;
     }): Promise<OperationWithTripsDto | null> {
         return this.operationQuery.findOneWithTrips(params);
+    }
+
+    async findManyItineraryLinks(params: {
+        calendarId: string;
+    }): Promise<OperationItineraryLinkDto[]> {
+        return buildOperationItineraryLinks(
+            VehicleItineraryReadModel.create(
+                await this.itinerarySegmentQuery.findManyByCalendarId(params),
+            ),
+        );
+    }
+
+    async findManyNextSegmentCandidates(params: {
+        calendarId: string;
+        stationId: string;
+        afterSeconds: number;
+    }): Promise<NextSegmentCandidateDto[]> {
+        const { calendarId, ...rest } = params;
+        return buildNextSegmentCandidates(
+            await this.itinerarySegmentQuery.findManyByCalendarId({
+                calendarId,
+            }),
+            rest,
+        );
     }
 }

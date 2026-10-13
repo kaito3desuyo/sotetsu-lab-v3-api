@@ -49,6 +49,8 @@ const TABLE: [AnyController, string, string][] = [
     [TripBlockV3Controller, 'findOneById', TIMETABLE],
     [OperationV3Controller, 'findManyByCalendarId', TIMETABLE],
     [OperationV3Controller, 'findManyWithTrips', TIMETABLE],
+    [OperationV3Controller, 'findManyItineraryLinks', TIMETABLE],
+    [OperationV3Controller, 'findManyNextSegmentCandidates', TIMETABLE],
     [OperationV3Controller, 'findOneWithTrips', TIMETABLE],
     [OperationV3Controller, 'findManyBySpecificPeriod', TIMETABLE],
     // D リアルタイム
@@ -80,8 +82,8 @@ const read = (controller: AnyController, method: string) =>
     );
 
 describe('v3 GET の Cache-Control', () => {
-    it('表は 28 本', () => {
-        expect(TABLE).toHaveLength(28);
+    it('表は 30 本', () => {
+        expect(TABLE).toHaveLength(30);
     });
 
     it.each(TABLE.map(([c, m, v]) => [`${c.name}.${m}`, c, m, v] as const))(

@@ -4,10 +4,14 @@ import { CACHE_CONTROL } from 'src/core/modules/cache-control/cache-control.cons
 import { CacheControl } from 'src/core/modules/cache-control/cache-control.decorator';
 import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
 import { parseCommaList } from 'src/core/utils/comma-list';
+import { NextSegmentCandidateDto } from '../usecase/dtos/next-segment-candidate.dto';
+import { OperationItineraryLinkDto } from '../usecase/dtos/operation-itinerary-link.dto';
 import { OperationCurrentPositionDto } from '../usecase/dtos/operation-current-position.dto';
 import { OperationDetailsDto } from '../usecase/dtos/operation-details.dto';
 import { OperationGroupDto } from '../usecase/dtos/operation-group.dto';
 import { OperationWithTripsDto } from '../usecase/dtos/operation-with-trips.dto';
+import { NextOperationCandidatesQuery } from '../usecase/params/next-operation-candidates.query';
+import { OperationCalendarQuery } from '../usecase/params/operation-calendar.query';
 import { OperationV3Service } from '../usecase/operation.v3.service';
 
 @Controller()
@@ -44,6 +48,31 @@ export class OperationV3Controller {
         });
 
         return result;
+    }
+
+    /** 運番が変わる車両のつながり（運用表・行路図の前後の運用用）。`?calendarId=` 必須 */
+    @Get('/itinerary-links')
+    @CacheControl(CACHE_CONTROL.TIMETABLE)
+    findManyItineraryLinks(
+        @Query() query: OperationCalendarQuery,
+    ): Promise<OperationItineraryLinkDto[]> {
+        return this.operationV3Service.findManyItineraryLinks({
+            calendarId: query.calendarId,
+        });
+    }
+
+    /** 「次の運用」の候補。`stationId` で始まり、`afterSeconds`（鉄道日の 0 時からの秒）以降の区間 */
+    @Get('/next-operation-candidates')
+    @CacheControl(CACHE_CONTROL.TIMETABLE)
+    async findManyNextSegmentCandidates(
+        @Query() query: NextOperationCandidatesQuery,
+    ): Promise<NextSegmentCandidateDto[]> {
+        if (!query.stationId) return [];
+        return this.operationV3Service.findManyNextSegmentCandidates({
+            calendarId: query.calendarId,
+            stationId: query.stationId,
+            afterSeconds: Number(query.afterSeconds) || 0,
+        });
     }
 
     /**
