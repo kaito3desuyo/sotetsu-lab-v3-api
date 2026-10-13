@@ -45,16 +45,27 @@ const usable = <S extends CarrySighting>(
                 dayjs(a.sightingTime).valueOf(),
         );
 
+/**
+ * 引き継いだ目撃に添える元の運番。直接の目撃と、目撃の時刻にその行程が
+ * operationNumber を受け持っていた目撃（運用が替わる前に次の運番で入力されたもの）には付けない。
+ */
 const sightedAs = (
     s: CarrySighting,
     operationNumber: string,
-): SightedAsOperation | null =>
-    s.operation && s.operation.operationNumber !== operationNumber
-        ? {
-              operationId: s.operationId,
-              operationNumber: s.operation.operationNumber,
-          }
-        : null;
+    itinerary: VehicleItinerary,
+): SightedAsOperation | null => {
+    if (!s.operation || s.operation.operationNumber === operationNumber)
+        return null;
+    if (
+        itinerary.segmentAt(secondsOf(s.sightingTime))?.operationNumber ===
+        operationNumber
+    )
+        return null;
+    return {
+        operationId: s.operationId,
+        operationNumber: s.operation.operationNumber,
+    };
+};
 
 export class SightingCarryOver {
     private constructor(
@@ -108,7 +119,7 @@ export class SightingCarryOver {
             return null;
         return {
             sighting: hit,
-            sightedAsOperation: sightedAs(hit, operationNumber),
+            sightedAsOperation: sightedAs(hit, operationNumber, itinerary),
         };
     }
 
@@ -143,7 +154,11 @@ export class SightingCarryOver {
         return {
             sighting: own,
             operationNumber: segment.operationNumber,
-            sightedAsOperation: sightedAs(own, segment.operationNumber),
+            sightedAsOperation: sightedAs(
+                own,
+                segment.operationNumber,
+                itinerary,
+            ),
         };
     }
 
@@ -189,10 +204,7 @@ export class SightingCarryOver {
                     operationSightingId: `${s.operationSightingId}#${other}`,
                     operationId: operation.operationId,
                     operation,
-                    sightedAsOperation: {
-                        operationId: s.operationId,
-                        operationNumber: number,
-                    },
+                    sightedAsOperation: sightedAs(s, other, itinerary),
                 } as S);
             }
         }
