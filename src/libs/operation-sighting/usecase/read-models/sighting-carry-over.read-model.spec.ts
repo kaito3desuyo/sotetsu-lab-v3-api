@@ -118,14 +118,26 @@ describe('SightingCarryOver.resolveForOperation', () => {
         });
         expect(r?.sightedAsOperation?.operationNumber).toBe('12K');
     });
-    it('11K を走っている時刻に 12K と入力された目撃は、11K では元の運番を付けない', () => {
+    it('同じ編成がその運番でも目撃されていれば、より新しい別の運番の目撃より直接の目撃を返す', () => {
+        const r = SightingCarryOver.create(ebina).resolveForOperation({
+            sightings: [
+                sighting('s0', '11K', '10701', '07:00'),
+                sighting('s1', '12K', '10701', '08:02'),
+            ],
+            operationNumber: '11K',
+            searchTime: at('13:00'),
+        });
+        expect(r?.sighting.id).toBe('s0');
+        expect(r?.sightedAsOperation).toBeNull();
+    });
+    it('その運番の直接の目撃が無ければ、11K を走っている時刻の目撃でも入力された運番を添える', () => {
         const r = SightingCarryOver.create(ebina).resolveForOperation({
             sightings: [sighting('s1', '12K', '10701', '08:02')],
             operationNumber: '11K',
             searchTime: at('13:00'),
         });
         expect(r?.sighting.id).toBe('s1');
-        expect(r?.sightedAsOperation).toBeNull();
+        expect(r?.sightedAsOperation?.operationNumber).toBe('12K');
     });
     it('直接の目撃には元の運番を付けない', () => {
         const r = SightingCarryOver.create(ebina).resolveForOperation({
@@ -212,14 +224,27 @@ describe('SightingCarryOver.resolveForFormation', () => {
         expect(r?.operationNumber).toBe('12K');
         expect(r?.sightedAsOperation?.operationNumber).toBe('11K');
     });
-    it('12K を走っている時刻に 11K と入力された目撃は、12K にいるとき元の運番を付けない', () => {
+    it('いまの運番でも目撃されていれば、より新しい別の運番の目撃より直接の目撃を返す', () => {
         const r = SightingCarryOver.create(ebina).resolveForFormation({
-            sightings: [sighting('s1', '11K', '10701', '08:40')],
+            sightings: [
+                sighting('s1', '12K', '10701', '08:40'),
+                sighting('s2', '11K', '10701', '08:50'),
+            ],
             formationNumber: '10701',
             searchTime: at('09:00'),
         });
         expect(r?.operationNumber).toBe('12K');
+        expect(r?.sighting.id).toBe('s1');
         expect(r?.sightedAsOperation).toBeNull();
+    });
+    it('いまの運番の直接の目撃が無ければ、入力された運番を添える', () => {
+        const r = SightingCarryOver.create(ebina).resolveForFormation({
+            sightings: [sighting('s2', '11K', '10701', '08:50')],
+            formationNumber: '10701',
+            searchTime: at('09:00'),
+        });
+        expect(r?.operationNumber).toBe('12K');
+        expect(r?.sightedAsOperation?.operationNumber).toBe('11K');
     });
     it('同じ行程表でほかの編成があとから目撃されていれば追い出されている', () => {
         const sightings = [
@@ -267,7 +292,7 @@ describe('SightingCarryOver.buildCarried', () => {
             }),
         ]);
     });
-    it('11K を走っている時刻に 12K と入力された目撃から作る 11K の目撃には、元の運番を付けない', () => {
+    it('11K を走っている時刻に 12K と入力された目撃から作る 11K の目撃にも、入力された運番を添える', () => {
         const out = SightingCarryOver.create(ebina).buildCarried({
             sightings: [sighting('a', '12K', '10701', '08:02')],
             operations,
@@ -276,7 +301,10 @@ describe('SightingCarryOver.buildCarried', () => {
             expect.objectContaining({
                 id: 'a#11K',
                 operationId: 'op-11K',
-                sightedAsOperation: null,
+                sightedAsOperation: {
+                    operationId: 'op-12K',
+                    operationNumber: '12K',
+                },
             }),
         ]);
     });
@@ -396,7 +424,8 @@ describe('SightingCarryOver.resolveForOperation（境界）', () => {
         ).toBeNull();
     });
     it('同じ行程の目撃が複数あれば、検索時刻までで最も新しいものを返す（入力の並びによらない）', () => {
-        const old = sighting('old', '11K', '10701', '06:30');
+        // 11K の直接の目撃が混ざると、そちらが優先される（別のテスト）ので、ここは 12K だけで並びを見る
+        const old = sighting('old', '12K', '10701', '06:30');
         const recent = sighting('recent', '12K', '10701', '08:40');
         const later = sighting('later', '12K', '10701', '10:00');
         for (const sightings of [

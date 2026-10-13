@@ -45,27 +45,17 @@ const usable = <S extends CarrySighting>(
                 dayjs(a.sightingTime).valueOf(),
         );
 
-/**
- * 引き継いだ目撃に添える元の運番。直接の目撃と、目撃の時刻にその行程が
- * operationNumber を受け持っていた目撃（運用が替わる前に次の運番で入力されたもの）には付けない。
- */
+/** 引き継いだ目撃に添える元の運番（入力された運番）。直接の目撃には付けない */
 const sightedAs = (
     s: CarrySighting,
     operationNumber: string,
-    itinerary: VehicleItinerary,
-): SightedAsOperation | null => {
-    if (!s.operation || s.operation.operationNumber === operationNumber)
-        return null;
-    if (
-        itinerary.segmentAt(secondsOf(s.sightingTime))?.operationNumber ===
-        operationNumber
-    )
-        return null;
-    return {
-        operationId: s.operationId,
-        operationNumber: s.operation.operationNumber,
-    };
-};
+): SightedAsOperation | null =>
+    s.operation && s.operation.operationNumber !== operationNumber
+        ? {
+              operationId: s.operationId,
+              operationNumber: s.operation.operationNumber,
+          }
+        : null;
 
 export class SightingCarryOver {
     private constructor(
@@ -83,6 +73,28 @@ export class SightingCarryOver {
         return this.itineraries.itineraryOfOperationAt(
             number,
             secondsOf(s.sightingTime),
+        );
+    }
+
+    /**
+     * 同じ編成・同じ行程の目撃のうち、operationNumber で直接入力された最も新しいもの。無ければ found のまま。
+     * 運用が替わる前に次の運番で入力された、より新しい目撃があっても、直接の目撃を出す。
+     */
+    private preferDirect<S extends CarrySighting>(
+        sightings: S[],
+        found: S,
+        operationNumber: string,
+        itinerary: VehicleItinerary,
+    ): S {
+        const formationNumber = found.formation?.formationNumber;
+        if (!formationNumber) return found;
+        return (
+            sightings.find(
+                (s) =>
+                    s.formation?.formationNumber === formationNumber &&
+                    s.operation?.operationNumber === operationNumber &&
+                    this.itineraryOfSighting(s) === itinerary,
+            ) ?? found
         );
     }
 
@@ -117,9 +129,15 @@ export class SightingCarryOver {
             this.itineraryOfSighting(latestOfFormation) !== itinerary
         )
             return null;
+        const sighting = this.preferDirect(
+            sightings,
+            hit,
+            operationNumber,
+            itinerary,
+        );
         return {
-            sighting: hit,
-            sightedAsOperation: sightedAs(hit, operationNumber, itinerary),
+            sighting,
+            sightedAsOperation: sightedAs(sighting, operationNumber),
         };
     }
 
@@ -151,14 +169,16 @@ export class SightingCarryOver {
             return null;
         const segment = itinerary.segmentAt(secondsOf(searchTime.toDate()));
         if (!segment) return undefined;
+        const sighting = this.preferDirect(
+            sightings,
+            own,
+            segment.operationNumber,
+            itinerary,
+        );
         return {
-            sighting: own,
+            sighting,
             operationNumber: segment.operationNumber,
-            sightedAsOperation: sightedAs(
-                own,
-                segment.operationNumber,
-                itinerary,
-            ),
+            sightedAsOperation: sightedAs(sighting, segment.operationNumber),
         };
     }
 
@@ -204,7 +224,7 @@ export class SightingCarryOver {
                     operationSightingId: `${s.operationSightingId}#${other}`,
                     operationId: operation.operationId,
                     operation,
-                    sightedAsOperation: sightedAs(s, other, itinerary),
+                    sightedAsOperation: sightedAs(s, other),
                 } as S);
             }
         }
