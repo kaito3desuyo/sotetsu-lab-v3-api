@@ -225,6 +225,52 @@ const serverlessConfiguration: AWS = {
                             ],
                             Compress: true,
                         },
+                        // 同時実行の山（1 ブラウザが 128 本を一斉に取りに来る）の出どころを調べるため、
+                        // アクセスログを S3 に出す（2026-10-14）
+                        Logging: {
+                            Bucket: {
+                                'Fn::GetAtt': [
+                                    'AppCloudFrontAccessLogBucket',
+                                    'DomainName',
+                                ],
+                            },
+                            IncludeCookies: false,
+                            Prefix: 'api/',
+                        },
+                    },
+                },
+            },
+            AppCloudFrontAccessLogBucket: {
+                Type: 'AWS::S3::Bucket',
+                Properties: {
+                    BucketName: '${param:prefix}-cloudfront-access-log-bucket',
+                    // CloudFront は ACL でログを書き込むので、ACL を無効（BucketOwnerEnforced）にできない
+                    OwnershipControls: {
+                        Rules: [{ ObjectOwnership: 'BucketOwnerPreferred' }],
+                    },
+                    PublicAccessBlockConfiguration: {
+                        BlockPublicAcls: true,
+                        BlockPublicPolicy: true,
+                        IgnorePublicAcls: true,
+                        RestrictPublicBuckets: true,
+                    },
+                    BucketEncryption: {
+                        ServerSideEncryptionConfiguration: [
+                            {
+                                ServerSideEncryptionByDefault: {
+                                    SSEAlgorithm: 'AES256',
+                                },
+                            },
+                        ],
+                    },
+                    LifecycleConfiguration: {
+                        Rules: [
+                            {
+                                Id: 'ExpireAccessLogs',
+                                Status: 'Enabled',
+                                ExpirationInDays: 30,
+                            },
+                        ],
                     },
                 },
             },
