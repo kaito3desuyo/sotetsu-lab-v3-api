@@ -1007,6 +1007,35 @@ describe('OperationSightingV3Service - 目撃の引き継ぎ', () => {
         expect(result.sightedAsOperation).toEqual({ operationId: 'op-11K', operationNumber: '11K' });
     });
 
+    it('推測のとき latestSighting はその運番自身の最後の目撃（11K の目撃ではない。太字・時刻の色の判定に使う）', async () => {
+        const own12K = {
+            id: 's0',
+            operationSightingId: 's0',
+            operationId: 'op-12K',
+            sightingTime: dayjs('2026-10-11T10:00:00+09:00').toDate(),
+            operation: { operationId: 'op-12K', operationNumber: '12K' },
+            formation: { formationId: 'f-10702', formationNumber: '10702' },
+        };
+        mockOperationSightingQuery.findOneLatestByOperationNumberAndBeforeSightingTime.mockResolvedValue(own12K);
+        const result = await service.findOneTimeCrossSectionByOperationNumber({ operationNumber: '12K', searchTime });
+        expect(result.latestSighting?.id).toBe('s0');
+        expect(result.expectedSighting?.formation?.formationNumber).toBe('10701');
+        expect(result.sightedAsOperation).toEqual({ operationId: 'op-11K', operationNumber: '11K' });
+    });
+
+    it('推測した運番に自身の目撃が無ければ latestSighting は null', async () => {
+        const result = await service.findOneTimeCrossSectionByOperationNumber({ operationNumber: '12K', searchTime });
+        expect(result.latestSighting).toBeNull();
+        expect(result.expectedSighting?.formation?.formationNumber).toBe('10701');
+    });
+
+    it('直接の目撃のときは latestSighting がその目撃', async () => {
+        mockOperationSightingQuery.findOneLatestByOperationNumberAndBeforeSightingTime.mockResolvedValue(sighting11K);
+        const result = await service.findOneTimeCrossSectionByOperationNumber({ operationNumber: '11K', searchTime: '2026-10-12T07:30:00+09:00' });
+        expect(result.latestSighting?.id).toBe('s1');
+        expect(result.sightedAsOperation).toBeNull();
+    });
+
     it('まとめて返す口でも、行程表と今日の目撃は 1 回ずつしか引かない', async () => {
         mockOperationSightingQuery.findManyLatestByOperationNumbersAndBeforeSightingTime.mockResolvedValue(new Map());
         mockOperationSightingLatestCacheQuery.findManyByFormationNumbers.mockResolvedValue(new Map());
@@ -1108,11 +1137,11 @@ describe('OperationSightingV3Service - 目撃の引き継ぎで出さない場�
         expect(result.sightedAsOperation ?? null).toBeNull();
     });
 
-    it('運用一覧に対象の運番が無ければ expectedSighting は null（目撃は引き継いだまま）', async () => {
+    it('運用一覧に対象の運番が無ければ expectedSighting は null（元の運番は添えたまま）', async () => {
         setup(ebinaSegs, [sighting('s1', '11K', '10701', '07:00')]);
         mockOperationQuery.findManyByCalendarId.mockResolvedValue([{ operationId: 'op-11K', operationNumber: '11K' }]);
         const result = await service.findOneTimeCrossSectionByOperationNumber({ operationNumber: '12K', searchTime: '2026-10-12T09:00:00+09:00' });
-        expect(result.latestSighting?.id).toBe('s1');
+        expect(result.latestSighting).toBeNull();
         expect(result.expectedSighting).toBeNull();
         expect(result.sightedAsOperation).toEqual({ operationId: 'op-11K', operationNumber: '11K' });
     });
