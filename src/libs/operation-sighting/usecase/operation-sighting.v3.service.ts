@@ -238,8 +238,10 @@ export class OperationSightingV3Service {
                 const { sighting, sightedAsOperation } = carried;
                 const operations = await source.operationsOf(calendar.id);
                 const operation = operations.find((o) => o.operationNumber === operationNumber);
+                // 推測のときは、この運番自身の最後の目撃を返す（元の 17K の目撃で 18K? を太字・赤字にしない。
+                // 順送りと同じく、太字・時刻の色はこの運番の目撃で決まる。ユーザー判断 2026-10-19）
                 return {
-                    latestSighting: sighting,
+                    latestSighting: sightedAsOperation ? latestSighting : sighting,
                     expectedSighting: sighting.formation && operation ? { operation, formation: sighting.formation } : null,
                     sightedAsOperation,
                 };
