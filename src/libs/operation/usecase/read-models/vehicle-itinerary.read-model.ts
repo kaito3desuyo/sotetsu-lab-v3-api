@@ -27,12 +27,37 @@ function pickAt(
     return ended.length ? ended[ended.length - 1] : sorted[0];
 }
 
+/**
+ * 目撃を結び付ける区間。受け持ち中 → 次に始まる → 直前に終わった（時刻順の配列から選ぶ）。
+ * 先回りの入力（X を走っている最中に、次に受け持つ Y と入れる）を次の Y に付けるため、検索時刻用の pickAt と順を替える
+ */
+function pickForSighting(
+    sorted: ItinerarySegment[],
+    seconds: number,
+): ItinerarySegment | null {
+    if (!sorted.length) return null;
+    const active = sorted.find(
+        (s) => s.startSeconds <= seconds && seconds < s.endSeconds,
+    );
+    if (active) return active;
+    const upcoming = sorted.find((s) => s.startSeconds > seconds);
+    if (upcoming) return upcoming;
+    return sorted[sorted.length - 1];
+}
+
 /** 1 本の行程（車両がたどる区間の連なり）。VehicleItineraryReadModel.create が作る */
 export class VehicleItinerary {
     private readonly timeOrdered: ItinerarySegment[];
+    private readonly runList: ItinerarySegment[][] = [];
 
     private constructor(private readonly chain: ItinerarySegment[]) {
         this.timeOrdered = [...chain].sort(compareSegmentsByTime);
+        for (const s of chain) {
+            const last = this.runList[this.runList.length - 1];
+            if (last && last[0].operationNumber === s.operationNumber)
+                last.push(s);
+            else this.runList.push([s]);
+        }
     }
 
     static create(chain: ItinerarySegment[]): VehicleItinerary {
@@ -47,6 +72,16 @@ export class VehicleItinerary {
     /** この行程が受け持つ運番（重複なし） */
     operationNumbers(): string[] {
         return [...new Set(this.chain.map((s) => s.operationNumber))];
+    }
+
+    /** 運番が切り替わるまとまり（つながり順）。18K → 17K → 18K と戻る行程なら 3 つ。同じ配列を返す */
+    runs(): ItinerarySegment[][] {
+        return this.runList;
+    }
+
+    /** 区間が入っている枠 */
+    runOf(segment: ItinerarySegment): ItinerarySegment[] | undefined {
+        return this.runList.find((r) => r.includes(segment));
     }
 
     /** その時刻に受け持っている区間 → 直前に終わった区間 → 最初の区間 */
@@ -136,6 +171,17 @@ export class VehicleItineraryReadModel {
         seconds: number,
     ): ItinerarySegment | null {
         return pickAt(this.byOperation.get(operationNumber) ?? [], seconds);
+    }
+
+    /** 目撃（その時刻にその運番と入力された）を結び付ける区間 */
+    segmentOfSightingAt(
+        operationNumber: string,
+        seconds: number,
+    ): ItinerarySegment | null {
+        return pickForSighting(
+            this.byOperation.get(operationNumber) ?? [],
+            seconds,
+        );
     }
 
     /** その時刻にその運番を受け持っている区間の行程 */

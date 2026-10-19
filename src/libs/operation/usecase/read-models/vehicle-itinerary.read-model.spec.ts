@@ -717,3 +717,59 @@ describe('VehicleItineraryReadModel の引き口（境界）', () => {
         expect(m.itineraryOf('p')).toBe(m.itineraryOf('o'));
     });
 });
+
+describe('VehicleItineraryReadModel.segmentOfSightingAt', () => {
+    // 18K（5:08〜8:52）→ 17K（9:00〜17:02）→ 18K（17:09〜21:22）
+    const model = VehicleItineraryReadModel.create([
+        seg({
+            id: 'm18',
+            operationNumber: '18K',
+            startSeconds: t('05:08'),
+            endSeconds: t('08:52'),
+            nextTripOperationListId: 'd17',
+        }),
+        seg({
+            id: 'd17',
+            operationNumber: '17K',
+            startSeconds: t('09:00'),
+            endSeconds: t('17:02'),
+            nextTripOperationListId: 'e18',
+        }),
+        seg({
+            id: 'e18',
+            operationNumber: '18K',
+            startSeconds: t('17:09'),
+            endSeconds: t('21:22'),
+        }),
+    ]);
+    it('受け持ち中の区間を選ぶ', () => {
+        expect(model.segmentOfSightingAt('18K', t('06:00'))?.id).toBe('m18');
+    });
+    it('受け持ち中が無ければ次に始まる区間を選ぶ（先回りの入力）', () => {
+        expect(model.segmentOfSightingAt('18K', t('16:23'))?.id).toBe('e18');
+    });
+    it('次も無ければ直前に終わった区間を選ぶ', () => {
+        expect(model.segmentOfSightingAt('18K', t('22:00'))?.id).toBe('e18');
+    });
+    it('始まる前なら最初の区間（次に始まる）', () => {
+        expect(model.segmentOfSightingAt('18K', t('04:30'))?.id).toBe('m18');
+    });
+    it('その運番の区間が無ければ null', () => {
+        expect(model.segmentOfSightingAt('99X', t('06:00'))).toBeNull();
+    });
+    it('検索時刻の選び方は変えない（16:23 の 18K は朝の区間）', () => {
+        expect(model.segmentOfOperationAt('18K', t('16:23'))?.id).toBe('m18');
+    });
+    it('枠は同じ配列を返し、区間から枠を引ける', () => {
+        const itinerary = model.itineraryOf('d17')!;
+        expect(itinerary.runs()).toBe(itinerary.runs());
+        expect(itinerary.runs().map((r) => r.map((s) => s.id))).toEqual([
+            ['m18'],
+            ['d17'],
+            ['e18'],
+        ]);
+        expect(itinerary.runOf(itinerary.segments[2])).toBe(
+            itinerary.runs()[2],
+        );
+    });
+});

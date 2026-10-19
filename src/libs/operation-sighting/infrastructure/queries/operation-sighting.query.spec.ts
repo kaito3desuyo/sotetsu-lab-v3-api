@@ -169,7 +169,7 @@ describe('OperationSightingQuery - findManyLatestByOperationNumbersAndBeforeSigh
     });
 });
 
-describe('OperationSightingQuery - findManyValidBySightingTimeRange', () => {
+describe('OperationSightingQuery - findManyBySightingTimeRange', () => {
     let query: OperationSightingQuery;
 
     beforeEach(async () => {
@@ -181,7 +181,7 @@ describe('OperationSightingQuery - findManyValidBySightingTimeRange', () => {
     });
 
     it('無効化を NOT EXISTS で除き、運用・編成つきで新しい順に引く', async () => {
-        await query.findManyValidBySightingTimeRange({
+        await query.findManyBySightingTimeRange({
             start: dayjs('2026-10-12T04:00:00+09:00'),
             end: dayjs('2026-10-12T09:00:00+09:00'),
         });
@@ -202,5 +202,16 @@ describe('OperationSightingQuery - findManyValidBySightingTimeRange', () => {
         expect(callback({ subQuery: () => subQuery })).toBe('NOT EXISTS (SELECT 1)');
         expect(currentQueryBuilder.orderBy).toHaveBeenCalledWith('sighting.sightingTime', 'DESC');
         expect(currentQueryBuilder.addOrderBy).toHaveBeenCalledWith('sighting.updatedAt', 'DESC');
+    });
+
+    it('includeInvalidated なら無効化も含め、無効化の情報もつけて引く', async () => {
+        await query.findManyBySightingTimeRange({
+            start: dayjs('2026-10-12T04:00:00+09:00'),
+            end: dayjs('2026-10-12T09:00:00+09:00'),
+            includeInvalidated: true,
+        });
+
+        expect(currentQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('sighting.invalidations', 'invalidations');
+        expect(currentQueryBuilder.andWhere).not.toHaveBeenCalled();
     });
 });
