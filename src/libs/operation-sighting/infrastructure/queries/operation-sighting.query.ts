@@ -257,20 +257,26 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
         return OperationSightingsDtoBuilder.buildFromModel(model);
     }
 
-    /** 期間内の有効な目撃を、運用・編成つきで新しい順に（目撃の引き継ぎ用） */
-    async findManyValidBySightingTimeRange(params: {
+    /**
+     * 期間内の目撃を、運用・編成・無効化つきで新しい順に（目撃の引き継ぎ用）。
+     * 既定は有効な目撃だけ。includeInvalidated なら無効化された目撃も含める（過去の運用で無効化も表示するとき）
+     */
+    async findManyBySightingTimeRange(params: {
         start: dayjs.Dayjs;
         end: dayjs.Dayjs;
+        includeInvalidated?: boolean;
     }): Promise<OperationSightingDetailsDto[]> {
-        const models = await this.operationSightingRepository
+        let qb = this.operationSightingRepository
             .createQueryBuilder('sighting')
             .leftJoinAndSelect('sighting.operation', 'operation')
             .leftJoinAndSelect('sighting.formation', 'formation')
+            .leftJoinAndSelect('sighting.invalidations', 'invalidations')
             .where('sighting.sightingTime BETWEEN :start AND :end', {
                 start: params.start.toISOString(),
                 end: params.end.toISOString(),
-            })
-            .andWhere((qb) => {
+            });
+        if (!params.includeInvalidated) {
+            qb = qb.andWhere((qb) => {
                 const sub = qb
                     .subQuery()
                     .select('1')
@@ -278,7 +284,9 @@ export class OperationSightingQuery extends TypeOrmCrudService<OperationSighting
                     .where('inv.operationSightingId = sighting.id')
                     .getQuery();
                 return `NOT EXISTS ${sub}`;
-            })
+            });
+        }
+        const models = await qb
             .orderBy('sighting.sightingTime', 'DESC')
             .addOrderBy('sighting.updatedAt', 'DESC')
             .getMany();

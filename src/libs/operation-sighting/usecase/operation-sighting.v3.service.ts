@@ -77,11 +77,13 @@ export class OperationSightingV3Service {
         });
         if (!includeCarriedOver) return direct;
 
-        // 引き継ぎの材料は、直接の一覧と同じ範囲の有効な目撃（operation・formation 付き）を別に引く
+        // 引き継ぎの材料は、直接の一覧と同じ範囲の目撃（operation・formation 付き）を別に引く。
+        // 無効化も表示するときは、無効化された目撃も含めて流れを組む（ユーザー判断 2026-10-19）
         const format = 'YYYY-MM-DD';
-        const material = await this.operationSightingQuery.findManyValidBySightingTimeRange({
+        const material = await this.operationSightingQuery.findManyBySightingTimeRange({
             start: dayjs(start, format).hour(4).minute(0).second(0).millisecond(0),
             end: dayjs(end, format).add(1, 'day').hour(4).minute(0).second(0).millisecond(0),
+            includeInvalidated,
         });
         const byDay = new Map<string, OperationSightingDetailsDto[]>();
         for (const o of material) {
@@ -92,6 +94,8 @@ export class OperationSightingV3Service {
         const itineraryCache = new Map<string, Promise<VehicleItineraryReadModel>>();
         const operationCache = new Map<string, ReturnType<OperationQuery['findManyByCalendarId']>>();
         const carried: OperationSightingDetailsDto[] = [];
+        // 鉄道日 → その日の引き継ぎと運用（並べる位置を出すのに使う）
+        const dayContext = new Map<string, { carry: SightingCarryOver; operations: Awaited<ReturnType<OperationQuery['findManyByCalendarId']>> }>();
         for (const [day, sightings] of byDay) {
             const calendar = await this.calendarQuery.findOneBySpecificDate({ date: day });
             if (!calendar) continue;
@@ -101,16 +105,30 @@ export class OperationSightingV3Service {
             if (!operationCache.has(calendar.id)) {
                 operationCache.set(calendar.id, this.operationQuery.findManyByCalendarId({ calendarId: calendar.id }));
             }
-            carried.push(
-                ...SightingCarryOver.create(await itineraryCache.get(calendar.id)!).buildCarried({
-                    sightings,
-                    operations: await operationCache.get(calendar.id)!,
-                }),
-            );
+            const carry = SightingCarryOver.create(await itineraryCache.get(calendar.id)!);
+            const operations = await operationCache.get(calendar.id)!;
+            dayContext.set(day, { carry, operations });
+            carried.push(...carry.buildCarried({ sightings, operations }));
         }
-        return [...direct, ...carried].sort(
-            (a, b) => dayjs(a.sightingTime).valueOf() - dayjs(b.sightingTime).valueOf(),
-        );
+
+        // 同じ行程の中は受け持つ順（18K → 17K → 18K）、行程をまたぐときは目撃の順に並べる。
+        // キーは [鉄道日の始まり + その編成がその行程で最初に目撃された秒, 枠の始まりの秒]
+        const orderOf = (o: OperationSightingDetailsDto): [number, number] => {
+            const base = getBaseDate(dayjs(o.sightingTime));
+            const day = base.format(format);
+            const context = dayContext.get(day);
+            const operationNumber = context?.operations.find((p) => p.operationId === o.operationId)?.operationNumber;
+            if (!context || !operationNumber) {
+                const time = dayjs(o.sightingTime).valueOf();
+                return [time, time];
+            }
+            const [entered, start] = context.carry.orderOf(o, operationNumber, byDay.get(day) ?? []);
+            return [base.add(entered, 'second').valueOf(), start];
+        };
+        return [...direct, ...carried]
+            .map((o) => ({ o, order: orderOf(o) }))
+            .sort((a, b) => a.order[0] - b.order[0] || a.order[1] - b.order[1] || dayjs(a.o.sightingTime).valueOf() - dayjs(b.o.sightingTime).valueOf())
+            .map(({ o }) => o);
     }
 
     /**
@@ -216,7 +234,7 @@ export class OperationSightingV3Service {
                 operationNumber,
                 searchTime: searchTimeInstance,
             });
-            if (carried) {
+            if (carried && carried !== 'unsighted') {
                 const { sighting, sightedAsOperation } = carried;
                 const operations = await source.operationsOf(calendar.id);
                 const operation = operations.find((o) => o.operationNumber === operationNumber);
@@ -226,8 +244,12 @@ export class OperationSightingV3Service {
                     sightedAsOperation,
                 };
             }
-            // 今日の行程表で判定でき、該当なし（別の車両・追い出し）。今日の直接の目撃が別の車両のものなら出さない
-            if (carried === null && latestSighting && searchBaseDate.isSame(getBaseDate(dayjs(latestSighting.sightingTime)))) {
+            // 行程に今日の実目撃があり、この枠は誰にも割り当てられない（spec 3.3）。順送りに戻さない
+            if (carried === null) {
+                return { latestSighting, expectedSighting: null, sightedAsOperation: null };
+            }
+            // 行程に今日の実目撃が無い。この運番の今日の目撃が別の行程のものなら出さない
+            if (carried === 'unsighted' && latestSighting && searchBaseDate.isSame(getBaseDate(dayjs(latestSighting.sightingTime)))) {
                 return { latestSighting, expectedSighting: null, sightedAsOperation: null };
             }
         }
@@ -471,7 +493,7 @@ export class OperationSightingV3Service {
             operationsOf: (calendarId) => this.operationQuery.findManyByCalendarId({ calendarId }),
             itineraries: (calendarId) => this.itinerarySegmentQuery.findManyByCalendarId({ calendarId }).then((segments) => VehicleItineraryReadModel.create(segments)),
             todaySightings: () =>
-                this.operationSightingQuery.findManyValidBySightingTimeRange({
+                this.operationSightingQuery.findManyBySightingTimeRange({
                     start: getBaseDate(searchTimeInstance).hour(4),
                     end: searchTimeInstance,
                 }),

@@ -96,6 +96,8 @@ const akabane = VehicleItineraryReadModel.create([
     }),
 ]);
 const at = (hhmm: string) => dayjs(`${day} ${hhmm}`);
+/** 運用カードの戻り値から 'unsighted' を外して読む（型だけ） */
+const hit = <T>(r: T) => r as Exclude<T, 'unsighted'>;
 
 describe('SightingCarryOver.resolveForOperation', () => {
     it('11K で目撃された編成は 12K でも目撃扱い・元の運番を添える', () => {
@@ -104,8 +106,8 @@ describe('SightingCarryOver.resolveForOperation', () => {
             operationNumber: '12K',
             searchTime: at('09:00'),
         });
-        expect(r?.sighting.id).toBe('s1');
-        expect(r?.sightedAsOperation).toEqual({
+        expect(hit(r)?.sighting.id).toBe('s1');
+        expect(hit(r)?.sightedAsOperation).toEqual({
             operationId: 'op-11K',
             operationNumber: '11K',
         });
@@ -116,7 +118,7 @@ describe('SightingCarryOver.resolveForOperation', () => {
             operationNumber: '11K',
             searchTime: at('09:30'),
         });
-        expect(r?.sightedAsOperation?.operationNumber).toBe('12K');
+        expect(hit(r)?.sightedAsOperation?.operationNumber).toBe('12K');
     });
     it('同じ編成がその運番でも目撃されていれば、より新しい別の運番の目撃より直接の目撃を返す', () => {
         const r = SightingCarryOver.create(ebina).resolveForOperation({
@@ -127,8 +129,8 @@ describe('SightingCarryOver.resolveForOperation', () => {
             operationNumber: '11K',
             searchTime: at('13:00'),
         });
-        expect(r?.sighting.id).toBe('s0');
-        expect(r?.sightedAsOperation).toBeNull();
+        expect(hit(r)?.sighting.id).toBe('s0');
+        expect(hit(r)?.sightedAsOperation).toBeNull();
     });
     it('その運番の直接の目撃が無ければ、11K を走っている時刻の目撃でも入力された運番を添える', () => {
         const r = SightingCarryOver.create(ebina).resolveForOperation({
@@ -136,8 +138,8 @@ describe('SightingCarryOver.resolveForOperation', () => {
             operationNumber: '11K',
             searchTime: at('13:00'),
         });
-        expect(r?.sighting.id).toBe('s1');
-        expect(r?.sightedAsOperation?.operationNumber).toBe('12K');
+        expect(hit(r)?.sighting.id).toBe('s1');
+        expect(hit(r)?.sightedAsOperation?.operationNumber).toBe('12K');
     });
     it('直接の目撃には元の運番を付けない', () => {
         const r = SightingCarryOver.create(ebina).resolveForOperation({
@@ -145,16 +147,18 @@ describe('SightingCarryOver.resolveForOperation', () => {
             operationNumber: '12K',
             searchTime: at('09:30'),
         });
-        expect(r?.sightedAsOperation).toBeNull();
+        expect(hit(r)?.sightedAsOperation).toBeNull();
     });
-    it('朝の 02K の目撃は 18:32 以降の 18K に出て、18:32 以降の 02K には出ない', () => {
+    it('朝の 02K の目撃は 18:32 以降の 18K に出て、18:32 以降の 02K は行程に実目撃が無い（unsighted）', () => {
         const sightings = [sighting('s1', '02K', '10701', '06:30')];
         expect(
-            SightingCarryOver.create(akabane).resolveForOperation({
-                sightings,
-                operationNumber: '18K',
-                searchTime: at('19:00'),
-            })?.sighting.id,
+            hit(
+                SightingCarryOver.create(akabane).resolveForOperation({
+                    sightings,
+                    operationNumber: '18K',
+                    searchTime: at('19:00'),
+                }),
+            )?.sighting.id,
         ).toBe('s1');
         expect(
             SightingCarryOver.create(akabane).resolveForOperation({
@@ -162,20 +166,22 @@ describe('SightingCarryOver.resolveForOperation', () => {
                 operationNumber: '02K',
                 searchTime: at('18:40'),
             }),
-        ).toBeNull();
+        ).toBe('unsighted');
     });
-    it('引き継いだ先でもっと新しい直接の目撃があればそちらが勝つ', () => {
+    it('その枠の実目撃は、ほかの枠のもっと新しい目撃より優先する（切替③）', () => {
         const sightings = [
             sighting('s2', '12K', '10702', '09:00'),
             sighting('s1', '11K', '10701', '07:00'),
         ];
         expect(
-            SightingCarryOver.create(ebina).resolveForOperation({
-                sightings,
-                operationNumber: '11K',
-                searchTime: at('09:30'),
-            })?.sighting.id,
-        ).toBe('s2');
+            hit(
+                SightingCarryOver.create(ebina).resolveForOperation({
+                    sightings,
+                    operationNumber: '11K',
+                    searchTime: at('09:30'),
+                }),
+            )?.sighting.id,
+        ).toBe('s1');
     });
     it('その編成があとで別の行程表で目撃されていれば追い出されている', () => {
         const sightings = [
@@ -201,7 +207,7 @@ describe('SightingCarryOver.resolveForOperation', () => {
                 operationNumber: '12K',
                 searchTime: at('09:00'),
             }),
-        ).toBeNull();
+        ).toBe('unsighted');
     });
     it('今日の区間が無い運番は undefined（今の判定へ落とす）', () => {
         expect(
@@ -327,6 +333,224 @@ describe('SightingCarryOver.buildCarried', () => {
     });
 });
 
+// 18K（〜8:52）→ 17K（9:00〜17:02）→ 18K（17:09〜）。2026-10-13 の平日ダイヤの 3122
+const back18 = VehicleItineraryReadModel.create([
+    seg({
+        id: 'm18',
+        operationNumber: '18K',
+        startSeconds: t('05:08'),
+        endSeconds: t('08:52'),
+        nextTripOperationListId: 'd17',
+    }),
+    seg({
+        id: 'd17',
+        operationNumber: '17K',
+        startSeconds: t('09:00'),
+        endSeconds: t('17:02'),
+        nextTripOperationListId: 'e18',
+    }),
+    seg({
+        id: 'e18',
+        operationNumber: '18K',
+        startSeconds: t('17:09'),
+        endSeconds: t('21:22'),
+    }),
+]);
+const operationsBack = [
+    { operationId: 'op-17K', operationNumber: '17K' },
+    { operationId: 'op-18K', operationNumber: '18K' },
+] as never;
+
+describe('SightingCarryOver.buildCarried（運番が戻る行程）', () => {
+    it('朝の 18K の目撃から、17K と戻った後の 18K の引き継いだ目撃を作る', () => {
+        const out = SightingCarryOver.create(back18).buildCarried({
+            sightings: [sighting('a', '18K', '3122', '05:09')],
+            operations: operationsBack,
+        });
+        expect(out).toEqual([
+            expect.objectContaining({
+                id: 'a#17K',
+                operationId: 'op-17K',
+                sightedAsOperation: {
+                    operationId: 'op-18K',
+                    operationNumber: '18K',
+                },
+            }),
+            expect.objectContaining({
+                id: 'a#18K#2',
+                operationSightingId: 'a#18K#2',
+                operationId: 'op-18K',
+                sightedAsOperation: {
+                    operationId: 'op-18K',
+                    operationNumber: '18K',
+                },
+            }),
+        ]);
+    });
+    it('17K の目撃から、前後の 18K を 2 つ作る', () => {
+        const out = SightingCarryOver.create(back18).buildCarried({
+            sightings: [sighting('a', '17K', '3122', '10:00')],
+            operations: operationsBack,
+        });
+        expect(out.map((o) => o.id)).toEqual(['a#18K', 'a#18K#2']);
+    });
+    it('戻った後の 18K が直接目撃されていれば、そこには作らない', () => {
+        const out = SightingCarryOver.create(back18).buildCarried({
+            sightings: [
+                sighting('a', '18K', '3122', '05:09'),
+                sighting('b', '18K', '3122', '21:07'),
+            ],
+            operations: operationsBack,
+        });
+        expect(out.map((o) => o.id)).toEqual(['b#17K']);
+    });
+});
+
+// 81（4:42〜23:47）は別の車両。77（7:14〜8:45）→ 87（8:59〜21:11）。2026-10-07 の 114
+const swap = VehicleItineraryReadModel.create([
+    seg({
+        id: 'x81',
+        operationNumber: '81',
+        startSeconds: t('04:42'),
+        endSeconds: t('23:47'),
+    }),
+    seg({
+        id: 'y77',
+        operationNumber: '77',
+        startSeconds: t('07:14'),
+        endSeconds: t('08:45'),
+        nextTripOperationListId: 'y87',
+    }),
+    seg({
+        id: 'y87',
+        operationNumber: '87',
+        startSeconds: t('08:59'),
+        endSeconds: t('21:11'),
+    }),
+]);
+const operationsSwap = [
+    { operationId: 'op-77', operationNumber: '77' },
+    { operationId: 'op-81', operationNumber: '81' },
+    { operationId: 'op-87', operationNumber: '87' },
+] as never;
+
+describe('SightingCarryOver.buildCarried（別の行程での目撃と時刻が重なる）', () => {
+    it('77 を受け持つ時間帯から 87 の目撃までの間に 81 で目撃されていれば、77 は作らない', () => {
+        const out = SightingCarryOver.create(swap).buildCarried({
+            sightings: [
+                sighting('a', '81', '114', '08:31'),
+                sighting('b', '87', '114', '18:12'),
+            ],
+            operations: operationsSwap,
+        });
+        expect(out).toEqual([]);
+    });
+    it('81 の目撃が 77 を受け持つより前なら、77 を作る', () => {
+        const out = SightingCarryOver.create(swap).buildCarried({
+            sightings: [
+                sighting('a', '81', '114', '06:00'),
+                sighting('b', '87', '114', '18:12'),
+            ],
+            operations: operationsSwap,
+        });
+        expect(out.map((o) => o.id)).toEqual(['b#77']);
+    });
+    it('後ろの枠も同じ。元の目撃から枠の終わりまでに別の行程で目撃されていれば作らない', () => {
+        const out = SightingCarryOver.create(back18).buildCarried({
+            sightings: [
+                sighting('a', '18K', '3122', '05:09'),
+                sighting('x', '99X', '3122', '12:00'),
+            ],
+            operations: operationsBack,
+        });
+        expect(out).toEqual([]);
+    });
+});
+
+describe('SightingCarryOver.buildCarried（ほかの編成が同じ枠で目撃されている）', () => {
+    it('10701 が 11K、10702 が 12K で目撃されていれば、どちらにも引き継ぎを作らない', () => {
+        const out = SightingCarryOver.create(ebina).buildCarried({
+            sightings: [
+                sighting('a', '11K', '10701', '07:00'),
+                sighting('b', '12K', '10702', '09:00'),
+            ],
+            operations,
+        });
+        expect(out).toEqual([]);
+    });
+    it('朝の 18K が 3122、戻った後の 18K が 3113 なら、17K は前から続く 3122 に作る', () => {
+        const out = SightingCarryOver.create(back18).buildCarried({
+            sightings: [
+                sighting('a', '18K', '3122', '05:09'),
+                sighting('b', '18K', '3113', '21:07'),
+            ],
+            operations: operationsBack,
+        });
+        expect(out.map((o) => o.id)).toEqual(['a#17K']);
+    });
+    it('取り合う編成がどちらも枠より後の目撃なら、早く目撃された編成に作る', () => {
+        const out = SightingCarryOver.create(back18).buildCarried({
+            sightings: [
+                sighting('a', '17K', '3122', '10:00'),
+                sighting('b', '18K', '3113', '21:07'),
+            ],
+            operations: operationsBack,
+        });
+        expect(out.map((o) => o.id)).toEqual(['a#18K']);
+    });
+    it('ほかの編成が別の枠で目撃されていても、取り合いにならない枠には作る', () => {
+        // 3113 は 13:00 に別の行程（99X）で目撃されているので、3113 からは 17K を作らない
+        const out = SightingCarryOver.create(back18).buildCarried({
+            sightings: [
+                sighting('a', '18K', '3122', '05:09'),
+                sighting('x', '99X', '3113', '13:00'),
+                sighting('b', '18K', '3113', '21:07'),
+            ],
+            operations: operationsBack,
+        });
+        expect(out.map((o) => o.id)).toEqual(['a#17K']);
+    });
+});
+
+describe('SightingCarryOver.orderOf', () => {
+    it('行程の中では受け持つ順に並ぶ（引き継いだ目撃は自分の枠の始まり）', () => {
+        const carry = SightingCarryOver.create(back18);
+        const direct = sighting('a', '17K', '3122', '10:00');
+        const sightings = [direct];
+        const [before, after] = carry.buildCarried({
+            sightings,
+            operations: operationsBack,
+        });
+        expect(carry.orderOf(before, '18K', sightings)).toEqual([
+            t('10:00'),
+            t('05:08'),
+        ]);
+        expect(carry.orderOf(direct, '17K', sightings)).toEqual([
+            t('10:00'),
+            t('09:00'),
+        ]);
+        expect(carry.orderOf(after, '18K', sightings)).toEqual([
+            t('10:00'),
+            t('17:09'),
+        ]);
+    });
+    it('行程が分からない目撃は目撃の時刻', () => {
+        const s = sighting('a', '99X', '3122', '10:00');
+        expect(SightingCarryOver.create(back18).orderOf(s, '99X', [s])).toEqual(
+            [t('10:00'), t('10:00')],
+        );
+    });
+    it('無効化した直接の目撃（sightings に無い）は、自分の時刻も行程に入った時刻に数える', () => {
+        const valid = sighting('b', '17K', '3122', '10:00');
+        const invalidated = sighting('a', '18K', '3122', '05:30');
+        expect(
+            SightingCarryOver.create(back18).orderOf(invalidated, '18K', [
+                valid,
+            ]),
+        ).toEqual([t('05:30'), t('05:08')]);
+    });
+});
+
 // 11K → 12K → 13K（決まり 2 を 2 回）
 const chain3 = VehicleItineraryReadModel.create([
     seg({
@@ -356,61 +580,29 @@ const operations3 = [
     { operationId: 'op-13K', operationNumber: '13K' },
 ] as never;
 
-describe('SightingCarryOver.itineraryOfSighting', () => {
-    it('目撃された時刻にその運番を受け持っていた区間の行程を返す', () => {
-        const carry = SightingCarryOver.create(ebina);
-        expect(
-            carry.itineraryOfSighting(sighting('s', '11K', '1', '07:00')),
-        ).toBe(ebina.itineraryOf('k11'));
-    });
-    it('運番が無い目撃は undefined', () => {
-        const s = { ...sighting('s', '11K', '1', '07:00'), operation: null };
-        expect(SightingCarryOver.create(ebina).itineraryOfSighting(s)).toBe(
-            undefined,
-        );
-    });
-    it('今日の区間に無い運番の目撃は undefined', () => {
-        expect(
-            SightingCarryOver.create(ebina).itineraryOfSighting(
-                sighting('s', '99X', '1', '07:00'),
-            ),
-        ).toBeUndefined();
-    });
-    it('同じ運番でも、目撃の時刻で受け持っていた車両（行程）が替わる', () => {
-        const carry = SightingCarryOver.create(akabane);
-        const morning = carry.itineraryOfSighting(
-            sighting('s1', '02K', '1', '06:30'),
-        );
-        const evening = carry.itineraryOfSighting(
-            sighting('s2', '02K', '1', '18:40'),
-        );
-        expect(morning).toBeDefined();
-        expect(evening).toBeDefined();
-        expect(morning).not.toBe(evening);
-    });
-});
-
 describe('SightingCarryOver.resolveForOperation（境界）', () => {
     const carry = SightingCarryOver.create(ebina);
     it('検索時刻ちょうどの目撃は使う', () => {
         expect(
-            carry.resolveForOperation({
-                sightings: [sighting('s1', '11K', '10701', '09:00')],
-                operationNumber: '12K',
-                searchTime: at('09:00'),
-            })?.sighting.id,
+            hit(
+                carry.resolveForOperation({
+                    sightings: [sighting('s1', '11K', '10701', '09:00')],
+                    operationNumber: '12K',
+                    searchTime: at('09:00'),
+                }),
+            )?.sighting.id,
         ).toBe('s1');
     });
-    it('目撃が無ければ null（行程表はあるので undefined ではない）', () => {
+    it('目撃が無ければ unsighted（行程表はあるので undefined ではない）', () => {
         expect(
             carry.resolveForOperation({
                 sightings: [],
                 operationNumber: '12K',
                 searchTime: at('09:00'),
             }),
-        ).toBeNull();
+        ).toBe('unsighted');
     });
-    it('別の行程表の目撃だけなら null', () => {
+    it('別の行程表の目撃だけなら unsighted', () => {
         const both = VehicleItineraryReadModel.create([
             ...ebina.segments(),
             ...akabane.segments(),
@@ -421,7 +613,7 @@ describe('SightingCarryOver.resolveForOperation（境界）', () => {
                 operationNumber: '12K',
                 searchTime: at('09:00'),
             }),
-        ).toBeNull();
+        ).toBe('unsighted');
     });
     it('同じ行程の目撃が複数あれば、検索時刻までで最も新しいものを返す（入力の並びによらない）', () => {
         // 11K の直接の目撃が混ざると、そちらが優先される（別のテスト）ので、ここは 12K だけで並びを見る
@@ -433,28 +625,32 @@ describe('SightingCarryOver.resolveForOperation（境界）', () => {
             [later, recent, old],
         ]) {
             expect(
-                carry.resolveForOperation({
-                    sightings,
-                    operationNumber: '11K',
-                    searchTime: at('09:00'),
-                })?.sighting.id,
+                hit(
+                    carry.resolveForOperation({
+                        sightings,
+                        operationNumber: '11K',
+                        searchTime: at('09:00'),
+                    }),
+                )?.sighting.id,
             ).toBe('recent');
         }
     });
     it('同じ編成の最新の目撃が同じ行程表の中なら追い出されない', () => {
         expect(
-            carry.resolveForOperation({
-                sightings: [
-                    sighting('s2', '12K', '10701', '08:40'),
-                    sighting('s1', '11K', '10701', '07:00'),
-                ],
-                operationNumber: '12K',
-                searchTime: at('09:00'),
-            })?.sighting.id,
+            hit(
+                carry.resolveForOperation({
+                    sightings: [
+                        sighting('s2', '12K', '10701', '08:40'),
+                        sighting('s1', '11K', '10701', '07:00'),
+                    ],
+                    operationNumber: '12K',
+                    searchTime: at('09:00'),
+                }),
+            )?.sighting.id,
         ).toBe('s2');
     });
-    it('追い出した編成の、より古い目撃は使わない', () => {
-        // 10701 は 07:00 に 11K で、10702 は 09:00 に 12K で目撃。11K には 10702 が出る
+    it('その枠に実目撃があれば、あとでほかの枠に出た編成に取られない（切替③）', () => {
+        // 10701 は 07:00 に 11K で、10702 は 09:00 に 12K で目撃。11K には実目撃の 10701 が出る
         const r = carry.resolveForOperation({
             sightings: [
                 sighting('s1', '11K', '10701', '07:00'),
@@ -463,8 +659,8 @@ describe('SightingCarryOver.resolveForOperation（境界）', () => {
             operationNumber: '11K',
             searchTime: at('09:30'),
         });
-        expect(r?.sighting.formation?.formationNumber).toBe('10702');
-        expect(r?.sightedAsOperation?.operationNumber).toBe('12K');
+        expect(hit(r)?.sighting.formation?.formationNumber).toBe('10701');
+        expect(hit(r)?.sightedAsOperation).toBeNull();
     });
     it('運番が無い目撃は、行程が判定できず無視される', () => {
         const noOp = {
@@ -477,7 +673,7 @@ describe('SightingCarryOver.resolveForOperation（境界）', () => {
                 operationNumber: '12K',
                 searchTime: at('09:00'),
             }),
-        ).toBeNull();
+        ).toBe('unsighted');
     });
     it('編成の無い目撃でも、直接なら返す', () => {
         const noFormation = {
@@ -489,8 +685,8 @@ describe('SightingCarryOver.resolveForOperation（境界）', () => {
             operationNumber: '12K',
             searchTime: at('09:30'),
         });
-        expect(r?.sighting.id).toBe('s');
-        expect(r?.sightedAsOperation).toBeNull();
+        expect(hit(r)?.sighting.id).toBe('s');
+        expect(hit(r)?.sightedAsOperation).toBeNull();
     });
     it('3 つの運番がつながる行程では、端の運番どうしにも引き継ぐ', () => {
         const r = SightingCarryOver.create(chain3).resolveForOperation({
@@ -498,7 +694,7 @@ describe('SightingCarryOver.resolveForOperation（境界）', () => {
             operationNumber: '13K',
             searchTime: at('13:00'),
         });
-        expect(r?.sightedAsOperation?.operationNumber).toBe('11K');
+        expect(hit(r)?.sightedAsOperation?.operationNumber).toBe('11K');
     });
 });
 
@@ -670,17 +866,7 @@ describe('SightingCarryOver.buildCarried（境界）', () => {
             operations,
         });
         expect(out).toHaveLength(1);
-        expect(out[0].id).toBe('a#12K');
-    });
-    it('別の編成の直接目撃があっても、この編成の引き継ぎは作る', () => {
-        const out = carry.buildCarried({
-            sightings: [
-                sighting('a', '11K', '10701', '07:00'),
-                sighting('b', '12K', '10702', '09:00'),
-            ],
-            operations,
-        });
-        expect(out.map((o) => o.id)).toEqual(['a#12K', 'b#11K']);
+        expect(out[0].id).toBe('b#12K');
     });
     it('operations に無い運番へは作らない', () => {
         const out = carry.buildCarried({
@@ -727,7 +913,7 @@ describe('SightingCarryOver.buildCarried（境界）', () => {
         expect(carried.operationSightingId).toBe('a#12K');
         expect(original.id).toBe('a');
     });
-    it('あとから別の行程表で追い出されても、履歴には引き継ぎを作る', () => {
+    it('同じ編成があとで別の行程表で目撃されていれば、その後の枠には引き継ぎを作らない', () => {
         const both = VehicleItineraryReadModel.create([
             ...ebina.segments(),
             ...akabane.segments(),
@@ -746,7 +932,7 @@ describe('SightingCarryOver.buildCarried（境界）', () => {
                 { operationId: 'op-18K', operationNumber: '18K' },
             ],
         });
-        expect(out.some((o) => o.id === 'a#12K')).toBe(true);
+        expect(out.some((o) => o.id === 'a#12K')).toBe(false);
     });
 });
 
@@ -779,5 +965,476 @@ describe('SightingCarryOver.resolveForFormation（編成の無い目撃）', () 
                 searchTime: at('09:00'),
             }),
         ).toBeUndefined();
+    });
+});
+
+describe('SightingCarryOver（枠の割り当て・spec 4 章）', () => {
+    // back18: X=18K（X1 5:08〜8:52）→ Y=17K（9:00〜17:02）→ X（X2 17:09〜21:22）
+    const op = (
+        sightings: OperationSightingDetailsDto[],
+        operationNumber: string,
+        hhmm: string,
+    ) =>
+        SightingCarryOver.create(back18).resolveForOperation({
+            sightings,
+            operationNumber,
+            searchTime: at(hhmm),
+        });
+    const fm = (
+        sightings: OperationSightingDetailsDto[],
+        formationNumber: string,
+        hhmm: string,
+    ) =>
+        SightingCarryOver.create(back18).resolveForFormation({
+            sightings,
+            formationNumber,
+            searchTime: at(hhmm),
+        });
+    const past = (sightings: OperationSightingDetailsDto[]) =>
+        SightingCarryOver.create(back18)
+            .buildCarried({ sightings, operations: operationsBack })
+            .map((o) => [
+                o.formation?.formationNumber,
+                o.operation?.operationNumber,
+            ]);
+    const who = (r: ReturnType<typeof op>) =>
+        r && typeof r === 'object'
+            ? `${r.sighting.formation?.formationNumber}${r.sightedAsOperation ? '?' : ''}`
+            : r;
+    const fmWho = (r: ReturnType<typeof fm>) =>
+        r ? `${r.operationNumber}${r.sightedAsOperation ? '?' : ''}` : r;
+
+    it('切替①（X:A）: Y は A?。編成カードは Y の間 17K?', () => {
+        const s = [sighting('a', '18K', 'A', '06:00')];
+        expect(who(op(s, '17K', '10:00'))).toBe('A?');
+        expect(fmWho(fm(s, 'A', '10:00'))).toBe('17K?');
+        expect(past(s)).toEqual([
+            ['A', '17K'],
+            ['A', '18K'],
+        ]);
+    });
+    it('切替②（Y:A）: X は Y の目撃後に A?、Y の目撃前は unsighted', () => {
+        const s = [sighting('a', '17K', 'A', '10:00')];
+        expect(who(op(s, '18K', '08:00'))).toBe('unsighted');
+        expect(who(op(s, '18K', '10:30'))).toBe('A?');
+    });
+    it('切替②: X の間に Y と先回りで入れたら、編成カードは X の間 18K?', () => {
+        const s = [sighting('a', '17K', 'A', '08:40')];
+        expect(fmWho(fm(s, 'A', '08:45'))).toBe('18K?');
+        expect(fmWho(fm(s, 'A', '09:30'))).toBe('17K');
+    });
+    it('切替③（X:A、Y:B）: 運用カードは X:A・Y:B、A は Y が始まったら不明', () => {
+        const s = [
+            sighting('a', '18K', 'A', '06:00'),
+            sighting('b', '17K', 'B', '10:00'),
+        ];
+        expect(who(op(s, '18K', '10:30'))).toBe('A');
+        expect(who(op(s, '17K', '10:30'))).toBe('B');
+        expect(fmWho(fm(s, 'A', '08:00'))).toBe('18K');
+        expect(fm(s, 'A', '10:30')).toBeNull();
+        expect(fmWho(fm(s, 'B', '10:30'))).toBe('17K');
+    });
+    it('戻り①（X1:A、Y:B）: X は X1・Y の間 A、X2 の間 B?。B は X2 の間 18K?', () => {
+        const s = [
+            sighting('a', '18K', 'A', '06:00'),
+            sighting('b', '17K', 'B', '10:00'),
+        ];
+        expect(who(op(s, '18K', '12:00'))).toBe('A');
+        expect(who(op(s, '18K', '18:00'))).toBe('B?');
+        expect(fm(s, 'A', '18:00')).toBeNull();
+        expect(fmWho(fm(s, 'B', '18:00'))).toBe('18K?');
+        expect(past(s)).toEqual([['B', '18K']]);
+    });
+    it('戻り①: X2 の推測の元は 17K（sightedAsOperation は元の目撃の運番）', () => {
+        const s = [
+            sighting('a', '18K', 'A', '06:00'),
+            sighting('b', '17K', 'B', '10:00'),
+        ];
+        const r = op(s, '18K', '18:00');
+        expect(
+            r && typeof r === 'object' && r.sightedAsOperation?.operationNumber,
+        ).toBe('17K');
+    });
+    it('戻り②（X1:A、X2:B）: Y は A?、A は X2 が始まったら不明', () => {
+        const s = [
+            sighting('a', '18K', 'A', '06:00'),
+            sighting('b', '18K', 'B', '17:30'),
+        ];
+        expect(who(op(s, '17K', '18:00'))).toBe('A?');
+        expect(who(op(s, '18K', '18:00'))).toBe('B');
+        expect(fmWho(fm(s, 'A', '12:00'))).toBe('17K?');
+        expect(fm(s, 'A', '18:00')).toBeNull();
+        expect(past(s)).toEqual([['A', '17K']]);
+    });
+    it('戻り（X1:A だけ）: Y も X2 も A?。X2 の推測の元は 18K', () => {
+        const s = [sighting('a', '18K', 'A', '05:09')];
+        expect(who(op(s, '18K', '18:00'))).toBe('A?');
+        expect(past(s)).toEqual([
+            ['A', '17K'],
+            ['A', '18K'],
+        ]);
+    });
+    it('移動: 朝 81、昼 87 の行程の目撃より前の 77 は付けない', () => {
+        const s = [
+            sighting('a', '81', '114', '08:31'),
+            sighting('b', '87', '114', '18:12'),
+        ];
+        expect(
+            SightingCarryOver.create(swap).buildCarried({
+                sightings: s,
+                operations: operationsSwap,
+            }),
+        ).toEqual([]);
+    });
+    it('休車: 朝 X、昼 100 なら、昼をまたぐ Y は付けない（ほかに候補が無ければ不明）', () => {
+        const s = [
+            sighting('a', '18K', 'A', '06:00'),
+            sighting('x', '100', 'A', '12:00'),
+        ];
+        expect(op(s, '17K', '13:00')).toBeNull();
+        expect(fm(s, 'A', '13:00')).toBeUndefined();
+    });
+    it('先回り: 16:23 の 18K は X2 の実目撃。X1 は A?', () => {
+        const s = [
+            sighting('a', '17K', 'A', '16:23'),
+            sighting('b', '18K', 'A', '16:23'),
+        ];
+        expect(past(s)).toEqual([['A', '18K']]);
+        const carried = SightingCarryOver.create(back18).buildCarried({
+            sightings: s,
+            operations: operationsBack,
+        });
+        expect(carried[0].id).toBe('b#18K');
+    });
+    it('10/05 の 3105・5181: 3105 に夕方の 18K の推測を作らない', () => {
+        const s = [
+            sighting('p', '18K', '5181', '08:12'),
+            sighting('q', '17K', '5181', '08:34'),
+            sighting('r', '17K', '3105', '16:23'),
+            sighting('u', '18K', '3105', '16:24'),
+        ];
+        expect(past(s)).toEqual([]);
+    });
+    it('別車両の同番: 17:50 の 02K は夕方の車両。18:20 の 02K、18:40 の 18K に出る', () => {
+        const s = [sighting('a', '02K', 'A', '17:50')];
+        const carry = SightingCarryOver.create(akabane);
+        const r1 = carry.resolveForOperation({
+            sightings: s,
+            operationNumber: '02K',
+            searchTime: at('18:20'),
+        });
+        expect(r1 && typeof r1 === 'object' && r1.sighting.id).toBe('a');
+        const r2 = carry.resolveForOperation({
+            sightings: s,
+            operationNumber: '18K',
+            searchTime: at('18:40'),
+        });
+        expect(
+            r2 &&
+                typeof r2 === 'object' &&
+                r2.sightedAsOperation?.operationNumber,
+        ).toBe('02K');
+    });
+    it('検索時刻の選び方は変えない: 06:30 の 02K の編成は、12:00 の 02K に出る', () => {
+        const s = [sighting('a', '02K', 'A', '06:30')];
+        const r = SightingCarryOver.create(akabane).resolveForOperation({
+            sightings: s,
+            operationNumber: '02K',
+            searchTime: at('12:00'),
+        });
+        expect(r && typeof r === 'object' && r.sighting.id).toBe('a');
+    });
+    it('同じ枠に 2 編成: 運用カードは新しいほう、推測は新しいほうから続く', () => {
+        const s = [
+            sighting('a', '18K', 'A', '05:30'),
+            sighting('b', '18K', 'B', '06:30'),
+        ];
+        expect(who(op(s, '18K', '07:00'))).toBe('B');
+        expect(who(op(s, '17K', '10:00'))).toBe('B?');
+    });
+    it('無効化も含めるとき、推測に載せる目撃は有効な目撃を優先する（無効化だけが根拠のときに限り無効化を写す）', () => {
+        const invalidated = (s: OperationSightingDetailsDto) =>
+            ({
+                ...s,
+                invalidation: { id: `inv-${s.id}` },
+            }) as unknown as OperationSightingDetailsDto;
+        const valid = sighting('a', '18K', 'A', '06:00');
+        const later = invalidated(sighting('b', '18K', 'A', '07:00'));
+        const carry = SightingCarryOver.create(back18);
+        const out = carry.buildCarried({
+            sightings: [valid, later],
+            operations: operationsBack,
+        });
+        expect(out.map((o) => o.id)).toEqual(['a#17K', 'a#18K#2']);
+        expect(out.every((o) => !o.invalidation)).toBe(true);
+        const only = carry.buildCarried({
+            sightings: [later],
+            operations: operationsBack,
+        });
+        expect(only.map((o) => o.invalidation)).toEqual([
+            { id: 'inv-b' },
+            { id: 'inv-b' },
+        ]);
+    });
+    it('同じ時刻に 2 編成: 入力の並びによらず、投稿の新しいほうが勝つ', () => {
+        const posted = (s: OperationSightingDetailsDto, hhmm: string) =>
+            ({
+                ...s,
+                createdAt: at(hhmm).toDate(),
+            }) as OperationSightingDetailsDto;
+        const a = posted(sighting('a', '18K', 'A', '06:00'), '06:05');
+        const b = posted(sighting('b', '18K', 'B', '06:00'), '06:01');
+        for (const s of [
+            [a, b],
+            [b, a],
+        ]) {
+            expect(who(op(s, '18K', '07:00'))).toBe('A');
+            expect(who(op(s, '17K', '10:00'))).toBe('A?');
+        }
+    });
+    it('同じ時刻・同じ投稿時刻なら id で決める（入力の並びによらない）', () => {
+        const a = sighting('a', '18K', 'A', '06:00');
+        const b = sighting('b', '18K', 'B', '06:00');
+        for (const s of [
+            [a, b],
+            [b, a],
+        ]) {
+            expect(who(op(s, '18K', '07:00'))).toBe('B');
+        }
+    });
+    it('検索時刻より後の目撃は使わない', () => {
+        const s = [
+            sighting('a', '18K', 'A', '06:00'),
+            sighting('b', '17K', 'B', '10:00'),
+        ];
+        expect(who(op(s, '17K', '09:30'))).toBe('A?');
+    });
+    it('割り当ての使い回し: 同じ行程表なら同じインスタンス', () => {
+        expect(SightingCarryOver.create(back18)).toBe(
+            SightingCarryOver.create(back18),
+        );
+    });
+    it('割り当ての使い回し: 同じ目撃の配列・同じ検索時刻なら作り直さず、検索時刻が違えば作り直す', () => {
+        const build = jest.spyOn(
+            SightingCarryOver.prototype as unknown as {
+                buildAssignments: () => unknown;
+            },
+            'buildAssignments',
+        );
+        try {
+            const s = [
+                sighting('a', '18K', 'A', '06:00'),
+                sighting('b', '17K', 'B', '10:00'),
+            ];
+            expect(who(op(s, '17K', '09:30'))).toBe('A?');
+            expect(who(op(s, '18K', '09:30'))).toBe('A');
+            expect(build).toHaveBeenCalledTimes(1);
+            expect(who(op(s, '17K', '10:30'))).toBe('B');
+            expect(build).toHaveBeenCalledTimes(2);
+        } finally {
+            build.mockRestore();
+        }
+    });
+});
+
+describe('SightingCarryOver（テストで押さえていなかった形）', () => {
+    const sightingAt = (
+        id: string,
+        operationNumber: string,
+        formationNumber: string,
+        datetime: string,
+    ) =>
+        ({
+            ...sighting(id, operationNumber, formationNumber, '00:00'),
+            sightingTime: dayjs(datetime).toDate(),
+        }) as OperationSightingDetailsDto;
+    const operationsOf = (...numbers: string[]) =>
+        numbers.map((n) => ({
+            operationId: `op-${n}`,
+            operationNumber: n,
+        }));
+    const formationOf = (r: unknown) =>
+        r && typeof r === 'object'
+            ? `${(r as { sighting: OperationSightingDetailsDto }).sighting.formation?.formationNumber}${(r as { sightedAsOperation: unknown }).sightedAsOperation ? '?' : ''}`
+            : r;
+
+    describe('深夜（0:00〜4:00）', () => {
+        // X（22:00〜24:30）→ Y（24:40〜25:30）。24 時以降は翌日の 0 時台
+        const night = VehicleItineraryReadModel.create([
+            seg({
+                id: 'nX',
+                operationNumber: '51K',
+                startSeconds: t('22:00'),
+                endSeconds: t('24:30'),
+                nextTripOperationListId: 'nY',
+            }),
+            seg({
+                id: 'nY',
+                operationNumber: '52K',
+                startSeconds: t('24:40'),
+                endSeconds: t('25:30'),
+            }),
+        ]);
+        it('0 時台の目撃は前の鉄道日の 24 時台の区間に付き、続く枠に推測が出る', () => {
+            const s = [sightingAt('a', '51K', 'A', '2026-10-13 00:10')];
+            const carry = SightingCarryOver.create(night);
+            expect(
+                formationOf(
+                    carry.resolveForOperation({
+                        sightings: s,
+                        operationNumber: '52K',
+                        searchTime: dayjs('2026-10-13 01:00'),
+                    }),
+                ),
+            ).toBe('A?');
+            expect(
+                carry
+                    .buildCarried({
+                        sightings: s,
+                        operations: operationsOf('51K', '52K') as never,
+                    })
+                    .map((o) => o.id),
+            ).toEqual(['a#52K']);
+        });
+        it('25 時台の目撃から、前の 24 時台の枠を推測する', () => {
+            const s = [sightingAt('b', '52K', 'A', '2026-10-13 01:00')];
+            expect(
+                SightingCarryOver.create(night)
+                    .buildCarried({
+                        sightings: s,
+                        operations: operationsOf('51K', '52K') as never,
+                    })
+                    .map((o) => o.id),
+            ).toEqual(['b#51K']);
+        });
+    });
+
+    describe('同じ編成が行程 I → 別の行程 J → また I', () => {
+        // I: P（06:00〜09:00）→ Q（09:10〜12:00）→ R（12:10〜20:00）→ T（20:10〜22:00）。J: S（08:00〜20:00）
+        const revisit = VehicleItineraryReadModel.create([
+            seg({
+                id: 'iP',
+                operationNumber: '61K',
+                startSeconds: t('06:00'),
+                endSeconds: t('09:00'),
+                nextTripOperationListId: 'iQ',
+            }),
+            seg({
+                id: 'iQ',
+                operationNumber: '62K',
+                startSeconds: t('09:10'),
+                endSeconds: t('12:00'),
+                nextTripOperationListId: 'iR',
+            }),
+            seg({
+                id: 'iR',
+                operationNumber: '63K',
+                startSeconds: t('12:10'),
+                endSeconds: t('20:00'),
+                nextTripOperationListId: 'iT',
+            }),
+            seg({
+                id: 'iT',
+                operationNumber: '64K',
+                startSeconds: t('20:10'),
+                endSeconds: t('22:00'),
+            }),
+            seg({
+                id: 'jS',
+                operationNumber: '71K',
+                startSeconds: t('08:00'),
+                endSeconds: t('20:00'),
+            }),
+        ]);
+        const s = [
+            sighting('p', '61K', 'A', '07:00'),
+            sighting('j', '71K', 'A', '10:00'),
+            sighting('r', '63K', 'A', '15:00'),
+        ];
+        const carry = SightingCarryOver.create(revisit);
+        it('J にいた時間帯をはさむ枠（Q）は推測せず不明、I に戻った後の枠（T）は推測する', () => {
+            expect(
+                carry.resolveForOperation({
+                    sightings: s,
+                    operationNumber: '62K',
+                    searchTime: at('11:00'),
+                }),
+            ).toBeNull();
+            expect(
+                formationOf(
+                    carry.resolveForOperation({
+                        sightings: s,
+                        operationNumber: '64K',
+                        searchTime: at('21:00'),
+                    }),
+                ),
+            ).toBe('A?');
+            expect(
+                carry
+                    .buildCarried({
+                        sightings: s,
+                        operations: operationsOf(
+                            '61K',
+                            '62K',
+                            '63K',
+                            '64K',
+                            '71K',
+                        ) as never,
+                    })
+                    .map((o) => o.id),
+            ).toEqual(['r#64K']);
+        });
+        it('過去の運用の並びは I（1 回目）→ J → I（2 回目）の順', () => {
+            const [carried] = carry.buildCarried({
+                sightings: s,
+                operations: operationsOf(
+                    '61K',
+                    '62K',
+                    '63K',
+                    '64K',
+                    '71K',
+                ) as never,
+            });
+            const items: [OperationSightingDetailsDto, string][] = [
+                [carried, '64K'],
+                [s[2], '63K'],
+                [s[1], '71K'],
+                [s[0], '61K'],
+            ];
+            const sorted = items
+                .map(([o, n]) => ({ o, k: carry.orderOf(o, n, s) }))
+                .sort((a, b) => a.k[0] - b.k[0] || a.k[1] - b.k[1])
+                .map(({ o }) => o.id);
+            expect(sorted).toEqual(['p', 'j', 'r', 'r#64K']);
+        });
+    });
+
+    it('輪になった行程（いちばん早い区間で切る）でも推測できる', () => {
+        const loop = VehicleItineraryReadModel.create([
+            seg({
+                id: 'L1',
+                operationNumber: '81K',
+                startSeconds: t('06:00'),
+                endSeconds: t('08:00'),
+                nextTripOperationListId: 'L2',
+            }),
+            seg({
+                id: 'L2',
+                operationNumber: '82K',
+                startSeconds: t('08:10'),
+                endSeconds: t('20:00'),
+                nextTripOperationListId: 'L1',
+            }),
+        ]);
+        const s = [sighting('a', '81K', 'A', '07:00')];
+        expect(
+            formationOf(
+                SightingCarryOver.create(loop).resolveForOperation({
+                    sightings: s,
+                    operationNumber: '82K',
+                    searchTime: at('12:00'),
+                }),
+            ),
+        ).toBe('A?');
     });
 });
