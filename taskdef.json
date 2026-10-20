@@ -25,6 +25,10 @@
                 {
                     "name": "CORS_HEADER_ORIGIN",
                     "value": "https://v3.sotetsu-lab.com"
+                },
+                {
+                    "name": "SUPABASE_URL",
+                    "value": "https://nofubcikiabamlnlxpko.supabase.co"
                 }
             ],
             "secrets": [

@@ -69,6 +69,7 @@ const serverlessConfiguration: AWS = {
             COGNITO_USERPOOL_ID:
                 '${ssm:sotetsu-lab-v3-auth-cognito-userpool-id}',
             COGNITO_CLIENT_ID: '${ssm:sotetsu-lab-v3-auth-cognito-client-id}',
+            SUPABASE_URL: '${ssm:sotetsu-lab-v3-supabase-url}',
         },
     },
     // import the function via paths
