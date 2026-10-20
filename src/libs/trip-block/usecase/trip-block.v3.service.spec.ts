@@ -6,7 +6,6 @@ import { TripBlockQuery } from '../infrastructure/queries/trip-block.query';
 import { TripBlockDomainBuilder } from './builders/trip-block.domain.builder';
 import { TripBlockV3Service } from './trip-block.v3.service';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
 
 const mockItinerarySegmentQuery = {

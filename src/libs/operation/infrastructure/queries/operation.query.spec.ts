@@ -3,15 +3,12 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { OperationModel } from '../models/operation.model';
 import { OperationQuery } from './operation.query';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
 
 const mockGetOne: AnyMock = jest.fn();
 const mockGetMany: AnyMock = jest.fn();
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildChainableQueryBuilder(): any {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const qb: any = {};
     for (const method of [
         'select',
@@ -27,7 +24,6 @@ function buildChainableQueryBuilder(): any {
     return qb;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let currentQueryBuilder: any;
 const mockCreateQueryBuilder: AnyMock = jest.fn();
 const mockFind: AnyMock = jest.fn();

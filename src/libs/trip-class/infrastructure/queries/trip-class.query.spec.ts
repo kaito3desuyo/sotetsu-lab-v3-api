@@ -3,14 +3,11 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { TripClassModel } from '../models/trip-class.model';
 import { TripClassQuery } from './trip-class.query';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
 
 const mockGetMany: AnyMock = jest.fn();
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildChainableQueryBuilder(): any {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const qb: any = {};
     for (const method of ['select', 'where', 'orderBy', 'addOrderBy']) {
         qb[method] = jest.fn().mockReturnValue(qb);
@@ -19,7 +16,6 @@ function buildChainableQueryBuilder(): any {
     return qb;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let currentQueryBuilder: any;
 const mockCreateQueryBuilder: AnyMock = jest.fn();
 const mockRepository = {

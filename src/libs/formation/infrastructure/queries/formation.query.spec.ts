@@ -7,14 +7,11 @@ import { FormationQuery } from './formation.query';
 
 dayjs.extend(customParseFormat);
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
 
 const mockGetMany: AnyMock = jest.fn();
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildChainableQueryBuilder(): any {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const qb: any = {};
     for (const method of [
         'select',
@@ -30,7 +27,6 @@ function buildChainableQueryBuilder(): any {
     return qb;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let currentQueryBuilder: any;
 const mockCreateQueryBuilder: AnyMock = jest.fn();
 const mockRepository = {

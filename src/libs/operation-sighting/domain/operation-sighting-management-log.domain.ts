@@ -44,9 +44,7 @@ export class OperationSightingManagementLogs extends WatchedList<OperationSighti
         return a.isEqual(b);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     protected _validateWhenCreating(): void {}
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     protected _validateWhenAdding(): void {}
 
     protected _validateWhenRemoving(): void {

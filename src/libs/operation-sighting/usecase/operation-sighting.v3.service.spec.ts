@@ -20,10 +20,8 @@ dayjs.extend(timezone);
 dayjs.extend(customParseFormat);
 dayjs.tz.setDefault('Asia/Tokyo');
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockManager: any = {};
 const mockSave: AnyMock = jest.fn();
 const mockOperationSightingCommand = { save: mockSave };
@@ -47,7 +45,6 @@ const mockOperationSightingQuery = {
 };
 const mockItinerarySegmentQuery = { findManyByCalendarId: jest.fn() as AnyMock };
 const mockDataSource = {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     transaction: jest.fn().mockImplementation(async (fn: any) => fn(mockManager)) as AnyMock,
 };
 const mockCalendarQuery = { findOneBySpecificDate: jest.fn() as AnyMock };
@@ -100,7 +97,6 @@ describe('OperationSightingV3Service - write side cache', () => {
 
     beforeEach(async () => {
         jest.clearAllMocks();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockDataSource.transaction.mockImplementation(async (fn: any) =>
             fn(mockManager),
         );
@@ -195,7 +191,6 @@ describe('OperationSightingV3Service - write side cache', () => {
         expect(
             mockOperationSightingLatestCacheCommand.save,
         ).toHaveBeenCalled();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const savedCache = mockOperationSightingLatestCacheCommand.save.mock.calls[0][0] as any;
         expect(savedCache.props.operationSightingId).toBe('sighting-prev');
         expect(
@@ -277,7 +272,6 @@ describe('OperationSightingV3Service - write side cache', () => {
         expect(
             mockOperationSightingLatestCacheCommand.save,
         ).toHaveBeenCalled();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const savedCache = mockOperationSightingLatestCacheCommand.save.mock.calls[0][0] as any;
         expect(savedCache.props.operationSightingId).toBe(sightingId);
         expect(savedCache.props.operationNumber).toBe('62');
@@ -758,7 +752,6 @@ describe('OperationSightingV3Service - post', () => {
 
     beforeEach(async () => {
         jest.clearAllMocks();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockDataSource.transaction.mockImplementation(async (fn: any) =>
             fn(mockManager),
         );

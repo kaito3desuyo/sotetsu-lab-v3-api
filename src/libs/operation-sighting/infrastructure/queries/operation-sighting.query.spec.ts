@@ -4,15 +4,12 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { OperationSightingModel } from '../models/operation-sighting.model';
 import { OperationSightingQuery } from './operation-sighting.query';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
 
 const mockGetOne: AnyMock = jest.fn();
 const mockGetMany: AnyMock = jest.fn();
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildChainableQueryBuilder(): any {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const qb: any = {};
     for (const method of ['leftJoinAndSelect', 'where', 'andWhere', 'orderBy', 'addOrderBy']) {
         qb[method] = jest.fn().mockReturnValue(qb);
@@ -22,7 +19,6 @@ function buildChainableQueryBuilder(): any {
     return qb;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let currentQueryBuilder: any;
 const mockCreateQueryBuilder: AnyMock = jest.fn();
 const mockRawQuery: AnyMock = jest.fn();

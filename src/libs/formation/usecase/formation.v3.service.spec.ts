@@ -4,7 +4,6 @@ import { FormationDetailsDto } from './dtos/formation-details.dto';
 import { FormationV3Service } from './formation.v3.service';
 import { FormationFindManyBySpecificPeriodParam } from './params/formation-find-many-by-specific-period.param';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
 
 const mockFormationQuery = {

@@ -19,7 +19,6 @@ jest.mock('src/core/modules/auth/auth.guard', () => ({
     AuthGuard: class {},
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyController = { prototype: any; name: string };
 
 const { MASTER, TIMETABLE, REALTIME } = CACHE_CONTROL;

@@ -6,7 +6,6 @@ import { OperationDetailsDto } from './dtos/operation-details.dto';
 import { OperationWithTripsDto } from './dtos/operation-with-trips.dto';
 import { OperationV3Service } from './operation.v3.service';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
 
 const mockOperationQuery = {

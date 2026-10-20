@@ -4,7 +4,6 @@ import { CalendarDateModel } from '../models/calendar-date.model';
 import { CalendarModel } from '../models/calendar.model';
 import { CalendarQuery } from './calendar.query';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
 
 function buildQueryBuilderMock(getManyResult: AnyMock) {

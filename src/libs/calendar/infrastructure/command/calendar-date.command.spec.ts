@@ -5,7 +5,6 @@ import { UseCaseError } from 'src/core/classes/custom-error';
 import { CalendarDateModel } from '../models/calendar-date.model';
 import { CalendarDateCommand } from './calendar-date.command';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
 
 function buildUniqueViolationError(): QueryFailedError {

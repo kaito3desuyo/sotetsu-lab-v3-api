@@ -72,10 +72,7 @@ export class TripBlocks extends WatchedList<TripBlock> {
         return a.isEqual(b);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     protected _validateWhenCreating(): void {}
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     protected _validateWhenAdding(): void {}
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     protected _validateWhenRemoving(): void {}
 }

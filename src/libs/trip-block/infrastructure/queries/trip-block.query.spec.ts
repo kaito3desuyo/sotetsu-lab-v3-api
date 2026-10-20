@@ -3,7 +3,6 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { TripBlockModel } from '../models/trip-block.model';
 import { TripBlockQuery } from './trip-block.query';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
 
 function buildQueryBuilderMock(getManyResult: unknown[]) {
