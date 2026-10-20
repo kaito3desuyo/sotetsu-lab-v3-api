@@ -29,6 +29,7 @@
 - 上を消した結果、どこからも使われなくなる DTO・param・builder・query・module。判定は「import するファイルが 0 件」（`tsc` が通ること＋ grep で確かめる）
   - 例: `VehicleQuery` は v2 からしか使われていない。`vehicle.libs.module.ts` がほかから import されていなければ一緒に消す。`VehicleModel` は formation の関連で使われるので残す
 - `src/core/utils/pagination-header.ts`（v2 からしか使われていない）
+- `src/core/utils/merge-customizer.ts`（v2 と、3.2 で消す `CrudRequest` 用メソッドからしか使われていない）
 
 ### 3.2 @dataui/crud
 
@@ -64,7 +65,8 @@
    - v3 の一覧: agencies・routes・stations・services・calendars・trip-classes・formations・operations・operation-sightings・trip-blocks（`fields` 付きも）
    - v3 の詳細: 各 `/:id` の代表 1 件
    - trip-blocks の書き込み: 渋谷工事臨時ダイヤ（2021 年 10 月版）で登録・更新・削除し、後始末の SQL で戻す
-   - 目撃の投稿（POST）
+   - 目撃の投稿（POST）の口が生きていること。本番 DB に目撃を残さないため、検証で 400 になる body を送り、404・500 にならないことを見る
+   - CLI（`npm run cli`）が DI のエラー無しに起動すること
 3. `/v2/agencies` が 404 を返す
 4. 本番デプロイ後、v3 の確認スクリプト（トークン無し 401・匿名 200・health-check 200）と、client の主な画面が表示されることを見る
 
