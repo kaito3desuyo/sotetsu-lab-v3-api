@@ -5,9 +5,7 @@ import {
     Logger,
     UnauthorizedException,
 } from '@nestjs/common';
-import { CognitoJwtVerifier } from 'aws-jwt-verify';
 import { Request } from 'express';
-import { readFileSync } from 'fs';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { isRole } from '../rbac/role.enum';
 import { AuthContext } from './auth-context';
@@ -19,18 +17,6 @@ const supabaseIssuer = `${process.env.SUPABASE_URL}/auth/v1`;
 const supabaseJwks = createRemoteJWKSet(
     new URL(`${supabaseIssuer}/.well-known/jwks.json`),
 );
-
-/** 切り替えの途中だけ受け付ける（spec 9 章の 2〜6）。6 で aws-jwt-verify ごと消す */
-const cognitoVerifier = CognitoJwtVerifier.create({
-    userPoolId: process.env.COGNITO_USERPOOL_ID,
-    clientId: process.env.COGNITO_CLIENT_ID,
-    tokenUse: 'access',
-});
-cognitoVerifier.cacheJwks(
-    JSON.parse(readFileSync(__dirname + '/jwks.json', { encoding: 'utf-8' })),
-);
-
-const COGNITO_SCOPE_PREFIX = 'sotetsu-lab-v3-api/';
 
 /**
  * 読み取りも含めてトークンを求める（ゲストは backend が作る Supabase の匿名セッションのトークン）。
@@ -64,23 +50,19 @@ export class AuthGuard implements CanActivate {
     }
 
     async #verify(jwt: string): Promise<AuthContext> {
-        if (readUnverifiedIssuer(jwt) === supabaseIssuer) {
-            const { payload } = await jwtVerify(jwt, supabaseJwks, {
-                issuer: supabaseIssuer,
-                audience: 'authenticated',
-                algorithms: ['ES256'],
-            });
-            return {
-                userId: payload.sub ?? null,
-                role: isRole(payload.user_role) ? payload.user_role : null,
-            };
+        // Cognito など Supabase 以外の発行元は、検証に回さずに断る
+        if (readUnverifiedIssuer(jwt) !== supabaseIssuer) {
+            throw new Error('Unexpected issuer');
         }
 
-        const payload = await cognitoVerifier.verify(jwt);
-        const scope = String(payload.scope ?? '').replace(
-            COGNITO_SCOPE_PREFIX,
-            '',
-        );
-        return { userId: null, role: isRole(scope) ? scope : null };
+        const { payload } = await jwtVerify(jwt, supabaseJwks, {
+            issuer: supabaseIssuer,
+            audience: 'authenticated',
+            algorithms: ['ES256'],
+        });
+        return {
+            userId: payload.sub ?? null,
+            role: isRole(payload.user_role) ? payload.user_role : null,
+        };
     }
 }

@@ -97,7 +97,7 @@ npm run deploy               # Serverless Framework でデプロイ
 - **API ドキュメント** - Swagger
 - **バリデーション** - class-validator（DTO ベース）
 - **ログ** - Pino（JSON 形式）
-- **認証** - AWS JWT Verify
+- **認証** - Supabase Auth の JWT を jose で検証（AuthGuard・RBACGuard）
 - **セキュリティ** - Helmet
 - **日時処理** - dayjs（タイムゾーン対応）
 - **テスト** - Jest + ts-jest + Supertest

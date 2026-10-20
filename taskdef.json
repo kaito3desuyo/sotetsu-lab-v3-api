@@ -35,10 +35,6 @@
                 {
                     "name": "DATABASE_URL",
                     "valueFrom": "sotetsu-lab-v3-api-database-url"
-                },
-                {
-                    "name": "COGNITO_USERPOOL_ID",
-                    "valueFrom": "sotetsu-lab-v3-auth-cognito-userpool-id"
                 }
             ],
             "logConfiguration": {

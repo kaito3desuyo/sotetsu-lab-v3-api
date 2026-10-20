@@ -103,8 +103,8 @@ client ─POST /api/auth/logout→ backend: signOut（そのセッションを�
 - `AuthGuard`: ヘッダーが無ければ 401。あれば Supabase の JWKS で検証し、失敗なら 401
 - `RBACGuard`: `@RBAC` の口で payload が無ければ 401、`user_role` が合わなければ 403
 - `Role` を `reader` / `reporter` / `editor` / `manager` の素の値にする
-- 切り替えの途中だけ Cognito と Supabase の両方を受け付ける（9 章の 2〜6）。両方の判定は Guard の中に閉じ、役割は同じ `Role` に揃えて RBACGuard に渡す
-- 検証ライブラリは汎用の `jose` ^6（ESM 専用。api の実行環境は Node 24 なので CommonJS から require できる）。切り替えの途中の Cognito の検証だけ今の `aws-jwt-verify` 4.0.1 を残し、9 章の 6 で依存ごと消す。Supabase の署名鍵は推奨どおり ES256（P-256）
+- 切り替えの途中だけ Cognito と Supabase の両方を受け付ける（9 章の 2〜6）。両方の判定は Guard の中に閉じ、役割は同じ `Role` に揃えて RBACGuard に渡す。2026-10-20 に 9 章の 6 で Cognito を外し、今は Supabase 以外の `iss` を検証に回さずに 401 にする
+- 検証ライブラリは汎用の `jose` ^6（ESM 専用。api の実行環境は Node 24 なので CommonJS から require できる）。切り替えの途中の Cognito の検証だけ今の `aws-jwt-verify` 4.0.1 を残し、9 章の 6 で依存ごと消す（2026-10-20 に消した。Cognito の公開鍵を同梱していた `jwks.json` も）。Supabase の署名鍵は推奨どおり ES256（P-256）
 - Supabase の access token は `iss` = `https://nofubcikiabamlnlxpko.supabase.co/auth/v1`・`aud` = `authenticated`（公式の JWT fields）
 
 ### 5.3 socket・backend・client
@@ -136,7 +136,7 @@ client ─POST /api/auth/logout→ backend: signOut（そのセッションを�
 
 ## 8. テスト
 
-- api: Guard の単体テスト（ヘッダー無しは 401・匿名は通す・正しい JWT・壊れた JWT・期限切れ・役割違い・途中期間の Cognito）
+- api: Guard の単体テスト（ヘッダー無しは 401・匿名は通す・正しい JWT・壊れた JWT・期限切れ・役割違い・Supabase 以外の発行元は 401）
 - socket・backend・client: それぞれのリポの spec の「テスト」
 - 移行スクリプト: 本番の dry-run で 105 人・衝突 0 を確かめる
 - 実機: 手元は本番の DB と本番の Supabase につながる。確かめるのは検証用の利用者 1 人で、ログイン → トークン → 書き込み（RBAC の付いた口）→ ログアウトを通し、終わったら消す
@@ -150,7 +150,7 @@ client ─POST /api/auth/logout→ backend: signOut（そのセッションを�
 3. client をデプロイ
 4. 移行スクリプトを本番で流す（直前に dry-run）。書き出された `UPDATE` 文を SQL Editor で流し、役割と登録日時を戻す
 5. backend をデプロイ。ここから Supabase で動き、ゲストは匿名セッションになる。`/api/token` が消える。今のセッションは使えなくなり、全員 1 回ログインし直し
-6. 様子を見て、api・socket から Cognito の受け付けを外す
+6. 様子を見て、api・socket から Cognito の受け付けを外す（2026-10-20 に実施。backend のデプロイから Cognito のアクセストークンの有効期間 60 分が過ぎたこと、CloudTrail の `Token_POST` が 90 日分すべて backend の `openid-client` からで 13:36 を最後に止まっていること、socket の接続に Cognito のトークンが無いことを確かめてから）
 7. 撤去: Cognito のプールと app client、DynamoDB の管理テーブルとキャッシュテーブル。**消す前に中身を列挙して、ユーザー・セッション・トークン以外が無いことを確かめ、ユーザーの確認を取ってから手で消す**。Cognito は、トークンの発行の記録（CloudWatch の指標か CloudTrail）で backend 以外から発行されていないことも確かめる（外部が app client の資格情報で直接取っている可能性をリポジトリの検索だけでは否定できないため）
 
 4 と 5 の間に登録した利用者は、5 の直前にもう一度スクリプトを流して拾う（何度流しても同じ結果になる作りのため）。

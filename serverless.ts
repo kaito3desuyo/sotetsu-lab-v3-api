@@ -66,9 +66,6 @@ const serverlessConfiguration: AWS = {
             CORS_HEADER_ORIGIN: 'https://v3.sotetsu-lab.com',
             DATABASE_URL:
                 'postgresql://${self:custom.databaseSecrets.username}:${self:custom.databaseSecrets.password}@${self:custom.databaseSecrets.host}:${self:custom.databaseSecrets.port}/${self:custom.databaseSecrets.dbname}',
-            COGNITO_USERPOOL_ID:
-                '${ssm:sotetsu-lab-v3-auth-cognito-userpool-id}',
-            COGNITO_CLIENT_ID: '${ssm:sotetsu-lab-v3-auth-cognito-client-id}',
             SUPABASE_URL: '${ssm:sotetsu-lab-v3-supabase-url}',
         },
     },

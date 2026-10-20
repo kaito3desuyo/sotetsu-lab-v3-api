@@ -14,7 +14,7 @@ import { TripV3Controller } from 'src/libs/trip/presentation/trip.v3.controller'
 import { CACHE_CONTROL } from './cache-control.constants';
 import { CACHE_CONTROL_METADATA_KEY } from './cache-control.decorator';
 
-// auth.guard は読み込んだ時点で Cognito の verifier を環境変数から作るので、メタデータを見るだけのここでは差し替える
+// auth.guard は読み込んだ時点で jose（ESM 専用で jest が読めない）と SUPABASE_URL を使うので、メタデータを見るだけのここでは差し替える
 jest.mock('src/core/modules/auth/auth.guard', () => ({
     AuthGuard: class {},
 }));
