@@ -6,12 +6,6 @@ jest.mock('jose', () => ({
     createRemoteJWKSet: () => 'jwks',
     jwtVerify: (...args: unknown[]) => supabaseVerify(...args),
 }));
-const cognitoVerify = jest.fn();
-jest.mock('aws-jwt-verify', () => ({
-    CognitoJwtVerifier: {
-        create: () => ({ verify: cognitoVerify, cacheJwks: jest.fn() }),
-    },
-}));
 
 process.env.SUPABASE_URL = 'https://example.supabase.co';
 const SUPABASE_ISS = 'https://example.supabase.co/auth/v1';
@@ -42,7 +36,6 @@ describe('AuthGuard', () => {
                 new AuthGuard().canActivate(ctx),
             ).rejects.toBeInstanceOf(UnauthorizedException);
             expect(supabaseVerify).not.toHaveBeenCalled();
-            expect(cognitoVerify).not.toHaveBeenCalled();
         },
     );
 
@@ -86,28 +79,14 @@ describe('AuthGuard', () => {
         expect(req.auth).toEqual({ userId: 'u-2', role: null });
     });
 
-    it('Cognito のトークンは scope の末尾を role にし、userId は null', async () => {
-        cognitoVerify.mockResolvedValueOnce({
-            sub: 'client-id',
-            scope: 'sotetsu-lab-v3-api/reporter',
-        });
-        const { req, ctx } = contextFor({
+    it('Supabase 以外の iss（Cognito など）は検証に回さず 401', async () => {
+        const { ctx } = contextFor({
             'x-sotetsu-lab-authorization': `Bearer ${jwtWithIss('https://cognito-idp.ap-northeast-1.amazonaws.com/pool')}`,
         });
-        await new AuthGuard().canActivate(ctx);
-        expect(req.auth).toEqual({ userId: null, role: 'reporter' });
-    });
-
-    it('Cognito の fullaccess は role を持たない', async () => {
-        cognitoVerify.mockResolvedValueOnce({
-            sub: 'client-id',
-            scope: 'sotetsu-lab-v3-api/fullaccess',
-        });
-        const { req, ctx } = contextFor({
-            'x-sotetsu-lab-authorization': `Bearer ${jwtWithIss('https://cognito-idp.ap-northeast-1.amazonaws.com/pool')}`,
-        });
-        await new AuthGuard().canActivate(ctx);
-        expect(req.auth).toEqual({ userId: null, role: null });
+        await expect(new AuthGuard().canActivate(ctx)).rejects.toBeInstanceOf(
+            UnauthorizedException,
+        );
+        expect(supabaseVerify).not.toHaveBeenCalled();
     });
 
     it('検証に失敗したら 401', async () => {
@@ -120,13 +99,13 @@ describe('AuthGuard', () => {
         );
     });
 
-    it('JWT の形をしていなければ 401', async () => {
-        cognitoVerify.mockRejectedValueOnce(new Error('malformed'));
+    it('JWT の形をしていなければ検証に回さず 401', async () => {
         const { ctx } = contextFor({
             'x-sotetsu-lab-authorization': 'Bearer not-a-jwt',
         });
         await expect(new AuthGuard().canActivate(ctx)).rejects.toBeInstanceOf(
             UnauthorizedException,
         );
+        expect(supabaseVerify).not.toHaveBeenCalled();
     });
 });

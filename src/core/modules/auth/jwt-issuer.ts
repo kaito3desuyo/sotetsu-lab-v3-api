@@ -1,4 +1,4 @@
-/** 署名を確かめる前に、どの発行元の verifier に回すかだけを決めるため iss を読む。信用はしない */
+/** 署名を確かめる前に、Supabase の発行元かだけを見分けるため iss を読む。信用はしない */
 export const readUnverifiedIssuer = (jwt: string): string | null => {
     const payload = jwt.split('.')[1];
     if (!payload) return null;
