@@ -73,7 +73,7 @@
 ## 6. デプロイと版
 
 - api だけ。client・backend・socket は触らない
-- 版は minor（v3.14.0）。v2 の口が消えるのは外から見える変化のため
+- 版は major（v4.0.0）。v2 の口が消えるのは後方互換の無い変更のため（v2 を消すコミットは `refactor!` と BREAKING CHANGE）
 
 ## 7. ドキュメント
 

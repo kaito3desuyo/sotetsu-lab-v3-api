@@ -1,5 +1,7 @@
 # refactor-instructions.md — sotetsu-lab-v3-api
 
+> **2026-10-21 注記**: v2 は廃止し、`@dataui/crud` は依存から外した（ADR-0006）。以下の v2 に関する禁止事項・作業順序は当時のもの。
+
 > 作成日: 2026-06-11 / 調査者: Claude (Fable 5)
 > 対象リポジトリ: `sotetsu-lab-v3-api`（このファイルが置かれているリポジトリ）
 >

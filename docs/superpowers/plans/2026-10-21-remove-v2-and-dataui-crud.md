@@ -17,7 +17,7 @@
 - DB のスキーマを変えない（マイグレーションを作らない）
 - コミットは Conventional Commits＋絵文字（例: `refactor: :recycle: …`）。日本語。GPG 署名つき（サンドボックス外で commit）。末尾に Co-Authored-By と Claude-Session の 2 行
 - master にコミットしない。ブランチは `refactor/remove-v2-and-dataui-crud`
-- 版は minor（v3.14.0）。版上げとデプロイはユーザーが行う
+- 版は major（v4.0.0）。版上げとデプロイはユーザーが行う
 - Bash はパイプでつながない。複数行のスクリプトは `.context/` に置いてから流す
 - 確認コマンド（以下「全チェック」）:
   - `npx tsc --noEmit -p tsconfig.json`
@@ -442,7 +442,7 @@ Expected: `rebuildLatestCache` を含むヘルプが出て、DI のエラーが�
 - 状況: `@dataui/crud` は 2024-04 で更新停止。NestJS 11/12 に上げる前に外す必要がある
 - 決定: `/v2/*` を廃止し、`@dataui/crud` 系 3 パッケージを外す。query・command は Repository＋`createQueryBuilder` だけで書く
 - 根拠: spec 2 章の 3 点（どのリポも v2 を呼んでいない・本番ログ 30 日で v2 は確認用の curl だけ・Supabase Auth 切り替え後は v3 の client 以外 v2 を叩けない）
-- 影響: `/v2/*` は 404。v3 は変わらない。版は v3.14.0
+- 影響: `/v2/*` は 404。v3 は変わらない。版は v4.0.0
 
 - [ ] **Step 2: CLAUDE.md を直す**
 
@@ -480,11 +480,11 @@ git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push -u
 gh pr create -R kaito3desuyo/sotetsu-lab-v3-api -B master -H refactor/remove-v2-and-dataui-crud -t "v2 を廃止し @dataui/crud を外す" -F .context/pr_remove_v2.md
 ```
 
-PR 本文（`.context/pr_remove_v2.md`）: 概要・消したもの・変えないもの・Task 4 の結果（`same/diff/total`・/v2 の 404・書き込みテスト・目撃 POST 400・CLI）・デプロイ（minor v3.14.0、デプロイ後に v3 の確認スクリプト）。末尾に `🤖 Generated with [Claude Code](https://claude.com/claude-code)` と Session URL。
+PR 本文（`.context/pr_remove_v2.md`）: 概要・消したもの・変えないもの・Task 4 の結果（`same/diff/total`・/v2 の 404・書き込みテスト・目撃 POST 400・CLI）・デプロイ（major v4.0.0、デプロイ後に v3 の確認スクリプト）。末尾に `🤖 Generated with [Claude Code](https://claude.com/claude-code)` と Session URL。
 
 - [ ] **Step 2: CI が通ることを確かめる**
 
 Run: `gh pr checks <番号> -R kaito3desuyo/sotetsu-lab-v3-api --watch`
 Expected: `test-and-lint` が pass
 
-マージ・版上げ（`npm version minor`）・デプロイはユーザーが行う。デプロイ後に `.context/prod_check_no_cognito.sh` を流し（v2 の行は 404 に変わる）、client の主な画面を見る。
+マージ・版上げ（`npm version major`）・デプロイはユーザーが行う。デプロイ後に `.context/prod_check_no_cognito.sh` を流し（v2 の行は 404 に変わる）、client の主な画面を見る。
