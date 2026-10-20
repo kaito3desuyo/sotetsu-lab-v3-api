@@ -1,3 +1,4 @@
+import { Nested } from 'src/core/types/nested';
 import { Expose, Type } from 'class-transformer';
 import { ServiceDetailsDto } from 'src/libs/service/usecase/dtos/service-details.dto';
 import { TripDetailsDto } from 'src/libs/trip/usecase/dtos/trip-details.dto';
@@ -27,9 +28,9 @@ export class TripClassDetailsDto extends BaseTripClassDto {
 
     @Expose()
     @Type(() => TripDetailsDto)
-    trips?: TripDetailsDto[];
+    trips?: Nested<TripDetailsDto[]>;
 
     @Expose()
     @Type(() => ServiceDetailsDto)
-    service?: ServiceDetailsDto;
+    service?: Nested<ServiceDetailsDto>;
 }

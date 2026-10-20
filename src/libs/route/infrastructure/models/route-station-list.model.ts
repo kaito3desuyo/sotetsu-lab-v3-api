@@ -10,6 +10,7 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    Relation,
 } from 'typeorm';
 import { RouteModel } from './route.model';
 
@@ -42,21 +43,21 @@ export class RouteStationListModel {
 
     @ManyToOne(() => RouteModel, (route) => route.routeStationLists)
     @JoinColumn({ name: 'route_id' })
-    route: RouteModel;
+    route: Relation<RouteModel>;
 
     @ManyToOne(() => StationModel, (station) => station.routeStationLists)
     @JoinColumn({ name: 'station_id' })
-    station: StationModel;
+    station: Relation<StationModel>;
 
     @OneToMany(
         () => OperatingSystemModel,
         (operatingSystem) => operatingSystem.startRouteStationList,
     )
-    startOperatingSystems?: OperatingSystemModel;
+    startOperatingSystems?: Relation<OperatingSystemModel>;
 
     @OneToMany(
         () => OperatingSystemModel,
         (operatingSystem) => operatingSystem.endRouteStationList,
     )
-    endOperatingSystems?: OperatingSystemModel;
+    endOperatingSystems?: Relation<OperatingSystemModel>;
 }

@@ -7,6 +7,7 @@ import {
     ManyToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    Relation,
 } from 'typeorm';
 import { CalendarModel } from './calendar.model';
 
@@ -51,5 +52,5 @@ export class CalendarDateModel {
 
     @ManyToOne(() => CalendarModel)
     @JoinColumn({ name: 'calendar_id' })
-    readonly calendar?: CalendarModel;
+    readonly calendar?: Relation<CalendarModel>;
 }

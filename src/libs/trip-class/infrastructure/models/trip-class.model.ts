@@ -10,6 +10,7 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    Relation,
 } from 'typeorm';
 
 @Entity({
@@ -39,9 +40,9 @@ export class TripClassModel {
     updatedAt: string;
 
     @OneToMany(() => TripModel, (trip) => trip.tripClass)
-    readonly trips?: TripModel[];
+    readonly trips?: Relation<TripModel[]>;
 
     @ManyToOne(() => ServiceModel, (service) => service.tripClasses)
     @JoinColumn({ name: 'service_id' })
-    readonly service?: ServiceModel;
+    readonly service?: Relation<ServiceModel>;
 }

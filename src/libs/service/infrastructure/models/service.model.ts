@@ -8,6 +8,7 @@ import {
     CreateDateColumn,
     UpdateDateColumn,
     OneToMany,
+    Relation,
 } from 'typeorm';
 import { OperatingSystemModel } from './operating-system.model';
 
@@ -31,17 +32,17 @@ export class ServiceModel {
     updatedAt: string;
 
     @OneToMany(() => CalendarModel, (calendar) => calendar.service)
-    readonly calendars?: CalendarModel[];
+    readonly calendars?: Relation<CalendarModel[]>;
 
     @OneToMany(
         () => OperatingSystemModel,
         (operatingSystem) => operatingSystem.service,
     )
-    readonly operatingSystems?: OperatingSystemModel[];
+    readonly operatingSystems?: Relation<OperatingSystemModel[]>;
 
     @OneToMany(() => TripModel, (trip) => trip.service)
-    readonly trips?: TripModel[];
+    readonly trips?: Relation<TripModel[]>;
 
     @OneToMany((_type) => TripClassModel, (tripClass) => tripClass.service)
-    readonly tripClasses?: TripClassModel[];
+    readonly tripClasses?: Relation<TripClassModel[]>;
 }

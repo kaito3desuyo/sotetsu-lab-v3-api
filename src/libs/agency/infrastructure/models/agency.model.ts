@@ -7,6 +7,7 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    Relation,
 } from 'typeorm';
 
 @Entity({
@@ -47,8 +48,8 @@ export class AgencyModel {
     updatedAt: Date;
 
     @OneToMany(() => RouteModel, (route) => route.agency)
-    routes?: RouteModel[];
+    routes?: Relation<RouteModel[]>;
 
     @OneToMany(() => FormationModel, (formation) => formation.agency)
-    formations?: FormationModel[];
+    formations?: Relation<FormationModel[]>;
 }

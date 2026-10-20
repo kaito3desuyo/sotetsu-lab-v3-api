@@ -10,6 +10,7 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    Relation,
 } from 'typeorm';
 import { RouteStationListModel } from './route-station-list.model';
 
@@ -56,17 +57,17 @@ export class RouteModel {
 
     @ManyToOne(() => AgencyModel, (agency) => agency.routes)
     @JoinColumn({ name: 'agency_id' })
-    readonly agency?: AgencyModel;
+    readonly agency?: Relation<AgencyModel>;
 
     @OneToMany(
         () => RouteStationListModel,
         (routeStationList) => routeStationList.route,
     )
-    readonly routeStationLists?: RouteStationListModel[];
+    readonly routeStationLists?: Relation<RouteStationListModel[]>;
 
     @OneToMany(
         () => OperatingSystemModel,
         (operatingSystem) => operatingSystem.route,
     )
-    readonly operatingSystems?: OperatingSystemModel[];
+    readonly operatingSystems?: Relation<OperatingSystemModel[]>;
 }

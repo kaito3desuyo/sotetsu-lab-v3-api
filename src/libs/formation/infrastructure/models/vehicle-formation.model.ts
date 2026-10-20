@@ -8,6 +8,7 @@ import {
     ManyToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    Relation,
 } from 'typeorm';
 import { FormationModel } from './formation.model';
 
@@ -44,12 +45,12 @@ export class VehicleFormationModel {
         },
     )
     @JoinColumn({ name: 'formation_id' })
-    readonly formation?: FormationModel;
+    readonly formation?: Relation<FormationModel>;
 
     @ManyToOne(() => VehicleModel, (vehicle) => vehicle.vehicleFormations, {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
     })
     @JoinColumn({ name: 'vehicle_id' })
-    readonly vehicle?: VehicleModel;
+    readonly vehicle?: Relation<VehicleModel>;
 }

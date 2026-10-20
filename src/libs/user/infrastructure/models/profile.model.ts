@@ -6,6 +6,7 @@ import {
     OneToOne,
     PrimaryColumn,
     UpdateDateColumn,
+    Relation,
 } from 'typeorm';
 import { AuthUserModel } from './auth-user.model';
 
@@ -21,7 +22,7 @@ export class ProfileModel {
 
     @OneToOne(() => AuthUserModel, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'user_id' })
-    authUser?: AuthUserModel;
+    authUser?: Relation<AuthUserModel>;
 
     /** ログインに使う名前を小文字にしたもの。ダミーのメールアドレスの前半と同じ */
     @Column('text', { unique: true })

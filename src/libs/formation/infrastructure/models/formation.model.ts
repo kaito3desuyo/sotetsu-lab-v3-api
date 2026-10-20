@@ -10,6 +10,7 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    Relation,
 } from 'typeorm';
 import { VehicleFormationModel } from './vehicle-formation.model';
 
@@ -48,7 +49,7 @@ export class FormationModel {
 
     @ManyToOne(() => AgencyModel, (agency) => agency.formations)
     @JoinColumn({ name: 'agency_id' })
-    agency?: AgencyModel;
+    agency?: Relation<AgencyModel>;
 
     @OneToMany(
         () => VehicleFormationModel,
@@ -57,11 +58,11 @@ export class FormationModel {
             cascade: true,
         },
     )
-    vehicleFormations?: VehicleFormationModel[];
+    vehicleFormations?: Relation<VehicleFormationModel[]>;
 
     @OneToMany(
         () => OperationSightingModel,
         (operationSighting) => operationSighting.formation,
     )
-    operationSightings?: OperationSightingModel[];
+    operationSightings?: Relation<OperationSightingModel[]>;
 }

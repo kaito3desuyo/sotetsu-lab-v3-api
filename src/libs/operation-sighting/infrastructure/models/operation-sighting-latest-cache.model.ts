@@ -5,6 +5,7 @@ import {
     JoinColumn,
     ManyToOne,
     PrimaryGeneratedColumn,
+    Relation,
 } from 'typeorm';
 import { OperationSightingModel } from './operation-sighting.model';
 
@@ -27,5 +28,5 @@ export class OperationSightingLatestCacheModel {
 
     @ManyToOne(() => OperationSightingModel)
     @JoinColumn({ name: 'operation_sighting_id' })
-    readonly operationSighting?: OperationSightingModel;
+    readonly operationSighting?: Relation<OperationSightingModel>;
 }

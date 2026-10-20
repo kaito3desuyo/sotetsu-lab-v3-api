@@ -6,6 +6,7 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    Relation,
 } from 'typeorm';
 
 @Entity({
@@ -42,5 +43,5 @@ export class VehicleModel {
             cascade: true,
         },
     )
-    vehicleFormations?: VehicleFormationModel[];
+    vehicleFormations?: Relation<VehicleFormationModel[]>;
 }

@@ -4,6 +4,7 @@ import {
     CreateDateColumn,
     UpdateDateColumn,
     OneToMany,
+    Relation,
 } from 'typeorm';
 import { TripModel } from '../../../trip/infrastructure/models/trip.model';
 
@@ -21,5 +22,5 @@ export class TripBlockModel {
     readonly updatedAt?: Date;
 
     @OneToMany(() => TripModel, (trip) => trip.tripBlock, { cascade: true })
-    readonly trips?: TripModel[];
+    readonly trips?: Relation<TripModel[]>;
 }

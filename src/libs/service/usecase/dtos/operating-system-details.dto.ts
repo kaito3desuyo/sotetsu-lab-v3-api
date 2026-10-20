@@ -1,3 +1,4 @@
+import { Nested } from 'src/core/types/nested';
 import { Expose, Type } from 'class-transformer';
 import { RouteDetailsDto } from 'src/libs/route/usecase/dtos/route-details.dto';
 import { RouteStationListDetailsDto } from 'src/libs/route/usecase/dtos/route-station-list-details.dto';
@@ -25,17 +26,17 @@ export class OperatingSystemDetailsDto extends BaseOperatingSystemDto {
 
     @Expose()
     @Type(() => ServiceDetailsDto)
-    service?: ServiceDetailsDto;
+    service?: Nested<ServiceDetailsDto>;
 
     @Expose()
     @Type(() => RouteDetailsDto)
-    route?: RouteDetailsDto;
+    route?: Nested<RouteDetailsDto>;
 
     @Expose()
     @Type(() => RouteStationListDetailsDto)
-    startRouteStationList?: RouteStationListDetailsDto;
+    startRouteStationList?: Nested<RouteStationListDetailsDto>;
 
     @Expose()
     @Type(() => RouteStationListDetailsDto)
-    endRouteStationList?: RouteStationListDetailsDto;
+    endRouteStationList?: Nested<RouteStationListDetailsDto>;
 }

@@ -1,3 +1,4 @@
+import { Nested } from 'src/core/types/nested';
 import { Expose, Type } from 'class-transformer';
 import { ServiceDetailsDto } from 'src/libs/service/usecase/dtos/service-details.dto';
 import { BaseCalendarDto } from './base-calendar.dto';
@@ -47,5 +48,5 @@ export class CalendarDetailsDto extends BaseCalendarDto {
 
     @Expose()
     @Type(() => ServiceDetailsDto)
-    service?: ServiceDetailsDto;
+    service?: Nested<ServiceDetailsDto>;
 }

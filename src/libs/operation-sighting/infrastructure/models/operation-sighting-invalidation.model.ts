@@ -7,6 +7,7 @@ import {
     ManyToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    Relation,
 } from 'typeorm';
 import { OperationSightingModel } from './operation-sighting.model';
 
@@ -35,5 +36,5 @@ export class OperationSightingInvalidationModel {
         },
     )
     @JoinColumn({ name: 'operation_sighting_id' })
-    readonly operationSighting?: OperationSightingModel;
+    readonly operationSighting?: Relation<OperationSightingModel>;
 }

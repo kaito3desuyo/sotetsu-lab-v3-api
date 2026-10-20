@@ -1,3 +1,4 @@
+import { Nested } from 'src/core/types/nested';
 import { Expose, Type } from 'class-transformer';
 import { BaseServiceDto } from './base-service.dto';
 import { OperatingSystemDetailsDto } from './operating-system-details.dto';
@@ -20,5 +21,5 @@ export class ServiceDetailsDto extends BaseServiceDto {
 
     @Expose()
     @Type(() => OperatingSystemDetailsDto)
-    operatingSystems?: OperatingSystemDetailsDto[];
+    operatingSystems?: Nested<OperatingSystemDetailsDto[]>;
 }

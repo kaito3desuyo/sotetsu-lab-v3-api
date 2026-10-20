@@ -1,3 +1,4 @@
+import { Nested } from 'src/core/types/nested';
 import { Expose, Type } from 'class-transformer';
 import { RouteDetailsDto } from './route-details.dto';
 import { StationDetailsDto } from 'src/libs/station/usecase/dtos/station-details.dto';
@@ -5,11 +6,11 @@ import { StationDetailsDto } from 'src/libs/station/usecase/dtos/station-details
 export class RouteStationsDto {
     @Expose()
     @Type(() => RouteDetailsDto)
-    route: RouteDetailsDto;
+    route: Nested<RouteDetailsDto>;
 
     @Expose()
     @Type(() => RouteStationDto)
-    stations: RouteStationDto[];
+    stations: Nested<RouteStationDto[]>;
 }
 
 export class RouteStationDto extends StationDetailsDto {

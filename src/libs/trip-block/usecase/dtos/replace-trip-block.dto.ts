@@ -1,3 +1,4 @@
+import { Nested } from 'src/core/types/nested';
 import { Type } from 'class-transformer';
 import { ArrayNotEmpty, ValidateIf, ValidateNested } from 'class-validator';
 import { ReplaceTripDto } from 'src/libs/trip/usecase/dtos/replace-trip.dto';
@@ -10,5 +11,5 @@ export class ReplaceTripBlockDto extends ValidatableTripBlockDto {
     @ValidateNested({ each: true })
     @Type(() => ReplaceTripDto)
     @ArrayNotEmpty()
-    trips: ReplaceTripDto[];
+    trips: Nested<ReplaceTripDto[]>;
 }

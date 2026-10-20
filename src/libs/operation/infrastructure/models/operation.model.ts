@@ -11,6 +11,7 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    Relation,
 } from 'typeorm';
 
 @Entity({
@@ -36,17 +37,17 @@ export class OperationModel {
 
     @ManyToOne(() => CalendarModel, (calendar) => calendar.operations)
     @JoinColumn({ name: 'calendar_id' })
-    readonly calendar?: CalendarModel;
+    readonly calendar?: Relation<CalendarModel>;
 
     @OneToMany(
         () => TripOperationListModel,
         (tripOperationList) => tripOperationList.operation,
     )
-    readonly tripOperationLists?: TripOperationListModel[];
+    readonly tripOperationLists?: Relation<TripOperationListModel[]>;
 
     @OneToMany(
         () => OperationSightingModel,
         (operationSighting) => operationSighting.operation,
     )
-    readonly operationSightings?: OperationSightingModel[];
+    readonly operationSightings?: Relation<OperationSightingModel[]>;
 }

@@ -1,3 +1,4 @@
+import { Nested } from 'src/core/types/nested';
 import { Exclude, Type } from 'class-transformer';
 import { ArrayNotEmpty, IsOptional, ValidateNested } from 'class-validator';
 import { ETripDirection } from '../../special/enums/trip.enum';
@@ -35,10 +36,10 @@ export class CreateTripDto extends ValidatableTripDto {
     @ValidateNested({ each: true })
     @Type(() => CreateTimeDto)
     @ArrayNotEmpty()
-    times: CreateTimeDto[];
+    times: Nested<CreateTimeDto[]>;
 
     @ValidateNested({ each: true })
     @Type(() => CreateTripOperationListDto)
     // @ArrayNotEmpty()
-    tripOperationLists: CreateTripOperationListDto[];
+    tripOperationLists: Nested<CreateTripOperationListDto[]>;
 }

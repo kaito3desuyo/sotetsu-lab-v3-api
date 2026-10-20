@@ -1,3 +1,4 @@
+import { Nested } from 'src/core/types/nested';
 import { Exclude, Type } from 'class-transformer';
 import {
     ArrayNotEmpty,
@@ -39,10 +40,10 @@ export class ReplaceTripDto extends ValidatableTripDto {
     @ValidateNested({ each: true })
     @Type(() => ReplaceTimeDto)
     @ArrayNotEmpty()
-    times: ReplaceTimeDto[];
+    times: Nested<ReplaceTimeDto[]>;
 
     @ValidateNested({ each: true })
     @Type(() => ReplaceTripOperationListDto)
     // @ArrayNotEmpty()
-    tripOperationLists: ReplaceTripOperationListDto[];
+    tripOperationLists: Nested<ReplaceTripOperationListDto[]>;
 }

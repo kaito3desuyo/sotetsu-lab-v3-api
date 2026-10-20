@@ -1,3 +1,4 @@
+import { Nested } from 'src/core/types/nested';
 import { Expose, Type } from 'class-transformer';
 import { AgencyDetailsDto } from 'src/libs/agency/usecase/dtos/agency-details.dto';
 import { BaseFormationDto } from './base-formation.dto';
@@ -36,9 +37,9 @@ export class FormationDetailsDto extends BaseFormationDto {
 
     @Expose()
     @Type(() => AgencyDetailsDto)
-    agency?: AgencyDetailsDto;
+    agency?: Nested<AgencyDetailsDto>;
 
     @Expose()
     @Type(() => VehicleFormationDetailsDto)
-    vehicleFormations?: VehicleFormationDetailsDto[];
+    vehicleFormations?: Nested<VehicleFormationDetailsDto[]>;
 }

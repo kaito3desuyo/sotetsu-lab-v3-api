@@ -9,6 +9,7 @@ import {
     ManyToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    Relation,
 } from 'typeorm';
 import { ServiceModel } from './service.model';
 
@@ -46,23 +47,23 @@ export class OperatingSystemModel {
 
     @ManyToOne(() => ServiceModel, (service) => service.operatingSystems)
     @JoinColumn({ name: 'service_id' })
-    readonly service?: ServiceModel;
+    readonly service?: Relation<ServiceModel>;
 
     @ManyToOne(() => RouteModel, (route) => route.operatingSystems)
     @JoinColumn({ name: 'route_id' })
-    readonly route?: RouteModel;
+    readonly route?: Relation<RouteModel>;
 
     @ManyToOne(
         () => RouteStationListModel,
         (routeStationList) => routeStationList.startOperatingSystems,
     )
     @JoinColumn({ name: 'start_route_station_list_id' })
-    readonly startRouteStationList?: RouteStationListModel;
+    readonly startRouteStationList?: Relation<RouteStationListModel>;
 
     @ManyToOne(
         () => RouteStationListModel,
         (routeStationList) => routeStationList.endOperatingSystems,
     )
     @JoinColumn({ name: 'end_route_station_list_id' })
-    readonly endRouteStationList?: RouteStationListModel;
+    readonly endRouteStationList?: Relation<RouteStationListModel>;
 }

@@ -1,3 +1,4 @@
+import { Nested } from 'src/core/types/nested';
 import { Expose, Type } from 'class-transformer';
 import { TripOperationListDetailsDto } from 'src/libs/trip/usecase/dtos/trip-operation-list-details.dto';
 import { OperationDetailsDto } from './operation-details.dto';
@@ -5,16 +6,16 @@ import { OperationDetailsDto } from './operation-details.dto';
 export class OperationCurrentPositionDto {
     @Expose()
     @Type(() => OperationDetailsDto)
-    operation: OperationDetailsDto;
+    operation: Nested<OperationDetailsDto>;
 
     @Expose()
     @Type(() => TripOperationListDetailsDto)
-    prev: TripOperationListDetailsDto | null;
+    prev: Nested<TripOperationListDetailsDto | null>;
 
     @Expose()
     @Type(() => TripOperationListDetailsDto)
-    current: TripOperationListDetailsDto | null;
+    current: Nested<TripOperationListDetailsDto | null>;
     @Expose()
     @Type(() => TripOperationListDetailsDto)
-    next: TripOperationListDetailsDto | null;
+    next: Nested<TripOperationListDetailsDto | null>;
 }

@@ -9,6 +9,7 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    Relation,
 } from 'typeorm';
 import { StationModel } from './station.model';
 
@@ -47,9 +48,9 @@ export class StopModel {
     updatedAt: string;
 
     @OneToMany(() => TimeModel, (time) => time.stop)
-    readonly times?: TimeModel[];
+    readonly times?: Relation<TimeModel[]>;
 
     @ManyToOne(() => StationModel, (station) => station.stops)
     @JoinColumn({ name: 'station_id' })
-    readonly station?: StationModel;
+    readonly station?: Relation<StationModel>;
 }

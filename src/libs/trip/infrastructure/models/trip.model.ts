@@ -10,6 +10,7 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    Relation,
 } from 'typeorm';
 import { TimeModel } from './time.model';
 import { TripBlockModel } from '../../../trip-block/infrastructure/models/trip-block.model';
@@ -67,24 +68,24 @@ export class TripModel {
     @OneToMany(() => TimeModel, (time) => time.trip, {
         cascade: true,
     })
-    readonly times?: TimeModel[];
+    readonly times?: Relation<TimeModel[]>;
 
     @OneToMany(
         () => TripOperationListModel,
         (tripOperationList) => tripOperationList.trip,
         { cascade: true },
     )
-    readonly tripOperationLists?: TripOperationListModel[];
+    readonly tripOperationLists?: Relation<TripOperationListModel[]>;
 
     @ManyToOne(() => ServiceModel, (service) => service.trips)
     @JoinColumn({ name: 'service_id' })
-    readonly service?: ServiceModel;
+    readonly service?: Relation<ServiceModel>;
 
     @ManyToOne(() => TripClassModel, (tripClass) => tripClass.trips)
     @JoinColumn({ name: 'trip_class_id' })
-    readonly tripClass?: TripClassModel;
+    readonly tripClass?: Relation<TripClassModel>;
 
     @ManyToOne(() => TripBlockModel, (tripBlock) => tripBlock.trips)
     @JoinColumn({ name: 'trip_block_id' })
-    readonly tripBlock?: TripBlockModel;
+    readonly tripBlock?: Relation<TripBlockModel>;
 }
