@@ -1,5 +1,3 @@
-import { CrudRequest } from '@dataui/crud';
-import { TypeOrmCrudService } from '@dataui/crud-typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository, SaveOptions } from 'typeorm';
@@ -17,13 +15,11 @@ import {
 import { TripBlockModel } from '../models/trip-block.model';
 
 @Injectable()
-export class TripBlockCommand extends TypeOrmCrudService<TripBlockModel> {
+export class TripBlockCommand {
     constructor(
         @InjectRepository(TripBlockModel)
         private readonly tripBlockRepository: Repository<TripBlockModel>,
-    ) {
-        super(tripBlockRepository);
-    }
+    ) {}
 
     async bulkCreate(
         domains: TripBlocks,
@@ -35,26 +31,6 @@ export class TripBlockCommand extends TypeOrmCrudService<TripBlockModel> {
     }
 
     // =========================================================================
-
-    async createManyTripBlocks(
-        query: CrudRequest,
-        domains: TripBlocks,
-    ): Promise<TripBlockDetailsDto[]> {
-        const models = TripBlocksModelBuilder.buildFromDomain(domains);
-        const result = await this.createMany(query, {
-            bulk: models,
-        });
-        return TripBlocksDtoBuilder.buildFromModel(result);
-    }
-
-    async replaceOneTripBlock(
-        query: CrudRequest,
-        domain: TripBlock,
-    ): Promise<TripBlockDetailsDto> {
-        const model = TripBlockModelBuilder.buildFromDomain(domain);
-        const result = await this.replaceOne(query, model);
-        return TripBlockDtoBuilder.buildFromModel(result);
-    }
 
     async replaceOneTripBlockByDomain(
         domain: TripBlock,
@@ -125,13 +101,6 @@ export class TripBlockCommand extends TypeOrmCrudService<TripBlockModel> {
                 owners: targets.map(([owner]) => owner),
             })
             .execute();
-    }
-
-    async deleteOneTripBlock(
-        query: CrudRequest,
-    ): Promise<void | TripBlockDetailsDto> {
-        const result = await this.deleteOne(query);
-        return result && TripBlockDtoBuilder.buildFromModel(result);
     }
 
     async deleteOneTripBlockByDomain(

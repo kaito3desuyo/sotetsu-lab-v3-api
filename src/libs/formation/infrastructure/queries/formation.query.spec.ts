@@ -35,13 +35,6 @@ let currentQueryBuilder: any;
 const mockCreateQueryBuilder: AnyMock = jest.fn();
 const mockRepository = {
     createQueryBuilder: mockCreateQueryBuilder,
-    metadata: {
-        connection: { options: { type: 'postgres' } },
-        columns: [],
-        primaryColumns: [],
-        relations: [],
-        targetName: 'FormationModel',
-    },
 };
 
 async function buildQuery(): Promise<FormationQuery> {

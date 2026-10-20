@@ -1,9 +1,6 @@
-import { CrudRequest, GetManyDefaultResponse } from '@dataui/crud';
-import { TypeOrmCrudService } from '@dataui/crud-typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
-import { isArray } from 'lodash';
 import { Repository } from 'typeorm';
 import { FormationDetailsDto } from '../../usecase/dtos/formation-details.dto';
 import {
@@ -13,48 +10,11 @@ import {
 import { FormationModel } from '../models/formation.model';
 
 @Injectable()
-export class FormationQuery extends TypeOrmCrudService<FormationModel> {
+export class FormationQuery {
     constructor(
         @InjectRepository(FormationModel)
         private readonly formationRepository: Repository<FormationModel>,
-    ) {
-        super(formationRepository);
-    }
-
-    async findManyFormations(
-        query: CrudRequest,
-    ): Promise<
-        FormationDetailsDto[] | GetManyDefaultResponse<FormationDetailsDto>
-    > {
-        // const models = await this.getMany(query);
-        // TODO: もうちょっとどうにかしたい
-        const qb = await this.createBuilder(query.parsed, query.options, true);
-        const customQb = qb
-            .addOrderBy(
-                'to_number("vehicle_type", \'9999999999999999\')',
-                'ASC',
-            )
-            .addOrderBy(
-                'to_number("formation_number", \'9999999999999999\')',
-                'ASC',
-            );
-
-        const models = await this.doGetMany(
-            customQb,
-            query.parsed,
-            query.options,
-        );
-
-        if (isArray(models)) {
-            return FormationsDtoBuilder.buildFromModel(models);
-        } else {
-            const data = FormationsDtoBuilder.buildFromModel(models.data);
-            return {
-                ...models,
-                data,
-            };
-        }
-    }
+    ) {}
 
     async findManyBySpecificDate(params: {
         date: string;
@@ -126,16 +86,6 @@ export class FormationQuery extends TypeOrmCrudService<FormationModel> {
             .getMany();
 
         return FormationsDtoBuilder.buildFromModel(result);
-    }
-
-    async findOneFormation(query: CrudRequest): Promise<FormationDetailsDto> {
-        const model = await this.getOne(query);
-
-        if (!model) {
-            return null;
-        }
-
-        return FormationDtoBuilder.buildFromModel(model);
     }
 
     async findOneByAgencyIdAndFormationNumberAndDate(params: {

@@ -73,13 +73,6 @@ describe('CalendarQuery - findOneBySpecificDate', () => {
 
         const mockCalendarRepository = {
             createQueryBuilder: calendarCreateQueryBuilder,
-            metadata: {
-                connection: { options: { type: 'postgres' } },
-                columns: [],
-                primaryColumns: [],
-                relations: [],
-                targetName: 'CalendarModel',
-            },
         };
         const mockCalendarDateRepository = {
             createQueryBuilder: calendarDateCreateQueryBuilder,

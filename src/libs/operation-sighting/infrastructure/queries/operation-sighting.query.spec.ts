@@ -38,14 +38,7 @@ const mockRepository = {
             }),
         },
     },
-    metadata: {
-        tableName: 'operation_sightings',
-        connection: { options: { type: 'postgres' } },
-        columns: [],
-        primaryColumns: [],
-        relations: [],
-        targetName: 'OperationSightingModel',
-    },
+    metadata: { tableName: 'operation_sightings' },
 };
 
 async function buildQuery(): Promise<OperationSightingQuery> {

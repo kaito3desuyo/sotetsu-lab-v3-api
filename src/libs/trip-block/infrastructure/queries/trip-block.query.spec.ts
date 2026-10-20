@@ -43,13 +43,6 @@ describe('TripBlockQuery - findManyByFilterWithFields', () => {
         ]);
         const repository = {
             createQueryBuilder: jest.fn().mockReturnValue(qb),
-            metadata: {
-                connection: { options: { type: 'postgres' } },
-                columns: [],
-                primaryColumns: [],
-                relations: [],
-                targetName: 'TripBlockModel',
-            },
         };
         const module: TestingModule = await Test.createTestingModule({
             providers: [

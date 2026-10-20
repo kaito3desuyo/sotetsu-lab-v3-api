@@ -36,13 +36,6 @@ const mockRepository = {
     createQueryBuilder: mockCreateQueryBuilder,
     find: mockFind,
     findOne: mockFindOne,
-    metadata: {
-        connection: { options: { type: 'postgres' } },
-        columns: [],
-        primaryColumns: [],
-        relations: [],
-        targetName: 'OperationModel',
-    },
 };
 
 async function buildQuery(): Promise<OperationQuery> {

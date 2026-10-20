@@ -1,8 +1,5 @@
-import { CrudRequest, GetManyDefaultResponse } from '@dataui/crud';
-import { TypeOrmCrudService } from '@dataui/crud-typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { isArray } from 'lodash';
 import { SparseFieldsets } from 'src/core/utils/sparse-fieldsets';
 import { FindManyOptions, Repository } from 'typeorm';
 import { TripBlockDetailsDto } from '../../usecase/dtos/trip-block-details.dto';
@@ -15,13 +12,11 @@ import {
 import { TripBlockModel } from '../models/trip-block.model';
 
 @Injectable()
-export class TripBlockQuery extends TypeOrmCrudService<TripBlockModel> {
+export class TripBlockQuery {
     constructor(
         @InjectRepository(TripBlockModel)
         private readonly tripBlockRepository: Repository<TripBlockModel>,
-    ) {
-        super(tripBlockRepository);
-    }
+    ) {}
 
     async findMany(
         options?: FindManyOptions<TripBlockModel>,
@@ -36,34 +31,6 @@ export class TripBlockQuery extends TypeOrmCrudService<TripBlockModel> {
     // }
 
     // =========================================================================
-
-    async findManyTripBlocks(
-        query: CrudRequest,
-    ): Promise<
-        TripBlockDetailsDto[] | GetManyDefaultResponse<TripBlockDetailsDto>
-    > {
-        const models = await this.getMany(query);
-
-        if (isArray(models)) {
-            return TripBlocksDtoBuilder.buildFromModel(models);
-        } else {
-            const data = TripBlocksDtoBuilder.buildFromModel(models.data);
-            return {
-                ...models,
-                data,
-            };
-        }
-    }
-
-    async findOneTripBlock(query: CrudRequest): Promise<TripBlockDetailsDto> {
-        const model = await this.getOne(query);
-
-        if (!model) {
-            return null;
-        }
-
-        return TripBlockDtoBuilder.buildFromModel(model);
-    }
 
     async findOneTripBlockByTripBlockId(
         tripBlockId: string,

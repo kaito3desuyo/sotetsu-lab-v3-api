@@ -1,9 +1,6 @@
-import { CrudRequest, GetManyDefaultResponse } from '@dataui/crud';
-import { TypeOrmCrudService } from '@dataui/crud-typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
-import { isArray } from 'lodash';
 import { getDayOfWeek } from 'src/core/utils/day-of-week';
 import { Repository } from 'typeorm';
 import { CalendarDetailsDto } from '../../usecase/dtos/calendar-details.dto';
@@ -16,43 +13,13 @@ import { CalendarModel } from '../models/calendar.model';
 import { resolveCalendarIdBySpecificDate } from './resolve-calendar-id-by-specific-date';
 
 @Injectable()
-export class CalendarQuery extends TypeOrmCrudService<CalendarModel> {
+export class CalendarQuery {
     constructor(
         @InjectRepository(CalendarModel)
         private readonly calendarRepository: Repository<CalendarModel>,
         @InjectRepository(CalendarDateModel)
         private readonly calendarDateRepository: Repository<CalendarDateModel>,
-    ) {
-        super(calendarRepository);
-    }
-
-    async findManyCalendars(
-        query: CrudRequest,
-    ): Promise<
-        CalendarDetailsDto[] | GetManyDefaultResponse<CalendarDetailsDto>
-    > {
-        const models = await this.getMany(query);
-
-        if (isArray(models)) {
-            return CalendarsDtoBuilder.buildFromModel(models);
-        } else {
-            const data = CalendarsDtoBuilder.buildFromModel(models.data);
-            return {
-                ...models,
-                data,
-            };
-        }
-    }
-
-    async findOneCalendar(query: CrudRequest): Promise<CalendarDetailsDto> {
-        const model = await this.getOne(query);
-
-        if (!model) {
-            return null;
-        }
-
-        return CalendarDtoBuilder.buildFromModel(model);
-    }
+    ) {}
 
     async findOneById(params: {
         id: string;

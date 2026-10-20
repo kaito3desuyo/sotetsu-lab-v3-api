@@ -1,21 +1,16 @@
-import { CrudRequest, GetManyDefaultResponse } from '@dataui/crud';
-import { TypeOrmCrudService } from '@dataui/crud-typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { isArray } from 'lodash';
 import { Repository } from 'typeorm';
 import { TripClassDetailsDto } from '../../usecase/dtos/trip-class-details.dto';
 import { TripClassesDtoBuilder } from '../builders/trip-class.dto.builder';
 import { TripClassModel } from '../models/trip-class.model';
 
 @Injectable()
-export class TripClassQuery extends TypeOrmCrudService<TripClassModel> {
+export class TripClassQuery {
     constructor(
         @InjectRepository(TripClassModel)
         private readonly tripClassRepository: Repository<TripClassModel>,
-    ) {
-        super(tripClassRepository);
-    }
+    ) {}
 
     async findMany(params?: {
         serviceId?: string;
@@ -33,23 +28,5 @@ export class TripClassQuery extends TypeOrmCrudService<TripClassModel> {
         // 並べないと物理順になり、更新した行から崩れる（相鉄→直通先→回送・不明の順が sequence）
         const models = await qb.orderBy('tripClass.sequence', 'ASC').getMany();
         return TripClassesDtoBuilder.buildFromModel(models);
-    }
-
-    async findManyTripClasses(
-        query: CrudRequest,
-    ): Promise<
-        TripClassDetailsDto[] | GetManyDefaultResponse<TripClassDetailsDto>
-    > {
-        const models = await this.getMany(query);
-
-        if (isArray(models)) {
-            return TripClassesDtoBuilder.buildFromModel(models);
-        } else {
-            const data = TripClassesDtoBuilder.buildFromModel(models.data);
-            return {
-                ...models,
-                data,
-            };
-        }
     }
 }
