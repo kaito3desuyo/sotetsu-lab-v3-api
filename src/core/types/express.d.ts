@@ -1,9 +1,9 @@
-import { CognitoJwtPayload } from 'aws-jwt-verify/jwt-model';
+import { AuthContext } from '../modules/auth/auth-context';
 
 declare global {
     namespace Express {
         interface Request {
-            cognito_jwt_payload?: CognitoJwtPayload;
+            auth?: AuthContext;
         }
     }
 }
