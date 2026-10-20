@@ -17,6 +17,7 @@
         },
         "types": ["node", "jest"],
         "incremental": true,
+        "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
         "resolveJsonModule": true,
         "esModuleInterop": true,
         "skipLibCheck": true
