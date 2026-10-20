@@ -120,8 +120,5 @@
         },
         "coverageDirectory": "../coverage",
         "testEnvironment": "node"
-    },
-    "volta": {
-        "node": "20.16.0"
     }
 }
