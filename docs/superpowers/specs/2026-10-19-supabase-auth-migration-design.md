@@ -29,13 +29,13 @@
 | トークン | Cognito の役割ごとの共有トークン | Supabase の利用者ごとの JWT。`user_role` を Custom Access Token Hook で入れる |
 | セッション | DynamoDB | Supabase `auth.sessions` だけ（backend は持たない） |
 | api の検証 | Cognito。全部の口でトークン必須 | 全部の口でトークン必須（ゲストは匿名セッション）。Supabase JWT を JWKS で検証し、`@RBAC` の口は `user_role` も見る |
-| socket | 接続に Cognito トークン必須 | 接続はトークン任意。あれば検証して `sub`・`role` を接続の context に |
+| socket | 接続に Cognito トークン必須 | 接続もトークン必須（ゲストは匿名セッション）。検証して `sub`・`role` を接続の context に |
 | 撤去 | — | Cognito プール・app client、backend `get-token`（`/api/token`）、DynamoDB の管理テーブルとキャッシュテーブル |
 
 ### 3.1 利用者の識別子
 
 - 利用者はメールアドレスを入れない。backend が `username` を内部用のダミーのメールアドレス `{username を小文字にしたもの}@users.sotetsu-lab.invalid` に機械的に変えて Supabase に渡す（`.invalid` は RFC 2606 で予約済みで、届かない）
-- メールの確認は切る。公開サインアップも閉じる（作るのは backend の管理 API だけ）
+- メールの確認は切る。公開サインアップは、匿名サインインのためにオンにするが、Before User Created hook で匿名以外を拒む（メールの利用者を作るのは backend の管理 API だけ）
 - ログインは大文字と小文字を区別しなくなる。本番で大小だけ違う衝突は 0（大文字を含むユーザー名は 48）。表示名は元の書き方を `profiles.display_name` に残す
 - パスワード再設定の画面は作らない。忘れた人には、管理者が Supabase の管理画面か管理 API で仮のパスワードを設定する。任意のメール登録は後から足せるよう、ユーザー名は `profiles.username` を正本にする（ダミーのメールアドレスに頼る所は backend の変換 1 か所だけにする）
 
@@ -93,45 +93,27 @@ client ─POST /api/auth/logout→ backend: signOut（そのセッションを�
 ### 5.1 Supabase（設定と SQL。MCP は読み取り専用なので、書き込みはユーザーが流す）
 
 - JWT の署名鍵を非対称にする（Migrate JWT secret → rotate。止めずに行える）
-- 公開サインアップを閉じる・メールの確認を切る
+- メールの確認を切る。公開サインアップと匿名サインインをオンにし、Before User Created hook で匿名以外を拒む
 - `profiles` のマイグレーションと `auth.users` への外部キー・profiles を作る trigger
 - `custom_access_token_hook` の作成と有効化
 - Data API は閉じたまま（Integrations → Data API）
 
 ### 5.2 api
 
-- `AuthGuard`: ヘッダーが無ければ payload を付けずに通す。あれば Supabase の JWKS で検証し、失敗なら 401
+- `AuthGuard`: ヘッダーが無ければ 401。あれば Supabase の JWKS で検証し、失敗なら 401
 - `RBACGuard`: `@RBAC` の口で payload が無ければ 401、`user_role` が合わなければ 403
 - `Role` を `reader` / `reporter` / `editor` / `manager` の素の値にする
 - 切り替えの途中だけ Cognito と Supabase の両方を受け付ける（9 章の 2〜6）。両方の判定は Guard の中に閉じ、役割は同じ `Role` に揃えて RBACGuard に渡す
 - 検証ライブラリは汎用の `jose` ^6（ESM 専用。api の実行環境は Node 24 なので CommonJS から require できる）。切り替えの途中の Cognito の検証だけ今の `aws-jwt-verify` 4.0.1 を残し、9 章の 6 で依存ごと消す。Supabase の署名鍵は推奨どおり ES256（P-256）
-- backend の Lambda は nodejs24.x・osls に上げる（supabase-js 2.110 以降が Node 22 以上を求めるため。api と同じ構成）
 - Supabase の access token は `iss` = `https://nofubcikiabamlnlxpko.supabase.co/auth/v1`・`aud` = `authenticated`（公式の JWT fields）
 
-### 5.3 socket
+### 5.3 socket・backend・client
 
-- API Gateway の identitySource（`route.request.querystring.token`）は値が無いと authorizer を呼ばずに 401 を返す。そのため client はゲストのとき `?token=guest` を付け、authorizer は `guest`・`null`・`undefined`・空をゲストとして扱う（SW に残った古い client は `token=null` を送る）
-- `authorizer`: token がゲストを表す値ならゲストとして Allow。あれば Supabase の JWT を検証し、`sub`・`user_role` を context に入れる。途中は Cognito も受け付ける
+各リポの設計は、そのリポの spec・計画・ADR に書く（この spec は全体の形・api・Supabase・切り替えの順番だけを持つ）。spec と計画のパスは、どのリポもこの spec・計画と同じ（`docs/superpowers/specs/2026-10-19-supabase-auth-migration-design.md`・`docs/superpowers/plans/2026-10-19-supabase-auth-migration.md`）。
 
-### 5.4 backend
-
-- `login`: 上の流れ。失敗は今と同じ曖昧な 401（利用者がいるかを漏らさない）
-- `get-auth-token`: 上の流れ
-- `logout`: 上の流れ
-- `register-user`: 管理 API で、`user_metadata.display_name` に元の書き方を付けて利用者を作る（profiles は trigger が作る）。ユーザー名・パスワードの規則は今の `schema.json` のまま。ユーザー名の重複は今と同じ 422 `User already exists.`（client の扱いを変えない）
-- `get-user-profile`: アクセストークンを `getClaims`（JWKS で署名を検証）で読み、`sub`・`display_name`・`user_role` から返す。DB は見ない。`createdAt`・`updatedAt` は返さない（client は使っていない）
-- 削除: `get-token`（`/api/token`）・DynamoDB のユーザー・セッション・トークンキャッシュの扱い
-- 管理テーブルとキャッシュテーブルは CloudFormation の資源なので、先に `DeletionPolicy: Retain` を付ける（テンプレートから外してもデータが消えないように）。テンプレートから外すのは 9 章の 7
-- 新規: 移行スクリプト（105 人なので 1 人ずつ順に作る。失敗した人は名前を出さず件数と userId を出して続ける）
-  - DynamoDB の利用者を、管理 API の `password_hash`（argon2id）で取り込む。`id` は今の `userId`（uuid）をそのまま使う
-  - 既にいる利用者は飛ばす（何度流しても同じ結果）。dry-run で件数と衝突を出す
-  - profiles は trigger が `reporter`・移行した日時で作るので、最後に元の役割と登録日時を戻す `UPDATE` 文をファイルに書き出す（`user_id`・`role`・`created_at` だけ。ユーザー名は含めない）。ユーザーが SQL Editor で流す
-
-### 5.5 client
-
-- `/api/auth/token` はゲストにも匿名のトークンを返すので、いつもヘッダーを付ける。取れなかったとき（503 など）は起動を止めずトークン無しで進み、API の 401 で 1 回取り直す
-- 匿名のプロフィールは 401（`display_name`・`user_role` が無い）なので、画面はゲストのまま
-- ログイン・登録・ログアウトの画面と呼ぶ先は今のまま
+- socket: `sotetsu-lab-v3-socket` の spec・計画（Task 4）・`docs/adr/0001-supabase-auth.md`。接続にもトークンを求め、Supabase の JWT を検証する
+- backend: `sotetsu-lab-v3-backend` の spec・計画（Task 6〜13）・`docs/adr/0001-supabase-auth.md`。ログイン・登録・トークン・プロフィール・ゲストの匿名セッション・移行スクリプト・撤去
+- client: `sotetsu-lab-v3-client` の spec・計画（Task 5）・`docs/adr/0009-supabase-auth.md`。トークンが取れなくても起動を止めず、socket はトークンが取れてからつなぐ
 
 ## 6. エラーの扱い
 
@@ -155,8 +137,7 @@ client ─POST /api/auth/logout→ backend: signOut（そのセッションを�
 ## 8. テスト
 
 - api: Guard の単体テスト（ヘッダー無しは 401・匿名は通す・正しい JWT・壊れた JWT・期限切れ・役割違い・途中期間の Cognito）
-- socket: authorizer のテストを Supabase 用に直す（token 無しで Allow を含む）
-- backend: usecase のテスト（Supabase のクライアントはモック）。Cookie の付け外し、ゲストの匿名セッション（匿名は loggedIn を立てない）
+- socket・backend・client: それぞれのリポの spec の「テスト」
 - 移行スクリプト: 本番の dry-run で 105 人・衝突 0 を確かめる
 - 実機: 手元は本番の DB と本番の Supabase につながる。確かめるのは検証用の利用者 1 人で、ログイン → トークン → 書き込み（RBAC の付いた口）→ ログアウトを通し、終わったら消す
 

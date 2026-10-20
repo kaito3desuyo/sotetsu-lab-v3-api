@@ -31,15 +31,13 @@
 
 - 全員 1 回ログインし直し。
 - パスワード再設定の画面は無い（管理者が手で設定）。
-- backend の Lambda を nodejs24.x・osls に上げた（supabase-js が Node 22 以上を求めるため。api と同じ構成）。
 - Supabase の JWT の検証は汎用の `jose`。切り替えの途中だけ Cognito 用に `aws-jwt-verify` を残し、Cognito の受け付けを外すときに依存ごと消す。
 
 ## 実装で決めたこと
 
-- Supabase に届かない・429・5xx は 503 にして、ログアウトさせない。503 は middy の httpErrorHandler に潰されないよう、`expose: true` の `serviceUnavailable()` 1 か所で作る。
-- トークンを更新したあとで失敗した応答にも、新しい Cookie を付ける（プロフィールの口）。
-- 登録の重複判定は、Supabase の `error.code`（`email_exists`・`user_already_exists`）だけで行う。
-- socket は `SUPABASE_URL` が空でもゲスト・Cognito を通す（JWKS は初回に遅延生成）。api は SSM 必須で、無ければ起動時に落ちる。
-- backend の CloudWatch ログ（input-output-logger）から、Cookie・Set-Cookie・Authorization・本文の password とトークンを伏せる。
+- socket・backend・client の決定は、それぞれのリポの ADR に書く（socket・backend は ADR-0001、client は ADR-0009）。この ADR は api と Supabase（profiles・hook・trigger・Data API）の決定だけを持つ。
+- api は `SUPABASE_URL`（SSM）が必須で、無ければ起動時に落ちる。
 - Data API（PostgREST）は閉じる。backend は profiles を読み書きしない。登録した利用者の profiles は `auth.users` の trigger が `reporter` で作り、プロフィールは hook が JWT に入れる `display_name`・`user_role` から返す。secret key が漏れても触れるのを Auth の管理だけに留めるため。役割を `user_metadata` に置かないのは、利用者が自分で書き換えられるから。既存の利用者の元の役割と登録日時は、移行スクリプトが書き出す `UPDATE` 文をユーザーが流して戻す。念のため public の表・関数から `anon`・`authenticated` の権限も剥がした
 - profiles の `auth.users` への外部キーはモデルにも書く（`auth.users` を `synchronize: false` の `AuthUserModel` として映す。制約名は TypeORM の既定のハッシュ名）。モデルに無いと `migration:generate` がこの外部キーを DROP する差分を出す。
+- 匿名の利用者（`auth.users.is_anonymous`）には profiles を作らない（trigger に `WHEN (NOT NEW.is_anonymous)`）。匿名は email が NULL なので、作ろうとすると INSERT が落ちて匿名サインインごと失敗する。
+- 匿名サインインは「Allow new users to sign up」がオンでないと断られる。オンにすると公開の `/auth/v1/signup` からメールの利用者を作れてしまうので、Before User Created hook（`public.before_user_created_hook`）で匿名以外を 403 にする。管理 API の作成（backend の登録・移行スクリプト）はこの hook を通らない（GoTrue の `adminUserCreate` は hook を呼ばない）。
