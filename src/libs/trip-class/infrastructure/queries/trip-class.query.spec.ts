@@ -24,13 +24,6 @@ let currentQueryBuilder: any;
 const mockCreateQueryBuilder: AnyMock = jest.fn();
 const mockRepository = {
     createQueryBuilder: mockCreateQueryBuilder,
-    metadata: {
-        connection: { options: { type: 'postgres' } },
-        columns: [],
-        primaryColumns: [],
-        relations: [],
-        targetName: 'TripClassModel',
-    },
 };
 
 async function buildQuery(): Promise<TripClassQuery> {

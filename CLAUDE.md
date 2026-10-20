@@ -28,7 +28,7 @@
 
 ### 主要なドメイン
 
-- **operation-sighting** - 列車編成の目撃情報管理（v2・v3 API がある）
+- **operation-sighting** - 列車編成の目撃情報管理
 - **operation** - 運行番号・運用番号管理
 - **formation** - 編成（列車セット）情報
 - **calendar** - 運行日定義
@@ -38,7 +38,7 @@
 
 ### 命名規約
 
-- API バージョニング: コントローラー・モジュールにバージョン付与（`operation-sighting.v2.module.ts` など）
+- API バージョニング: コントローラー・モジュールにバージョン付与（`operation-sighting.v3.module.ts` など。v2 は廃止済み・ADR-0006）
 - サービス分離: `.service.ts`（ビジネスロジック）、`.query.ts`（読み取り）、`.command.ts`（書き込み）
 
 ## よく使うコマンド
@@ -119,7 +119,7 @@ npm run deploy               # Serverless Framework でデプロイ
 
 ### DB アクセスパターン
 - Query（読み取り）→ `.query.ts` → DTO を返却
-- Query の実装は TypeORM の `createQueryBuilder` で書く。`repository.find` / `findOne`（`relations` 付き）や `TypeOrmCrudService` の `getMany` / `getOne` は新たに使わない（v2 用に残っているものを真似ない）。`findOne` に `relations` を付けると、`DISTINCT` の問い合わせが余分に 1 本走る
+- Query の実装は TypeORM の `createQueryBuilder` で書く。`repository.find` / `findOne`（`relations` 付き）は新たに使わない。`findOne` に `relations` を付けると、`DISTINCT` の問い合わせが余分に 1 本走る
 - Command（書き込み）→ `.command.ts` → ドメインエンティティで操作
 - TypeORM data-source → `src/core/utils/data-source.ts`
 - マイグレーション実行時は dotenvx で `.env.local` を読み込む
@@ -130,7 +130,6 @@ npm run deploy               # Serverless Framework でデプロイ
 - Jest 設定 - `src/` をルートで `.spec.ts$` マッチ
 - E2E テスト - `test/` フォルダ（別の Jest 設定）
 - カバレッジ - `coverage/`（gitignore 対象）
-- `TypeOrmCrudService` を extends する Query クラスのテストでは、リポジトリモックに `metadata: { connection: { options: { type: 'postgres' } }, columns: [], primaryColumns: [], relations: [], targetName: '...' }` が必要（ないとコンストラクタで即死）
 - usecase 層のモックテストは Query の `relations` 漏れを検知できない — リレーションを追加・参照する際は Query クラス自体の spec も書く
 
 ### Git・コミット

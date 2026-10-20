@@ -1,10 +1,7 @@
-import { CrudRequest, GetManyDefaultResponse } from '@dataui/crud';
-import { TypeOrmCrudService } from '@dataui/crud-typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import omit from 'just-omit';
-import { isArray } from 'lodash';
 import { FindManyOptions, Repository } from 'typeorm';
 import { OperationCurrentPositionDto } from '../../usecase/dtos/operation-current-position.dto';
 import { OperationDetailsDto } from '../../usecase/dtos/operation-details.dto';
@@ -17,13 +14,11 @@ import {
 import { OperationModel } from '../models/operation.model';
 
 @Injectable()
-export class OperationQuery extends TypeOrmCrudService<OperationModel> {
+export class OperationQuery {
     constructor(
         @InjectRepository(OperationModel)
         private readonly operationRepository: Repository<OperationModel>,
-    ) {
-        super(operationRepository);
-    }
+    ) {}
 
     async findMany(
         options?: FindManyOptions<OperationModel>,
@@ -33,24 +28,6 @@ export class OperationQuery extends TypeOrmCrudService<OperationModel> {
     }
 
     // =========================================================================
-
-    async findManyOperations(
-        query: CrudRequest,
-    ): Promise<
-        OperationDetailsDto[] | GetManyDefaultResponse<OperationDetailsDto>
-    > {
-        const models = await this.getMany(query);
-
-        if (isArray(models)) {
-            return OperationsDtoBuilder.buildFromModel(models);
-        } else {
-            const data = OperationsDtoBuilder.buildFromModel(models.data);
-            return {
-                ...models,
-                data,
-            };
-        }
-    }
 
     async findManyByCalendarId(params: {
         calendarId: string;
@@ -91,16 +68,6 @@ export class OperationQuery extends TypeOrmCrudService<OperationModel> {
             .getMany();
 
         return OperationsDtoBuilder.buildFromModel(result);
-    }
-
-    async findOneOperation(query: CrudRequest): Promise<OperationDetailsDto> {
-        const model = await this.getOne(query);
-
-        if (!model) {
-            return null;
-        }
-
-        return OperationDtoBuilder.buildFromModel(model);
     }
 
     /** 現在位置の計算に要る列車と始終着の時刻を結合し、出発 → 到着の時刻順に並べる。 */

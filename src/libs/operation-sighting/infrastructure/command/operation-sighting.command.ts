@@ -1,5 +1,3 @@
-import { CrudRequest } from '@dataui/crud';
-import { TypeOrmCrudService } from '@dataui/crud-typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
@@ -10,13 +8,11 @@ import { OperationSightingModelBuilder } from '../builders/operation-sighting.mo
 import { OperationSightingModel } from '../models/operation-sighting.model';
 
 @Injectable()
-export class OperationSightingCommand extends TypeOrmCrudService<OperationSightingModel> {
+export class OperationSightingCommand {
     constructor(
         @InjectRepository(OperationSightingModel)
         private readonly operationSightingRepository: Repository<OperationSightingModel>,
-    ) {
-        super(operationSightingRepository);
-    }
+    ) {}
 
     async save(
         domain: OperationSighting,
@@ -27,15 +23,6 @@ export class OperationSightingCommand extends TypeOrmCrudService<OperationSighti
             : this.operationSightingRepository;
         const model = OperationSightingModelBuilder.buildFromDomain(domain);
         const result = await repo.save(model);
-        return OperationSightingDtoBuilder.buildFromModel(result);
-    }
-
-    async createOneOperationSighting(
-        query: CrudRequest,
-        domain: OperationSighting,
-    ): Promise<OperationSightingDetailsDto> {
-        const model = OperationSightingModelBuilder.buildFromDomain(domain);
-        const result = await this.createOne(query, model);
         return OperationSightingDtoBuilder.buildFromModel(result);
     }
 }

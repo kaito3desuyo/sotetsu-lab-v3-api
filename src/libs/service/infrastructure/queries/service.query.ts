@@ -1,8 +1,6 @@
-import { CrudRequest, GetManyDefaultResponse } from '@dataui/crud';
-import { TypeOrmCrudService } from '@dataui/crud-typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
-import { cloneDeep, isArray, sortBy } from 'lodash';
+import { cloneDeep, sortBy } from 'lodash';
 import { DataSourceConfig } from 'src/core/configs/database.config';
 import { AgencyModel } from 'src/libs/agency/infrastructure/models/agency.model';
 import { RouteStationListModel } from 'src/libs/route/infrastructure/models/route-station-list.model';
@@ -15,49 +13,18 @@ import { ServiceAgenciesDtoBuilder } from '../builders/service-agencies.dto.buil
 import { ServiceRoutesDtoBuilder } from '../builders/service-routes.dto.builder';
 import { ServiceStationsDtoBuilder } from '../builders/service-stations.dto.builder';
 import {
-    ServiceDtoBuilder,
     ServicesDtoBuilder,
 } from '../builders/service.dto.builder';
 import { ServiceModel } from '../models/service.model';
 
 @Injectable()
-export class ServiceQuery extends TypeOrmCrudService<ServiceModel> {
+export class ServiceQuery {
     constructor(
         @InjectRepository(ServiceModel)
         private readonly serviceRepository: Repository<ServiceModel>,
         @InjectEntityManager(DataSourceConfig)
         private readonly entityManager: EntityManager,
-    ) {
-        super(serviceRepository);
-    }
-
-    async findManyServices(
-        query: CrudRequest,
-    ): Promise<
-        ServiceDetailsDto[] | GetManyDefaultResponse<ServiceDetailsDto>
-    > {
-        const models = await this.getMany(query);
-
-        if (isArray(models)) {
-            return ServicesDtoBuilder.buildFromModel(models);
-        } else {
-            const data = ServicesDtoBuilder.buildFromModel(models.data);
-            return {
-                ...models,
-                data,
-            };
-        }
-    }
-
-    async findOneService(query: CrudRequest): Promise<ServiceDetailsDto> {
-        const model = await this.getOne(query);
-
-        if (!model) {
-            return null;
-        }
-
-        return ServiceDtoBuilder.buildFromModel(model);
-    }
+    ) {}
 
     async findOneWithAgencies(params: { serviceId: string }): Promise<any> {
         const { serviceId } = params;
