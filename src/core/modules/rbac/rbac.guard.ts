@@ -1,9 +1,15 @@
-import { ExecutionContext, Injectable } from '@nestjs/common';
+import {
+    ExecutionContext,
+    ForbiddenException,
+    Injectable,
+    UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { RBAC_KEY } from './rbac.decorator';
 import { Role } from './role.enum';
 
+/** @RBAC の付いた口だけ役割を見る。トークンが無ければ 401、役割が足りなければ 403 */
 @Injectable()
 export class RBACGuard {
     constructor(private reflector: Reflector) {}
@@ -18,10 +24,16 @@ export class RBACGuard {
             return true;
         }
 
-        const payload = context
-            .switchToHttp()
-            .getRequest<Request>().cognito_jwt_payload;
+        const auth = context.switchToHttp().getRequest<Request>().auth;
 
-        return requiredRoles.some((role) => payload.scope === role);
+        if (!auth) {
+            throw new UnauthorizedException();
+        }
+
+        if (!auth.role || !requiredRoles.includes(auth.role)) {
+            throw new ForbiddenException();
+        }
+
+        return true;
     }
 }
