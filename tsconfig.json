@@ -1,14 +1,21 @@
 {
     "compilerOptions": {
-        "module": "commonjs",
+        "module": "nodenext",
+        "moduleResolution": "nodenext",
+        "resolvePackageJsonExports": true,
         "declaration": true,
         "removeComments": true,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
-        "target": "es2017",
+        "target": "ES2023",
+        "strict": false,
+        "useDefineForClassFields": false,
         "sourceMap": true,
         "outDir": "./dist",
-        "baseUrl": "./",
+        "paths": {
+            "src/*": ["./src/*"]
+        },
+        "types": ["node", "jest"],
         "incremental": true,
         "resolveJsonModule": true,
         "esModuleInterop": true,

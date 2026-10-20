@@ -92,9 +92,8 @@ npm run deploy               # Serverless Framework でデプロイ
 
 ## 主要な技術スタック
 
-- **フレームワーク** - NestJS 10.x / TypeScript 4.7
+- **フレームワーク** - NestJS 12.x / TypeScript 6.0
 - **DB** - TypeORM 0.3 + PostgreSQL
-- **API ドキュメント** - Swagger
 - **バリデーション** - class-validator（DTO ベース）
 - **ログ** - Pino（JSON 形式）
 - **認証** - Supabase Auth の JWT を jose で検証（AuthGuard・RBACGuard）

@@ -105,6 +105,7 @@ describe('CacheControlModule', () => {
         ['guard が拒んだ 403', '/denied', 403],
         ['@CacheControl の無い handler の 500', '/plain-broken', 500],
         ['存在しない URL の 404', '/no-such-route', 404],
+        ['入れ子の存在しない URL の 404', '/no/such/route', 404],
     ])('%s は no-store にする', async (_label, path, status) => {
         const res = await request(app.getHttpServer()).get(path);
 

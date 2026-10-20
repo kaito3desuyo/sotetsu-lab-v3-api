@@ -13,6 +13,6 @@ import { noStoreOnError } from './no-store-on-error.middleware';
 })
 export class CacheControlModule implements NestModule {
     configure(consumer: MiddlewareConsumer): void {
-        consumer.apply(noStoreOnError).forRoutes('*');
+        consumer.apply(noStoreOnError).forRoutes('{*splat}');
     }
 }
