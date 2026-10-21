@@ -1,4 +1,3 @@
-import type { Nested } from '../../../../core/types/nested.js';
 import { Expose } from 'class-transformer';
 import { BaseCalendarDateDto } from './base-calendar-date.dto.js';
 
@@ -13,7 +12,7 @@ export class CalendarDateDetailsDto extends BaseCalendarDateDto {
     date: string;
 
     @Expose()
-    exceptionType: Nested<BaseCalendarDateDto['exceptionType']>;
+    exceptionType: BaseCalendarDateDto['exceptionType'];
 
     @Expose()
     memo: string | null;
