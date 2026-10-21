@@ -19,7 +19,7 @@ export class CalendarDateCommand {
         calendarId: string;
         date: string;
         exceptionType: CalendarDateModel['exceptionType'];
-        memo?: string;
+        memo?: string | null;
     }): Promise<CalendarDateDetailsDto> {
         const { calendarId, date, exceptionType, memo } = params;
 

@@ -23,7 +23,7 @@ export class CalendarDateV3Service {
         calendarId: string;
         date: string;
         exceptionType: CalendarDateModel['exceptionType'];
-        memo?: string;
+        memo?: string | null;
     }): Promise<CalendarDateDetailsDto> {
         return this.calendarDateCommand.create(params);
     }
