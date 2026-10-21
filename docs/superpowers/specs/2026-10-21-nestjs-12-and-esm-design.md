@@ -93,7 +93,7 @@
 
 - api だけ。client・backend・socket は触らない
 - 1 本の PR。段 1 と段 2 でコミットを分ける。段 2 が行き詰まったら、段 1 までで PR を出す
-- 版は major（v5.0.0）。NestJS 12・ESM 化で依存と出力の形が変わり、helmet のヘッダーも変わるため。コミットには `!` と BREAKING CHANGE を付ける
+- 版は patch（v4.0.1）。API を使う側から見た互換（v3 の応答）は変わらないため（2026-10-21 に major から改めた）。コミットに `!` と BREAKING CHANGE は付けない
 
 ## 8. ドキュメント
 

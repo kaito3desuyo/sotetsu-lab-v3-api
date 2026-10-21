@@ -22,7 +22,7 @@
 - ローカルの api は本番 DB を読む。書き込みテストは渋谷工事臨時ダイヤ（calendar_id `27792766-0031-4b89-9c32-23eea267cbbc`）だけで、列番は `9997T`（`9998T`・`9999T` は前回のテストの残りがまだ DB にある）
 - コミットは GPG 署名つき・サンドボックス外で行い、`git log -1 --format='%h %G? %s'` で `G` を確かめる。npm の通信は `allowed_domains: registry.npmjs.org`、npm のキャッシュは `npm_config_cache="$TMPDIR/npm-cache"`
 - 複数行のインラインスクリプトは hook に止められる。スクリプトは `.context/` に書いてから流す（`.context/` は gitignore 済み）
-- コミットの型: 版が major（v5.0.0）なので、NestJS 12 に上げるコミットと ESM に切り替えるコミットに `!` と `BREAKING CHANGE:` を付ける
+- コミットの型: 版が major（v5.0.0）なので、NestJS 12 に上げるコミットと ESM に切り替えるコミットに `!` と `BREAKING CHANGE:` を付ける（2026-10-21 に取り消し: 版は patch v4.0.1 に改め、`!` と BREAKING CHANGE は外した）
 - コミットメッセージの末尾に次の 2 行を付ける
   - `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`
   - `Claude-Session: https://claude.ai/code/session_01FZB1eB3dTj4GQVxda71thf`

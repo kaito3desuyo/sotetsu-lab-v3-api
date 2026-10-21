@@ -43,4 +43,4 @@
 - vitest は import の読み込みが緩く、上の「export が無い」を見逃す。CLI・migration を実際に流して確かめる。
 - helmet 8 で既定のヘッダーが変わった（`block-all-mixed-content` と `Cross-Origin-Embedder-Policy`・`Expect-CT` が無くなり、HSTS は 15552000 → 31536000 秒。PR #182 に一覧）。
 - 起動時の読み込み（`AppModule`）は手元で 429 ms → 509 ms（中央値）。
-- 版は major（v5.0.0）。
+- 版は patch（v4.0.1）。API を使う側から見た互換（v3 の応答）は変わらず、ESM 化はリポジトリの中の話のため。helmet のヘッダーの既定値の変化も互換を切らない。
