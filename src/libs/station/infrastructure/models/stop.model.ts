@@ -18,17 +18,17 @@ import { StationModel } from './station.model.js';
 })
 export class StopModel {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column('uuid')
     @Index()
-    stationId: string;
+    stationId!: string;
 
     @Column('varchar')
-    stopName: string;
+    stopName!: string;
 
     @Column('text', { nullable: true })
-    stopDescription: string;
+    stopDescription!: string;
 
     @Column({
         type: 'geometry',
@@ -36,16 +36,16 @@ export class StopModel {
         srid: 4326,
         nullable: true,
     })
-    stopLatlng: string;
+    stopLatlng!: string;
 
     @Column('uuid', { nullable: true })
-    zoneId: string;
+    zoneId!: string;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
-    createdAt: string;
+    createdAt!: string;
 
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
-    updatedAt: string;
+    updatedAt!: string;
 
     @OneToMany(() => TimeModel, (time) => time.stop)
     readonly times?: Relation<TimeModel[]>;

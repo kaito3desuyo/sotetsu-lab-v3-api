@@ -7,34 +7,34 @@ import { TripDetailsDto } from './trip-details.dto.js';
 
 export class TripOperationListDetailsDto extends BaseTripOperationListDto {
     @Expose()
-    id: string;
+    id!: string;
 
     @Expose()
-    tripId: string;
+    tripId!: string;
 
     @Expose()
-    operationId: string;
+    operationId!: string;
 
     @Expose()
-    startTimeId: string;
+    startTimeId!: string;
 
     @Expose()
-    endTimeId: string;
+    endTimeId!: string;
 
     @Expose()
-    startStationId: string;
+    startStationId!: string;
 
     @Expose()
-    endStationId: string;
+    endStationId!: string;
 
     @Expose()
-    nextTripOperationListId: string | null;
+    nextTripOperationListId!: string | null;
 
     @Expose()
-    createdAt: Date;
+    createdAt!: Date;
 
     @Expose()
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @Expose()
     @Type(() => TripDetailsDto)

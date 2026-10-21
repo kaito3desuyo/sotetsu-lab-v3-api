@@ -8,5 +8,5 @@ import { Entity, PrimaryColumn } from 'typeorm';
 @Entity({ schema: 'auth', name: 'users', synchronize: false })
 export class AuthUserModel {
     @PrimaryColumn('uuid')
-    id: string;
+    id!: string;
 }

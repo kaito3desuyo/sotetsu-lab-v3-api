@@ -18,7 +18,7 @@ import { AuthUserModel } from './auth-user.model.js';
 @Entity({ name: 'profiles' })
 export class ProfileModel {
     @PrimaryColumn('uuid')
-    userId: string;
+    userId!: string;
 
     @OneToOne(() => AuthUserModel, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'user_id' })
@@ -26,18 +26,18 @@ export class ProfileModel {
 
     /** ログインに使う名前を小文字にしたもの。ダミーのメールアドレスの前半と同じ */
     @Column('text', { unique: true })
-    username: string;
+    username!: string;
 
     /** 元の書き方のユーザー名 */
     @Column('text')
-    displayName: string;
+    displayName!: string;
 
     @Column('text')
-    role: string;
+    role!: string;
 
     @CreateDateColumn({ type: 'timestamptz' })
-    createdAt: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn({ type: 'timestamptz' })
-    updatedAt: Date;
+    updatedAt!: Date;
 }

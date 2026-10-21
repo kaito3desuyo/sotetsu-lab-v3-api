@@ -19,21 +19,21 @@ import {
 })
 export class OperationModel {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column('uuid')
     @Index()
-    calendarId: string;
+    calendarId!: string;
 
     @Column('varchar')
     @Index()
-    operationNumber: string;
+    operationNumber!: string;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
-    createdAt: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @ManyToOne(() => CalendarModel, (calendar) => calendar.operations)
     @JoinColumn({ name: 'calendar_id' })

@@ -15,37 +15,37 @@ import {
 })
 export class AgencyModel {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column('varchar')
-    agencyNumber: string;
+    agencyNumber!: string;
 
     @Column('varchar', { nullable: true })
-    parentAgencyNumber: string;
+    parentAgencyNumber!: string;
 
     @Column('varchar')
-    agencyOfficialName: string;
+    agencyOfficialName!: string;
 
     @Column('varchar', { nullable: true })
-    agencyName: string;
+    agencyName!: string;
 
     @Column('smallint')
-    agencyType: number;
+    agencyType!: number;
 
     @Column('varchar', { nullable: true })
-    agencyUrl: string;
+    agencyUrl!: string;
 
     @Column('varchar', { nullable: true })
-    agencyPhone: string;
+    agencyPhone!: string;
 
     @Column('varchar', { nullable: true })
-    agencyFareUrl: string;
+    agencyFareUrl!: string;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
-    createdAt: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @OneToMany(() => RouteModel, (route) => route.agency)
     routes?: Relation<RouteModel[]>;

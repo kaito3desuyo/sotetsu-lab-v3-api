@@ -6,17 +6,17 @@ import { StationDetailsDto } from '../../../station/usecase/dtos/station-details
 export class RouteStationsDto {
     @Expose()
     @Type(() => RouteDetailsDto)
-    route: Nested<RouteDetailsDto>;
+    route!: Nested<RouteDetailsDto>;
 
     @Expose()
     @Type(() => RouteStationDto)
-    stations: Nested<RouteStationDto[]>;
+    stations!: Nested<RouteStationDto[]>;
 }
 
 export class RouteStationDto extends StationDetailsDto {
     @Expose()
-    stationSequence: number;
+    stationSequence!: number;
 
     @Expose()
-    stationNumbering: string;
+    stationNumbering!: string;
 }

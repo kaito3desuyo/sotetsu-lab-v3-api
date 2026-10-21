@@ -16,19 +16,19 @@ import { StopModel } from './stop.model.js';
 })
 export class StationModel {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column('varchar')
-    stationName: string;
+    stationName!: string;
 
     @Column('varchar', { nullable: true })
-    stationSubname: string;
+    stationSubname!: string;
 
     @Column('smallint')
-    stationType: number;
+    stationType!: number;
 
     @Column('text', { nullable: true })
-    stationDescription: string;
+    stationDescription!: string;
 
     @Column({
         type: 'geometry',
@@ -36,19 +36,19 @@ export class StationModel {
         srid: 4326,
         nullable: true,
     })
-    stationLatlng: string;
+    stationLatlng!: string;
 
     @Column('varchar', { nullable: true })
-    stationUrl: string;
+    stationUrl!: string;
 
     @Column('boolean')
-    wheelchairBoarding: boolean;
+    wheelchairBoarding!: boolean;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
-    createdAt: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @OneToMany(
         () => RouteStationListModel,

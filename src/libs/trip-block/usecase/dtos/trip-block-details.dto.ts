@@ -5,13 +5,13 @@ import { BaseTripBlockDto } from './base-trip-block.dto.js';
 
 export class TripBlockDetailsDto extends BaseTripBlockDto {
     @Expose()
-    id: string;
+    id!: string;
 
     @Expose()
-    createdAt: Date;
+    createdAt!: Date;
 
     @Expose()
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @Expose()
     @Type(() => TripDetailsDto)

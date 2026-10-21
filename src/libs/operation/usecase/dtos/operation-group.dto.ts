@@ -2,8 +2,8 @@ import { Expose } from 'class-transformer';
 
 export class OperationGroupDto {
     @Expose()
-    groupName: string;
+    groupName!: string;
 
     @Expose()
-    operationNumbers: string[];
+    operationNumbers!: string[];
 }

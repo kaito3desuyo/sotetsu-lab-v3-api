@@ -25,31 +25,31 @@ import { TripModel } from './trip.model.js';
 )
 export class TripOperationListModel {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column('uuid')
     @Index()
-    tripId: string;
+    tripId!: string;
 
     @Column('uuid')
     @Index()
-    operationId: string;
+    operationId!: string;
 
     @Column('uuid', { nullable: true })
     @Index()
-    startStationId: string;
+    startStationId!: string;
 
     @Column('uuid', { nullable: true })
     @Index()
-    endStationId: string;
+    endStationId!: string;
 
     @Column('uuid', { nullable: true })
     @Index()
-    startTimeId: string;
+    startTimeId!: string;
 
     @Column('uuid', { nullable: true })
     @Index()
-    endTimeId: string;
+    endTimeId!: string;
 
     /** この区間のあと、車両が移る区間（spec 3.6 決まり 2）。同じカレンダーの運用の区間に限る */
     @Column('uuid', { nullable: true })

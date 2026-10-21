@@ -10,11 +10,11 @@ export class ReplaceTripOperationListDto extends ValidatableTripOperationListDto
     @Exclude()
     tripId: undefined;
 
-    operationId: string;
+    operationId!: string;
 
-    startStationId: string;
+    startStationId!: string;
 
-    endStationId: string;
+    endStationId!: string;
 
     @IsOptional()
     @Exclude()

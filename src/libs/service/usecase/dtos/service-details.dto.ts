@@ -5,19 +5,19 @@ import { OperatingSystemDetailsDto } from './operating-system-details.dto.js';
 
 export class ServiceDetailsDto extends BaseServiceDto {
     @Expose()
-    id: string;
+    id!: string;
 
     @Expose()
-    serviceName: string;
+    serviceName!: string;
 
     @Expose()
-    serviceDescription: string;
+    serviceDescription!: string;
 
     @Expose()
-    createdAt: Date;
+    createdAt!: Date;
 
     @Expose()
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @Expose()
     @Type(() => OperatingSystemDetailsDto)

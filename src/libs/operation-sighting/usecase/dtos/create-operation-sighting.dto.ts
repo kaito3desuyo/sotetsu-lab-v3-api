@@ -7,9 +7,9 @@ export class CreateOperationSightingDto extends ValidatableOperationSightingDto 
     @Exclude()
     id: undefined;
 
-    formationId: string;
+    formationId!: string;
 
-    operationId: string;
+    operationId!: string;
 
-    sightingTime: Date;
+    sightingTime!: Date;
 }

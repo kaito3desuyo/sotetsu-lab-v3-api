@@ -30,25 +30,25 @@ export type CalendarDateExceptionType =
 @Index(['date'])
 export class CalendarDateModel {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column('uuid')
-    calendarId: string;
+    calendarId!: string;
 
     @Column('date')
-    date: string;
+    date!: string;
 
     @Column('smallint')
-    exceptionType: CalendarDateExceptionType;
+    exceptionType!: CalendarDateExceptionType;
 
     @Column('varchar', { nullable: true })
-    memo: string | null;
+    memo!: string | null;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
-    createdAt: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @ManyToOne(() => CalendarModel)
     @JoinColumn({ name: 'calendar_id' })

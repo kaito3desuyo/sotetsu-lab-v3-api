@@ -6,25 +6,25 @@ import { BaseTripClassDto } from './base-trip-class.dto.js';
 
 export class TripClassDetailsDto extends BaseTripClassDto {
     @Expose()
-    id: string;
+    id!: string;
 
     @Expose()
-    serviceId: string;
+    serviceId!: string;
 
     @Expose()
-    tripClassName: string;
+    tripClassName!: string;
 
     @Expose()
-    tripClassColor: string;
+    tripClassColor!: string;
 
     @Expose()
-    sequence: number;
+    sequence!: number;
 
     @Expose()
-    createdAt: Date;
+    createdAt!: Date;
 
     @Expose()
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @Expose()
     @Type(() => TripDetailsDto)

@@ -11,35 +11,35 @@ export class CreateTripDto extends ValidatableTripDto {
     @Exclude()
     id: undefined;
 
-    serviceId: string;
+    serviceId!: string;
 
-    tripNumber: string;
+    tripNumber!: string;
 
-    tripClassId: string;
+    tripClassId!: string;
 
-    tripName: string | null;
+    tripName!: string | null;
 
-    tripDirection: ETripDirection;
+    tripDirection!: ETripDirection;
 
     @IsOptional()
     @Exclude()
     tripBlockId: undefined;
 
-    depotIn: boolean;
+    depotIn!: boolean;
 
-    depotOut: boolean;
+    depotOut!: boolean;
 
-    calendarId: string | null;
+    calendarId!: string | null;
 
-    extraCalendarId: string | null;
+    extraCalendarId!: string | null;
 
     @ValidateNested({ each: true })
     @Type(() => CreateTimeDto)
     @ArrayNotEmpty()
-    times: Nested<CreateTimeDto[]>;
+    times!: Nested<CreateTimeDto[]>;
 
     @ValidateNested({ each: true })
     @Type(() => CreateTripOperationListDto)
     // @ArrayNotEmpty()
-    tripOperationLists: Nested<CreateTripOperationListDto[]>;
+    tripOperationLists!: Nested<CreateTripOperationListDto[]>;
 }

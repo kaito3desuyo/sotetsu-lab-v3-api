@@ -7,22 +7,22 @@ import { ServiceDetailsDto } from './service-details.dto.js';
 
 export class OperatingSystemDetailsDto extends BaseOperatingSystemDto {
     @Expose()
-    id: string;
+    id!: string;
 
     @Expose()
-    serviceId: string;
+    serviceId!: string;
 
     @Expose()
-    routeId: string;
+    routeId!: string;
 
     @Expose()
-    startRouteStationListId: string;
+    startRouteStationListId!: string;
 
     @Expose()
-    endRouteStationListId: string;
+    endRouteStationListId!: string;
 
     @Expose()
-    sequence: number;
+    sequence!: number;
 
     @Expose()
     @Type(() => ServiceDetailsDto)

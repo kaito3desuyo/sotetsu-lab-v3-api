@@ -17,24 +17,24 @@ import { FormationModel } from './formation.model.js';
 })
 export class VehicleFormationModel {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column('uuid')
     @Index()
-    formationId: string;
+    formationId!: string;
 
     @Column('uuid')
     @Index()
-    vehicleId: string;
+    vehicleId!: string;
 
     @Column('smallint')
-    carNumber: number;
+    carNumber!: number;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
-    createdAt: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @ManyToOne(
         () => FormationModel,

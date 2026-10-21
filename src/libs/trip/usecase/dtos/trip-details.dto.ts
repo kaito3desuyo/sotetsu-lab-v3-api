@@ -8,43 +8,43 @@ import { TripOperationListDetailsDto } from './trip-operation-list-details.dto.j
 
 export class TripDetailsDto extends BaseTripDto {
     @Expose()
-    id: string;
+    id!: string;
 
     @Expose()
-    serviceId: string;
+    serviceId!: string;
 
     @Expose()
-    tripNumber: string;
+    tripNumber!: string;
 
     @Expose()
-    tripClassId: string;
+    tripClassId!: string;
 
     @Expose()
-    tripName: string;
+    tripName!: string;
 
     @Expose()
-    tripDirection: number;
+    tripDirection!: number;
 
     @Expose()
-    tripBlockId: string;
+    tripBlockId!: string;
 
     @Expose()
-    depotIn: boolean;
+    depotIn!: boolean;
 
     @Expose()
-    depotOut: boolean;
+    depotOut!: boolean;
 
     @Expose()
-    calendarId: string;
+    calendarId!: string;
 
     @Expose()
-    extraCalendarId: string;
+    extraCalendarId!: string;
 
     @Expose()
-    createdAt: Date;
+    createdAt!: Date;
 
     @Expose()
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @Expose()
     @Type(() => TimeDetailsDto)

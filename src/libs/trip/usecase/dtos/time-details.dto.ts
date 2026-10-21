@@ -7,43 +7,43 @@ import { TripOperationListDetailsDto } from './trip-operation-list-details.dto.j
 
 export class TimeDetailsDto {
     @Expose()
-    id: string;
+    id!: string;
 
     @Expose()
-    tripId: string;
+    tripId!: string;
 
     @Expose()
-    stationId: string;
+    stationId!: string;
 
     @Expose()
-    stopId: string;
+    stopId!: string;
 
     @Expose()
-    stopSequence: number;
+    stopSequence!: number;
 
     @Expose()
-    pickupType: number;
+    pickupType!: number;
 
     @Expose()
-    dropoffType: number;
+    dropoffType!: number;
 
     @Expose()
-    arrivalDays: number;
+    arrivalDays!: number;
 
     @Expose()
-    arrivalTime: string;
+    arrivalTime!: string;
 
     @Expose()
-    departureDays: number;
+    departureDays!: number;
 
     @Expose()
-    departureTime: string;
+    departureTime!: string;
 
     @Expose()
-    createdAt: Date;
+    createdAt!: Date;
 
     @Expose()
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @Expose()
     @Type(() => TripDetailsDto)

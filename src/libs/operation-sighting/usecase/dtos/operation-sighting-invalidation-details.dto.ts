@@ -3,14 +3,14 @@ import { BaseOperationSightingInvalidationDto } from './base-operation-sighting-
 
 export class OperationSightingInvalidationDetailsDto extends BaseOperationSightingInvalidationDto {
     @Expose({ name: 'id' })
-    operationSightingInvalidationId: string;
+    operationSightingInvalidationId!: string;
 
     @Expose()
-    operationSightingId: string;
+    operationSightingId!: string;
 
     @Expose()
-    createdAt: string;
+    createdAt!: string;
 
     @Expose()
-    updatedAt: string;
+    updatedAt!: string;
 }

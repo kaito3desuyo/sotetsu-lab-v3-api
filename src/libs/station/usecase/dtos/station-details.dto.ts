@@ -7,34 +7,34 @@ import { StopDetailsDto } from './stop-details.dto.js';
 
 export class StationDetailsDto extends BaseStationDto {
     @Expose()
-    id: string;
+    id!: string;
 
     @Expose()
-    stationName: string;
+    stationName!: string;
 
     @Expose()
-    stationSubname: string;
+    stationSubname!: string;
 
     @Expose()
-    stationType: number;
+    stationType!: number;
 
     @Expose()
-    stationDescription: string;
+    stationDescription!: string;
 
     @Expose()
-    stationLatlng: string;
+    stationLatlng!: string;
 
     @Expose()
-    stationUrl: string;
+    stationUrl!: string;
 
     @Expose()
-    wheelchairBoarding: boolean;
+    wheelchairBoarding!: boolean;
 
     @Expose()
-    createdAt: Date;
+    createdAt!: Date;
 
     @Expose()
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @Expose()
     @Type(() => RouteStationListDetailsDto)

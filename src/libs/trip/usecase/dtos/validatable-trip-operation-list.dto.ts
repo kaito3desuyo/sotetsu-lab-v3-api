@@ -2,25 +2,25 @@ import { IsOptional, IsUUID } from 'class-validator';
 
 export abstract class ValidatableTripOperationListDto {
     @IsUUID()
-    id: string;
+    id!: string;
 
     @IsUUID()
-    tripId: string;
+    tripId!: string;
 
     @IsUUID()
-    operationId: string;
+    operationId!: string;
 
     @IsUUID()
-    startStationId: string;
+    startStationId!: string;
 
     @IsUUID()
-    endStationId: string;
+    endStationId!: string;
 
     @IsUUID()
-    startTimeId: string;
+    startTimeId!: string;
 
     @IsUUID()
-    endTimeId: string;
+    endTimeId!: string;
 
     @IsOptional()
     @IsUUID()

@@ -9,38 +9,38 @@ import { ETripDirection } from '../../special/enums/trip.enum.js';
 
 export abstract class ValidatableTripDto {
     @IsUUID()
-    id: string;
+    id!: string;
 
     @IsUUID()
-    serviceId: string;
+    serviceId!: string;
 
     @IsString()
-    tripNumber: string;
+    tripNumber!: string;
 
     @IsUUID()
-    tripClassId: string;
+    tripClassId!: string;
 
     @IsString()
     @ValidateIf((_, v) => v !== null)
-    tripName: string | null;
+    tripName!: string | null;
 
     @IsEnum(ETripDirection)
-    tripDirection: number;
+    tripDirection!: number;
 
     @IsUUID()
-    tripBlockId: string;
+    tripBlockId!: string;
 
     @IsBoolean()
-    depotIn: boolean;
+    depotIn!: boolean;
 
     @IsBoolean()
-    depotOut: boolean;
+    depotOut!: boolean;
 
     @IsUUID()
     @ValidateIf((_, v) => v !== null)
-    calendarId: string | null;
+    calendarId!: string | null;
 
     @IsUUID()
     @ValidateIf((_, v) => v !== null)
-    extraCalendarId: string | null;
+    extraCalendarId!: string | null;
 }

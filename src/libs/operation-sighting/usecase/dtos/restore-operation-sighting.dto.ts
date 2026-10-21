@@ -4,11 +4,11 @@ import { IsOptional, IsString, IsUUID } from 'class-validator';
 export class RestoreOperationSightingDto {
     @IsOptional()
     @Exclude()
-    operationSightingId: string;
+    operationSightingId!: string;
 
     @IsUUID()
-    userId: string;
+    userId!: string;
 
     @IsString()
-    reason: string;
+    reason!: string;
 }

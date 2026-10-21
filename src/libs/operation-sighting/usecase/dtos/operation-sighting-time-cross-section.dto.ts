@@ -5,11 +5,11 @@ import { OperationSightingDetailsDto } from './operation-sighting-details.dto.js
 export class OperationSightingTimeCrossSectionDto {
     @Expose()
     @Type(() => OperationSightingDetailsDto)
-    latestSighting: Nested<OperationSightingDetailsDto | null>;
+    latestSighting!: Nested<OperationSightingDetailsDto | null>;
 
     @Expose()
     @Type(() => OperationSightingDetailsDto)
-    expectedSighting:
+    expectedSighting!:
         | (Omit<
               Partial<OperationSightingDetailsDto>,
               'operation' | 'formation'

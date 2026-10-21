@@ -18,26 +18,26 @@ import {
 })
 export class TripClassModel {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column('uuid')
     @Index()
-    serviceId: string;
+    serviceId!: string;
 
     @Column('varchar')
-    tripClassName: string;
+    tripClassName!: string;
 
     @Column('varchar')
-    tripClassColor: string;
+    tripClassColor!: string;
 
     @Column('smallint')
-    sequence: number;
+    sequence!: number;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
-    createdAt: string;
+    createdAt!: string;
 
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
-    updatedAt: string;
+    updatedAt!: string;
 
     @OneToMany(() => TripModel, (trip) => trip.tripClass)
     readonly trips?: Relation<TripModel[]>;

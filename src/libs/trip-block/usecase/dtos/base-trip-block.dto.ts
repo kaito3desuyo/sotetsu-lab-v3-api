@@ -1,3 +1,3 @@
 export abstract class BaseTripBlockDto {
-    id: string;
+    id!: string;
 }

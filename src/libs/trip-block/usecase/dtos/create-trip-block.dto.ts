@@ -12,5 +12,5 @@ export class CreateTripBlockDto extends ValidatableTripBlockDto {
     @ValidateNested({ each: true })
     @Type(() => CreateTripDto)
     @ArrayNotEmpty()
-    trips: Nested<CreateTripDto[]>;
+    trips!: Nested<CreateTripDto[]>;
 }

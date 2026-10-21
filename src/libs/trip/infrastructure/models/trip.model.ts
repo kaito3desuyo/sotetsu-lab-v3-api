@@ -22,42 +22,42 @@ import { TripOperationListModel } from './trip-operation-list.model.js';
 @Index(['calendarId', 'tripDirection'])
 export class TripModel {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column('uuid')
     @Index()
-    serviceId: string;
+    serviceId!: string;
 
     @Column('varchar')
-    tripNumber: string;
+    tripNumber!: string;
 
     @Column('uuid')
     @Index()
-    tripClassId: string;
+    tripClassId!: string;
 
     @Column('varchar', { nullable: true })
-    tripName: string;
+    tripName!: string;
 
     @Column('smallint')
-    tripDirection: number;
+    tripDirection!: number;
 
     @Column('uuid')
     @Index()
-    tripBlockId: string;
+    tripBlockId!: string;
 
     @Column('boolean')
-    depotIn: boolean;
+    depotIn!: boolean;
 
     @Column('boolean')
-    depotOut: boolean;
+    depotOut!: boolean;
 
     @Column('uuid', { nullable: true })
     @Index()
-    calendarId: string;
+    calendarId!: string;
 
     @Column('uuid', { nullable: true })
     @Index()
-    extraCalendarId: string;
+    extraCalendarId!: string;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
     readonly createdAt?: Date;

@@ -17,10 +17,10 @@ import { OperationSightingModel } from './operation-sighting.model.js';
 @Index(['operationSightingId'])
 export class OperationSightingInvalidationModel {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column('uuid')
-    operationSightingId: string;
+    operationSightingId!: string;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
     createdAt?: string;

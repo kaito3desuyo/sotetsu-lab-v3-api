@@ -4,9 +4,9 @@ import { IsInt, IsNotEmpty, IsString } from 'class-validator';
 export class TripFindManyByStationIdQuery {
     @IsString()
     @IsNotEmpty()
-    calendarId: string;
+    calendarId!: string;
 
     @Type(() => Number)
     @IsInt()
-    tripDirection: number;
+    tripDirection!: number;
 }

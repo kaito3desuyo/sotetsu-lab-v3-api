@@ -6,8 +6,8 @@ export class DeleteTripFromTripBlockDto {
     id: string | undefined;
 
     @IsUUID()
-    tripId: string;
+    tripId!: string;
 
     @IsBoolean()
-    holdAsAnotherTripBlock: boolean;
+    holdAsAnotherTripBlock!: boolean;
 }

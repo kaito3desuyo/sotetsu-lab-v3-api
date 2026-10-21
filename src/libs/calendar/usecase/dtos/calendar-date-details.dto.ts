@@ -3,23 +3,23 @@ import { BaseCalendarDateDto } from './base-calendar-date.dto.js';
 
 export class CalendarDateDetailsDto extends BaseCalendarDateDto {
     @Expose()
-    id: string;
+    id!: string;
 
     @Expose()
-    calendarId: string;
+    calendarId!: string;
 
     @Expose()
-    date: string;
+    date!: string;
 
     @Expose()
-    exceptionType: BaseCalendarDateDto['exceptionType'];
+    exceptionType!: BaseCalendarDateDto['exceptionType'];
 
     @Expose()
-    memo: string | null;
+    memo!: string | null;
 
     @Expose()
-    createdAt: Date;
+    createdAt!: Date;
 
     @Expose()
-    updatedAt: Date;
+    updatedAt!: Date;
 }

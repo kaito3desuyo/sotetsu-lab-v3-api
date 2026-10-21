@@ -6,34 +6,34 @@ import { VehicleFormationDetailsDto } from './vehicle-formation-details.dto.js';
 
 export class FormationDetailsDto extends BaseFormationDto {
     @Expose()
-    id: string;
+    id!: string;
 
     @Expose()
-    formationId: string;
+    formationId!: string;
 
     @Expose()
-    agencyId: string;
+    agencyId!: string;
 
     @Expose()
-    vehicleType: string;
+    vehicleType!: string;
 
     @Expose()
-    formationNumber: string;
+    formationNumber!: string;
 
     @Expose()
-    formationDescription: string;
+    formationDescription!: string;
 
     @Expose()
-    startDate: string;
+    startDate!: string;
 
     @Expose()
-    endDate: string;
+    endDate!: string;
 
     @Expose()
-    createdAt: Date;
+    createdAt!: Date;
 
     @Expose()
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @Expose()
     @Type(() => AgencyDetailsDto)

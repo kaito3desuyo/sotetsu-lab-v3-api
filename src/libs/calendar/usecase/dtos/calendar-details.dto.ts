@@ -5,46 +5,46 @@ import { BaseCalendarDto } from './base-calendar.dto.js';
 
 export class CalendarDetailsDto extends BaseCalendarDto {
     @Expose()
-    id: string;
+    id!: string;
 
     @Expose()
-    serviceId: string;
+    serviceId!: string;
 
     @Expose()
-    calendarName: string;
+    calendarName!: string;
 
     @Expose()
-    sunday: boolean;
+    sunday!: boolean;
 
     @Expose()
-    monday: boolean;
+    monday!: boolean;
 
     @Expose()
-    tuesday: boolean;
+    tuesday!: boolean;
 
     @Expose()
-    wednesday: boolean;
+    wednesday!: boolean;
 
     @Expose()
-    thursday: boolean;
+    thursday!: boolean;
 
     @Expose()
-    friday: boolean;
+    friday!: boolean;
 
     @Expose()
-    saturday: boolean;
+    saturday!: boolean;
 
     @Expose()
-    startDate: string;
+    startDate!: string;
 
     @Expose()
-    endDate: string;
+    endDate!: string;
 
     @Expose()
-    createdAt: Date;
+    createdAt!: Date;
 
     @Expose()
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @Expose()
     @Type(() => ServiceDetailsDto)

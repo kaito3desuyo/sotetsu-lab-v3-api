@@ -3,23 +3,23 @@ import { BaseOperationSightingManagementLogDto } from './base-operation-sighting
 
 export class OperationSightingManagementLogDetailsDto extends BaseOperationSightingManagementLogDto {
     @Expose({ name: 'id' })
-    operationSightingManagementLogId: string;
+    operationSightingManagementLogId!: string;
 
     @Expose()
-    operationSightingId: string;
+    operationSightingId!: string;
 
     @Expose()
-    userId: string;
+    userId!: string;
 
     @Expose()
-    action: string;
+    action!: string;
 
     @Expose()
-    reason: string;
+    reason!: string;
 
     @Expose()
-    createdAt: string;
+    createdAt!: string;
 
     @Expose()
-    updatedAt: string;
+    updatedAt!: string;
 }

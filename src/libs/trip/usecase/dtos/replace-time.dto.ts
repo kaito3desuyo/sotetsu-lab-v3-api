@@ -10,21 +10,21 @@ export class ReplaceTimeDto extends ValidatableTimeDto {
     @Exclude()
     tripId: undefined;
 
-    stationId: string;
+    stationId!: string;
 
-    stopId: string | null;
+    stopId!: string | null;
 
-    stopSequence: number;
+    stopSequence!: number;
 
-    pickupType: number;
+    pickupType!: number;
 
-    dropoffType: number;
+    dropoffType!: number;
 
-    arrivalDays: number | null;
+    arrivalDays!: number | null;
 
-    arrivalTime: string | null;
+    arrivalTime!: string | null;
 
-    departureDays: number | null;
+    departureDays!: number | null;
 
-    departureTime: string | null;
+    departureTime!: string | null;
 }

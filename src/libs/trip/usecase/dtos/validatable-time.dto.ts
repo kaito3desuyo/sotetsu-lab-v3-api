@@ -10,45 +10,45 @@ import { BaseTimeDto } from './base-time.dto.js';
 
 export abstract class ValidatableTimeDto extends BaseTimeDto {
     @IsUUID()
-    id: string;
+    id!: string;
 
     @IsUUID()
-    tripId: string;
+    tripId!: string;
 
     @IsUUID()
-    stationId: string;
+    stationId!: string;
 
     @IsUUID()
     @ValidateIf((_, v) => v !== null)
-    stopId: string | null;
+    stopId!: string | null;
 
     @IsInt()
     @IsPositive()
-    stopSequence: number;
+    stopSequence!: number;
 
     @IsInt()
     @Min(0)
-    pickupType: number;
+    pickupType!: number;
 
     @IsInt()
     @Min(0)
-    dropoffType: number;
+    dropoffType!: number;
 
     @IsInt()
     @IsPositive()
     @ValidateIf((_, v) => v !== null)
-    arrivalDays: number | null;
+    arrivalDays!: number | null;
 
     @IsMilitaryTime()
     @ValidateIf((_, v) => v !== null)
-    arrivalTime: string | null;
+    arrivalTime!: string | null;
 
     @IsInt()
     @IsPositive()
     @ValidateIf((_, v) => v !== null)
-    departureDays: number | null;
+    departureDays!: number | null;
 
     @IsMilitaryTime()
     @ValidateIf((_, v) => v !== null)
-    departureTime: string | null;
+    departureTime!: string | null;
 }

@@ -17,19 +17,19 @@ import { OperationSightingModel } from './operation-sighting.model.js';
 @Index(['operationSightingId'])
 export class OperationSightingManagementLogModel {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column('uuid')
-    operationSightingId: string;
+    operationSightingId!: string;
 
     @Column('uuid')
-    userId: string;
+    userId!: string;
 
     @Column('text')
-    action: string;
+    action!: string;
 
     @Column('text')
-    reason: string;
+    reason!: string;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
     createdAt?: string;

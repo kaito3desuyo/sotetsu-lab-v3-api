@@ -7,16 +7,16 @@ import {
 
 export class CreateCalendarDateDto {
     @IsUUID()
-    calendarId: string;
+    calendarId!: string;
 
     @IsISO8601()
-    date: string;
+    date!: string;
 
     @IsIn([
         CALENDAR_DATE_EXCEPTION_TYPE_ADDED,
         CALENDAR_DATE_EXCEPTION_TYPE_REMOVED,
     ])
-    exceptionType: CalendarDateExceptionType;
+    exceptionType!: CalendarDateExceptionType;
 
     @IsOptional()
     @IsString()

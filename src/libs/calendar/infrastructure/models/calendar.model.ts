@@ -18,47 +18,47 @@ import {
 })
 export class CalendarModel {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column('uuid')
     @Index()
-    serviceId: string;
+    serviceId!: string;
 
     @Column('varchar')
-    calendarName: string;
+    calendarName!: string;
 
     @Column('boolean')
-    sunday: boolean;
+    sunday!: boolean;
 
     @Column('boolean')
-    monday: boolean;
+    monday!: boolean;
 
     @Column('boolean')
-    tuesday: boolean;
+    tuesday!: boolean;
 
     @Column('boolean')
-    wednesday: boolean;
+    wednesday!: boolean;
 
     @Column('boolean')
-    thursday: boolean;
+    thursday!: boolean;
 
     @Column('boolean')
-    friday: boolean;
+    friday!: boolean;
 
     @Column('boolean')
-    saturday: boolean;
+    saturday!: boolean;
 
     @Column('date')
-    startDate: string;
+    startDate!: string;
 
     @Column('date', { nullable: true })
-    endDate: string;
+    endDate!: string;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
-    createdAt: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @OneToMany(() => OperationModel, (operation) => operation.calendar)
     readonly operations?: Relation<OperationModel[]>;

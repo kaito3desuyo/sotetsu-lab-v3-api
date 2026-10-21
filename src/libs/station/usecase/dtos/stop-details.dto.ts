@@ -3,26 +3,26 @@ import { BaseStopDto } from './base-stop.dto.js';
 
 export class StopDetailsDto extends BaseStopDto {
     @Expose()
-    id: string;
+    id!: string;
 
     @Expose()
-    stationId: string;
+    stationId!: string;
 
     @Expose()
-    stopName: string;
+    stopName!: string;
 
     @Expose()
-    stopDescription: string;
+    stopDescription!: string;
 
     @Expose()
-    stopLatlng: string;
+    stopLatlng!: string;
 
     @Expose()
-    zoneId: string;
+    zoneId!: string;
 
     @Expose()
-    createdAt: Date;
+    createdAt!: Date;
 
     @Expose()
-    updatedAt: Date;
+    updatedAt!: Date;
 }
