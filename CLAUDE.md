@@ -80,7 +80,7 @@ npm run migration:revert     # ロールバック
 
 ### CLI
 ```bash
-npm run cli -- rebuildLatestCache   # operation_sighting_latest_caches を全件再構築する
+npm run cli -- operation-sighting rebuild-latest-cache   # operation_sighting_latest_caches を全件再構築する
 ```
 
 ### デプロイ
@@ -99,7 +99,7 @@ npm run deploy               # Serverless Framework でデプロイ
 - **認証** - Supabase Auth の JWT を jose で検証（AuthGuard・RBACGuard）
 - **セキュリティ** - Helmet
 - **日時処理** - dayjs（タイムゾーン対応）
-- **テスト** - Jest + ts-jest + Supertest
+- **テスト** - Vitest + unplugin-swc + Supertest
 - **コード品質** - ESLint + Prettier
 - **デプロイ** - Serverless Framework
 
@@ -109,6 +109,13 @@ npm run deploy               # Serverless Framework でデプロイ
 - `.env.local` で設定（dotenvx で読み込み）
 - タイムゾーン - 全体で Asia/Tokyo に統一
 - CORS - `CORS_HEADER_ORIGIN` で設定（デフォルト `*`）
+
+### ESM
+- `"type": "module"`。相対 import には `.js` を付ける（`import { X } from './x.js'`）。`src/…` の絶対 import は使えない
+- CommonJS のパッケージ（lodash など）からの名前付き import は実行時に落ちることがある。関数ごとの default import（`lodash/cloneDeep.js`）にする
+- エンティティの関連の型は `Relation<…>`、DTO の入れ子は `Nested<…>` で包む（循環 import 対策）。どちらも `import type` で読む（SWC がメタデータで値として参照するため）
+- CLI・migration・seed は `@swc-node/register/esm-register` で TS のまま流す
+- serverless-layers は 2.7.0 に固定（2.8.5 は package で手元の dev 依存を消す・ADR-0007）
 
 ### エラーハンドリング
 - ドメイン層のエラーは `UseCaseError` を使用
@@ -126,8 +133,9 @@ npm run deploy               # Serverless Framework でデプロイ
 
 ### テスト戦略
 - ユニットテスト - ソースコードと同じ場所（`.spec.ts`）
-- Jest 設定 - `src/` をルートで `.spec.ts$` マッチ
-- E2E テスト - `test/` フォルダ（別の Jest 設定）
+- Vitest 設定 - `vitest.config.ts`（`src/**/*.spec.ts`）。e2e は `vitest.config.e2e.ts`
+- E2E テスト - `test/` フォルダ（DB に繋ぐので `npm run dotenv -- npm run test:e2e`）
+- テスト・CLI・migration は SWC を使うので、Claude Code のサンドボックス内では動かない（`ERR_SWC_NATIVE_CACHE`）。サンドボックス外で流す
 - カバレッジ - `coverage/`（gitignore 対象）
 - usecase 層のモックテストは Query の `relations` 漏れを検知できない — リレーションを追加・参照する際は Query クラス自体の spec も書く
 
