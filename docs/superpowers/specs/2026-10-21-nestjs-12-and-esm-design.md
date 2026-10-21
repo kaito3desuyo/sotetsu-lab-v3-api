@@ -4,6 +4,7 @@
 - 対象: sotetsu-lab-v3-api のみ
 - 前提: v2 と `@dataui/crud` は撤去済み（ADR-0006・v4.0.0）
 - 後続（別 spec）: typeorm 1.x 化。socket の osls 4 化
+- **実装で変わった点は ADR-0007 が正**: CLI・migration・seed は dist からでなく swc-node で TS のまま流す（4 章）／osls は 4 に上げず 3 に据え置き（3.1）／serverless-layers は 2.7.0 に固定／エンティティはクラスの一覧で渡す／Lambda ではレイヤーの依存を resolve の hook で解決する／Express 5 のクエリ解析は extended に戻す／版は patch v4.0.1（7 章）
 
 ## 1. 目的
 

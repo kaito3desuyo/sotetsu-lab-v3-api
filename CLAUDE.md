@@ -114,6 +114,8 @@ npm run deploy               # Serverless Framework でデプロイ
 - `"type": "module"`。相対 import には `.js` を付ける（`import { X } from './x.js'`）。`src/…` の絶対 import は使えない
 - CommonJS のパッケージ（lodash など）からの名前付き import は実行時に落ちることがある。関数ごとの default import（`lodash/cloneDeep.js`）にする
 - エンティティの関連の型は `Relation<…>`、DTO の入れ子は `Nested<…>` で包む（循環 import 対策）。どちらも `import type` で読む（SWC がメタデータで値として参照するため）
+- エンティティは glob でなく `src/core/configs/entities.ts` の一覧で TypeORM に渡す。モデルを足したら一覧にも足す（`entities.spec.ts` が漏れを見つける）
+- `package.json` の `overrides`（`@golevelup/nestjs-discovery` 7.1.0）は nest-commander が Nest 12 対応版を取ったら外す（ADR-0007）
 - CLI・migration・seed は `@swc-node/register/esm-register` で TS のまま流す
 - Lambda では `dist/run.sh` が `register-node-path.js` を先に読み、レイヤー（NODE_PATH）の依存を ESM でも解決する。外すと本番が起動しない
 - Express 5 のクエリ解析は `extended` に戻してある（`fields[資源]=項目` のため）

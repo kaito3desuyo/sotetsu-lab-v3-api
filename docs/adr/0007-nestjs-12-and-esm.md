@@ -45,4 +45,6 @@
 - Express 5 はクエリ解析の既定が simple になり `fields[資源]=項目` が入れ子にならないので、`query parser` を `extended` に戻す（`src/core/configs/express-settings.ts`）。
 - helmet 8 で既定のヘッダーが変わった（`block-all-mixed-content` と `Cross-Origin-Embedder-Policy`・`Expect-CT` が無くなり、HSTS は 15552000 → 31536000 秒。PR #182 に一覧）。
 - 起動時の読み込み（`AppModule`）は手元で 429 ms → 509 ms（中央値）。
+- `package.json` の `overrides`（nest-commander → `@golevelup/nestjs-discovery` 7.1.0）は一時措置。nest-commander が Nest 12 対応の nestjs-discovery（7.1.0 以上）を依存に取る版を出したら、その版に上げて overrides を外す。
+- エンティティは glob でなく `src/core/configs/entities.ts` の一覧で渡す（glob だと TypeORM が素の Node で import し、テストでクラスが 2 重にできる）。モデルを足したら一覧にも足す（`entities.spec.ts` が漏れを見つける）。
 - 版は patch（v4.0.1）。API を使う側から見た互換（v3 の応答）は変わらず、ESM 化はリポジトリの中の話のため。helmet のヘッダーの既定値の変化も互換を切らない。
