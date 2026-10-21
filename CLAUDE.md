@@ -115,6 +115,8 @@ npm run deploy               # Serverless Framework でデプロイ
 - CommonJS のパッケージ（lodash など）からの名前付き import は実行時に落ちることがある。関数ごとの default import（`lodash/cloneDeep.js`）にする
 - エンティティの関連の型は `Relation<…>`、DTO の入れ子は `Nested<…>` で包む（循環 import 対策）。どちらも `import type` で読む（SWC がメタデータで値として参照するため）
 - CLI・migration・seed は `@swc-node/register/esm-register` で TS のまま流す
+- Lambda では `dist/run.sh` が `register-node-path.js` を先に読み、レイヤー（NODE_PATH）の依存を ESM でも解決する。外すと本番が起動しない
+- Express 5 のクエリ解析は `extended` に戻してある（`fields[資源]=項目` のため）
 - serverless-layers は 2.7.0 に固定（2.8.5 は package で手元の dev 依存を消す・ADR-0007）
 
 ### エラーハンドリング

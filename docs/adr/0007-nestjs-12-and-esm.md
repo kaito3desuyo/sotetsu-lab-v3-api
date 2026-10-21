@@ -41,6 +41,8 @@
 
 - import を書くときは `.js` を付ける（付け忘れは tsc がエラーにする）。CommonJS のパッケージから名前付きで import すると、tsc を通っても実行時に落ちることがある。`.context/smoke_import_dist.mjs` のように dist を Node で import して確かめる。
 - vitest は import の読み込みが緩く、上の「export が無い」を見逃す。CLI・migration を実際に流して確かめる。
+- Lambda では依存がレイヤー（`/opt/nodejs/node_modules`・NODE_PATH）にあり、ESM の import は NODE_PATH を見ない。`dist/run.sh` で `register-node-path.js` を `--import` し、見つからない外部パッケージだけ NODE_PATH から探し直す（`module.registerHooks`）。確かめは `.context/smoke_layer_layout.sh`（Lambda と同じ配置で起動する）。
+- Express 5 はクエリ解析の既定が simple になり `fields[資源]=項目` が入れ子にならないので、`query parser` を `extended` に戻す（`src/core/configs/express-settings.ts`）。
 - helmet 8 で既定のヘッダーが変わった（`block-all-mixed-content` と `Cross-Origin-Embedder-Policy`・`Expect-CT` が無くなり、HSTS は 15552000 → 31536000 秒。PR #182 に一覧）。
 - 起動時の読み込み（`AppModule`）は手元で 429 ms → 509 ms（中央値）。
 - 版は patch（v4.0.1）。API を使う側から見た互換（v3 の応答）は変わらず、ESM 化はリポジトリの中の話のため。helmet のヘッダーの既定値の変化も互換を切らない。
