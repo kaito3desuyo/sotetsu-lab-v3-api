@@ -1,3 +1,4 @@
+import { UnexpectedError } from '../../../../core/classes/unexpected-error.js';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getEntityManagerToken, getRepositoryToken } from '@nestjs/typeorm';
 import { DataSourceConfig } from '../../../../core/configs/database.config.js';
@@ -87,5 +88,23 @@ describe('ServiceQuery.findOneStationsForService', () => {
         await expect(
             query.findOneStationsForService({ serviceId: 'none' }),
         ).resolves.toBeNull();
+    });
+});
+
+describe('ServiceQuery.findOneStationsForService の結合漏れ', () => {
+    it('運行系統の始点（startRouteStationList）が結合できなければ UnexpectedError', async () => {
+        const query = await buildQuery({
+            id: 'svc',
+            operatingSystems: [
+                {
+                    ...service.operatingSystems[0],
+                    startRouteStationList: undefined,
+                },
+            ],
+        });
+
+        await expect(
+            query.findOneStationsForService({ serviceId: 'svc' }),
+        ).rejects.toThrow(UnexpectedError);
     });
 });

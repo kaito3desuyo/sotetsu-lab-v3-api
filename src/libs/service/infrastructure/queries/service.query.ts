@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
+import { UnexpectedError } from '../../../../core/classes/unexpected-error.js';
 import { DataSourceConfig } from '../../../../core/configs/database.config.js';
 import { AgencyModel } from '../../../agency/infrastructure/models/agency.model.js';
 import { RouteStationListModel } from '../../../route/infrastructure/models/route-station-list.model.js';
@@ -137,13 +138,27 @@ export class ServiceQuery {
             priority?: number;
         })[] = [];
 
-        for (const operatingSystem of service.operatingSystems) {
+        // leftJoinAndSelect しているので、運行系統が無くても空の配列が入る
+        for (const operatingSystem of service.operatingSystems!) {
+            const { route, startRouteStationList, endRouteStationList } =
+                operatingSystem;
+            if (
+                !route?.routeStationLists ||
+                !startRouteStationList ||
+                !endRouteStationList
+            ) {
+                throw new UnexpectedError(
+                    '運行系統の路線か始終点が結合できない',
+                    { operatingSystemId: operatingSystem.id },
+                );
+            }
+
             const isAscending =
-                operatingSystem.startRouteStationList.stationSequence <
-                operatingSystem.endRouteStationList.stationSequence;
+                startRouteStationList.stationSequence <
+                endRouteStationList.stationSequence;
 
             const byStationSequence =
-                operatingSystem.route.routeStationLists.toSorted(
+                route.routeStationLists.toSorted(
                     (a, b) => a.stationSequence - b.stationSequence,
                 );
             const sortedRSLs = isAscending
@@ -155,7 +170,7 @@ export class ServiceQuery {
                 .findIndex(
                     (o) =>
                         o.stationId ===
-                        operatingSystem.startRouteStationList.stationId,
+                        startRouteStationList.stationId,
                 );
 
             let position =
@@ -166,12 +181,12 @@ export class ServiceQuery {
             const startIdx = sortedRSLs.findIndex(
                 (o) =>
                     o.stationId ===
-                    operatingSystem.startRouteStationList.stationId,
+                    startRouteStationList.stationId,
             );
             const endIdx = sortedRSLs.findIndex(
                 (o) =>
                     o.stationId ===
-                    operatingSystem.endRouteStationList.stationId,
+                    endRouteStationList.stationId,
             );
 
             for (const rsl of sortedRSLs.filter(
@@ -179,12 +194,12 @@ export class ServiceQuery {
             )) {
                 if (
                     ['厚木線', '副都心線', '有楽町線'].includes(
-                        operatingSystem.route.routeName,
+                        route.routeName,
                     )
                 ) {
                     pickedRouteStationLists.push({ ...rsl, priority: 1 });
                     position = pickedRouteStationLists.length - 1;
-                } else if (operatingSystem.route.routeName === '西武有楽町線') {
+                } else if (route.routeName === '西武有楽町線') {
                     pickedRouteStationLists.push({ ...rsl, priority: 2 });
                     position = pickedRouteStationLists.length - 1;
                 } else {

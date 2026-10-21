@@ -1,3 +1,4 @@
+import { UnexpectedError } from '../../../../core/classes/unexpected-error.js';
 import { UniqueEntityId } from '../../../../core/classes/unique-entity-id.js';
 import { TripsDomainBuilder } from '../../../trip/usecase/builders/trip.domain.builder.js';
 import { TripBlock, TripBlocks } from '../../domain/trip-block.domain.js';
@@ -7,6 +8,11 @@ import { TripBlockDetailsDto } from '../dtos/trip-block-details.dto.js';
 
 export const TripBlockDomainBuilder = {
     buildFromDetailsDto: (dto: TripBlockDetailsDto) => {
+        if (!dto.trips) {
+            throw new UnexpectedError('block の列車が結合されていない', {
+                tripBlockId: dto.id,
+            });
+        }
         return TripBlock.create(
             {
                 trips: TripsDomainBuilder.buildFromDetailsDto(dto.trips),
