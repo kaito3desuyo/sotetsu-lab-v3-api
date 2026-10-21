@@ -53,10 +53,18 @@ export class TripBlockQuery {
         const model = await this.tripBlockRepository
             .createQueryBuilder('tripBlock')
             .select('tripBlock')
+            // 読み込む側の trips で絞ると block の列車がこの 1 本だけになるので、別名で絞る
+            .innerJoin(
+                'tripBlock.trips',
+                'filterTrip',
+                'filterTrip.id = :tripId',
+                {
+                    tripId,
+                },
+            )
             .leftJoinAndSelect('tripBlock.trips', 'trips')
             .leftJoinAndSelect('trips.times', 'times')
             .leftJoinAndSelect('trips.tripOperationLists', 'tripOperationLists')
-            .where('trips.id = :tripId', { tripId })
             .getOne();
         if (!model) return null;
         return TripBlockDtoBuilder.buildFromModel(model);

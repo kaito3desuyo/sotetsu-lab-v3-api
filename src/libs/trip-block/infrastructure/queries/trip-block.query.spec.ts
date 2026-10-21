@@ -155,3 +155,50 @@ describe('TripBlockQuery - findManyByFilterWithFields', () => {
         expect(qb.orderBy).not.toHaveBeenCalled();
     });
 });
+
+describe('TripBlockQuery - findOneTripBlockByTripId', () => {
+    let qb: Record<string, AnyMock>;
+    let query: TripBlockQuery;
+
+    beforeEach(async () => {
+        qb = {};
+        for (const method of [
+            'select',
+            'innerJoin',
+            'leftJoinAndSelect',
+            'where',
+        ]) {
+            qb[method] = vi.fn().mockReturnValue(qb);
+        }
+        qb.getOne = vi.fn().mockResolvedValue(null);
+        const module: TestingModule = await Test.createTestingModule({
+            providers: [
+                TripBlockQuery,
+                {
+                    provide: getRepositoryToken(TripBlockModel),
+                    useValue: {
+                        createQueryBuilder: vi.fn().mockReturnValue(qb),
+                    },
+                },
+            ],
+        }).compile();
+        query = module.get(TripBlockQuery);
+    });
+
+    it('列車での絞り込みは別名の結合で行い、block の列車は全部読み込む', async () => {
+        await query.findOneTripBlockByTripId('t1');
+
+        expect(qb.innerJoin).toHaveBeenCalledWith(
+            'tripBlock.trips',
+            'filterTrip',
+            'filterTrip.id = :tripId',
+            { tripId: 't1' },
+        );
+        expect(qb.leftJoinAndSelect).toHaveBeenCalledWith(
+            'tripBlock.trips',
+            'trips',
+        );
+        // 読み込む側の別名（trips）で絞ると、block の列車が動かす 1 本だけになる
+        expect(qb.where).not.toHaveBeenCalled();
+    });
+});
