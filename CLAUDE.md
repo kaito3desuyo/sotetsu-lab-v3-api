@@ -93,7 +93,7 @@ npm run deploy               # Serverless Framework でデプロイ
 ## 主要な技術スタック
 
 - **フレームワーク** - NestJS 12.x / TypeScript 6.0
-- **DB** - TypeORM 0.3 + PostgreSQL
+- **DB** - TypeORM 1.x + PostgreSQL
 - **バリデーション** - class-validator（DTO ベース）
 - **ログ** - Pino（JSON 形式）
 - **認証** - Supabase Auth の JWT を jose で検証（AuthGuard・RBACGuard）
@@ -109,10 +109,11 @@ npm run deploy               # Serverless Framework でデプロイ
 - `.env.local` で設定（dotenvx で読み込み）
 - タイムゾーン - 全体で Asia/Tokyo に統一
 - CORS - `CORS_HEADER_ORIGIN` で設定（デフォルト `*`）
+- TypeScript は strict。値を外から詰めるプロパティ（エンティティ・DTO）は `!`。`as any`・`@ts-ignore` は使わない
 
 ### ESM
 - `"type": "module"`。相対 import には `.js` を付ける（`import { X } from './x.js'`）。`src/…` の絶対 import は使えない
-- CommonJS のパッケージ（lodash など）からの名前付き import は実行時に落ちることがある。関数ごとの default import（`lodash/cloneDeep.js`）にする
+- CommonJS のパッケージからの名前付き import は実行時に落ちることがある。default import にする。lodash は使わない（標準の関数を使い、足りなければ es-toolkit・ADR-0008）
 - エンティティの関連の型は `Relation<…>`、DTO の入れ子は `Nested<…>` で包む（循環 import 対策）。どちらも `import type` で読む（SWC がメタデータで値として参照するため）
 - エンティティは glob でなく `src/core/configs/entities.ts` の一覧で TypeORM に渡す。モデルを足したら一覧にも足す（`entities.spec.ts` が漏れを見つける）
 - `package.json` の `overrides`（`@golevelup/nestjs-discovery` 7.1.0）は nest-commander が Nest 12 対応版を取ったら外す（ADR-0007）
