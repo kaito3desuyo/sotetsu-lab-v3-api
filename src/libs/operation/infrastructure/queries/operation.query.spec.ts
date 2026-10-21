@@ -1,12 +1,13 @@
+import type { MockedFunction } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { OperationModel } from '../models/operation.model';
 import { OperationQuery } from './operation.query';
 
-type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
+type AnyMock = MockedFunction<(...args: any[]) => any>;
 
-const mockGetOne: AnyMock = jest.fn();
-const mockGetMany: AnyMock = jest.fn();
+const mockGetOne: AnyMock = vi.fn();
+const mockGetMany: AnyMock = vi.fn();
 
 function buildChainableQueryBuilder(): any {
     const qb: any = {};
@@ -17,7 +18,7 @@ function buildChainableQueryBuilder(): any {
         'orderBy',
         'addOrderBy',
     ]) {
-        qb[method] = jest.fn().mockReturnValue(qb);
+        qb[method] = vi.fn().mockReturnValue(qb);
     }
     qb.getOne = mockGetOne;
     qb.getMany = mockGetMany;
@@ -25,9 +26,9 @@ function buildChainableQueryBuilder(): any {
 }
 
 let currentQueryBuilder: any;
-const mockCreateQueryBuilder: AnyMock = jest.fn();
-const mockFind: AnyMock = jest.fn();
-const mockFindOne: AnyMock = jest.fn();
+const mockCreateQueryBuilder: AnyMock = vi.fn();
+const mockFind: AnyMock = vi.fn();
+const mockFindOne: AnyMock = vi.fn();
 const mockRepository = {
     createQueryBuilder: mockCreateQueryBuilder,
     find: mockFind,
@@ -92,7 +93,7 @@ describe('OperationQuery - findOneWithCurrentPosition', () => {
     let query: OperationQuery;
 
     beforeEach(async () => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         currentQueryBuilder = buildChainableQueryBuilder();
         mockCreateQueryBuilder.mockReturnValue(currentQueryBuilder);
         query = await buildQuery();
@@ -138,7 +139,7 @@ describe('OperationQuery - findManyWithCurrentPosition', () => {
     let query: OperationQuery;
 
     beforeEach(async () => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         currentQueryBuilder = buildChainableQueryBuilder();
         mockCreateQueryBuilder.mockReturnValue(currentQueryBuilder);
         query = await buildQuery();

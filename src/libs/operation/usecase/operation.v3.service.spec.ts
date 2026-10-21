@@ -1,3 +1,4 @@
+import type { MockedFunction } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ItinerarySegmentQuery } from 'src/libs/operation/infrastructure/queries/itinerary-segment.query';
 import { OperationQuery } from '../infrastructure/queries/operation.query';
@@ -6,14 +7,14 @@ import { OperationDetailsDto } from './dtos/operation-details.dto';
 import { OperationWithTripsDto } from './dtos/operation-with-trips.dto';
 import { OperationV3Service } from './operation.v3.service';
 
-type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
+type AnyMock = MockedFunction<(...args: any[]) => any>;
 
 const mockOperationQuery = {
-    findManyByCalendarId: jest.fn() as AnyMock,
-    findManyBySpecificPeriod: jest.fn() as AnyMock,
-    findOneWithCurrentPosition: jest.fn() as AnyMock,
-    findManyWithCurrentPosition: jest.fn() as AnyMock,
-    findManyWithTrips: jest.fn() as AnyMock,
+    findManyByCalendarId: vi.fn() as AnyMock,
+    findManyBySpecificPeriod: vi.fn() as AnyMock,
+    findOneWithCurrentPosition: vi.fn() as AnyMock,
+    findManyWithCurrentPosition: vi.fn() as AnyMock,
+    findManyWithTrips: vi.fn() as AnyMock,
 };
 
 async function buildService(): Promise<OperationV3Service> {
@@ -32,7 +33,7 @@ describe('OperationV3Service', () => {
     let service: OperationV3Service;
 
     beforeEach(async () => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         service = await buildService();
     });
 

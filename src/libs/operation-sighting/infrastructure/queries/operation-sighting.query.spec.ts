@@ -1,18 +1,19 @@
+import type { MockedFunction } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import dayjs from 'dayjs';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { OperationSightingModel } from '../models/operation-sighting.model';
 import { OperationSightingQuery } from './operation-sighting.query';
 
-type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
+type AnyMock = MockedFunction<(...args: any[]) => any>;
 
-const mockGetOne: AnyMock = jest.fn();
-const mockGetMany: AnyMock = jest.fn();
+const mockGetOne: AnyMock = vi.fn();
+const mockGetMany: AnyMock = vi.fn();
 
 function buildChainableQueryBuilder(): any {
     const qb: any = {};
     for (const method of ['leftJoinAndSelect', 'where', 'andWhere', 'orderBy', 'addOrderBy']) {
-        qb[method] = jest.fn().mockReturnValue(qb);
+        qb[method] = vi.fn().mockReturnValue(qb);
     }
     qb.getOne = mockGetOne;
     qb.getMany = mockGetMany;
@@ -20,9 +21,9 @@ function buildChainableQueryBuilder(): any {
 }
 
 let currentQueryBuilder: any;
-const mockCreateQueryBuilder: AnyMock = jest.fn();
-const mockRawQuery: AnyMock = jest.fn();
-const mockFind: AnyMock = jest.fn();
+const mockCreateQueryBuilder: AnyMock = vi.fn();
+const mockRawQuery: AnyMock = vi.fn();
+const mockFind: AnyMock = vi.fn();
 const mockRepository = {
     createQueryBuilder: mockCreateQueryBuilder,
     query: mockRawQuery,
@@ -54,7 +55,7 @@ describe('OperationSightingQuery - findOneById', () => {
     let query: OperationSightingQuery;
 
     beforeEach(async () => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         currentQueryBuilder = buildChainableQueryBuilder();
         mockCreateQueryBuilder.mockReturnValue(currentQueryBuilder);
         mockGetOne.mockResolvedValue(null);
@@ -108,7 +109,7 @@ describe('OperationSightingQuery - findManyLatestByOperationNumbersAndBeforeSigh
     let query: OperationSightingQuery;
 
     beforeEach(async () => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         currentQueryBuilder = buildChainableQueryBuilder();
         mockCreateQueryBuilder.mockReturnValue(currentQueryBuilder);
         query = await buildQuery();
@@ -162,7 +163,7 @@ describe('OperationSightingQuery - findManyBySightingTimeRange', () => {
     let query: OperationSightingQuery;
 
     beforeEach(async () => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         currentQueryBuilder = buildChainableQueryBuilder();
         mockCreateQueryBuilder.mockReturnValue(currentQueryBuilder);
         mockGetMany.mockResolvedValue([]);
@@ -182,10 +183,10 @@ describe('OperationSightingQuery - findManyBySightingTimeRange', () => {
             expect.any(Object),
         );
         const subQuery = {
-            select: jest.fn().mockReturnThis(),
-            from: jest.fn().mockReturnThis(),
-            where: jest.fn().mockReturnThis(),
-            getQuery: jest.fn().mockReturnValue('(SELECT 1)'),
+            select: vi.fn().mockReturnThis(),
+            from: vi.fn().mockReturnThis(),
+            where: vi.fn().mockReturnThis(),
+            getQuery: vi.fn().mockReturnValue('(SELECT 1)'),
         };
         const callback = currentQueryBuilder.andWhere.mock.calls[0][0];
         expect(callback({ subQuery: () => subQuery })).toBe('NOT EXISTS (SELECT 1)');

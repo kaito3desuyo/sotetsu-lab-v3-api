@@ -1215,7 +1215,7 @@ describe('SightingCarryOver（枠の割り当て・spec 4 章）', () => {
         );
     });
     it('割り当ての使い回し: 同じ目撃の配列・同じ検索時刻なら作り直さず、検索時刻が違えば作り直す', () => {
-        const build = jest.spyOn(
+        const build = vi.spyOn(
             SightingCarryOver.prototype as unknown as {
                 buildAssignments: () => unknown;
             },

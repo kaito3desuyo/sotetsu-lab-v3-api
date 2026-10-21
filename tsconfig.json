@@ -15,7 +15,7 @@
         "paths": {
             "src/*": ["./src/*"]
         },
-        "types": ["node", "jest"],
+        "types": ["node", "vitest/globals"],
         "incremental": true,
         "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
         "resolveJsonModule": true,

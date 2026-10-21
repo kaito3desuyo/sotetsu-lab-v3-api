@@ -8,7 +8,7 @@ import { validationPipeOptions } from 'src/core/configs/validator-options';
 import { OperationV3Service } from '../usecase/operation.v3.service';
 import { OperationV3Controller } from './operation.v3.controller';
 
-jest.mock('src/core/modules/auth/auth.guard', () => ({
+vi.mock('src/core/modules/auth/auth.guard', () => ({
     AuthGuard: class {},
 }));
 
@@ -17,9 +17,9 @@ const CALENDAR_ID = '3f0b6a5e-8a52-4c1c-9d0a-2b5d1b8e7a11';
 describe('OperationV3Controller (itinerary-links / next-operation-candidates)', () => {
     let app: INestApplication;
     const service = {
-        findManyItineraryLinks: jest.fn(),
-        findManyNextSegmentCandidates: jest.fn(),
-        findOneWithTrips: jest.fn(),
+        findManyItineraryLinks: vi.fn(),
+        findManyNextSegmentCandidates: vi.fn(),
+        findOneWithTrips: vi.fn(),
     };
 
     beforeAll(async () => {
@@ -43,7 +43,7 @@ describe('OperationV3Controller (itinerary-links / next-operation-candidates)', 
     });
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         service.findManyItineraryLinks.mockResolvedValue([]);
         service.findManyNextSegmentCandidates.mockResolvedValue([]);
         service.findOneWithTrips.mockResolvedValue({});

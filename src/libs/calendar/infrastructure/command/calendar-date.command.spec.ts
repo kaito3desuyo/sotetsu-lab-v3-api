@@ -1,3 +1,4 @@
+import type { MockedFunction } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { QueryFailedError } from 'typeorm';
@@ -5,7 +6,7 @@ import { UseCaseError } from 'src/core/classes/custom-error';
 import { CalendarDateModel } from '../models/calendar-date.model';
 import { CalendarDateCommand } from './calendar-date.command';
 
-type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
+type AnyMock = MockedFunction<(...args: any[]) => any>;
 
 function buildUniqueViolationError(): QueryFailedError {
     const error = new QueryFailedError('INSERT ...', [], new Error('duplicate key'));
@@ -20,9 +21,9 @@ describe('CalendarDateCommand', () => {
     let command: CalendarDateCommand;
 
     beforeEach(async () => {
-        create = jest.fn().mockImplementation((entity) => entity);
-        save = jest.fn();
-        deleteFn = jest.fn();
+        create = vi.fn().mockImplementation((entity) => entity);
+        save = vi.fn();
+        deleteFn = vi.fn();
 
         const mockRepository = {
             create,

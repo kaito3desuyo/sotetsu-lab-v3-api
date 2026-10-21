@@ -1,18 +1,19 @@
+import type { Mock } from 'vitest';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { TripOperationListModel } from 'src/libs/trip/infrastructure/models/trip-operation-list.model';
 import { ItinerarySegmentQuery } from './itinerary-segment.query';
 
-const getRawMany = jest.fn();
-const qb: Record<string, jest.Mock> = {};
+const getRawMany = vi.fn();
+const qb: Record<string, Mock> = {};
 for (const m of ['select', 'addSelect', 'innerJoin', 'where'])
-    qb[m] = jest.fn(() => qb);
+    qb[m] = vi.fn(() => qb);
 qb.getRawMany = getRawMany;
 
 describe('ItinerarySegmentQuery', () => {
     let query: ItinerarySegmentQuery;
     beforeEach(async () => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         const module = await Test.createTestingModule({
             providers: [
                 ItinerarySegmentQuery,

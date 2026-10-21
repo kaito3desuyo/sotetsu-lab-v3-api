@@ -17,11 +17,11 @@
         "start:prod": "node dist/main.js",
         "deploy": "npm run build && serverless deploy",
         "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-        "test": "NODE_OPTIONS=--experimental-vm-modules jest",
-        "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
-        "test:cov": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
-        "test:debug": "NODE_OPTIONS=--experimental-vm-modules node --inspect-brk node_modules/.bin/jest --runInBand",
-        "test:e2e": "NODE_OPTIONS=--experimental-vm-modules jest --config ./test/jest-e2e.json",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:cov": "vitest run --coverage",
+        "test:debug": "vitest --inspect-brk --no-file-parallelism",
+        "test:e2e": "vitest run --config vitest.config.e2e.ts",
         "copy-secrets": "mkdir dist && cp -rv src/secrets dist/secrets/",
         "dotenv": "dotenvx run --env-file=.env.local --",
         "typeorm": "node -r @swc-node/register ./node_modules/typeorm/cli.js",
@@ -72,7 +72,6 @@
         "@swc/core": "^1.16.18",
         "@types/compression": "^1.8.1",
         "@types/express": "^5",
-        "@types/jest": "^30.0.0",
         "@types/lodash": "^4.17.26",
         "@types/node": "^24",
         "@types/on-headers": "^1.0.4",
@@ -80,10 +79,10 @@
         "@types/pluralize": "^0.0.33",
         "@types/serverless": "^3.12.28",
         "@types/supertest": "^7.2.1",
+        "@vitest/coverage-v8": "^5.0.5",
         "eslint": "^10.13.0",
         "eslint-config-prettier": "^10.1.8",
         "globals": "^17.13.0",
-        "jest": "^30.5.2",
         "osls": "^3.78.0",
         "patch-package": "^8.0.1",
         "pino-pretty": "^13.2.0",
@@ -93,28 +92,11 @@
         "serverless-layers": "^2.8.5",
         "serverless-plugin-warmup": "^8.4.1",
         "supertest": "^7.3.1",
-        "ts-jest": "^29.4.15",
         "typescript": "~6.0.3",
         "typescript-eslint": "^8.72.0",
-        "typesync": "^0.14.3"
-    },
-    "jest": {
-        "moduleFileExtensions": [
-            "js",
-            "json",
-            "ts"
-        ],
-        "rootDir": "src",
-        "testRegex": ".spec.ts$",
-        "globalSetup": "<rootDir>/test-setup.ts",
-        "transform": {
-            "^.+\\.(t|j)s$": "ts-jest"
-        },
-        "moduleNameMapper": {
-            "^src/(.*)$": "<rootDir>/$1"
-        },
-        "coverageDirectory": "../coverage",
-        "testEnvironment": "node"
+        "typesync": "^0.14.3",
+        "unplugin-swc": "^2.0.0",
+        "vitest": "^5.0.5"
     },
     "overrides": {
         "nest-commander": {

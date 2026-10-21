@@ -1,3 +1,4 @@
+import type { MockedFunction } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
@@ -7,9 +8,9 @@ import { FormationQuery } from './formation.query';
 
 dayjs.extend(customParseFormat);
 
-type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
+type AnyMock = MockedFunction<(...args: any[]) => any>;
 
-const mockGetMany: AnyMock = jest.fn();
+const mockGetMany: AnyMock = vi.fn();
 
 function buildChainableQueryBuilder(): any {
     const qb: any = {};
@@ -21,14 +22,14 @@ function buildChainableQueryBuilder(): any {
         'orderBy',
         'addOrderBy',
     ]) {
-        qb[method] = jest.fn().mockReturnValue(qb);
+        qb[method] = vi.fn().mockReturnValue(qb);
     }
     qb.getMany = mockGetMany;
     return qb;
 }
 
 let currentQueryBuilder: any;
-const mockCreateQueryBuilder: AnyMock = jest.fn();
+const mockCreateQueryBuilder: AnyMock = vi.fn();
 const mockRepository = {
     createQueryBuilder: mockCreateQueryBuilder,
 };
@@ -50,7 +51,7 @@ describe('FormationQuery - findManyBySpecificPeriod', () => {
     let query: FormationQuery;
 
     beforeEach(async () => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         currentQueryBuilder = buildChainableQueryBuilder();
         mockCreateQueryBuilder.mockReturnValue(currentQueryBuilder);
         mockGetMany.mockResolvedValue([]);
