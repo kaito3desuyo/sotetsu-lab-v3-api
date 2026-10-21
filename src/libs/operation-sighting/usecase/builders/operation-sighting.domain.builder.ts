@@ -1,12 +1,12 @@
-import { UniqueEntityId } from 'src/core/classes/unique-entity-id';
-import { OperationSightingInvalidation } from '../../domain/operation-sighting-invalidation.domain';
+import { UniqueEntityId } from '../../../../core/classes/unique-entity-id.js';
+import { OperationSightingInvalidation } from '../../domain/operation-sighting-invalidation.domain.js';
 import {
     OperationSightingManagementLog,
     OperationSightingManagementLogs,
-} from '../../domain/operation-sighting-management-log.domain';
-import { OperationSighting } from '../../domain/operation-sighting.domain';
-import { CreateOperationSightingDto } from '../dtos/create-operation-sighting.dto';
-import { OperationSightingDetailsDto } from '../dtos/operation-sighting-details.dto';
+} from '../../domain/operation-sighting-management-log.domain.js';
+import { OperationSighting } from '../../domain/operation-sighting.domain.js';
+import { CreateOperationSightingDto } from '../dtos/create-operation-sighting.dto.js';
+import { OperationSightingDetailsDto } from '../dtos/operation-sighting-details.dto.js';
 
 export const OperationSightingDomainBuilder = {
     buildFromDetailsDto: (

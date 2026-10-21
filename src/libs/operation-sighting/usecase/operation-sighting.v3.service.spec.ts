@@ -1,65 +1,63 @@
+import type { MockedFunction } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import dayjs from 'dayjs';
-import customParseFormat from 'dayjs/plugin/customParseFormat';
-import timezone from 'dayjs/plugin/timezone';
-import utc from 'dayjs/plugin/utc';
+import customParseFormat from 'dayjs/plugin/customParseFormat.js';
+import timezone from 'dayjs/plugin/timezone.js';
+import utc from 'dayjs/plugin/utc.js';
 import { DataSource } from 'typeorm';
-import { OperationSightingLatestCacheCommand } from '../infrastructure/command/operation-sighting-latest-cache.command';
-import { OperationSightingCommand } from '../infrastructure/command/operation-sighting.command';
-import { OperationSightingLatestCacheQuery } from '../infrastructure/queries/operation-sighting-latest-cache.query';
-import { OperationSightingQuery } from '../infrastructure/queries/operation-sighting.query';
-import { CalendarQuery } from 'src/libs/calendar/infrastructure/queries/calendar.query';
-import { FormationQuery } from 'src/libs/formation/infrastructure/queries/formation.query';
-import { OperationQuery } from 'src/libs/operation/infrastructure/queries/operation.query';
-import { ItinerarySegmentQuery } from 'src/libs/operation/infrastructure/queries/itinerary-segment.query';
-import { ItinerarySegment } from 'src/libs/operation/domain/itinerary-link-rule.domain';
-import { OperationSightingV3Service } from './operation-sighting.v3.service';
+import { OperationSightingLatestCacheCommand } from '../infrastructure/command/operation-sighting-latest-cache.command.js';
+import { OperationSightingCommand } from '../infrastructure/command/operation-sighting.command.js';
+import { OperationSightingLatestCacheQuery } from '../infrastructure/queries/operation-sighting-latest-cache.query.js';
+import { OperationSightingQuery } from '../infrastructure/queries/operation-sighting.query.js';
+import { CalendarQuery } from '../../calendar/infrastructure/queries/calendar.query.js';
+import { FormationQuery } from '../../formation/infrastructure/queries/formation.query.js';
+import { OperationQuery } from '../../operation/infrastructure/queries/operation.query.js';
+import { ItinerarySegmentQuery } from '../../operation/infrastructure/queries/itinerary-segment.query.js';
+import { ItinerarySegment } from '../../operation/domain/itinerary-link-rule.domain.js';
+import { OperationSightingV3Service } from './operation-sighting.v3.service.js';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(customParseFormat);
 dayjs.tz.setDefault('Asia/Tokyo');
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
+type AnyMock = MockedFunction<(...args: any[]) => any>;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockManager: any = {};
-const mockSave: AnyMock = jest.fn();
+const mockSave: AnyMock = vi.fn();
 const mockOperationSightingCommand = { save: mockSave };
 const mockOperationSightingLatestCacheCommand = {
-    save: jest.fn() as AnyMock,
-    remove: jest.fn() as AnyMock,
+    save: vi.fn() as AnyMock,
+    remove: vi.fn() as AnyMock,
 };
 const mockOperationSightingLatestCacheQuery = {
-    findOneByFormationNumber: jest.fn() as AnyMock,
-    findManyLatestGroupByFormationByOperationNumbersAndSightingTimeRange: jest.fn() as AnyMock,
-    findManyByFormationNumbers: jest.fn() as AnyMock,
+    findOneByFormationNumber: vi.fn() as AnyMock,
+    findManyLatestGroupByFormationByOperationNumbersAndSightingTimeRange: vi.fn() as AnyMock,
+    findManyByFormationNumbers: vi.fn() as AnyMock,
 };
 const mockOperationSightingQuery = {
-    findOneById: jest.fn() as AnyMock,
-    findOneLatestByOperationNumberAndBeforeSightingTime: jest.fn() as AnyMock,
-    findOneLatestByFormationNumberAndBeforeSightingTime: jest.fn() as AnyMock,
-    findManyLatestByOperationNumbersAndBeforeSightingTime: jest.fn() as AnyMock,
-    findManyLatestByFormationNumbersAndBeforeSightingTime: jest.fn() as AnyMock,
-    findManyBySightingTimeRange: jest.fn() as AnyMock,
-    findManyBySpecificPeriod: jest.fn() as AnyMock,
+    findOneById: vi.fn() as AnyMock,
+    findOneLatestByOperationNumberAndBeforeSightingTime: vi.fn() as AnyMock,
+    findOneLatestByFormationNumberAndBeforeSightingTime: vi.fn() as AnyMock,
+    findManyLatestByOperationNumbersAndBeforeSightingTime: vi.fn() as AnyMock,
+    findManyLatestByFormationNumbersAndBeforeSightingTime: vi.fn() as AnyMock,
+    findManyBySightingTimeRange: vi.fn() as AnyMock,
+    findManyBySpecificPeriod: vi.fn() as AnyMock,
 };
-const mockItinerarySegmentQuery = { findManyByCalendarId: jest.fn() as AnyMock };
+const mockItinerarySegmentQuery = { findManyByCalendarId: vi.fn() as AnyMock };
 const mockDataSource = {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    transaction: jest.fn().mockImplementation(async (fn: any) => fn(mockManager)) as AnyMock,
+    transaction: vi.fn().mockImplementation(async (fn: any) => fn(mockManager)) as AnyMock,
 };
-const mockCalendarQuery = { findOneBySpecificDate: jest.fn() as AnyMock };
+const mockCalendarQuery = { findOneBySpecificDate: vi.fn() as AnyMock };
 const mockFormationQuery = {
-    findManyBySpecificPeriod: jest.fn() as AnyMock,
-    findOneByAgencyIdAndFormationNumberAndDate: jest.fn() as AnyMock,
-    findOneByAgencyIdAndVehicleNumberAndDate: jest.fn() as AnyMock,
+    findManyBySpecificPeriod: vi.fn() as AnyMock,
+    findOneByAgencyIdAndFormationNumberAndDate: vi.fn() as AnyMock,
+    findOneByAgencyIdAndVehicleNumberAndDate: vi.fn() as AnyMock,
 };
 const mockOperationQuery = {
-    findOneByCalendarIdAndOperationNumber: jest.fn() as AnyMock,
-    findOneFirstDepartureTimeByOperationIdAndDate: jest.fn() as AnyMock,
-    findManyByCalendarId: jest.fn() as AnyMock,
+    findOneByCalendarIdAndOperationNumber: vi.fn() as AnyMock,
+    findOneFirstDepartureTimeByOperationIdAndDate: vi.fn() as AnyMock,
+    findManyByCalendarId: vi.fn() as AnyMock,
 };
 
 async function buildService(): Promise<OperationSightingV3Service> {
@@ -99,8 +97,7 @@ describe('OperationSightingV3Service - write side cache', () => {
     let service: OperationSightingV3Service;
 
     beforeEach(async () => {
-        jest.clearAllMocks();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        vi.clearAllMocks();
         mockDataSource.transaction.mockImplementation(async (fn: any) =>
             fn(mockManager),
         );
@@ -195,7 +192,6 @@ describe('OperationSightingV3Service - write side cache', () => {
         expect(
             mockOperationSightingLatestCacheCommand.save,
         ).toHaveBeenCalled();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const savedCache = mockOperationSightingLatestCacheCommand.save.mock.calls[0][0] as any;
         expect(savedCache.props.operationSightingId).toBe('sighting-prev');
         expect(
@@ -277,7 +273,6 @@ describe('OperationSightingV3Service - write side cache', () => {
         expect(
             mockOperationSightingLatestCacheCommand.save,
         ).toHaveBeenCalled();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const savedCache = mockOperationSightingLatestCacheCommand.save.mock.calls[0][0] as any;
         expect(savedCache.props.operationSightingId).toBe(sightingId);
         expect(savedCache.props.operationNumber).toBe('62');
@@ -288,7 +283,7 @@ describe('OperationSightingV3Service - findOneTimeCrossSectionByOperationNumber'
     let service: OperationSightingV3Service;
 
     beforeEach(async () => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         service = await buildService();
     });
 
@@ -478,7 +473,7 @@ describe('OperationSightingV3Service - findOneTimeCrossSectionByFormationNumber'
     let service: OperationSightingV3Service;
 
     beforeEach(async () => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         service = await buildService();
     });
 
@@ -757,8 +752,7 @@ describe('OperationSightingV3Service - post', () => {
     };
 
     beforeEach(async () => {
-        jest.clearAllMocks();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        vi.clearAllMocks();
         mockDataSource.transaction.mockImplementation(async (fn: any) =>
             fn(mockManager),
         );
@@ -847,7 +841,7 @@ describe('OperationSightingV3Service - 時刻断面をまとめて返す', () =>
     const searchTime = '2026-05-30T15:00:00+09:00';
 
     beforeEach(async () => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         service = await buildService();
         mockCalendarQuery.findOneBySpecificDate.mockResolvedValue({ id: 'cal-1', startDate: '2026-03-13' });
     });
@@ -989,7 +983,7 @@ describe('OperationSightingV3Service - 目撃の引き継ぎ', () => {
     const searchTime = '2026-10-12T09:00:00+09:00';
 
     beforeEach(async () => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         service = await buildService();
         mockCalendarQuery.findOneBySpecificDate.mockResolvedValue({ id: 'cal-1', startDate: '2026-03-13' });
         mockItinerarySegmentQuery.findManyByCalendarId.mockResolvedValue(ebina);
@@ -1080,7 +1074,7 @@ describe('OperationSightingV3Service - 目撃の引き継ぎで出さない場�
     };
 
     beforeEach(async () => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         service = await buildService();
         mockCalendarQuery.findOneBySpecificDate.mockResolvedValue({ id: 'cal-1', startDate: '2026-03-13' });
         mockOperationSightingQuery.findOneLatestByOperationNumberAndBeforeSightingTime.mockResolvedValue(null);
@@ -1196,7 +1190,7 @@ describe('OperationSightingV3Service - findManyBySpecificPeriod includeCarriedOv
     const direct = [sighting('a', '11K', '10701', '07:00')];
 
     beforeEach(async () => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         service = await buildService();
         mockOperationSightingQuery.findManyBySpecificPeriod.mockResolvedValue(direct);
         mockOperationSightingQuery.findManyBySightingTimeRange.mockResolvedValue(direct);

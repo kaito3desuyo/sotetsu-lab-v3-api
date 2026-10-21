@@ -1,6 +1,6 @@
-import { CalendarModel } from 'src/libs/calendar/infrastructure/models/calendar.model';
-import { TripClassModel } from 'src/libs/trip-class/infrastructure/models/trip-class.model';
-import { TripModel } from 'src/libs/trip/infrastructure/models/trip.model';
+import { CalendarModel } from '../../../calendar/infrastructure/models/calendar.model.js';
+import { TripClassModel } from '../../../trip-class/infrastructure/models/trip-class.model.js';
+import { TripModel } from '../../../trip/infrastructure/models/trip.model.js';
 import {
     Entity,
     PrimaryGeneratedColumn,
@@ -8,8 +8,9 @@ import {
     CreateDateColumn,
     UpdateDateColumn,
     OneToMany,
+    type Relation,
 } from 'typeorm';
-import { OperatingSystemModel } from './operating-system.model';
+import { OperatingSystemModel } from './operating-system.model.js';
 
 @Entity({
     name: 'services',
@@ -31,17 +32,17 @@ export class ServiceModel {
     updatedAt: string;
 
     @OneToMany(() => CalendarModel, (calendar) => calendar.service)
-    readonly calendars?: CalendarModel[];
+    readonly calendars?: Relation<CalendarModel[]>;
 
     @OneToMany(
         () => OperatingSystemModel,
         (operatingSystem) => operatingSystem.service,
     )
-    readonly operatingSystems?: OperatingSystemModel[];
+    readonly operatingSystems?: Relation<OperatingSystemModel[]>;
 
     @OneToMany(() => TripModel, (trip) => trip.service)
-    readonly trips?: TripModel[];
+    readonly trips?: Relation<TripModel[]>;
 
     @OneToMany((_type) => TripClassModel, (tripClass) => tripClass.service)
-    readonly tripClasses?: TripClassModel[];
+    readonly tripClasses?: Relation<TripClassModel[]>;
 }

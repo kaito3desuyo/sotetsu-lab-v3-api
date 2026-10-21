@@ -1,18 +1,19 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { AuthGuard } from './auth.guard.js';
 
-// jose は ESM 専用で jest が読めないので、実物を読ませずに差し替える
-const supabaseVerify = jest.fn();
-jest.mock('jose', () => ({
+// auth.guard は読み込んだ時点で SUPABASE_URL を使うので、import より前に（vi.hoisted で）入れる
+const { supabaseVerify } = vi.hoisted(() => {
+    process.env.SUPABASE_URL = 'https://example.supabase.co';
+    return { supabaseVerify: vi.fn() };
+});
+
+// 実物の JWKS を取りに行かないよう、jose を差し替える
+vi.mock('jose', () => ({
     createRemoteJWKSet: () => 'jwks',
     jwtVerify: (...args: unknown[]) => supabaseVerify(...args),
 }));
 
-process.env.SUPABASE_URL = 'https://example.supabase.co';
 const SUPABASE_ISS = 'https://example.supabase.co/auth/v1';
-
-// import だと巻き上げられて SUPABASE_URL を入れる前に読まれるので require にする
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { AuthGuard } = require('./auth.guard');
 
 const jwtWithIss = (iss: string) =>
     `x.${Buffer.from(JSON.stringify({ iss })).toString('base64url')}.y`;
@@ -26,7 +27,7 @@ const contextFor = (headers: Record<string, string>) => {
 };
 
 describe('AuthGuard', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => vi.clearAllMocks());
 
     it.each([{}, { authorization: '' }, { authorization: 'Bearer ' }])(
         'トークンが無ければ 401（%o）',

@@ -1,10 +1,10 @@
+import type { MockedFunction } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { TripBlockModel } from '../models/trip-block.model';
-import { TripBlockQuery } from './trip-block.query';
+import { TripBlockModel } from '../models/trip-block.model.js';
+import { TripBlockQuery } from './trip-block.query.js';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
+type AnyMock = MockedFunction<(...args: any[]) => any>;
 
 function buildQueryBuilderMock(getManyResult: unknown[]) {
     const qb: Record<string, AnyMock> = {};
@@ -16,9 +16,9 @@ function buildQueryBuilderMock(getManyResult: unknown[]) {
         'orderBy',
         'addOrderBy',
     ]) {
-        qb[method] = jest.fn().mockReturnValue(qb);
+        qb[method] = vi.fn().mockReturnValue(qb);
     }
-    qb.getMany = jest.fn().mockResolvedValue(getManyResult);
+    qb.getMany = vi.fn().mockResolvedValue(getManyResult);
     return qb;
 }
 
@@ -42,7 +42,7 @@ describe('TripBlockQuery - findManyByFilterWithFields', () => {
             },
         ]);
         const repository = {
-            createQueryBuilder: jest.fn().mockReturnValue(qb),
+            createQueryBuilder: vi.fn().mockReturnValue(qb),
         };
         const module: TestingModule = await Test.createTestingModule({
             providers: [

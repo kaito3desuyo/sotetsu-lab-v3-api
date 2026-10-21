@@ -1,17 +1,17 @@
 import 'reflect-metadata';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { AppDataSource } from '../../src/core/utils/data-source';
-import { CalendarModel } from '../../src/libs/calendar/infrastructure/models/calendar.model';
-import { CalendarDateModel } from '../../src/libs/calendar/infrastructure/models/calendar-date.model';
+import { AppDataSource } from '../../src/core/utils/data-source.js';
+import { CalendarModel } from '../../src/libs/calendar/infrastructure/models/calendar.model.js';
+import { CalendarDateModel } from '../../src/libs/calendar/infrastructure/models/calendar-date.model.js';
 import {
     buildHolidayCalendarDateRows,
     CalendarDateSeedRow,
     CalendarValidityRow,
-} from '../../src/libs/calendar/infrastructure/seeds/build-holiday-calendar-date-rows';
-import { parseSyukujitsuCsvBuffer } from '../../src/libs/calendar/infrastructure/seeds/parse-syukujitsu-csv';
+} from '../../src/libs/calendar/infrastructure/seeds/build-holiday-calendar-date-rows.js';
+import { parseSyukujitsuCsvBuffer } from '../../src/libs/calendar/infrastructure/seeds/parse-syukujitsu-csv.js';
 
-const CSV_PATH = join(__dirname, 'data', 'syukujitsu.csv');
+const CSV_PATH = join(import.meta.dirname, 'data', 'syukujitsu.csv');
 const INSERT_CHUNK_SIZE = 500;
 
 interface CliArgs {

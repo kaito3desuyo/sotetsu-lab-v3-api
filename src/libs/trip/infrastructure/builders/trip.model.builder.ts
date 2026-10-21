@@ -1,7 +1,7 @@
-import { Trip, Trips } from '../../domain/trip.domain';
-import { TripModel } from '../models/trip.model';
-import { TimeModelBuilder } from './time.model.builder';
-import { TripOperationListModelBuilder } from './trip-operation-list.model.builder';
+import { Trip, Trips } from '../../domain/trip.domain.js';
+import { TripModel } from '../models/trip.model.js';
+import { TimeModelBuilder } from './time.model.builder.js';
+import { TripOperationListModelBuilder } from './trip-operation-list.model.builder.js';
 
 export const TripModelBuilder = {
     buildFromDomain: (domain: Trip): TripModel => {

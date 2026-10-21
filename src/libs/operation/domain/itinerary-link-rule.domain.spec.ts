@@ -3,7 +3,7 @@ import {
     ItineraryLinks,
     ItineraryLinkRule,
     ItinerarySegment,
-} from './itinerary-link-rule.domain';
+} from './itinerary-link-rule.domain.js';
 
 const t = (hhmm: string) => {
     const [h, m] = hhmm.split(':').map(Number);

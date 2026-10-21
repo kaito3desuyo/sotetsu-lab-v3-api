@@ -1,25 +1,24 @@
 import { Reflector } from '@nestjs/core';
-import { AgencyV3Controller } from 'src/libs/agency/presentation/agency.v3.controller';
-import { CalendarDateV3Controller } from 'src/libs/calendar/presentation/calendar-date.v3.controller';
-import { CalendarV3Controller } from 'src/libs/calendar/presentation/calendar.v3.controller';
-import { FormationV3Controller } from 'src/libs/formation/presentation/formation.v3.controller';
-import { OperationSightingV3Controller } from 'src/libs/operation-sighting/presentation/operation-sighting.v3.controller';
-import { OperationV3Controller } from 'src/libs/operation/presentation/operation.v3.controller';
-import { RouteV3Controller } from 'src/libs/route/presentation/route.v3.controller';
-import { ServiceV3Controller } from 'src/libs/service/presentation/service.v3.controller';
-import { StationV3Controller } from 'src/libs/station/presentation/station.v3.controller';
-import { TripBlockV3Controller } from 'src/libs/trip-block/presentation/trip-block.v3.controller';
-import { TripClassV3Controller } from 'src/libs/trip-class/presentation/trip-class.v3.controller';
-import { TripV3Controller } from 'src/libs/trip/presentation/trip.v3.controller';
-import { CACHE_CONTROL } from './cache-control.constants';
-import { CACHE_CONTROL_METADATA_KEY } from './cache-control.decorator';
+import { AgencyV3Controller } from '../../../libs/agency/presentation/agency.v3.controller.js';
+import { CalendarDateV3Controller } from '../../../libs/calendar/presentation/calendar-date.v3.controller.js';
+import { CalendarV3Controller } from '../../../libs/calendar/presentation/calendar.v3.controller.js';
+import { FormationV3Controller } from '../../../libs/formation/presentation/formation.v3.controller.js';
+import { OperationSightingV3Controller } from '../../../libs/operation-sighting/presentation/operation-sighting.v3.controller.js';
+import { OperationV3Controller } from '../../../libs/operation/presentation/operation.v3.controller.js';
+import { RouteV3Controller } from '../../../libs/route/presentation/route.v3.controller.js';
+import { ServiceV3Controller } from '../../../libs/service/presentation/service.v3.controller.js';
+import { StationV3Controller } from '../../../libs/station/presentation/station.v3.controller.js';
+import { TripBlockV3Controller } from '../../../libs/trip-block/presentation/trip-block.v3.controller.js';
+import { TripClassV3Controller } from '../../../libs/trip-class/presentation/trip-class.v3.controller.js';
+import { TripV3Controller } from '../../../libs/trip/presentation/trip.v3.controller.js';
+import { CACHE_CONTROL } from './cache-control.constants.js';
+import { CACHE_CONTROL_METADATA_KEY } from './cache-control.decorator.js';
 
-// auth.guard は読み込んだ時点で jose（ESM 専用で jest が読めない）と SUPABASE_URL を使うので、メタデータを見るだけのここでは差し替える
-jest.mock('src/core/modules/auth/auth.guard', () => ({
+// auth.guard は読み込んだ時点で SUPABASE_URL を使う（テストでは SUPABASE_URL が無い）ので、メタデータを見るだけのここでは差し替える
+vi.mock('../auth/auth.guard.js', () => ({
     AuthGuard: class {},
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyController = { prototype: any; name: string };
 
 const { MASTER, TIMETABLE, REALTIME } = CACHE_CONTROL;

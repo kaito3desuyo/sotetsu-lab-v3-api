@@ -1,9 +1,9 @@
-import { ItinerarySegment } from 'src/libs/operation/domain/itinerary-link-rule.domain';
-import { VehicleItineraryReadModel } from 'src/libs/operation/usecase/read-models/vehicle-itinerary.read-model';
+import { ItinerarySegment } from '../domain/itinerary-link-rule.domain.js';
+import { VehicleItineraryReadModel } from './read-models/vehicle-itinerary.read-model.js';
 import {
     buildNextSegmentCandidates,
     buildOperationItineraryLinks,
-} from './build-operation-itinerary-links';
+} from './build-operation-itinerary-links.js';
 
 const seg = (
     p: Partial<ItinerarySegment> &

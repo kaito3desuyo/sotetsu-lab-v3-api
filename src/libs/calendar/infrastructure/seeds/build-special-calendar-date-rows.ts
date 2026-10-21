@@ -2,12 +2,12 @@ import dayjs from 'dayjs';
 import {
     CALENDAR_DATE_EXCEPTION_TYPE_ADDED,
     CALENDAR_DATE_EXCEPTION_TYPE_REMOVED,
-} from '../models/calendar-date.model';
+} from '../models/calendar-date.model.js';
 import {
     CalendarDateSeedRow,
     CalendarValidityRow,
     isWithinCalendarValidity,
-} from './build-holiday-calendar-date-rows';
+} from './build-holiday-calendar-date-rows.js';
 
 type WeekdayKey =
     | 'sunday'

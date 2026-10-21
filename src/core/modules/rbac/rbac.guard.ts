@@ -6,8 +6,8 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
-import { RBAC_KEY } from './rbac.decorator';
-import { Role } from './role.enum';
+import { RBAC_KEY } from './rbac.decorator.js';
+import { Role } from './role.enum.js';
 
 /** @RBAC の付いた口だけ役割を見る。トークンが無ければ 401、役割が足りなければ 403 */
 @Injectable()

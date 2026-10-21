@@ -7,8 +7,9 @@ import {
     ManyToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    type Relation,
 } from 'typeorm';
-import { OperationSightingModel } from './operation-sighting.model';
+import { OperationSightingModel } from './operation-sighting.model.js';
 
 @Entity({
     name: 'operation_sighting_management_logs',
@@ -44,5 +45,5 @@ export class OperationSightingManagementLogModel {
         },
     )
     @JoinColumn({ name: 'operation_sighting_id' })
-    readonly operationSighting?: OperationSightingModel;
+    readonly operationSighting?: Relation<OperationSightingModel>;
 }

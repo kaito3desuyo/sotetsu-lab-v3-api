@@ -1,8 +1,8 @@
 import { plainToClass } from 'class-transformer';
-import { transformerOptions } from 'src/core/configs/transformer-options';
-import { TripOperationListModel } from 'src/libs/trip/infrastructure/models/trip-operation-list.model';
-import { OperationCurrentPositionDto } from '../../usecase/dtos/operation-current-position.dto';
-import { OperationModel } from '../models/operation.model';
+import { transformerOptions } from '../../../../core/configs/transformer-options.js';
+import { TripOperationListModel } from '../../../trip/infrastructure/models/trip-operation-list.model.js';
+import { OperationCurrentPositionDto } from '../../usecase/dtos/operation-current-position.dto.js';
+import { OperationModel } from '../models/operation.model.js';
 
 export const OperationCurrentPositionDtoBuilder = {
     buildFromModel: (model: {

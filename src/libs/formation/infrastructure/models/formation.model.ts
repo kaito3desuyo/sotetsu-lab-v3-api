@@ -1,5 +1,5 @@
-import { AgencyModel } from 'src/libs/agency/infrastructure/models/agency.model';
-import { OperationSightingModel } from 'src/libs/operation-sighting/infrastructure/models/operation-sighting.model';
+import { AgencyModel } from '../../../agency/infrastructure/models/agency.model.js';
+import { OperationSightingModel } from '../../../operation-sighting/infrastructure/models/operation-sighting.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -10,8 +10,9 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    type Relation,
 } from 'typeorm';
-import { VehicleFormationModel } from './vehicle-formation.model';
+import { VehicleFormationModel } from './vehicle-formation.model.js';
 
 @Entity({
     name: 'formations',
@@ -48,7 +49,7 @@ export class FormationModel {
 
     @ManyToOne(() => AgencyModel, (agency) => agency.formations)
     @JoinColumn({ name: 'agency_id' })
-    agency?: AgencyModel;
+    agency?: Relation<AgencyModel>;
 
     @OneToMany(
         () => VehicleFormationModel,
@@ -57,11 +58,11 @@ export class FormationModel {
             cascade: true,
         },
     )
-    vehicleFormations?: VehicleFormationModel[];
+    vehicleFormations?: Relation<VehicleFormationModel[]>;
 
     @OneToMany(
         () => OperationSightingModel,
         (operationSighting) => operationSighting.formation,
     )
-    operationSightings?: OperationSightingModel[];
+    operationSightings?: Relation<OperationSightingModel[]>;
 }

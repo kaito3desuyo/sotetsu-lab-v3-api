@@ -1,5 +1,5 @@
-import { FormationModel } from 'src/libs/formation/infrastructure/models/formation.model';
-import { OperationModel } from 'src/libs/operation/infrastructure/models/operation.model';
+import { FormationModel } from '../../../formation/infrastructure/models/formation.model.js';
+import { OperationModel } from '../../../operation/infrastructure/models/operation.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -10,9 +10,10 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    type Relation,
 } from 'typeorm';
-import { OperationSightingInvalidationModel } from './operation-sighting-invalidation.model';
-import { OperationSightingManagementLogModel } from './operation-sighting-management-log.model';
+import { OperationSightingInvalidationModel } from './operation-sighting-invalidation.model.js';
+import { OperationSightingManagementLogModel } from './operation-sighting-management-log.model.js';
 
 @Entity({
     name: 'operation_sightings',
@@ -47,14 +48,14 @@ export class OperationSightingModel {
         (operation) => operation.operationSightings,
     )
     @JoinColumn({ name: 'operation_id' })
-    readonly operation?: OperationModel;
+    readonly operation?: Relation<OperationModel>;
 
     @ManyToOne(
         () => FormationModel,
         (formation) => formation.operationSightings,
     )
     @JoinColumn({ name: 'formation_id' })
-    readonly formation?: FormationModel;
+    readonly formation?: Relation<FormationModel>;
 
     @OneToMany(
         () => OperationSightingInvalidationModel,
@@ -62,7 +63,7 @@ export class OperationSightingModel {
             operationSightingInvalidation.operationSighting,
         { cascade: true },
     )
-    readonly invalidations?: OperationSightingInvalidationModel[];
+    readonly invalidations?: Relation<OperationSightingInvalidationModel[]>;
 
     @OneToMany(
         () => OperationSightingManagementLogModel,
@@ -70,5 +71,5 @@ export class OperationSightingModel {
             operationSightingManagementLog.operationSighting,
         { cascade: true },
     )
-    readonly managementLogs?: OperationSightingManagementLogModel[];
+    readonly managementLogs?: Relation<OperationSightingManagementLogModel[]>;
 }

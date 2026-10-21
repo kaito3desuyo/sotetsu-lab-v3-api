@@ -1,7 +1,7 @@
 import { plainToClass } from 'class-transformer';
-import { transformerOptions } from 'src/core/configs/transformer-options';
-import { RouteStationsDto } from '../../usecase/dtos/route-stations.dto';
-import { RouteModel } from '../models/route.model';
+import { transformerOptions } from '../../../../core/configs/transformer-options.js';
+import { RouteStationsDto } from '../../usecase/dtos/route-stations.dto.js';
+import { RouteModel } from '../models/route.model.js';
 
 export const RouteStationsDtoBuilder = {
     buildFromModel: (model: RouteModel): RouteStationsDto => {

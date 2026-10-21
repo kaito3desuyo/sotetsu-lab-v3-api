@@ -6,7 +6,7 @@ import {
     Min,
     ValidateIf,
 } from 'class-validator';
-import { BaseTimeDto } from './base-time.dto';
+import { BaseTimeDto } from './base-time.dto.js';
 
 export abstract class ValidatableTimeDto extends BaseTimeDto {
     @IsUUID()

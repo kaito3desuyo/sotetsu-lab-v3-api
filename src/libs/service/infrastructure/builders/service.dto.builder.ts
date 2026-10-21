@@ -1,7 +1,7 @@
 import { plainToClass } from 'class-transformer';
-import { transformerOptions } from 'src/core/configs/transformer-options';
-import { ServiceDetailsDto } from '../../usecase/dtos/service-details.dto';
-import { ServiceModel } from '../models/service.model';
+import { transformerOptions } from '../../../../core/configs/transformer-options.js';
+import { ServiceDetailsDto } from '../../usecase/dtos/service-details.dto.js';
+import { ServiceModel } from '../models/service.model.js';
 
 export const ServiceDtoBuilder = {
     buildFromModel: (model: ServiceModel): ServiceDetailsDto => {

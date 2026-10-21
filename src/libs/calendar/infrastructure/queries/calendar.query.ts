@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
-import { getDayOfWeek } from 'src/core/utils/day-of-week';
+import { getDayOfWeek } from '../../../../core/utils/day-of-week.js';
 import { Repository } from 'typeorm';
-import { CalendarDetailsDto } from '../../usecase/dtos/calendar-details.dto';
+import { CalendarDetailsDto } from '../../usecase/dtos/calendar-details.dto.js';
 import {
     CalendarDtoBuilder,
     CalendarsDtoBuilder,
-} from '../builders/calendar.dto.builder';
-import { CalendarDateModel } from '../models/calendar-date.model';
-import { CalendarModel } from '../models/calendar.model';
-import { resolveCalendarIdBySpecificDate } from './resolve-calendar-id-by-specific-date';
+} from '../builders/calendar.dto.builder.js';
+import { CalendarDateModel } from '../models/calendar-date.model.js';
+import { CalendarModel } from '../models/calendar.model.js';
+import { resolveCalendarIdBySpecificDate } from './resolve-calendar-id-by-specific-date.js';
 
 @Injectable()
 export class CalendarQuery {

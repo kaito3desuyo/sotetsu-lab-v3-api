@@ -1,15 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { SparseFieldsets } from 'src/core/utils/sparse-fieldsets';
+import { SparseFieldsets } from '../../../../core/utils/sparse-fieldsets.js';
 import { FindManyOptions, Repository } from 'typeorm';
-import { TripBlockDetailsDto } from '../../usecase/dtos/trip-block-details.dto';
-import { TripBlockSparseDto } from '../../usecase/dtos/trip-block-sparse.dto';
-import { TripBlockSparseDtoBuilder } from '../builders/trip-block-sparse.dto.builder';
+import { TripBlockDetailsDto } from '../../usecase/dtos/trip-block-details.dto.js';
+import { TripBlockSparseDto } from '../../usecase/dtos/trip-block-sparse.dto.js';
+import { TripBlockSparseDtoBuilder } from '../builders/trip-block-sparse.dto.builder.js';
 import {
     TripBlockDtoBuilder,
     TripBlocksDtoBuilder,
-} from '../builders/trip-block.dto.builder';
-import { TripBlockModel } from '../models/trip-block.model';
+} from '../builders/trip-block.dto.builder.js';
+import { TripBlockModel } from '../models/trip-block.model.js';
 
 @Injectable()
 export class TripBlockQuery {

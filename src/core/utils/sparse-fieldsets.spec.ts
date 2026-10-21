@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { parseSparseFieldsets, pickFields } from './sparse-fieldsets';
+import { parseSparseFieldsets, pickFields } from './sparse-fieldsets.js';
 
 const WHITELIST = {
     trip: ['tripNumber', 'tripDirection'],

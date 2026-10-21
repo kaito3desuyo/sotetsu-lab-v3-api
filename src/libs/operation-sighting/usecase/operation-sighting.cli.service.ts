@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OperationSightingLatestCache } from '../domain/operation-sighting-latest-cache.domain';
-import { OperationSightingLatestCacheCommand } from '../infrastructure/command/operation-sighting-latest-cache.command';
-import { OperationSightingQuery } from '../infrastructure/queries/operation-sighting.query';
+import { OperationSightingLatestCache } from '../domain/operation-sighting-latest-cache.domain.js';
+import { OperationSightingLatestCacheCommand } from '../infrastructure/command/operation-sighting-latest-cache.command.js';
+import { OperationSightingQuery } from '../infrastructure/queries/operation-sighting.query.js';
 
 @Injectable()
 export class OperationSightingCliService {

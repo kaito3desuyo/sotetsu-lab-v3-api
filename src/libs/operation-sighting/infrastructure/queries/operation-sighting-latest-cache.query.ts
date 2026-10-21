@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import * as dayjs from 'dayjs';
+import dayjs from 'dayjs';
 import { Repository } from 'typeorm';
-import { OperationSightingLatestCacheDto } from '../../usecase/dtos/operation-sighting-latest-cache.dto';
+import { OperationSightingLatestCacheDto } from '../../usecase/dtos/operation-sighting-latest-cache.dto.js';
 import {
     OperationSightingLatestCacheDtoBuilder,
     OperationSightingLatestCachesDtoBuilder,
-} from '../builders/operation-sighting-latest-cache.dto.builder';
-import { OperationSightingLatestCacheModel } from '../models/operation-sighting-latest-cache.model';
+} from '../builders/operation-sighting-latest-cache.dto.builder.js';
+import { OperationSightingLatestCacheModel } from '../models/operation-sighting-latest-cache.model.js';
 
 @Injectable()
 export class OperationSightingLatestCacheQuery {

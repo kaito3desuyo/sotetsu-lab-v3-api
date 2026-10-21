@@ -1,8 +1,8 @@
 import 'reflect-metadata';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { validatorOptions } from 'src/core/configs/validator-options';
-import { TripBlockFindManyByFilterQuery } from './trip-block-find-many-by-filter.query';
+import { validatorOptions } from '../../../../core/configs/validator-options.js';
+import { TripBlockFindManyByFilterQuery } from './trip-block-find-many-by-filter.query.js';
 
 describe('TripBlockFindManyByFilterQuery', () => {
     it('tripDirection を number へ変換し検証を通過する', async () => {

@@ -1,13 +1,13 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
-import { AuthGuard } from 'src/core/modules/auth/auth.guard';
-import { CACHE_CONTROL } from 'src/core/modules/cache-control/cache-control.constants';
-import { CacheControl } from 'src/core/modules/cache-control/cache-control.decorator';
-import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
-import { ServiceAgenciesDto } from '../usecase/dtos/service-agencies.dto';
-import { ServiceDetailsDto } from '../usecase/dtos/service-details.dto';
-import { ServiceRoutesDto } from '../usecase/dtos/service-routes.dto';
-import { ServiceStationsDto } from '../usecase/dtos/service-stations.dto';
-import { ServiceV3Service } from '../usecase/service.v3.service';
+import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
+import { CACHE_CONTROL } from '../../../core/modules/cache-control/cache-control.constants.js';
+import { CacheControl } from '../../../core/modules/cache-control/cache-control.decorator.js';
+import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
+import { ServiceAgenciesDto } from '../usecase/dtos/service-agencies.dto.js';
+import { ServiceDetailsDto } from '../usecase/dtos/service-details.dto.js';
+import { ServiceRoutesDto } from '../usecase/dtos/service-routes.dto.js';
+import { ServiceStationsDto } from '../usecase/dtos/service-stations.dto.js';
+import { ServiceV3Service } from '../usecase/service.v3.service.js';
 
 @Controller()
 @UseGuards(AuthGuard, RBACGuard)

@@ -1,5 +1,5 @@
-import { OperationSightingInvalidation } from '../../domain/operation-sighting-invalidation.domain';
-import { OperationSightingInvalidationModel } from '../models/operation-sighting-invalidation.model';
+import { OperationSightingInvalidation } from '../../domain/operation-sighting-invalidation.domain.js';
+import { OperationSightingInvalidationModel } from '../models/operation-sighting-invalidation.model.js';
 
 export const OperationSightingInvalidationModelBuilder = {
     buildFromDomain: (

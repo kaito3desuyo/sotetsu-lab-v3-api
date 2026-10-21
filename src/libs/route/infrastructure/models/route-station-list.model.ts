@@ -1,5 +1,5 @@
-import { OperatingSystemModel } from 'src/libs/service/infrastructure/models/operating-system.model';
-import { StationModel } from 'src/libs/station/infrastructure/models/station.model';
+import { OperatingSystemModel } from '../../../service/infrastructure/models/operating-system.model.js';
+import { StationModel } from '../../../station/infrastructure/models/station.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -10,8 +10,9 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    type Relation,
 } from 'typeorm';
-import { RouteModel } from './route.model';
+import { RouteModel } from './route.model.js';
 
 @Entity({
     name: 'route_station_lists',
@@ -42,21 +43,21 @@ export class RouteStationListModel {
 
     @ManyToOne(() => RouteModel, (route) => route.routeStationLists)
     @JoinColumn({ name: 'route_id' })
-    route: RouteModel;
+    route: Relation<RouteModel>;
 
     @ManyToOne(() => StationModel, (station) => station.routeStationLists)
     @JoinColumn({ name: 'station_id' })
-    station: StationModel;
+    station: Relation<StationModel>;
 
     @OneToMany(
         () => OperatingSystemModel,
         (operatingSystem) => operatingSystem.startRouteStationList,
     )
-    startOperatingSystems?: OperatingSystemModel;
+    startOperatingSystems?: Relation<OperatingSystemModel>;
 
     @OneToMany(
         () => OperatingSystemModel,
         (operatingSystem) => operatingSystem.endRouteStationList,
     )
-    endOperatingSystems?: OperatingSystemModel;
+    endOperatingSystems?: Relation<OperatingSystemModel>;
 }

@@ -1,7 +1,7 @@
-import { OperationSighting } from '../../domain/operation-sighting.domain';
-import { OperationSightingModel } from '../models/operation-sighting.model';
-import { OperationSightingInvalidationModelBuilder } from './operation-sighting-invalidation.model.builder';
-import { OperationSightingManagementLogModelBuilder } from './operation-sighting-management-log.model.builder';
+import { OperationSighting } from '../../domain/operation-sighting.domain.js';
+import { OperationSightingModel } from '../models/operation-sighting.model.js';
+import { OperationSightingInvalidationModelBuilder } from './operation-sighting-invalidation.model.builder.js';
+import { OperationSightingManagementLogModelBuilder } from './operation-sighting-management-log.model.builder.js';
 
 export const OperationSightingModelBuilder = {
     buildFromDomain: (domain: OperationSighting): OperationSightingModel => {

@@ -1,6 +1,9 @@
-import { pickFields, SparseFieldsets } from 'src/core/utils/sparse-fieldsets';
-import { TripBlockSparseDto } from '../../usecase/dtos/trip-block-sparse.dto';
-import { TripBlockModel } from '../models/trip-block.model';
+import {
+    pickFields,
+    SparseFieldsets,
+} from '../../../../core/utils/sparse-fieldsets.js';
+import { TripBlockSparseDto } from '../../usecase/dtos/trip-block-sparse.dto.js';
+import { TripBlockModel } from '../models/trip-block.model.js';
 
 const EMPTY: ReadonlySet<string> = new Set();
 

@@ -1,4 +1,4 @@
-import { resolveCalendarIdBySpecificDate } from './resolve-calendar-id-by-specific-date';
+import { resolveCalendarIdBySpecificDate } from './resolve-calendar-id-by-specific-date.js';
 
 describe('resolveCalendarIdBySpecificDate', () => {
     it('例外が0件の場合、曜日規則にマッチしたカレンダーを返す（従来判定と完全一致・リグレッションなし）', () => {

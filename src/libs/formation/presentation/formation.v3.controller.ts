@@ -1,11 +1,11 @@
 import { Controller, Get, Param, UseGuards } from '@nestjs/common';
-import { AuthGuard } from 'src/core/modules/auth/auth.guard';
-import { CACHE_CONTROL } from 'src/core/modules/cache-control/cache-control.constants';
-import { CacheControl } from 'src/core/modules/cache-control/cache-control.decorator';
-import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
-import { FormationDetailsDto } from '../usecase/dtos/formation-details.dto';
-import { FormationV3Service } from '../usecase/formation.v3.service';
-import { FormationFindManyBySpecificPeriodParam } from '../usecase/params/formation-find-many-by-specific-period.param';
+import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
+import { CACHE_CONTROL } from '../../../core/modules/cache-control/cache-control.constants.js';
+import { CacheControl } from '../../../core/modules/cache-control/cache-control.decorator.js';
+import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
+import { FormationDetailsDto } from '../usecase/dtos/formation-details.dto.js';
+import { FormationV3Service } from '../usecase/formation.v3.service.js';
+import { FormationFindManyBySpecificPeriodParam } from '../usecase/params/formation-find-many-by-specific-period.param.js';
 
 @Controller()
 @UseGuards(AuthGuard, RBACGuard)

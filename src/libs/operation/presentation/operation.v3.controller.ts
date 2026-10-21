@@ -1,18 +1,18 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
-import { AuthGuard } from 'src/core/modules/auth/auth.guard';
-import { CACHE_CONTROL } from 'src/core/modules/cache-control/cache-control.constants';
-import { CacheControl } from 'src/core/modules/cache-control/cache-control.decorator';
-import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
-import { parseCommaList } from 'src/core/utils/comma-list';
-import { NextSegmentCandidateDto } from '../usecase/dtos/next-segment-candidate.dto';
-import { OperationItineraryLinkDto } from '../usecase/dtos/operation-itinerary-link.dto';
-import { OperationCurrentPositionDto } from '../usecase/dtos/operation-current-position.dto';
-import { OperationDetailsDto } from '../usecase/dtos/operation-details.dto';
-import { OperationGroupDto } from '../usecase/dtos/operation-group.dto';
-import { OperationWithTripsDto } from '../usecase/dtos/operation-with-trips.dto';
-import { NextOperationCandidatesQuery } from '../usecase/params/next-operation-candidates.query';
-import { OperationCalendarQuery } from '../usecase/params/operation-calendar.query';
-import { OperationV3Service } from '../usecase/operation.v3.service';
+import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
+import { CACHE_CONTROL } from '../../../core/modules/cache-control/cache-control.constants.js';
+import { CacheControl } from '../../../core/modules/cache-control/cache-control.decorator.js';
+import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
+import { parseCommaList } from '../../../core/utils/comma-list.js';
+import { NextSegmentCandidateDto } from '../usecase/dtos/next-segment-candidate.dto.js';
+import { OperationItineraryLinkDto } from '../usecase/dtos/operation-itinerary-link.dto.js';
+import { OperationCurrentPositionDto } from '../usecase/dtos/operation-current-position.dto.js';
+import { OperationDetailsDto } from '../usecase/dtos/operation-details.dto.js';
+import { OperationGroupDto } from '../usecase/dtos/operation-group.dto.js';
+import { OperationWithTripsDto } from '../usecase/dtos/operation-with-trips.dto.js';
+import { NextOperationCandidatesQuery } from '../usecase/params/next-operation-candidates.query.js';
+import { OperationCalendarQuery } from '../usecase/params/operation-calendar.query.js';
+import { OperationV3Service } from '../usecase/operation.v3.service.js';
 
 @Controller()
 @UseGuards(AuthGuard, RBACGuard)

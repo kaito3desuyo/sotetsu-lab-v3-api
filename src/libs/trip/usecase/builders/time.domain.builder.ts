@@ -1,8 +1,8 @@
-import { UniqueEntityId } from 'src/core/classes/unique-entity-id';
-import { Time, Times } from '../../domain/time.domain';
-import { CreateTimeDto } from '../dtos/create-time.dto';
-import { ReplaceTimeDto } from '../dtos/replace-time.dto';
-import { TimeDetailsDto } from '../dtos/time-details.dto';
+import { UniqueEntityId } from '../../../../core/classes/unique-entity-id.js';
+import { Time, Times } from '../../domain/time.domain.js';
+import { CreateTimeDto } from '../dtos/create-time.dto.js';
+import { ReplaceTimeDto } from '../dtos/replace-time.dto.js';
+import { TimeDetailsDto } from '../dtos/time-details.dto.js';
 
 export const TimeDomainBuilder = {
     buildFromDetailsDto: (dto: TimeDetailsDto): Time => {

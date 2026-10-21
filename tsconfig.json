@@ -1,21 +1,23 @@
 {
     "compilerOptions": {
-        "module": "commonjs",
+        "module": "nodenext",
+        "moduleResolution": "nodenext",
+        "resolvePackageJsonExports": true,
         "declaration": true,
         "removeComments": true,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
-        "target": "es2017",
+        "target": "ES2023",
+        "strict": false,
+        "useDefineForClassFields": false,
         "sourceMap": true,
         "outDir": "./dist",
-        "baseUrl": "./",
+        "types": ["node", "vitest/globals"],
         "incremental": true,
+        "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
         "resolveJsonModule": true,
         "esModuleInterop": true,
         "skipLibCheck": true
     },
-    "exclude": ["db/backup/**", "db/oldSeedMigration/**", "db/seeds/**"],
-    "ts-node": {
-        "require": ["tsconfig-paths/register"]
-    }
+    "exclude": ["db/backup/**", "db/oldSeedMigration/**", "db/seeds/**"]
 }

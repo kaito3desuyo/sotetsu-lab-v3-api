@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { TripQuery } from '../infrastructure/queries/trip.query';
-import { TripDetailsDto } from './dtos/trip-details.dto';
+import { TripQuery } from '../infrastructure/queries/trip.query.js';
+import { TripDetailsDto } from './dtos/trip-details.dto.js';
 
 @Injectable()
 export class TripV3Service {

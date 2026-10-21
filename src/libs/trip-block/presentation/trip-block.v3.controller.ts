@@ -9,21 +9,21 @@ import {
     Query,
     UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from 'src/core/modules/auth/auth.guard';
-import { CACHE_CONTROL } from 'src/core/modules/cache-control/cache-control.constants';
-import { CacheControl } from 'src/core/modules/cache-control/cache-control.decorator';
-import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
-import { AddTripToTripBlockDto } from '../usecase/dtos/add-trip-to-trip-block.dto';
-import { CreateTripBlockDto } from '../usecase/dtos/create-trip-block.dto';
-import { DeleteTripFromTripBlockDto } from '../usecase/dtos/delete-trip-from-trip-block.dto';
-import { ReplaceTripBlockDto } from '../usecase/dtos/replace-trip-block.dto';
-import { TripBlockDetailsDto } from '../usecase/dtos/trip-block-details.dto';
-import { TripBlockSparseDto } from '../usecase/dtos/trip-block-sparse.dto';
-import { AddTripToTripBlockParam } from '../usecase/params/add-trip-to-trip-block.param';
-import { DeleteTripFromTripBlockParam } from '../usecase/params/delete-trip-from-trip-block.param';
-import { ReplaceTripBlockParam } from '../usecase/params/replace-trip-block.param';
-import { TripBlockFindManyByFilterQuery } from '../usecase/params/trip-block-find-many-by-filter.query';
-import { TripBlockV3Service } from '../usecase/trip-block.v3.service';
+import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
+import { CACHE_CONTROL } from '../../../core/modules/cache-control/cache-control.constants.js';
+import { CacheControl } from '../../../core/modules/cache-control/cache-control.decorator.js';
+import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
+import { AddTripToTripBlockDto } from '../usecase/dtos/add-trip-to-trip-block.dto.js';
+import { CreateTripBlockDto } from '../usecase/dtos/create-trip-block.dto.js';
+import { DeleteTripFromTripBlockDto } from '../usecase/dtos/delete-trip-from-trip-block.dto.js';
+import { ReplaceTripBlockDto } from '../usecase/dtos/replace-trip-block.dto.js';
+import { TripBlockDetailsDto } from '../usecase/dtos/trip-block-details.dto.js';
+import { TripBlockSparseDto } from '../usecase/dtos/trip-block-sparse.dto.js';
+import { AddTripToTripBlockParam } from '../usecase/params/add-trip-to-trip-block.param.js';
+import { DeleteTripFromTripBlockParam } from '../usecase/params/delete-trip-from-trip-block.param.js';
+import { ReplaceTripBlockParam } from '../usecase/params/replace-trip-block.param.js';
+import { TripBlockFindManyByFilterQuery } from '../usecase/params/trip-block-find-many-by-filter.query.js';
+import { TripBlockV3Service } from '../usecase/trip-block.v3.service.js';
 
 @Controller()
 @UseGuards(AuthGuard, RBACGuard)

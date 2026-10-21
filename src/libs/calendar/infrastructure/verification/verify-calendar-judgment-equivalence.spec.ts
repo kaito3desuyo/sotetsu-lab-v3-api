@@ -1,13 +1,13 @@
 import dayjs from 'dayjs';
-import { isHoliday, newYearDays } from 'src/core/utils/day-of-week';
-import { CalendarValidityRow } from '../seeds/build-holiday-calendar-date-rows';
-import { buildNewYearCalendarDateRows } from '../seeds/build-newyear-calendar-date-rows';
+import { isHoliday, newYearDays } from '../../../../core/utils/day-of-week.js';
+import { CalendarValidityRow } from '../seeds/build-holiday-calendar-date-rows.js';
+import { buildNewYearCalendarDateRows } from '../seeds/build-newyear-calendar-date-rows.js';
 import {
     CalendarJudgmentMismatch,
     legacyJudgment,
     newJudgment,
     verifyCalendarJudgmentEquivalence,
-} from './verify-calendar-judgment-equivalence';
+} from './verify-calendar-judgment-equivalence.js';
 
 /**
  * 実運用のカレンダー構成（db/backup/1569130509694-SeedCalendar.ts 等で実績のある
@@ -128,9 +128,10 @@ describe('verifyCalendarJudgmentEquivalence', () => {
         expectNoMismatches('2014-01-01', '2015-12-31');
     });
 
+    // 13 年分を日ごとに判定するので 10 秒ほどかかる（Jest は同期のテストを時間切れにしなかった）
     it('全期間（2014-2026）を通して完全一致する（撤去ゲート・総合）', () => {
         expectNoMismatches('2014-01-01', '2026-12-31');
-    });
+    }, 30_000);
 
     describe('無期限カレンダー×未来の年末年始（回帰検体）', () => {
         /**

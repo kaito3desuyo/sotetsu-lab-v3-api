@@ -1,9 +1,9 @@
 import {
     CALENDAR_DATE_EXCEPTION_TYPE_ADDED,
     CALENDAR_DATE_EXCEPTION_TYPE_REMOVED,
-} from '../models/calendar-date.model';
-import { CalendarValidityRow } from './build-holiday-calendar-date-rows';
-import { buildSpecialCalendarDateRows } from './build-special-calendar-date-rows';
+} from '../models/calendar-date.model.js';
+import { CalendarValidityRow } from './build-holiday-calendar-date-rows.js';
+import { buildSpecialCalendarDateRows } from './build-special-calendar-date-rows.js';
 
 function makeCalendar(
     overrides: Partial<CalendarValidityRow> & { id: string },

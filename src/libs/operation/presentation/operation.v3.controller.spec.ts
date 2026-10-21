@@ -1,14 +1,14 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { AuthGuard } from 'src/core/modules/auth/auth.guard';
-import { CacheControlModule } from 'src/core/modules/cache-control/cache-control.module';
-import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
-import { validationPipeOptions } from 'src/core/configs/validator-options';
-import { OperationV3Service } from '../usecase/operation.v3.service';
-import { OperationV3Controller } from './operation.v3.controller';
+import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
+import { CacheControlModule } from '../../../core/modules/cache-control/cache-control.module.js';
+import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
+import { validationPipeOptions } from '../../../core/configs/validator-options.js';
+import { OperationV3Service } from '../usecase/operation.v3.service.js';
+import { OperationV3Controller } from './operation.v3.controller.js';
 
-jest.mock('src/core/modules/auth/auth.guard', () => ({
+vi.mock('../../../core/modules/auth/auth.guard.js', () => ({
     AuthGuard: class {},
 }));
 
@@ -17,9 +17,9 @@ const CALENDAR_ID = '3f0b6a5e-8a52-4c1c-9d0a-2b5d1b8e7a11';
 describe('OperationV3Controller (itinerary-links / next-operation-candidates)', () => {
     let app: INestApplication;
     const service = {
-        findManyItineraryLinks: jest.fn(),
-        findManyNextSegmentCandidates: jest.fn(),
-        findOneWithTrips: jest.fn(),
+        findManyItineraryLinks: vi.fn(),
+        findManyNextSegmentCandidates: vi.fn(),
+        findOneWithTrips: vi.fn(),
     };
 
     beforeAll(async () => {
@@ -43,7 +43,7 @@ describe('OperationV3Controller (itinerary-links / next-operation-candidates)', 
     });
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         service.findManyItineraryLinks.mockResolvedValue([]);
         service.findManyNextSegmentCandidates.mockResolvedValue([]);
         service.findOneWithTrips.mockResolvedValue({});

@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { StationDetailsDto } from '../../usecase/dtos/station-details.dto';
-import { StationsDtoBuilder } from '../builders/station.dto.builder';
-import { StationModel } from '../models/station.model';
+import { StationDetailsDto } from '../../usecase/dtos/station-details.dto.js';
+import { StationsDtoBuilder } from '../builders/station.dto.builder.js';
+import { StationModel } from '../models/station.model.js';
 
 @Injectable()
 export class StationQuery {

@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { FormationLibsModule } from '../formation/formation.libs.module';
-import { OperationLibsModule } from '../operation/operation.libs.module';
-import { OperationSightingLibsModule } from './operation-sighting.libs.module';
-import { OperationSightingV3Controller } from './presentation/operation-sighting.v3.controller';
-import { OperationSightingV3Service } from './usecase/operation-sighting.v3.service';
-import { CalendarLibsModule } from '../calendar/calendar.libs.module';
+import { FormationLibsModule } from '../formation/formation.libs.module.js';
+import { OperationLibsModule } from '../operation/operation.libs.module.js';
+import { OperationSightingLibsModule } from './operation-sighting.libs.module.js';
+import { OperationSightingV3Controller } from './presentation/operation-sighting.v3.controller.js';
+import { OperationSightingV3Service } from './usecase/operation-sighting.v3.service.js';
+import { CalendarLibsModule } from '../calendar/calendar.libs.module.js';
 
 @Module({
     imports: [

@@ -1,11 +1,11 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
-import { AuthGuard } from 'src/core/modules/auth/auth.guard';
-import { CACHE_CONTROL } from 'src/core/modules/cache-control/cache-control.constants';
-import { CacheControl } from 'src/core/modules/cache-control/cache-control.decorator';
-import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
-import { RouteDetailsDto } from '../usecase/dtos/route-details.dto';
-import { RouteStationsDto } from '../usecase/dtos/route-stations.dto';
-import { RouteV3Service } from '../usecase/route.v3.service';
+import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
+import { CACHE_CONTROL } from '../../../core/modules/cache-control/cache-control.constants.js';
+import { CacheControl } from '../../../core/modules/cache-control/cache-control.decorator.js';
+import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
+import { RouteDetailsDto } from '../usecase/dtos/route-details.dto.js';
+import { RouteStationsDto } from '../usecase/dtos/route-stations.dto.js';
+import { RouteV3Service } from '../usecase/route.v3.service.js';
 
 @Controller()
 @UseGuards(AuthGuard, RBACGuard)

@@ -1,7 +1,7 @@
 import { plainToClass } from 'class-transformer';
-import { transformerOptions } from 'src/core/configs/transformer-options';
-import { OperationDetailsDto } from '../../usecase/dtos/operation-details.dto';
-import { OperationModel } from '../models/operation.model';
+import { transformerOptions } from '../../../../core/configs/transformer-options.js';
+import { OperationDetailsDto } from '../../usecase/dtos/operation-details.dto.js';
+import { OperationModel } from '../models/operation.model.js';
 
 export const OperationDtoBuilder = {
     buildFromModel: (model: OperationModel): OperationDetailsDto => {

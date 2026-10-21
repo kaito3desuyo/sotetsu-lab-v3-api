@@ -1,7 +1,7 @@
 import { plainToClass } from 'class-transformer';
-import { transformerOptions } from 'src/core/configs/transformer-options';
-import { FormationDetailsDto } from '../../usecase/dtos/formation-details.dto';
-import { FormationModel } from '../models/formation.model';
+import { transformerOptions } from '../../../../core/configs/transformer-options.js';
+import { FormationDetailsDto } from '../../usecase/dtos/formation-details.dto.js';
+import { FormationModel } from '../models/formation.model.js';
 
 export const FormationDtoBuilder = {
     buildFromModel: (model: FormationModel): FormationDetailsDto => {

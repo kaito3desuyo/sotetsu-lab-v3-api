@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { AgencyQuery } from '../infrastructure/queries/agency.query';
-import { AgencyDetailsDto } from './dtos/agency-details.dto';
+import { AgencyQuery } from '../infrastructure/queries/agency.query.js';
+import { AgencyDetailsDto } from './dtos/agency-details.dto.js';
 
 @Injectable()
 export class AgencyV3Service {

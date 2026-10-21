@@ -1,18 +1,19 @@
+import type { Mock } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
-import { CalendarDateCommand } from '../infrastructure/command/calendar-date.command';
-import { CalendarDateQuery } from '../infrastructure/queries/calendar-date.query';
-import { CalendarDateV3Service } from './calendar-date.v3.service';
+import { CalendarDateCommand } from '../infrastructure/command/calendar-date.command.js';
+import { CalendarDateQuery } from '../infrastructure/queries/calendar-date.query.js';
+import { CalendarDateV3Service } from './calendar-date.v3.service.js';
 
 describe('CalendarDateV3Service', () => {
     let service: CalendarDateV3Service;
-    let findMany: jest.Mock;
-    let create: jest.Mock;
-    let deleteOneById: jest.Mock;
+    let findMany: Mock;
+    let create: Mock;
+    let deleteOneById: Mock;
 
     beforeEach(async () => {
-        findMany = jest.fn();
-        create = jest.fn();
-        deleteOneById = jest.fn();
+        findMany = vi.fn();
+        create = vi.fn();
+        deleteOneById = vi.fn();
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [

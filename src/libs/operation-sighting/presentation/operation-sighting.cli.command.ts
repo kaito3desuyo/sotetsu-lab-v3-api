@@ -1,5 +1,5 @@
 import { Command, CommandRunner, SubCommand } from 'nest-commander';
-import { OperationSightingCliService } from '../usecase/operation-sighting.cli.service';
+import { OperationSightingCliService } from '../usecase/operation-sighting.cli.service.js';
 
 @SubCommand({
     name: 'rebuild-latest-cache',

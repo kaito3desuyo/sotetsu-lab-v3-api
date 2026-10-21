@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { AuthModule } from 'src/core/modules/auth/auth.module';
-import { OperationLibsModule } from './operation.libs.module';
-import { OperationV3Controller } from './presentation/operation.v3.controller';
-import { OperationV3Service } from './usecase/operation.v3.service';
+import { AuthModule } from '../../core/modules/auth/auth.module.js';
+import { OperationLibsModule } from './operation.libs.module.js';
+import { OperationV3Controller } from './presentation/operation.v3.controller.js';
+import { OperationV3Service } from './usecase/operation.v3.service.js';
 
 @Module({
     imports: [AuthModule, OperationLibsModule],

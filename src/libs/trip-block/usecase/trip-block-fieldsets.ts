@@ -1,7 +1,7 @@
 import {
     FieldsetRequires,
     FieldsetWhitelist,
-} from 'src/core/utils/sparse-fieldsets';
+} from '../../../core/utils/sparse-fieldsets.js';
 
 /**
  * `GET /v3/trip-blocks` の `fields` で選べる項目（docs/adr/0002-v3-sparse-fieldsets.md）。

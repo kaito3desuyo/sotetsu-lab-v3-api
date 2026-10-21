@@ -1,8 +1,8 @@
 import { plainToClass } from 'class-transformer';
-import { transformerOptions } from 'src/core/configs/transformer-options';
-import { StationModel } from 'src/libs/station/infrastructure/models/station.model';
-import { ServiceStationsDto } from '../../usecase/dtos/service-stations.dto';
-import { ServiceModel } from '../models/service.model';
+import { transformerOptions } from '../../../../core/configs/transformer-options.js';
+import { StationModel } from '../../../station/infrastructure/models/station.model.js';
+import { ServiceStationsDto } from '../../usecase/dtos/service-stations.dto.js';
+import { ServiceModel } from '../models/service.model.js';
 
 export const ServiceStationsDtoBuilder = {
     buildFromModel: (model: {

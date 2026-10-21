@@ -4,11 +4,11 @@ import {
     decodeShiftJisCsv,
     parseSyukujitsuCsv,
     parseSyukujitsuCsvBuffer,
-} from './parse-syukujitsu-csv';
+} from './parse-syukujitsu-csv.js';
 
 describe('parseSyukujitsuCsv', () => {
     const fixtureBuffer = readFileSync(
-        join(__dirname, '__fixtures__', 'sample-syukujitsu.csv'),
+        join(import.meta.dirname, '__fixtures__', 'sample-syukujitsu.csv'),
     );
 
     it('Shift_JIS のバイト列を UTF-8 文字列へデコードできる', () => {

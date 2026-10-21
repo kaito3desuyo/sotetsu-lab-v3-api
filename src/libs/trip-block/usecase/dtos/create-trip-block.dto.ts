@@ -1,7 +1,8 @@
+import type { Nested } from '../../../../core/types/nested.js';
 import { Exclude, Type } from 'class-transformer';
 import { ArrayNotEmpty, IsOptional, ValidateNested } from 'class-validator';
-import { CreateTripDto } from 'src/libs/trip/usecase/dtos/create-trip.dto';
-import { ValidatableTripBlockDto } from './validatable-trip-block.dto';
+import { CreateTripDto } from '../../../trip/usecase/dtos/create-trip.dto.js';
+import { ValidatableTripBlockDto } from './validatable-trip-block.dto.js';
 
 export class CreateTripBlockDto extends ValidatableTripBlockDto {
     @IsOptional()
@@ -11,5 +12,5 @@ export class CreateTripBlockDto extends ValidatableTripBlockDto {
     @ValidateNested({ each: true })
     @Type(() => CreateTripDto)
     @ArrayNotEmpty()
-    trips: CreateTripDto[];
+    trips: Nested<CreateTripDto[]>;
 }

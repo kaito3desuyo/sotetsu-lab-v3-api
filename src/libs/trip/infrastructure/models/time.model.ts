@@ -1,5 +1,5 @@
-import { StationModel } from 'src/libs/station/infrastructure/models/station.model';
-import { StopModel } from 'src/libs/station/infrastructure/models/stop.model';
+import { StationModel } from '../../../station/infrastructure/models/station.model.js';
+import { StopModel } from '../../../station/infrastructure/models/stop.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -10,9 +10,10 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    type Relation,
 } from 'typeorm';
-import { TripOperationListModel } from './trip-operation-list.model';
-import { TripModel } from './trip.model';
+import { TripOperationListModel } from './trip-operation-list.model.js';
+import { TripModel } from './trip.model.js';
 
 @Entity({
     name: 'times',
@@ -79,25 +80,25 @@ export class TimeModel {
         onDelete: 'CASCADE',
     })
     @JoinColumn({ name: 'trip_id' })
-    readonly trip?: TripModel;
+    readonly trip?: Relation<TripModel>;
 
     @ManyToOne(() => StationModel, (station) => station.times)
     @JoinColumn({ name: 'station_id' })
-    readonly station?: StationModel;
+    readonly station?: Relation<StationModel>;
 
     @ManyToOne(() => StopModel, (stop) => stop.times)
     @JoinColumn({ name: 'stop_id' })
-    readonly stop?: StopModel;
+    readonly stop?: Relation<StopModel>;
 
     @OneToMany(
         () => TripOperationListModel,
         (tripOperationList) => tripOperationList.startTime,
     )
-    readonly startTripOperationLists?: TripOperationListModel[];
+    readonly startTripOperationLists?: Relation<TripOperationListModel[]>;
 
     @OneToMany(
         () => TripOperationListModel,
         (tripOperationList) => tripOperationList.endTime,
     )
-    readonly endTripOperationLists?: TripOperationListModel[];
+    readonly endTripOperationLists?: Relation<TripOperationListModel[]>;
 }

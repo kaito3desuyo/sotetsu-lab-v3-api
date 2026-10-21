@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { BaseStopDto } from './base-stop.dto';
+import { BaseStopDto } from './base-stop.dto.js';
 
 export class StopDetailsDto extends BaseStopDto {
     @Expose()

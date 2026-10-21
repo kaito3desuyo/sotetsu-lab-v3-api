@@ -1,27 +1,24 @@
+import type { MockedFunction } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { TripClassModel } from '../models/trip-class.model';
-import { TripClassQuery } from './trip-class.query';
+import { TripClassModel } from '../models/trip-class.model.js';
+import { TripClassQuery } from './trip-class.query.js';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
+type AnyMock = MockedFunction<(...args: any[]) => any>;
 
-const mockGetMany: AnyMock = jest.fn();
+const mockGetMany: AnyMock = vi.fn();
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildChainableQueryBuilder(): any {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const qb: any = {};
     for (const method of ['select', 'where', 'orderBy', 'addOrderBy']) {
-        qb[method] = jest.fn().mockReturnValue(qb);
+        qb[method] = vi.fn().mockReturnValue(qb);
     }
     qb.getMany = mockGetMany;
     return qb;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let currentQueryBuilder: any;
-const mockCreateQueryBuilder: AnyMock = jest.fn();
+const mockCreateQueryBuilder: AnyMock = vi.fn();
 const mockRepository = {
     createQueryBuilder: mockCreateQueryBuilder,
 };
@@ -43,7 +40,7 @@ describe('TripClassQuery - findMany', () => {
     let query: TripClassQuery;
 
     beforeEach(async () => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         currentQueryBuilder = buildChainableQueryBuilder();
         mockCreateQueryBuilder.mockReturnValue(currentQueryBuilder);
         mockGetMany.mockResolvedValue([]);

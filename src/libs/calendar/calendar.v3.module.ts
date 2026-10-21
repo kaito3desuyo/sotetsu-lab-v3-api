@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { CalendarLibsModule } from './calendar.libs.module';
-import { CalendarV3Controller } from './presentation/calendar.v3.controller';
-import { CalendarV3Service } from './usecase/calendar.v3.service';
+import { CalendarLibsModule } from './calendar.libs.module.js';
+import { CalendarV3Controller } from './presentation/calendar.v3.controller.js';
+import { CalendarV3Service } from './usecase/calendar.v3.service.js';
 
 @Module({
     imports: [CalendarLibsModule],

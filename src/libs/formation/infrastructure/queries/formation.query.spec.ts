@@ -1,20 +1,18 @@
+import type { MockedFunction } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
-import customParseFormat from 'dayjs/plugin/customParseFormat';
-import { FormationModel } from '../models/formation.model';
-import { FormationQuery } from './formation.query';
+import customParseFormat from 'dayjs/plugin/customParseFormat.js';
+import { FormationModel } from '../models/formation.model.js';
+import { FormationQuery } from './formation.query.js';
 
 dayjs.extend(customParseFormat);
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
+type AnyMock = MockedFunction<(...args: any[]) => any>;
 
-const mockGetMany: AnyMock = jest.fn();
+const mockGetMany: AnyMock = vi.fn();
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildChainableQueryBuilder(): any {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const qb: any = {};
     for (const method of [
         'select',
@@ -24,15 +22,14 @@ function buildChainableQueryBuilder(): any {
         'orderBy',
         'addOrderBy',
     ]) {
-        qb[method] = jest.fn().mockReturnValue(qb);
+        qb[method] = vi.fn().mockReturnValue(qb);
     }
     qb.getMany = mockGetMany;
     return qb;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let currentQueryBuilder: any;
-const mockCreateQueryBuilder: AnyMock = jest.fn();
+const mockCreateQueryBuilder: AnyMock = vi.fn();
 const mockRepository = {
     createQueryBuilder: mockCreateQueryBuilder,
 };
@@ -54,7 +51,7 @@ describe('FormationQuery - findManyBySpecificPeriod', () => {
     let query: FormationQuery;
 
     beforeEach(async () => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         currentQueryBuilder = buildChainableQueryBuilder();
         mockCreateQueryBuilder.mockReturnValue(currentQueryBuilder);
         mockGetMany.mockResolvedValue([]);

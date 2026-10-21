@@ -1,5 +1,5 @@
-import { OperationModel } from 'src/libs/operation/infrastructure/models/operation.model';
-import { StationModel } from 'src/libs/station/infrastructure/models/station.model';
+import { OperationModel } from '../../../operation/infrastructure/models/operation.model.js';
+import { StationModel } from '../../../station/infrastructure/models/station.model.js';
 import {
     Check,
     Column,
@@ -10,9 +10,10 @@ import {
     ManyToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    type Relation,
 } from 'typeorm';
-import { TimeModel } from './time.model';
-import { TripModel } from './trip.model';
+import { TimeModel } from './time.model.js';
+import { TripModel } from './trip.model.js';
 
 @Entity({
     name: 'trip_operation_lists',
@@ -65,32 +66,32 @@ export class TripOperationListModel {
         onDelete: 'CASCADE',
     })
     @JoinColumn({ name: 'trip_id' })
-    readonly trip?: TripModel;
+    readonly trip?: Relation<TripModel>;
 
     @ManyToOne(
         () => OperationModel,
         (operation) => operation.tripOperationLists,
     )
     @JoinColumn({ name: 'operation_id' })
-    readonly operation?: OperationModel;
+    readonly operation?: Relation<OperationModel>;
 
     @ManyToOne(() => TimeModel, (time) => time.startTripOperationLists)
     @JoinColumn({ name: 'start_time_id' })
-    readonly startTime?: TimeModel;
+    readonly startTime?: Relation<TimeModel>;
 
     @ManyToOne(() => TimeModel, (time) => time.endTripOperationLists)
     @JoinColumn({ name: 'end_time_id' })
-    readonly endTime?: TimeModel;
+    readonly endTime?: Relation<TimeModel>;
 
     @ManyToOne(() => StationModel, (station) => station)
     @JoinColumn({ name: 'start_station_id' })
-    readonly startStation?: StationModel;
+    readonly startStation?: Relation<StationModel>;
 
     @ManyToOne(() => StationModel, (station) => station)
     @JoinColumn({ name: 'end_station_id' })
-    readonly endStation?: StationModel;
+    readonly endStation?: Relation<StationModel>;
 
     @ManyToOne(() => TripOperationListModel, { onDelete: 'SET NULL' })
     @JoinColumn({ name: 'next_trip_operation_list_id' })
-    readonly nextTripOperationList?: TripOperationListModel;
+    readonly nextTripOperationList?: Relation<TripOperationListModel>;
 }

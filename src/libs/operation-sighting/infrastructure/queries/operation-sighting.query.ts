@@ -2,15 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import { Repository } from 'typeorm';
-import { FormationModel } from 'src/libs/formation/infrastructure/models/formation.model';
-import { OperationModel } from 'src/libs/operation/infrastructure/models/operation.model';
-import { OperationSightingDetailsDto } from '../../usecase/dtos/operation-sighting-details.dto';
+import { FormationModel } from '../../../formation/infrastructure/models/formation.model.js';
+import { OperationModel } from '../../../operation/infrastructure/models/operation.model.js';
+import { OperationSightingDetailsDto } from '../../usecase/dtos/operation-sighting-details.dto.js';
 import {
     OperationSightingDtoBuilder,
     OperationSightingsDtoBuilder,
-} from '../builders/operation-sighting.dto.builder';
-import { OperationSightingInvalidationModel } from '../models/operation-sighting-invalidation.model';
-import { OperationSightingModel } from '../models/operation-sighting.model';
+} from '../builders/operation-sighting.dto.builder.js';
+import { OperationSightingInvalidationModel } from '../models/operation-sighting-invalidation.model.js';
+import { OperationSightingModel } from '../models/operation-sighting.model.js';
 
 @Injectable()
 export class OperationSightingQuery {

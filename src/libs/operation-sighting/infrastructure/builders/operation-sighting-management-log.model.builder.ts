@@ -1,5 +1,5 @@
-import { OperationSightingManagementLog } from '../../domain/operation-sighting-management-log.domain';
-import { OperationSightingManagementLogModel } from '../models/operation-sighting-management-log.model';
+import { OperationSightingManagementLog } from '../../domain/operation-sighting-management-log.domain.js';
+import { OperationSightingManagementLogModel } from '../models/operation-sighting-management-log.model.js';
 
 export const OperationSightingManagementLogModelBuilder = {
     buildFromDomain: (

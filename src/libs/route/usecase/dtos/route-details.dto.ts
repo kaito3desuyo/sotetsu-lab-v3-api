@@ -1,8 +1,9 @@
+import type { Nested } from '../../../../core/types/nested.js';
 import { Expose, Type } from 'class-transformer';
-import { OperatingSystemDetailsDto } from 'src/libs/service/usecase/dtos/operating-system-details.dto';
-import { BaseRouteDto } from './base-route.dto';
-import { RouteStationListDetailsDto } from './route-station-list-details.dto';
-import { AgencyDetailsDto } from 'src/libs/agency/usecase/dtos/agency-details.dto';
+import { OperatingSystemDetailsDto } from '../../../service/usecase/dtos/operating-system-details.dto.js';
+import { BaseRouteDto } from './base-route.dto.js';
+import { RouteStationListDetailsDto } from './route-station-list-details.dto.js';
+import { AgencyDetailsDto } from '../../../agency/usecase/dtos/agency-details.dto.js';
 
 export class RouteDetailsDto extends BaseRouteDto {
     @Expose()
@@ -43,13 +44,13 @@ export class RouteDetailsDto extends BaseRouteDto {
 
     @Expose()
     @Type(() => AgencyDetailsDto)
-    agency?: AgencyDetailsDto;
+    agency?: Nested<AgencyDetailsDto>;
 
     @Expose()
     @Type(() => RouteStationListDetailsDto)
-    routeStationLists?: RouteStationListDetailsDto[];
+    routeStationLists?: Nested<RouteStationListDetailsDto[]>;
 
     @Expose()
     @Type(() => OperatingSystemDetailsDto)
-    operatingSystems?: OperatingSystemDetailsDto[];
+    operatingSystems?: Nested<OperatingSystemDetailsDto[]>;
 }

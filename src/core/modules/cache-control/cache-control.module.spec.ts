@@ -8,11 +8,11 @@ import {
 } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { UseCaseError } from '../../classes/custom-error';
-import { UseCaseErrorFilter } from '../../filters/usecase-error.filter';
-import { CACHE_CONTROL } from './cache-control.constants';
-import { CacheControl } from './cache-control.decorator';
-import { CacheControlModule } from './cache-control.module';
+import { UseCaseError } from '../../classes/custom-error.js';
+import { UseCaseErrorFilter } from '../../filters/usecase-error.filter.js';
+import { CACHE_CONTROL } from './cache-control.constants.js';
+import { CacheControl } from './cache-control.decorator.js';
+import { CacheControlModule } from './cache-control.module.js';
 
 class DenyGuard implements CanActivate {
     canActivate(): boolean {
@@ -105,6 +105,7 @@ describe('CacheControlModule', () => {
         ['guard が拒んだ 403', '/denied', 403],
         ['@CacheControl の無い handler の 500', '/plain-broken', 500],
         ['存在しない URL の 404', '/no-such-route', 404],
+        ['入れ子の存在しない URL の 404', '/no/such/route', 404],
     ])('%s は no-store にする', async (_label, path, status) => {
         const res = await request(app.getHttpServer()).get(path);
 

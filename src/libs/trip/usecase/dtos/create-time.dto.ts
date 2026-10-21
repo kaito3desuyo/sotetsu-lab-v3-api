@@ -1,6 +1,6 @@
 import { Exclude } from 'class-transformer';
 import { IsOptional } from 'class-validator';
-import { ValidatableTimeDto } from './validatable-time.dto';
+import { ValidatableTimeDto } from './validatable-time.dto.js';
 
 export class CreateTimeDto extends ValidatableTimeDto {
     @IsOptional()

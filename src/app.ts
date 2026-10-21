@@ -1,18 +1,22 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { ExpressAdapter } from '@nestjs/platform-express';
+import {
+    ExpressAdapter,
+    NestExpressApplication,
+} from '@nestjs/platform-express';
 // import compression from 'compression';
 import dayjs from 'dayjs';
-import customParseFormat from 'dayjs/plugin/customParseFormat';
-import timezone from 'dayjs/plugin/timezone';
-import utc from 'dayjs/plugin/utc';
+import customParseFormat from 'dayjs/plugin/customParseFormat.js';
+import timezone from 'dayjs/plugin/timezone.js';
+import utc from 'dayjs/plugin/utc.js';
 import helmet from 'helmet';
-import { AppModule } from './app.module';
-import { corsOptions } from './core/configs/cors-options';
-import { validationPipeOptions } from './core/configs/validator-options';
-import { UnexpectedErrorFilter } from './core/filters/unexpected-error.filter';
-import { UseCaseErrorFilter } from './core/filters/usecase-error.filter';
-import { LoggerService } from './core/modules/logger/logger.service';
+import { AppModule } from './app.module.js';
+import { corsOptions } from './core/configs/cors-options.js';
+import { configureExpress } from './core/configs/express-settings.js';
+import { validationPipeOptions } from './core/configs/validator-options.js';
+import { UnexpectedErrorFilter } from './core/filters/unexpected-error.filter.js';
+import { UseCaseErrorFilter } from './core/filters/usecase-error.filter.js';
+import { LoggerService } from './core/modules/logger/logger.service.js';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -20,10 +24,15 @@ dayjs.extend(customParseFormat);
 dayjs.tz.setDefault('Asia/Tokyo');
 
 export async function createApp(): Promise<INestApplication> {
-    const app = await NestFactory.create(AppModule, new ExpressAdapter(), {
-        bufferLogs: true,
-    });
+    const app = await NestFactory.create<NestExpressApplication>(
+        AppModule,
+        new ExpressAdapter(),
+        {
+            bufferLogs: true,
+        },
+    );
 
+    configureExpress(app);
     app.enableShutdownHooks();
     // app.use(compression());
     app.use(helmet());

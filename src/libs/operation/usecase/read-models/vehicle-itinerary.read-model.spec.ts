@@ -1,8 +1,8 @@
-import { ItinerarySegment } from 'src/libs/operation/domain/itinerary-link-rule.domain';
+import { ItinerarySegment } from '../../domain/itinerary-link-rule.domain.js';
 import {
     VehicleItinerary,
     VehicleItineraryReadModel,
-} from './vehicle-itinerary.read-model';
+} from './vehicle-itinerary.read-model.js';
 
 const t = (hhmm: string) => {
     const [h, m] = hhmm.split(':').map(Number);

@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { OperationQuery } from 'src/libs/operation/infrastructure/queries/operation.query';
-import { TripBlockCommand } from '../infrastructure/commands/trip-block.command';
-import { TripBlockQuery } from '../infrastructure/queries/trip-block.query';
-import { TripBlocksDomainBuilder } from './builders/trip-block.domain.builder';
-import { CreateTripBlockDto } from './dtos/create-trip-block.dto';
+import { OperationQuery } from '../../operation/infrastructure/queries/operation.query.js';
+import { TripBlockCommand } from '../infrastructure/commands/trip-block.command.js';
+import { TripBlockQuery } from '../infrastructure/queries/trip-block.query.js';
+import { TripBlocksDomainBuilder } from './builders/trip-block.domain.builder.js';
+import { CreateTripBlockDto } from './dtos/create-trip-block.dto.js';
 
 @Injectable()
 export class TripBlockCliService {

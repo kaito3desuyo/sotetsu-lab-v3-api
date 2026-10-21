@@ -6,7 +6,7 @@ import {
     Logger,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { UnexpectedError } from '../classes/unexpected-error';
+import { UnexpectedError } from '../classes/unexpected-error.js';
 
 @Catch(UnexpectedError)
 export class UnexpectedErrorFilter implements ExceptionFilter {

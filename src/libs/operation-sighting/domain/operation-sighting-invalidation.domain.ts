@@ -1,5 +1,5 @@
-import { Entity } from 'src/core/classes/entity';
-import { UniqueEntityId } from 'src/core/classes/unique-entity-id';
+import { Entity } from '../../../core/classes/entity.js';
+import { UniqueEntityId } from '../../../core/classes/unique-entity-id.js';
 
 type OperationSightingInvalidationProps = {
     operationSightingId: string;

@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { RouteDetailsDto } from '../../usecase/dtos/route-details.dto';
-import { RouteStationsDto } from '../../usecase/dtos/route-stations.dto';
-import { RoutesDtoBuilder } from '../builders/route.dto.builder';
-import { RouteStationsDtoBuilder } from '../builders/route-stations.dto.builder';
-import { RouteModel } from '../models/route.model';
+import { RouteDetailsDto } from '../../usecase/dtos/route-details.dto.js';
+import { RouteStationsDto } from '../../usecase/dtos/route-stations.dto.js';
+import { RoutesDtoBuilder } from '../builders/route.dto.builder.js';
+import { RouteStationsDtoBuilder } from '../builders/route-stations.dto.builder.js';
+import { RouteModel } from '../models/route.model.js';
 
 @Injectable()
 export class RouteQuery {

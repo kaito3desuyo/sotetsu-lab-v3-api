@@ -1,7 +1,7 @@
 import { plainToClass } from 'class-transformer';
-import { transformerOptions } from 'src/core/configs/transformer-options';
-import { CalendarDateDetailsDto } from '../../usecase/dtos/calendar-date-details.dto';
-import { CalendarDateModel } from '../models/calendar-date.model';
+import { transformerOptions } from '../../../../core/configs/transformer-options.js';
+import { CalendarDateDetailsDto } from '../../usecase/dtos/calendar-date-details.dto.js';
+import { CalendarDateModel } from '../models/calendar-date.model.js';
 
 export const CalendarDateDtoBuilder = {
     buildFromModel: (model: CalendarDateModel): CalendarDateDetailsDto => {

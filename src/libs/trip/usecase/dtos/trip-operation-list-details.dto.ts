@@ -1,8 +1,9 @@
+import type { Nested } from '../../../../core/types/nested.js';
 import { Expose, Type } from 'class-transformer';
-import { OperationDetailsDto } from 'src/libs/operation/usecase/dtos/operation-details.dto';
-import { BaseTripOperationListDto } from './base-trip-operation-list.dto';
-import { TimeDetailsDto } from './time-details.dto';
-import { TripDetailsDto } from './trip-details.dto';
+import { OperationDetailsDto } from '../../../operation/usecase/dtos/operation-details.dto.js';
+import { BaseTripOperationListDto } from './base-trip-operation-list.dto.js';
+import { TimeDetailsDto } from './time-details.dto.js';
+import { TripDetailsDto } from './trip-details.dto.js';
 
 export class TripOperationListDetailsDto extends BaseTripOperationListDto {
     @Expose()
@@ -37,17 +38,17 @@ export class TripOperationListDetailsDto extends BaseTripOperationListDto {
 
     @Expose()
     @Type(() => TripDetailsDto)
-    trip?: TripDetailsDto;
+    trip?: Nested<TripDetailsDto>;
 
     @Expose()
     @Type(() => OperationDetailsDto)
-    operation?: OperationDetailsDto;
+    operation?: Nested<OperationDetailsDto>;
 
     @Expose()
     @Type(() => TimeDetailsDto)
-    startTime?: TimeDetailsDto;
+    startTime?: Nested<TimeDetailsDto>;
 
     @Expose()
     @Type(() => TimeDetailsDto)
-    endTime?: TimeDetailsDto;
+    endTime?: Nested<TimeDetailsDto>;
 }

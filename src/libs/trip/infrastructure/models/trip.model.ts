@@ -1,5 +1,5 @@
-import { ServiceModel } from 'src/libs/service/infrastructure/models/service.model';
-import { TripClassModel } from 'src/libs/trip-class/infrastructure/models/trip-class.model';
+import { ServiceModel } from '../../../service/infrastructure/models/service.model.js';
+import { TripClassModel } from '../../../trip-class/infrastructure/models/trip-class.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -10,10 +10,11 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    type Relation,
 } from 'typeorm';
-import { TimeModel } from './time.model';
-import { TripBlockModel } from '../../../trip-block/infrastructure/models/trip-block.model';
-import { TripOperationListModel } from './trip-operation-list.model';
+import { TimeModel } from './time.model.js';
+import { TripBlockModel } from '../../../trip-block/infrastructure/models/trip-block.model.js';
+import { TripOperationListModel } from './trip-operation-list.model.js';
 
 @Entity({
     name: 'trips',
@@ -67,24 +68,24 @@ export class TripModel {
     @OneToMany(() => TimeModel, (time) => time.trip, {
         cascade: true,
     })
-    readonly times?: TimeModel[];
+    readonly times?: Relation<TimeModel[]>;
 
     @OneToMany(
         () => TripOperationListModel,
         (tripOperationList) => tripOperationList.trip,
         { cascade: true },
     )
-    readonly tripOperationLists?: TripOperationListModel[];
+    readonly tripOperationLists?: Relation<TripOperationListModel[]>;
 
     @ManyToOne(() => ServiceModel, (service) => service.trips)
     @JoinColumn({ name: 'service_id' })
-    readonly service?: ServiceModel;
+    readonly service?: Relation<ServiceModel>;
 
     @ManyToOne(() => TripClassModel, (tripClass) => tripClass.trips)
     @JoinColumn({ name: 'trip_class_id' })
-    readonly tripClass?: TripClassModel;
+    readonly tripClass?: Relation<TripClassModel>;
 
     @ManyToOne(() => TripBlockModel, (tripBlock) => tripBlock.trips)
     @JoinColumn({ name: 'trip_block_id' })
-    readonly tripBlock?: TripBlockModel;
+    readonly tripBlock?: Relation<TripBlockModel>;
 }

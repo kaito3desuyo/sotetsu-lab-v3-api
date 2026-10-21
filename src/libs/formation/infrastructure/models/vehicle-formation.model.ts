@@ -1,4 +1,4 @@
-import { VehicleModel } from 'src/libs/vehicle/infrastructure/models/vehicle.model';
+import { VehicleModel } from '../../../vehicle/infrastructure/models/vehicle.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -8,8 +8,9 @@ import {
     ManyToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    type Relation,
 } from 'typeorm';
-import { FormationModel } from './formation.model';
+import { FormationModel } from './formation.model.js';
 
 @Entity({
     name: 'vehicle_formations',
@@ -44,12 +45,12 @@ export class VehicleFormationModel {
         },
     )
     @JoinColumn({ name: 'formation_id' })
-    readonly formation?: FormationModel;
+    readonly formation?: Relation<FormationModel>;
 
     @ManyToOne(() => VehicleModel, (vehicle) => vehicle.vehicleFormations, {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
     })
     @JoinColumn({ name: 'vehicle_id' })
-    readonly vehicle?: VehicleModel;
+    readonly vehicle?: Relation<VehicleModel>;
 }

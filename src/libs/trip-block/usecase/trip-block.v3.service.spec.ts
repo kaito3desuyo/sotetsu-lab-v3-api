@@ -1,32 +1,32 @@
+import type { MockedFunction } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ItinerarySegmentQuery } from 'src/libs/operation/infrastructure/queries/itinerary-segment.query';
-import { TripBlockCommand } from '../infrastructure/commands/trip-block.command';
-import { TripBlockQuery } from '../infrastructure/queries/trip-block.query';
-import { TripBlockDomainBuilder } from './builders/trip-block.domain.builder';
-import { TripBlockV3Service } from './trip-block.v3.service';
+import { ItinerarySegmentQuery } from '../../operation/infrastructure/queries/itinerary-segment.query.js';
+import { TripBlockCommand } from '../infrastructure/commands/trip-block.command.js';
+import { TripBlockQuery } from '../infrastructure/queries/trip-block.query.js';
+import { TripBlockDomainBuilder } from './builders/trip-block.domain.builder.js';
+import { TripBlockV3Service } from './trip-block.v3.service.js';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
+type AnyMock = MockedFunction<(...args: any[]) => any>;
 
 const mockItinerarySegmentQuery = {
-    findManyByCalendarId: jest.fn() as AnyMock,
+    findManyByCalendarId: vi.fn() as AnyMock,
 };
 const mockTripBlockCommand = {
-    replaceOneTripBlockByDomain: jest.fn() as AnyMock,
+    replaceOneTripBlockByDomain: vi.fn() as AnyMock,
 };
 
 const mockTripBlockQuery = {
-    findOneTripBlockByTripBlockId: jest.fn() as AnyMock,
-    findManyByFilter: jest.fn() as AnyMock,
-    findManyByFilterWithFields: jest.fn() as AnyMock,
+    findOneTripBlockByTripBlockId: vi.fn() as AnyMock,
+    findManyByFilter: vi.fn() as AnyMock,
+    findManyByFilterWithFields: vi.fn() as AnyMock,
 };
 
 describe('TripBlockV3Service - findManyByFilter', () => {
     let service: TripBlockV3Service;
 
     beforeEach(async () => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue(
             null,
         );
@@ -105,10 +105,10 @@ describe('TripBlockV3Service - findManyByFilter', () => {
 describe('TripBlockV3Service - 次の運用の検め', () => {
     let service: TripBlockV3Service;
 
-    afterEach(() => jest.restoreAllMocks());
+    afterEach(() => vi.restoreAllMocks());
 
     beforeEach(async () => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue(
             null,
         );
@@ -186,7 +186,7 @@ describe('TripBlockV3Service - 次の運用の検め', () => {
                 },
             ],
         };
-        jest.spyOn(
+        vi.spyOn(
             TripBlockDomainBuilder,
             'buildFromReplaceDto',
         ).mockReturnValue({} as never);
@@ -208,7 +208,7 @@ describe('TripBlockV3Service - 次の運用の検め', () => {
         mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue({
             trips: [{ tripOperationLists: [{ id: 'c' }, { id: 'a' }] }],
         });
-        jest.spyOn(
+        vi.spyOn(
             TripBlockDomainBuilder,
             'buildFromReplaceDto',
         ).mockReturnValue({} as never);

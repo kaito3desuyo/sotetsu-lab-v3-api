@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { StationQuery } from '../infrastructure/queries/station.query';
-import { StationDetailsDto } from './dtos/station-details.dto';
+import { StationQuery } from '../infrastructure/queries/station.query.js';
+import { StationDetailsDto } from './dtos/station-details.dto.js';
 
 @Injectable()
 export class StationV3Service {

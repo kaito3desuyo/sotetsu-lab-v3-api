@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
-import { UseCaseError } from 'src/core/classes/custom-error';
-import { CalendarDateDtoBuilder } from '../builders/calendar-date.dto.builder';
-import { CalendarDateModel } from '../models/calendar-date.model';
-import { CalendarDateDetailsDto } from '../../usecase/dtos/calendar-date-details.dto';
+import { UseCaseError } from '../../../../core/classes/custom-error.js';
+import { CalendarDateDtoBuilder } from '../builders/calendar-date.dto.builder.js';
+import { CalendarDateModel } from '../models/calendar-date.model.js';
+import { CalendarDateDetailsDto } from '../../usecase/dtos/calendar-date-details.dto.js';
 
 const POSTGRES_UNIQUE_VIOLATION_CODE = '23505';
 

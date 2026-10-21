@@ -1,4 +1,4 @@
-import { parseCommaList } from './comma-list';
+import { parseCommaList } from './comma-list.js';
 
 describe('parseCommaList', () => {
     it('空要素・前後の空白・重複を捨てる', () => {

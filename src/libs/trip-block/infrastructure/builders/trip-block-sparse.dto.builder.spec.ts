@@ -1,5 +1,5 @@
-import { TripBlockModel } from '../models/trip-block.model';
-import { TripBlockSparseDtoBuilder } from './trip-block-sparse.dto.builder';
+import { TripBlockModel } from '../models/trip-block.model.js';
+import { TripBlockSparseDtoBuilder } from './trip-block-sparse.dto.builder.js';
 
 const MODELS = [
     {

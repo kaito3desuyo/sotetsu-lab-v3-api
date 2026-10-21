@@ -1,6 +1,6 @@
-import { CalendarModel } from 'src/libs/calendar/infrastructure/models/calendar.model';
-import { OperationSightingModel } from 'src/libs/operation-sighting/infrastructure/models/operation-sighting.model';
-import { TripOperationListModel } from 'src/libs/trip/infrastructure/models/trip-operation-list.model';
+import { CalendarModel } from '../../../calendar/infrastructure/models/calendar.model.js';
+import { OperationSightingModel } from '../../../operation-sighting/infrastructure/models/operation-sighting.model.js';
+import { TripOperationListModel } from '../../../trip/infrastructure/models/trip-operation-list.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -11,6 +11,7 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    type Relation,
 } from 'typeorm';
 
 @Entity({
@@ -36,17 +37,17 @@ export class OperationModel {
 
     @ManyToOne(() => CalendarModel, (calendar) => calendar.operations)
     @JoinColumn({ name: 'calendar_id' })
-    readonly calendar?: CalendarModel;
+    readonly calendar?: Relation<CalendarModel>;
 
     @OneToMany(
         () => TripOperationListModel,
         (tripOperationList) => tripOperationList.operation,
     )
-    readonly tripOperationLists?: TripOperationListModel[];
+    readonly tripOperationLists?: Relation<TripOperationListModel[]>;
 
     @OneToMany(
         () => OperationSightingModel,
         (operationSighting) => operationSighting.operation,
     )
-    readonly operationSightings?: OperationSightingModel[];
+    readonly operationSightings?: Relation<OperationSightingModel[]>;
 }

@@ -1,8 +1,8 @@
-import { TripBlockModel } from '../models/trip-block.model';
-import { TripOperationListModel } from 'src/libs/trip/infrastructure/models/trip-operation-list.model';
-import { TripBlockCommand } from './trip-block.command';
-import { TripBlockModelBuilder } from '../builders/trip-block.model.builder';
-import { TripBlockDtoBuilder } from '../builders/trip-block.dto.builder';
+import { TripBlockModel } from '../models/trip-block.model.js';
+import { TripOperationListModel } from '../../../trip/infrastructure/models/trip-operation-list.model.js';
+import { TripBlockCommand } from './trip-block.command.js';
+import { TripBlockModelBuilder } from '../builders/trip-block.model.builder.js';
+import { TripBlockDtoBuilder } from '../builders/trip-block.dto.builder.js';
 
 describe('TripBlockCommand.replaceOneTripBlockByDomain - 次の区間の付け替え', () => {
     const calls: string[] = [];
@@ -11,12 +11,12 @@ describe('TripBlockCommand.replaceOneTripBlockByDomain - 次の区間の付け�
         { id: 'b', nextTripOperationListId: null },
     ];
     const updateBuilder = {
-        update: jest.fn().mockReturnThis(),
-        set: jest.fn().mockImplementation((v) => {
+        update: vi.fn().mockReturnThis(),
+        set: vi.fn().mockImplementation((v) => {
             calls.push(`clear:${JSON.stringify(v)}`);
             return updateBuilder;
         }),
-        where: jest.fn().mockImplementation((_s, p) => {
+        where: vi.fn().mockImplementation((_s, p) => {
             calls.push(
                 p.ids
                     ? `where:${p.ids.join(',')}`
@@ -24,17 +24,17 @@ describe('TripBlockCommand.replaceOneTripBlockByDomain - 次の区間の付け�
             );
             return updateBuilder;
         }),
-        andWhere: jest.fn().mockImplementation((_s, p) => {
+        andWhere: vi.fn().mockImplementation((_s, p) => {
             calls.push(`except:${p.owners.join(',')}`);
             return updateBuilder;
         }),
-        select: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue(existing),
-        execute: jest.fn().mockResolvedValue(undefined),
+        select: vi.fn().mockReturnThis(),
+        getMany: vi.fn().mockResolvedValue(existing),
+        execute: vi.fn().mockResolvedValue(undefined),
     };
-    const tripBlockRepo = { save: jest.fn() };
+    const tripBlockRepo = { save: vi.fn() };
     const manager = {
-        getRepository: jest
+        getRepository: vi
             .fn()
             .mockImplementation((m) =>
                 m === TripOperationListModel
@@ -44,9 +44,9 @@ describe('TripBlockCommand.replaceOneTripBlockByDomain - 次の区間の付け�
     };
     const repository = {
         manager: {
-            transaction: jest.fn().mockImplementation((cb) => cb(manager)),
+            transaction: vi.fn().mockImplementation((cb) => cb(manager)),
         },
-        save: jest.fn(),
+        save: vi.fn(),
     };
 
     it('次の区間が変わる区間を先に null にしてから最終値を保存する（同じトランザクション内）', async () => {
@@ -60,10 +60,10 @@ describe('TripBlockCommand.replaceOneTripBlockByDomain - 次の区間の付け�
                 },
             ],
         };
-        jest.spyOn(TripBlockModelBuilder, 'buildFromDomain').mockReturnValue(
+        vi.spyOn(TripBlockModelBuilder, 'buildFromDomain').mockReturnValue(
             model as never,
         );
-        jest.spyOn(TripBlockDtoBuilder, 'buildFromModel').mockReturnValue(
+        vi.spyOn(TripBlockDtoBuilder, 'buildFromModel').mockReturnValue(
             {} as never,
         );
         tripBlockRepo.save.mockImplementation(async (m) => {

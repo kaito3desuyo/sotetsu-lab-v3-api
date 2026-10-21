@@ -1,6 +1,6 @@
-import { UniqueEntityId } from 'src/core/classes/unique-entity-id';
-import { TripOperationList } from '../../domain/trip-operation-list.domain';
-import { TripOperationListModelBuilder } from './trip-operation-list.model.builder';
+import { UniqueEntityId } from '../../../../core/classes/unique-entity-id.js';
+import { TripOperationList } from '../../domain/trip-operation-list.domain.js';
+import { TripOperationListModelBuilder } from './trip-operation-list.model.builder.js';
 
 const base = {
     tripId: 't1',

@@ -1,9 +1,9 @@
-import { UseCaseError } from 'src/core/classes/custom-error';
-import { ItinerarySegment } from './itinerary-link-rule.domain';
+import { UseCaseError } from '../../../core/classes/custom-error.js';
+import { ItinerarySegment } from './itinerary-link-rule.domain.js';
 import {
     NextOperationPolicy,
     ProposedSegmentShape,
-} from './next-operation-policy.domain';
+} from './next-operation-policy.domain.js';
 
 const plain = (id: string, next: string | null = null): ItinerarySegment => ({
     id,

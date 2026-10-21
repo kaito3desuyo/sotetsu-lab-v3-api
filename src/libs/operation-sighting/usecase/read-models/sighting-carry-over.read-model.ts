@@ -1,10 +1,10 @@
 import dayjs from 'dayjs';
-import { ItinerarySegment } from 'src/libs/operation/domain/itinerary-link-rule.domain';
-import { getBaseDate } from 'src/core/utils/datetime';
+import { ItinerarySegment } from '../../../operation/domain/itinerary-link-rule.domain.js';
+import { getBaseDate } from '../../../../core/utils/datetime.js';
 import {
     VehicleItineraryReadModel,
     VehicleItinerary,
-} from 'src/libs/operation/usecase/read-models/vehicle-itinerary.read-model';
+} from '../../../operation/usecase/read-models/vehicle-itinerary.read-model.js';
 
 /**
  * 目撃の枠割り当て（docs/superpowers/specs/2026-10-19-sighting-run-assignment-design.md）。規則はここ 1 か所に集める。

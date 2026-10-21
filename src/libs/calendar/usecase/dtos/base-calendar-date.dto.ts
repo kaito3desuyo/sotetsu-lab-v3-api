@@ -1,4 +1,4 @@
-import { CalendarDateExceptionType } from '../../infrastructure/models/calendar-date.model';
+import { CalendarDateExceptionType } from '../../infrastructure/models/calendar-date.model.js';
 
 export abstract class BaseCalendarDateDto {
     id: string;

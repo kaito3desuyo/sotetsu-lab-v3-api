@@ -1,5 +1,5 @@
-import { OperationModel } from 'src/libs/operation/infrastructure/models/operation.model';
-import { ServiceModel } from 'src/libs/service/infrastructure/models/service.model';
+import { OperationModel } from '../../../operation/infrastructure/models/operation.model.js';
+import { ServiceModel } from '../../../service/infrastructure/models/service.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -10,6 +10,7 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    type Relation,
 } from 'typeorm';
 
 @Entity({
@@ -60,9 +61,9 @@ export class CalendarModel {
     updatedAt: Date;
 
     @OneToMany(() => OperationModel, (operation) => operation.calendar)
-    readonly operations?: OperationModel[];
+    readonly operations?: Relation<OperationModel[]>;
 
     @ManyToOne(() => ServiceModel, (service) => service.calendars)
     @JoinColumn({ name: 'service_id' })
-    readonly service?: ServiceModel;
+    readonly service?: Relation<ServiceModel>;
 }

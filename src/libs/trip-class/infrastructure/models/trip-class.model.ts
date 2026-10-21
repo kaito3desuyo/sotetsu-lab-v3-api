@@ -1,5 +1,5 @@
-import { ServiceModel } from 'src/libs/service/infrastructure/models/service.model';
-import { TripModel } from 'src/libs/trip/infrastructure/models/trip.model';
+import { ServiceModel } from '../../../service/infrastructure/models/service.model.js';
+import { TripModel } from '../../../trip/infrastructure/models/trip.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -10,6 +10,7 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    type Relation,
 } from 'typeorm';
 
 @Entity({
@@ -39,9 +40,9 @@ export class TripClassModel {
     updatedAt: string;
 
     @OneToMany(() => TripModel, (trip) => trip.tripClass)
-    readonly trips?: TripModel[];
+    readonly trips?: Relation<TripModel[]>;
 
     @ManyToOne(() => ServiceModel, (service) => service.tripClasses)
     @JoinColumn({ name: 'service_id' })
-    readonly service?: ServiceModel;
+    readonly service?: Relation<ServiceModel>;
 }

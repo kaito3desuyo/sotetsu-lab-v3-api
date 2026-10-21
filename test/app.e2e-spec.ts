@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { AppModule } from './../src/app.module';
+import { DataSource } from 'typeorm';
+import { AppModule } from '../src/app.module.js';
+import { AgencyModel } from '../src/libs/agency/infrastructure/models/agency.model.js';
 
 describe('AppController (e2e)', () => {
   let app;
@@ -12,6 +14,12 @@ describe('AppController (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
+  });
+
+  // アプリが import したモデルと TypeORM が持つメタデータのクラスが同じもの（2 重に読まれていない）
+  it('TypeORM がアプリと同じモデルのクラスを持つ', () => {
+    const dataSource = app.get(DataSource);
+    expect(dataSource.hasMetadata(AgencyModel)).toBe(true);
   });
 
   it('/ (GET)', () => {

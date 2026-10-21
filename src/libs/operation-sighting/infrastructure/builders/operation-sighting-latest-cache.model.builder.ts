@@ -1,5 +1,5 @@
-import { OperationSightingLatestCache } from '../../domain/operation-sighting-latest-cache.domain';
-import { OperationSightingLatestCacheModel } from '../models/operation-sighting-latest-cache.model';
+import { OperationSightingLatestCache } from '../../domain/operation-sighting-latest-cache.domain.js';
+import { OperationSightingLatestCacheModel } from '../models/operation-sighting-latest-cache.model.js';
 
 export const OperationSightingLatestCacheModelBuilder = {
     buildFromDomain: (

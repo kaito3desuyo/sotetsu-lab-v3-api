@@ -1,17 +1,17 @@
+import type { MockedFunction } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { CalendarDateModel } from '../models/calendar-date.model';
-import { CalendarModel } from '../models/calendar.model';
-import { CalendarQuery } from './calendar.query';
+import { CalendarDateModel } from '../models/calendar-date.model.js';
+import { CalendarModel } from '../models/calendar.model.js';
+import { CalendarQuery } from './calendar.query.js';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
+type AnyMock = MockedFunction<(...args: any[]) => any>;
 
 function buildQueryBuilderMock(getManyResult: AnyMock) {
     const qb: Record<string, AnyMock> = {
-        select: jest.fn(),
-        where: jest.fn(),
-        andWhere: jest.fn(),
+        select: vi.fn(),
+        where: vi.fn(),
+        andWhere: vi.fn(),
         getMany: getManyResult,
     };
     qb.select.mockReturnValue(qb);
@@ -62,12 +62,12 @@ describe('CalendarQuery - findOneBySpecificDate', () => {
     let query: CalendarQuery;
 
     beforeEach(async () => {
-        calendarGetMany = jest.fn();
-        calendarDateGetMany = jest.fn().mockResolvedValue([]);
-        calendarCreateQueryBuilder = jest
+        calendarGetMany = vi.fn();
+        calendarDateGetMany = vi.fn().mockResolvedValue([]);
+        calendarCreateQueryBuilder = vi
             .fn()
             .mockImplementation(() => buildQueryBuilderMock(calendarGetMany));
-        calendarDateCreateQueryBuilder = jest
+        calendarDateCreateQueryBuilder = vi
             .fn()
             .mockImplementation(() => buildQueryBuilderMock(calendarDateGetMany));
 

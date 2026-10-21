@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { ServiceQuery } from '../infrastructure/queries/service.query';
-import { ServiceDetailsDto } from './dtos/service-details.dto';
-import { ServiceRoutesDto } from './dtos/service-routes.dto';
-import { ServiceStationsDto } from './dtos/service-stations.dto';
+import { ServiceQuery } from '../infrastructure/queries/service.query.js';
+import { ServiceDetailsDto } from './dtos/service-details.dto.js';
+import { ServiceRoutesDto } from './dtos/service-routes.dto.js';
+import { ServiceStationsDto } from './dtos/service-stations.dto.js';
 
 @Injectable()
 export class ServiceV3Service {

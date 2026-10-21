@@ -1,5 +1,5 @@
-import { RouteStationListModel } from 'src/libs/route/infrastructure/models/route-station-list.model';
-import { RouteModel } from 'src/libs/route/infrastructure/models/route.model';
+import { RouteStationListModel } from '../../../route/infrastructure/models/route-station-list.model.js';
+import { RouteModel } from '../../../route/infrastructure/models/route.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -9,8 +9,9 @@ import {
     ManyToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    type Relation,
 } from 'typeorm';
-import { ServiceModel } from './service.model';
+import { ServiceModel } from './service.model.js';
 
 @Entity({
     name: 'operating_systems',
@@ -46,23 +47,23 @@ export class OperatingSystemModel {
 
     @ManyToOne(() => ServiceModel, (service) => service.operatingSystems)
     @JoinColumn({ name: 'service_id' })
-    readonly service?: ServiceModel;
+    readonly service?: Relation<ServiceModel>;
 
     @ManyToOne(() => RouteModel, (route) => route.operatingSystems)
     @JoinColumn({ name: 'route_id' })
-    readonly route?: RouteModel;
+    readonly route?: Relation<RouteModel>;
 
     @ManyToOne(
         () => RouteStationListModel,
         (routeStationList) => routeStationList.startOperatingSystems,
     )
     @JoinColumn({ name: 'start_route_station_list_id' })
-    readonly startRouteStationList?: RouteStationListModel;
+    readonly startRouteStationList?: Relation<RouteStationListModel>;
 
     @ManyToOne(
         () => RouteStationListModel,
         (routeStationList) => routeStationList.endOperatingSystems,
     )
     @JoinColumn({ name: 'end_route_station_list_id' })
-    readonly endRouteStationList?: RouteStationListModel;
+    readonly endRouteStationList?: Relation<RouteStationListModel>;
 }

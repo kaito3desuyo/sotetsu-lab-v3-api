@@ -1,6 +1,6 @@
-import { Entity } from 'src/core/classes/entity';
-import { UniqueEntityId } from 'src/core/classes/unique-entity-id';
-import { WatchedList } from 'src/core/classes/watched-list';
+import { Entity } from '../../../core/classes/entity.js';
+import { UniqueEntityId } from '../../../core/classes/unique-entity-id.js';
+import { WatchedList } from '../../../core/classes/watched-list.js';
 
 type OperationSightingManagementLogProps = {
     operationSightingId: string;
@@ -44,9 +44,7 @@ export class OperationSightingManagementLogs extends WatchedList<OperationSighti
         return a.isEqual(b);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     protected _validateWhenCreating(): void {}
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     protected _validateWhenAdding(): void {}
 
     protected _validateWhenRemoving(): void {

@@ -4,8 +4,9 @@ import {
     CreateDateColumn,
     UpdateDateColumn,
     OneToMany,
+    type Relation,
 } from 'typeorm';
-import { TripModel } from '../../../trip/infrastructure/models/trip.model';
+import { TripModel } from '../../../trip/infrastructure/models/trip.model.js';
 
 @Entity({
     name: 'trip_blocks',
@@ -21,5 +22,5 @@ export class TripBlockModel {
     readonly updatedAt?: Date;
 
     @OneToMany(() => TripModel, (trip) => trip.tripBlock, { cascade: true })
-    readonly trips?: TripModel[];
+    readonly trips?: Relation<TripModel[]>;
 }

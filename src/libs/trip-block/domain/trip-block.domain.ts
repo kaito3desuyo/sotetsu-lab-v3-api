@@ -1,7 +1,7 @@
-import { AggregatedRoot } from 'src/core/classes/aggregated-root';
-import { UniqueEntityId } from 'src/core/classes/unique-entity-id';
-import { WatchedList } from 'src/core/classes/watched-list';
-import { Trip, Trips } from 'src/libs/trip/domain/trip.domain';
+import { AggregatedRoot } from '../../../core/classes/aggregated-root.js';
+import { UniqueEntityId } from '../../../core/classes/unique-entity-id.js';
+import { WatchedList } from '../../../core/classes/watched-list.js';
+import { Trip, Trips } from '../../trip/domain/trip.domain.js';
 
 interface ITripBlockProps {
     trips: Trips;
@@ -72,10 +72,7 @@ export class TripBlocks extends WatchedList<TripBlock> {
         return a.isEqual(b);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     protected _validateWhenCreating(): void {}
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     protected _validateWhenAdding(): void {}
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     protected _validateWhenRemoving(): void {}
 }

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { RBACGuard } from './rbac.guard';
+import { RBACGuard } from './rbac.guard.js';
 
 @Module({
     providers: [RBACGuard],

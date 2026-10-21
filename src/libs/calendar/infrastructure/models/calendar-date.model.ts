@@ -7,8 +7,9 @@ import {
     ManyToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    type Relation,
 } from 'typeorm';
-import { CalendarModel } from './calendar.model';
+import { CalendarModel } from './calendar.model.js';
 
 /**
  * GTFS calendar_dates.txt 相当。
@@ -51,5 +52,5 @@ export class CalendarDateModel {
 
     @ManyToOne(() => CalendarModel)
     @JoinColumn({ name: 'calendar_id' })
-    readonly calendar?: CalendarModel;
+    readonly calendar?: Relation<CalendarModel>;
 }

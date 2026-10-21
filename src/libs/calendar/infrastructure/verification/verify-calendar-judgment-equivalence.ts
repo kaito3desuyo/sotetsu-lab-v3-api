@@ -1,16 +1,16 @@
 import dayjs from 'dayjs';
-import { getDayOfWeek, newYearDays, specialCalendarDays } from 'src/core/utils/day-of-week';
-import { CalendarDateExceptionType } from '../models/calendar-date.model';
-import { resolveCalendarIdBySpecificDate } from '../queries/resolve-calendar-id-by-specific-date';
+import { getDayOfWeek, newYearDays, specialCalendarDays } from '../../../../core/utils/day-of-week.js';
+import { CalendarDateExceptionType } from '../models/calendar-date.model.js';
+import { resolveCalendarIdBySpecificDate } from '../queries/resolve-calendar-id-by-specific-date.js';
 import {
     buildHolidayCalendarDateRows,
     CalendarDateSeedRow,
     CalendarValidityRow,
     isWithinCalendarValidity,
-} from '../seeds/build-holiday-calendar-date-rows';
-import { buildNewYearCalendarDateRows } from '../seeds/build-newyear-calendar-date-rows';
-import { buildSpecialCalendarDateRows } from '../seeds/build-special-calendar-date-rows';
-import { legacyDayOfWeekMatcher } from './legacy-day-of-week-matcher';
+} from '../seeds/build-holiday-calendar-date-rows.js';
+import { buildNewYearCalendarDateRows } from '../seeds/build-newyear-calendar-date-rows.js';
+import { buildSpecialCalendarDateRows } from '../seeds/build-special-calendar-date-rows.js';
+import { legacyDayOfWeekMatcher } from './legacy-day-of-week-matcher.js';
 
 const DATE_FORMAT = 'YYYY-MM-DD';
 

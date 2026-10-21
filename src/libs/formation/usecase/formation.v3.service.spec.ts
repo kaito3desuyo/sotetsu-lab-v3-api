@@ -1,14 +1,14 @@
+import type { MockedFunction } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
-import { FormationQuery } from '../infrastructure/queries/formation.query';
-import { FormationDetailsDto } from './dtos/formation-details.dto';
-import { FormationV3Service } from './formation.v3.service';
-import { FormationFindManyBySpecificPeriodParam } from './params/formation-find-many-by-specific-period.param';
+import { FormationQuery } from '../infrastructure/queries/formation.query.js';
+import { FormationDetailsDto } from './dtos/formation-details.dto.js';
+import { FormationV3Service } from './formation.v3.service.js';
+import { FormationFindManyBySpecificPeriodParam } from './params/formation-find-many-by-specific-period.param.js';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyMock = jest.MockedFunction<(...args: any[]) => any>;
+type AnyMock = MockedFunction<(...args: any[]) => any>;
 
 const mockFormationQuery = {
-    findManyBySpecificPeriod: jest.fn() as AnyMock,
+    findManyBySpecificPeriod: vi.fn() as AnyMock,
 };
 
 async function buildService(): Promise<FormationV3Service> {
@@ -26,7 +26,7 @@ describe('FormationV3Service', () => {
     let service: FormationV3Service;
 
     beforeEach(async () => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         service = await buildService();
     });
 

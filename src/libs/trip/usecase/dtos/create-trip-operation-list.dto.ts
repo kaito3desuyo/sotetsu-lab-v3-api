@@ -1,6 +1,6 @@
 import { Exclude } from 'class-transformer';
 import { IsOptional } from 'class-validator';
-import { ValidatableTripOperationListDto } from './validatable-trip-operation-list.dto';
+import { ValidatableTripOperationListDto } from './validatable-trip-operation-list.dto.js';
 
 export class CreateTripOperationListDto extends ValidatableTripOperationListDto {
     @IsOptional()

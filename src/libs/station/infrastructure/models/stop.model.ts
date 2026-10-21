@@ -1,4 +1,4 @@
-import { TimeModel } from 'src/libs/trip/infrastructure/models/time.model';
+import { TimeModel } from '../../../trip/infrastructure/models/time.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -9,8 +9,9 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    type Relation,
 } from 'typeorm';
-import { StationModel } from './station.model';
+import { StationModel } from './station.model.js';
 
 @Entity({
     name: 'stops',
@@ -47,9 +48,9 @@ export class StopModel {
     updatedAt: string;
 
     @OneToMany(() => TimeModel, (time) => time.stop)
-    readonly times?: TimeModel[];
+    readonly times?: Relation<TimeModel[]>;
 
     @ManyToOne(() => StationModel, (station) => station.stops)
     @JoinColumn({ name: 'station_id' })
-    readonly station?: StationModel;
+    readonly station?: Relation<StationModel>;
 }

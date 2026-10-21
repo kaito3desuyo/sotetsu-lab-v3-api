@@ -1,5 +1,5 @@
-import { FormationModel } from 'src/libs/formation/infrastructure/models/formation.model';
-import { RouteModel } from 'src/libs/route/infrastructure/models/route.model';
+import { FormationModel } from '../../../formation/infrastructure/models/formation.model.js';
+import { RouteModel } from '../../../route/infrastructure/models/route.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -7,6 +7,7 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    type Relation,
 } from 'typeorm';
 
 @Entity({
@@ -47,8 +48,8 @@ export class AgencyModel {
     updatedAt: Date;
 
     @OneToMany(() => RouteModel, (route) => route.agency)
-    routes?: RouteModel[];
+    routes?: Relation<RouteModel[]>;
 
     @OneToMany(() => FormationModel, (formation) => formation.agency)
-    formations?: FormationModel[];
+    formations?: Relation<FormationModel[]>;
 }

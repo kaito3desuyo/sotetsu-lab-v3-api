@@ -1,8 +1,8 @@
 import dayjs from 'dayjs';
-import { ItinerarySegment } from 'src/libs/operation/domain/itinerary-link-rule.domain';
-import { VehicleItineraryReadModel } from 'src/libs/operation/usecase/read-models/vehicle-itinerary.read-model';
-import { OperationSightingDetailsDto } from '../dtos/operation-sighting-details.dto';
-import { SightingCarryOver } from './sighting-carry-over.read-model';
+import { ItinerarySegment } from '../../../operation/domain/itinerary-link-rule.domain.js';
+import { VehicleItineraryReadModel } from '../../../operation/usecase/read-models/vehicle-itinerary.read-model.js';
+import { OperationSightingDetailsDto } from '../dtos/operation-sighting-details.dto.js';
+import { SightingCarryOver } from './sighting-carry-over.read-model.js';
 
 const t = (hhmm: string) => {
     const [h, m] = hhmm.split(':').map(Number);
@@ -1215,7 +1215,7 @@ describe('SightingCarryOver（枠の割り当て・spec 4 章）', () => {
         );
     });
     it('割り当ての使い回し: 同じ目撃の配列・同じ検索時刻なら作り直さず、検索時刻が違えば作り直す', () => {
-        const build = jest.spyOn(
+        const build = vi.spyOn(
             SightingCarryOver.prototype as unknown as {
                 buildAssignments: () => unknown;
             },

@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { BaseCalendarDateDto } from './base-calendar-date.dto';
+import { BaseCalendarDateDto } from './base-calendar-date.dto.js';
 
 export class CalendarDateDetailsDto extends BaseCalendarDateDto {
     @Expose()

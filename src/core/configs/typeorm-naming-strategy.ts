@@ -1,6 +1,6 @@
 import { DefaultNamingStrategy } from 'typeorm';
-import { snakeCase } from 'typeorm/util/StringUtils';
-import pluralize, { singular } from 'pluralize';
+import { snakeCase } from 'typeorm/util/StringUtils.js';
+import pluralize from 'pluralize';
 
 export class TypeOrmNamingStrategy extends DefaultNamingStrategy {
     tableName(className: string, customName: string): string {
@@ -23,7 +23,9 @@ export class TypeOrmNamingStrategy extends DefaultNamingStrategy {
     }
 
     joinColumnName(relationName: string, referencedColumnName: string): string {
-        return snakeCase(singular(relationName) + '_' + referencedColumnName);
+        return snakeCase(
+            pluralize.singular(relationName) + '_' + referencedColumnName,
+        );
     }
 
     joinTableName(firstTableName: string, secondTableName: string): string {
@@ -36,7 +38,7 @@ export class TypeOrmNamingStrategy extends DefaultNamingStrategy {
         columnName: string,
     ): string {
         return snakeCase(
-            singular(tableName) + '_' + (columnName || propertyName),
+            pluralize.singular(tableName) + '_' + (columnName || propertyName),
         );
     }
 
@@ -45,7 +47,9 @@ export class TypeOrmNamingStrategy extends DefaultNamingStrategy {
         parentTableIdPropertyName: string,
     ): string {
         return snakeCase(
-            singular(parentTableName) + '_' + parentTableIdPropertyName,
+            pluralize.singular(parentTableName) +
+                '_' +
+                parentTableIdPropertyName,
         );
     }
 }

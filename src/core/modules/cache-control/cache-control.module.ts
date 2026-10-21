@@ -1,7 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
-import { CacheControlInterceptor } from './cache-control.interceptor';
-import { noStoreOnError } from './no-store-on-error.middleware';
+import { CacheControlInterceptor } from './cache-control.interceptor.js';
+import { noStoreOnError } from './no-store-on-error.middleware.js';
 
 /**
  * 読み込むと、成功した返答には `@CacheControl` の値を、エラーの返答には `no-store` を付ける。
@@ -13,6 +13,6 @@ import { noStoreOnError } from './no-store-on-error.middleware';
 })
 export class CacheControlModule implements NestModule {
     configure(consumer: MiddlewareConsumer): void {
-        consumer.apply(noStoreOnError).forRoutes('*');
+        consumer.apply(noStoreOnError).forRoutes('{*splat}');
     }
 }

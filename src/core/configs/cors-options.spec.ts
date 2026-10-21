@@ -1,7 +1,7 @@
 import { Controller, Get, INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { corsOptions } from './cors-options';
+import { corsOptions } from './cors-options.js';
 
 @Controller()
 class DummyController {

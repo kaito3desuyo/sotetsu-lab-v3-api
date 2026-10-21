@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { CalendarQuery } from '../infrastructure/queries/calendar.query';
-import { CalendarDetailsDto } from './dtos/calendar-details.dto';
+import { CalendarQuery } from '../infrastructure/queries/calendar.query.js';
+import { CalendarDetailsDto } from './dtos/calendar-details.dto.js';
 
 @Injectable()
 export class CalendarV3Service {

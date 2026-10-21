@@ -1,6 +1,6 @@
-import { Entity } from 'src/core/classes/entity';
-import { UniqueEntityId } from 'src/core/classes/unique-entity-id';
-import { WatchedList } from 'src/core/classes/watched-list';
+import { Entity } from '../../../core/classes/entity.js';
+import { UniqueEntityId } from '../../../core/classes/unique-entity-id.js';
+import { WatchedList } from '../../../core/classes/watched-list.js';
 
 interface ITimeProps {
     tripId: string;
@@ -45,10 +45,7 @@ export class Times extends WatchedList<Time> {
         return a.isEqual(b);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     protected _validateWhenCreating(): void {}
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     protected _validateWhenAdding(): void {}
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     protected _validateWhenRemoving(): void {}
 }
