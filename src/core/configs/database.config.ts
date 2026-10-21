@@ -1,24 +1,13 @@
-import { join } from 'node:path';
 import { DataSourceOptions } from 'typeorm';
+import { ENTITIES } from './entities.js';
 import { TypeOrmNamingStrategy } from './typeorm-naming-strategy.js';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
+// migrations はアプリでは使わないので、CLI 用の src/core/utils/data-source.ts だけで渡す
 export const DataSourceConfig: DataSourceOptions = {
     type: 'postgres',
     url: process.env.DATABASE_URL,
-    entities: [join(import.meta.dirname, '..', '..', '**', '*.model.{ts,js}')],
-    migrations: [
-        join(
-            import.meta.dirname,
-            '..',
-            '..',
-            '..',
-            'db',
-            'migrations',
-            '**',
-            '*.{ts,js}',
-        ),
-    ],
+    entities: ENTITIES,
     // cli: {
     //     migrationsDir: 'db/migrations',
     // },
