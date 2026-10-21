@@ -1,11 +1,11 @@
-export abstract class BaseTripDto {
-    id!: string;
+export abstract class BaseTripDto<Id extends string | undefined = string> {
+    id!: Id;
     serviceId!: string;
     tripNumber!: string;
     tripClassId!: string;
     tripName!: string | null;
     tripDirection!: number;
-    tripBlockId!: string;
+    tripBlockId!: Id;
     depotIn!: boolean;
     depotOut!: boolean;
     calendarId!: string | null;

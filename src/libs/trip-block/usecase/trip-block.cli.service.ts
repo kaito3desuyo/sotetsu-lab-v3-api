@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { plainToInstance } from 'class-transformer';
 import { OperationQuery } from '../../operation/infrastructure/queries/operation.query.js';
 import { TripBlockCommand } from '../infrastructure/commands/trip-block.command.js';
 import { TripBlockQuery } from '../infrastructure/queries/trip-block.query.js';
@@ -49,8 +50,9 @@ export class TripBlockCliService {
             }),
         };
 
+        // コピー元の id 類は Create の @Exclude で落ちる（組み立て時にコピー先の id で埋め直される）
         const tripBlocks = TripBlocksDomainBuilder.buildFromCreateDto(
-            tripBlockDtos as CreateTripBlockDto[],
+            plainToInstance(CreateTripBlockDto, tripBlockDtos),
         );
 
         for (const tripBlock of tripBlocks.getItems()) {
@@ -69,13 +71,13 @@ export class TripBlockCliService {
                         (o) => o.operationNumber === fromOperationNumber,
                     )?.id;
 
-                    tripOperationList.update({
-                        operationId: toOperationId ?? null,
-                    });
-                }
-
-                if (tripOperationList?.props.operationId === null) {
-                    trip.removeTripOperationList(tripOperationList);
+                    if (toOperationId === undefined) {
+                        trip.removeTripOperationList(tripOperationList);
+                    } else {
+                        tripOperationList.update({
+                            operationId: toOperationId,
+                        });
+                    }
                 }
             }
         }

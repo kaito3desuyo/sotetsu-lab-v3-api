@@ -18,7 +18,7 @@ const SUPABASE_ISS = 'https://example.supabase.co/auth/v1';
 const jwtWithIss = (iss: string) =>
     `x.${Buffer.from(JSON.stringify({ iss })).toString('base64url')}.y`;
 
-const contextFor = (headers: Record<string, string>) => {
+const contextFor = (headers: Partial<Record<string, string>>) => {
     const req: Record<string, unknown> = { headers };
     const ctx = {
         switchToHttp: () => ({ getRequest: () => req }),

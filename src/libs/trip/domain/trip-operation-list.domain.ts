@@ -7,8 +7,8 @@ interface ITripOperationListProps {
     operationId: string;
     startStationId: string;
     endStationId: string;
-    startTimeId: string;
-    endTimeId: string;
+    startTimeId: string | null;
+    endTimeId: string | null;
     /** undefined は「送られていない（今の値を残す）」、null は「つながりなし」 */
     nextTripOperationListId?: string | null;
 }
@@ -26,9 +26,7 @@ export class TripOperationList extends Entity<ITripOperationListProps> {
     }
 
     update(props: Partial<ITripOperationListProps>): void {
-        for (const key of Object.keys(props)) {
-            this._props[key] = props[key];
-        }
+        Object.assign(this._props, props);
     }
 }
 

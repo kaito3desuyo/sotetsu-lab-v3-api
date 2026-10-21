@@ -22,13 +22,13 @@ export class StationModel {
     stationName!: string;
 
     @Column('varchar', { nullable: true })
-    stationSubname!: string;
+    stationSubname!: string | null;
 
     @Column('smallint')
     stationType!: number;
 
     @Column('text', { nullable: true })
-    stationDescription!: string;
+    stationDescription!: string | null;
 
     @Column({
         type: 'geometry',
@@ -36,10 +36,10 @@ export class StationModel {
         srid: 4326,
         nullable: true,
     })
-    stationLatlng!: string;
+    stationLatlng!: string | null;
 
     @Column('varchar', { nullable: true })
-    stationUrl!: string;
+    stationUrl!: string | null;
 
     @Column('boolean')
     wheelchairBoarding!: boolean;

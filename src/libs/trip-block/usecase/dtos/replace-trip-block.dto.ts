@@ -4,7 +4,9 @@ import { ArrayNotEmpty, ValidateIf, ValidateNested } from 'class-validator';
 import { ReplaceTripDto } from '../../../trip/usecase/dtos/replace-trip.dto.js';
 import { ValidatableTripBlockDto } from './validatable-trip-block.dto.js';
 
-export class ReplaceTripBlockDto extends ValidatableTripBlockDto {
+export class ReplaceTripBlockDto extends ValidatableTripBlockDto<
+    string | undefined
+> {
     @ValidateIf((_, v) => v !== undefined)
     id: string | undefined;
 

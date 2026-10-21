@@ -1,6 +1,6 @@
-export abstract class BaseTimeDto {
-    id!: string;
-    tripId!: string;
+export abstract class BaseTimeDto<Id extends string | undefined = string> {
+    id!: Id;
+    tripId!: Id;
     stationId!: string;
     stopId!: string | null;
     stopSequence!: number;

@@ -28,7 +28,7 @@ export class StopModel {
     stopName!: string;
 
     @Column('text', { nullable: true })
-    stopDescription!: string;
+    stopDescription!: string | null;
 
     @Column({
         type: 'geometry',
@@ -36,10 +36,10 @@ export class StopModel {
         srid: 4326,
         nullable: true,
     })
-    stopLatlng!: string;
+    stopLatlng!: string | null;
 
     @Column('uuid', { nullable: true })
-    zoneId!: string;
+    zoneId!: string | null;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
     createdAt!: string;

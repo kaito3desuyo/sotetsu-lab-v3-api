@@ -44,7 +44,8 @@ export class AuthGuard implements CanActivate {
             req.auth = await this.#verify(jwt);
             return true;
         } catch (e) {
-            this.#logger.error(e.message, e.stack);
+            const error = e instanceof Error ? e : new Error(String(e));
+            this.#logger.error(error.message, error.stack);
             throw new UnauthorizedException();
         }
     }

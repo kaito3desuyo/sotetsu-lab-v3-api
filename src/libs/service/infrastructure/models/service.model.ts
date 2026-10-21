@@ -23,7 +23,7 @@ export class ServiceModel {
     serviceName!: string;
 
     @Column('text', { nullable: true })
-    serviceDescription!: string;
+    serviceDescription!: string | null;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
     createdAt!: string;

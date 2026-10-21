@@ -11,7 +11,7 @@ import { ReplaceTimeDto } from './replace-time.dto.js';
 import { ReplaceTripOperationListDto } from './replace-trip-operation-list.dto.js';
 import { ValidatableTripDto } from './validatable-trip.dto.js';
 
-export class ReplaceTripDto extends ValidatableTripDto {
+export class ReplaceTripDto extends ValidatableTripDto<string | undefined> {
     @ValidateIf((_, v) => v !== undefined)
     id: string | undefined;
 

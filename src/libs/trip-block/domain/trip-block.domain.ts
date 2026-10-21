@@ -18,18 +18,17 @@ export class TripBlock extends AggregatedRoot<ITripBlockProps> {
     }
 
     public update(props: Partial<ITripBlockProps>): void {
-        for (const key of Object.keys(props)) {
-            if (key in this._props) {
-                this._props[key] = props[key];
-            }
-        }
+        const known = Object.entries(props).filter(
+            ([key]) => key in this._props,
+        );
+        Object.assign(this._props, Object.fromEntries(known));
     }
 
     public getTripItems(): Trip[] {
         return this._props.trips.getItems();
     }
 
-    public getTripByTripId(tripId: string): Trip {
+    public getTripByTripId(tripId: string): Trip | undefined {
         return this._props.trips.getItemByFn((trip) =>
             trip.id.isEqual(new UniqueEntityId(tripId)),
         );

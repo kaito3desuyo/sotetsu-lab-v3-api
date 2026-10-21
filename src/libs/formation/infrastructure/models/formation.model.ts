@@ -33,13 +33,13 @@ export class FormationModel {
     formationNumber!: string;
 
     @Column('text', { nullable: true })
-    formationDescription!: string;
+    formationDescription!: string | null;
 
     @Column('date', { nullable: true })
-    startDate!: string;
+    startDate!: string | null;
 
     @Column('date', { nullable: true })
-    endDate!: string;
+    endDate!: string | null;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
     createdAt!: Date;

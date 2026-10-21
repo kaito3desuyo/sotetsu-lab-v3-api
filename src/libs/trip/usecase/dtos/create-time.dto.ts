@@ -2,7 +2,7 @@ import { Exclude } from 'class-transformer';
 import { IsOptional } from 'class-validator';
 import { ValidatableTimeDto } from './validatable-time.dto.js';
 
-export class CreateTimeDto extends ValidatableTimeDto {
+export class CreateTimeDto extends ValidatableTimeDto<undefined> {
     @IsOptional()
     @Exclude()
     id: undefined;

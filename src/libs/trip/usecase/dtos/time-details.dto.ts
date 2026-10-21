@@ -4,8 +4,9 @@ import { StationDetailsDto } from '../../../station/usecase/dtos/station-details
 import { StopDetailsDto } from '../../../station/usecase/dtos/stop-details.dto.js';
 import { TripDetailsDto } from './trip-details.dto.js';
 import { TripOperationListDetailsDto } from './trip-operation-list-details.dto.js';
+import { BaseTimeDto } from './base-time.dto.js';
 
-export class TimeDetailsDto {
+export class TimeDetailsDto extends BaseTimeDto {
     @Expose()
     id!: string;
 
@@ -16,7 +17,7 @@ export class TimeDetailsDto {
     stationId!: string;
 
     @Expose()
-    stopId!: string;
+    stopId!: string | null;
 
     @Expose()
     stopSequence!: number;
@@ -28,16 +29,16 @@ export class TimeDetailsDto {
     dropoffType!: number;
 
     @Expose()
-    arrivalDays!: number;
+    arrivalDays!: number | null;
 
     @Expose()
-    arrivalTime!: string;
+    arrivalTime!: string | null;
 
     @Expose()
-    departureDays!: number;
+    departureDays!: number | null;
 
     @Expose()
-    departureTime!: string;
+    departureTime!: string | null;
 
     @Expose()
     createdAt!: Date;

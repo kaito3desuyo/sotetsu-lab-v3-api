@@ -21,25 +21,25 @@ export class AgencyModel {
     agencyNumber!: string;
 
     @Column('varchar', { nullable: true })
-    parentAgencyNumber!: string;
+    parentAgencyNumber!: string | null;
 
     @Column('varchar')
     agencyOfficialName!: string;
 
     @Column('varchar', { nullable: true })
-    agencyName!: string;
+    agencyName!: string | null;
 
     @Column('smallint')
     agencyType!: number;
 
     @Column('varchar', { nullable: true })
-    agencyUrl!: string;
+    agencyUrl!: string | null;
 
     @Column('varchar', { nullable: true })
-    agencyPhone!: string;
+    agencyPhone!: string | null;
 
     @Column('varchar', { nullable: true })
-    agencyFareUrl!: string;
+    agencyFareUrl!: string | null;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
     createdAt!: Date;

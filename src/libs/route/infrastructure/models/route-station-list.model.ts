@@ -33,7 +33,7 @@ export class RouteStationListModel {
     stationSequence!: number;
 
     @Column('varchar', { nullable: true })
-    stationNumbering!: string;
+    stationNumbering!: string | null;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
     createdAt!: string;

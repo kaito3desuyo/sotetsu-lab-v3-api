@@ -51,7 +51,7 @@ export class OperationV3Service {
     findOneWithCurrentPosition(params: {
         operationId: string;
         searchTime?: string;
-    }): Promise<OperationCurrentPositionDto> {
+    }): Promise<OperationCurrentPositionDto | null> {
         const { operationId, searchTime } = params;
 
         const result = this.operationQuery.findOneWithCurrentPosition({

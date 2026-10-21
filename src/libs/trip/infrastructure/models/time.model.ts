@@ -32,7 +32,7 @@ export class TimeModel {
 
     @Column('uuid', { nullable: true })
     @Index()
-    stopId!: string;
+    stopId!: string | null;
 
     @Column('int')
     @Index()
@@ -48,19 +48,19 @@ export class TimeModel {
 
     @Column('smallint', { nullable: true })
     @Index()
-    arrivalDays!: number;
+    arrivalDays!: number | null;
 
     @Column('time', { nullable: true })
     @Index()
-    arrivalTime!: string;
+    arrivalTime!: string | null;
 
     @Column('smallint', { nullable: true })
     @Index()
-    departureDays!: number;
+    departureDays!: number | null;
 
     @Column('time', { nullable: true })
     @Index()
-    departureTime!: string;
+    departureTime!: string | null;
     /*
       @Column('bool')
       depot_in: boolean;

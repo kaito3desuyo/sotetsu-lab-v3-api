@@ -25,10 +25,10 @@ export class VehicleModel {
     belongs!: string;
 
     @Column('date', { nullable: true })
-    productionDate!: string;
+    productionDate!: string | null;
 
     @Column('date', { nullable: true })
-    scrappedDate!: string;
+    scrappedDate!: string | null;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
     createdAt!: Date;

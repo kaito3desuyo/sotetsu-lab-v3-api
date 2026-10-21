@@ -34,7 +34,7 @@ export class TripBlockQuery {
 
     async findOneTripBlockByTripBlockId(
         tripBlockId: string,
-    ): Promise<TripBlockDetailsDto> {
+    ): Promise<TripBlockDetailsDto | null> {
         const model = await this.tripBlockRepository
             .createQueryBuilder('tripBlock')
             .select('tripBlock')
@@ -43,12 +43,13 @@ export class TripBlockQuery {
             .leftJoinAndSelect('trips.tripOperationLists', 'tripOperationLists')
             .where('tripBlock.id = :tripBlockId', { tripBlockId })
             .getOne();
+        if (!model) return null;
         return TripBlockDtoBuilder.buildFromModel(model);
     }
 
     async findOneTripBlockByTripId(
         tripId: string,
-    ): Promise<TripBlockDetailsDto> {
+    ): Promise<TripBlockDetailsDto | null> {
         const model = await this.tripBlockRepository
             .createQueryBuilder('tripBlock')
             .select('tripBlock')
@@ -57,6 +58,7 @@ export class TripBlockQuery {
             .leftJoinAndSelect('trips.tripOperationLists', 'tripOperationLists')
             .where('trips.id = :tripId', { tripId })
             .getOne();
+        if (!model) return null;
         return TripBlockDtoBuilder.buildFromModel(model);
     }
 

@@ -6,10 +6,13 @@ import {
     ValidateIf,
 } from 'class-validator';
 import { ETripDirection } from '../../special/enums/trip.enum.js';
+import { BaseTripDto } from './base-trip.dto.js';
 
-export abstract class ValidatableTripDto {
+export abstract class ValidatableTripDto<
+    Id extends string | undefined = string,
+> extends BaseTripDto<Id> {
     @IsUUID()
-    id!: string;
+    id!: Id;
 
     @IsUUID()
     serviceId!: string;
@@ -28,7 +31,7 @@ export abstract class ValidatableTripDto {
     tripDirection!: number;
 
     @IsUUID()
-    tripBlockId!: string;
+    tripBlockId!: Id;
 
     @IsBoolean()
     depotIn!: boolean;

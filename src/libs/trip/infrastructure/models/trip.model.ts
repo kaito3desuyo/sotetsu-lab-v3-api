@@ -36,7 +36,7 @@ export class TripModel {
     tripClassId!: string;
 
     @Column('varchar', { nullable: true })
-    tripName!: string;
+    tripName!: string | null;
 
     @Column('smallint')
     tripDirection!: number;
@@ -53,11 +53,11 @@ export class TripModel {
 
     @Column('uuid', { nullable: true })
     @Index()
-    calendarId!: string;
+    calendarId!: string | null;
 
     @Column('uuid', { nullable: true })
     @Index()
-    extraCalendarId!: string;
+    extraCalendarId!: string | null;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
     readonly createdAt?: Date;

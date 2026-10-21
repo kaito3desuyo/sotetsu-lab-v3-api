@@ -12,13 +12,13 @@ export class CalendarV3Service {
         return this.calendarQuery.findManyByServiceName(params);
     }
 
-    findOne(params: { id: string }): Promise<CalendarDetailsDto> {
+    findOne(params: { id: string }): Promise<CalendarDetailsDto | null> {
         return this.calendarQuery.findOneById(params);
     }
 
     findOneBySpecificDate(params: {
         date: string;
-    }): Promise<CalendarDetailsDto> {
+    }): Promise<CalendarDetailsDto | undefined> {
         const { date } = params;
 
         return this.calendarQuery.findOneBySpecificDate({

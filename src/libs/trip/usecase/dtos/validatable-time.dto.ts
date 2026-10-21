@@ -8,12 +8,14 @@ import {
 } from 'class-validator';
 import { BaseTimeDto } from './base-time.dto.js';
 
-export abstract class ValidatableTimeDto extends BaseTimeDto {
+export abstract class ValidatableTimeDto<
+    Id extends string | undefined = string,
+> extends BaseTimeDto<Id> {
     @IsUUID()
-    id!: string;
+    id!: Id;
 
     @IsUUID()
-    tripId!: string;
+    tripId!: Id;
 
     @IsUUID()
     stationId!: string;

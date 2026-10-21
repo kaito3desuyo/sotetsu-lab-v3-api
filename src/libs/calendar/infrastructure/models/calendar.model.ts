@@ -52,7 +52,7 @@ export class CalendarModel {
     startDate!: string;
 
     @Column('date', { nullable: true })
-    endDate!: string;
+    endDate!: string | null;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
     createdAt!: Date;

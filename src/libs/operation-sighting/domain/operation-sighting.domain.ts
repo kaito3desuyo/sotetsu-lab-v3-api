@@ -27,9 +27,7 @@ export class OperationSighting extends AggregatedRoot<OperationSightingProps> {
     }
 
     public update(props: Partial<OperationSightingProps>): void {
-        for (const key of Object.keys(props)) {
-            this.props[key] = props[key];
-        }
+        Object.assign(this.props, props);
     }
 
     invalidate(userId: string, reason: string): void {

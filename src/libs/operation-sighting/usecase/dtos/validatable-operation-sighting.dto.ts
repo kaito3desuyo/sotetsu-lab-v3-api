@@ -2,9 +2,11 @@ import { Type } from 'class-transformer';
 import { IsDate, IsUUID } from 'class-validator';
 import { BaseOperationSightingDto } from './base-operation-sighting.dto.js';
 
-export abstract class ValidatableOperationSightingDto extends BaseOperationSightingDto {
+export abstract class ValidatableOperationSightingDto<
+    Id extends string | undefined = string,
+> extends BaseOperationSightingDto<Id> {
     @IsUUID()
-    id!: string;
+    id!: Id;
 
     @IsUUID()
     formationId!: string;

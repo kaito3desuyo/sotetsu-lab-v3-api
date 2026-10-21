@@ -26,28 +26,28 @@ export class RouteModel {
     agencyId!: string;
 
     @Column('varchar', { nullable: true })
-    routeNumber!: string;
+    routeNumber!: string | null;
 
     @Column('varchar')
     routeName!: string;
 
     @Column('varchar', { nullable: true })
-    routeNickname!: string;
+    routeNickname!: string | null;
 
     @Column('text', { nullable: true })
-    routeDescription!: string;
+    routeDescription!: string | null;
 
     @Column('smallint')
     routeType!: number;
 
     @Column('varchar', { nullable: true })
-    routeUrl!: string;
+    routeUrl!: string | null;
 
     @Column('varchar', { nullable: true })
-    routeColor!: string;
+    routeColor!: string | null;
 
     @Column('varchar', { nullable: true })
-    routeTextColor!: string;
+    routeTextColor!: string | null;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
     createdAt!: Date;

@@ -6,7 +6,7 @@ import { CreateTimeDto } from './create-time.dto.js';
 import { CreateTripOperationListDto } from './create-trip-operation-list.dto.js';
 import { ValidatableTripDto } from './validatable-trip.dto.js';
 
-export class CreateTripDto extends ValidatableTripDto {
+export class CreateTripDto extends ValidatableTripDto<undefined> {
     @IsOptional()
     @Exclude()
     id: undefined;
