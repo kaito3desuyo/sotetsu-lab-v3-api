@@ -18,13 +18,10 @@ export class TripBlockCliService {
         toCalendarId: string,
     ): Promise<void> {
         const tripBlockDtos = await this.tripBlockQuery.findMany({
-            join: {
-                alias: 'tripBlock',
-                leftJoinAndSelect: {
-                    trips: 'tripBlock.trips',
-                    times: 'trips.times',
-                    tripOperationLists: 'trips.tripOperationLists',
-                    operation: 'tripOperationLists.operation',
+            relations: {
+                trips: {
+                    times: true,
+                    tripOperationLists: { operation: true },
                 },
             },
             where: {

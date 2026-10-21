@@ -29,7 +29,7 @@ const mockRepository = {
     query: mockRawQuery,
     find: mockFind,
     manager: {
-        connection: {
+        dataSource: {
             getMetadata: (target: { name: string }) => ({
                 tableName: target.name,
             }),
