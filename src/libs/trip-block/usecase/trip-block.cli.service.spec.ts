@@ -106,4 +106,56 @@ describe('TripBlockCliService.copyTripBlocks', () => {
         expect(trip2.props.calendarId).toBe('to');
         expect(trip2.props.tripOperationLists.getItems()).toEqual([]);
     });
+
+    it('「次の区間」はコピー元のダイヤの区間を指すので、写さず null にする', async () => {
+        const bulkCreate = vi.fn().mockResolvedValue([]);
+        const base = trip('trip1', '1001', 'opA');
+        const source = {
+            ...base,
+            tripOperationLists: [
+                {
+                    ...base.tripOperationLists[0],
+                    nextTripOperationListId: 'from-calendar-tol',
+                },
+            ],
+        };
+        const module = await Test.createTestingModule({
+            providers: [
+                TripBlockCliService,
+                { provide: TripBlockCommand, useValue: { bulkCreate } },
+                {
+                    provide: TripBlockQuery,
+                    useValue: {
+                        findMany: vi
+                            .fn()
+                            .mockResolvedValue([
+                                { id: 'block', trips: [source] },
+                            ]),
+                    },
+                },
+                {
+                    provide: OperationQuery,
+                    useValue: {
+                        findMany: vi
+                            .fn()
+                            .mockResolvedValueOnce([
+                                { id: 'opA', operationNumber: '11' },
+                            ])
+                            .mockResolvedValueOnce([
+                                { id: 'opA2', operationNumber: '11' },
+                            ]),
+                    },
+                },
+            ],
+        }).compile();
+        vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+        await module.get(TripBlockCliService).copyTripBlocks('from', 'to');
+
+        const blocks: TripBlocks = bulkCreate.mock.calls[0][0];
+        const [copied] = blocks.getItems()[0].getTripItems();
+        const [tol] = copied.props.tripOperationLists.getItems();
+        expect(tol.props.operationId).toBe('opA2');
+        expect(tol.props.nextTripOperationListId).toBeNull();
+    });
 });

@@ -61,6 +61,11 @@ export class TripBlockCliService {
                     calendarId: toCalendarId,
                 });
 
+                // 「次の区間」はコピー元のダイヤの区間を指しているので写さない
+                for (const tol of trip.props.tripOperationLists.getItems()) {
+                    tol.update({ nextTripOperationListId: null });
+                }
+
                 const tripOperationList = trip.getFirstTripOperationList();
 
                 if (tripOperationList) {
