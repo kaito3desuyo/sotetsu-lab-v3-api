@@ -1,1 +1,1 @@
-node dist/main.js
+node --import ./dist/register-node-path.js dist/main.js
