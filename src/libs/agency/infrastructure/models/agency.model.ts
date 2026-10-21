@@ -1,5 +1,5 @@
-import { FormationModel } from 'src/libs/formation/infrastructure/models/formation.model';
-import { RouteModel } from 'src/libs/route/infrastructure/models/route.model';
+import { FormationModel } from '../../../formation/infrastructure/models/formation.model.js';
+import { RouteModel } from '../../../route/infrastructure/models/route.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -7,7 +7,7 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
-    Relation,
+    type Relation,
 } from 'typeorm';
 
 @Entity({

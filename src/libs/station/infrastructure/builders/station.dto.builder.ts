@@ -1,7 +1,7 @@
 import { plainToClass } from 'class-transformer';
-import { transformerOptions } from 'src/core/configs/transformer-options';
-import { StationDetailsDto } from '../../usecase/dtos/station-details.dto';
-import { StationModel } from '../models/station.model';
+import { transformerOptions } from '../../../../core/configs/transformer-options.js';
+import { StationDetailsDto } from '../../usecase/dtos/station-details.dto.js';
+import { StationModel } from '../models/station.model.js';
 
 export const StationDtoBuilder = {
     buildFromModel: (model: StationModel): StationDetailsDto => {

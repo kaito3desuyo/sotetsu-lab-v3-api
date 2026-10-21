@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CalendarDatesDtoBuilder } from '../builders/calendar-date.dto.builder';
-import { CalendarDateModel } from '../models/calendar-date.model';
-import { CalendarDateDetailsDto } from '../../usecase/dtos/calendar-date-details.dto';
+import { CalendarDatesDtoBuilder } from '../builders/calendar-date.dto.builder.js';
+import { CalendarDateModel } from '../models/calendar-date.model.js';
+import { CalendarDateDetailsDto } from '../../usecase/dtos/calendar-date-details.dto.js';
 
 @Injectable()
 export class CalendarDateQuery {

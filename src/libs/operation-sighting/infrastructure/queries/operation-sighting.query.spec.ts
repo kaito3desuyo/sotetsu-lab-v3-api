@@ -2,8 +2,8 @@ import type { MockedFunction } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import dayjs from 'dayjs';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { OperationSightingModel } from '../models/operation-sighting.model';
-import { OperationSightingQuery } from './operation-sighting.query';
+import { OperationSightingModel } from '../models/operation-sighting.model.js';
+import { OperationSightingQuery } from './operation-sighting.query.js';
 
 type AnyMock = MockedFunction<(...args: any[]) => any>;
 

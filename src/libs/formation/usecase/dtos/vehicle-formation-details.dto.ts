@@ -1,8 +1,8 @@
-import { Nested } from 'src/core/types/nested';
+import type { Nested } from '../../../../core/types/nested.js';
 import { Expose, Type } from 'class-transformer';
-import { VehicleDetailsDto } from 'src/libs/vehicle/usecase/dtos/vehicle-details.dto';
-import { BaseVehicleFormationModel } from './base-vehicle-formation.dto';
-import { FormationDetailsDto } from './formation-details.dto';
+import { VehicleDetailsDto } from '../../../vehicle/usecase/dtos/vehicle-details.dto.js';
+import { BaseVehicleFormationModel } from './base-vehicle-formation.dto.js';
+import { FormationDetailsDto } from './formation-details.dto.js';
 
 export class VehicleFormationDetailsDto extends BaseVehicleFormationModel {
     @Expose()

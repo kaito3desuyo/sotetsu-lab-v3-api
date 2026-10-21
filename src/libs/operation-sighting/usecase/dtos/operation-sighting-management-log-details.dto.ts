@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { BaseOperationSightingManagementLogDto } from './base-operation-sighting-management-log.dto';
+import { BaseOperationSightingManagementLogDto } from './base-operation-sighting-management-log.dto.js';
 
 export class OperationSightingManagementLogDetailsDto extends BaseOperationSightingManagementLogDto {
     @Expose({ name: 'id' })

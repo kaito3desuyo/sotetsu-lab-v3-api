@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { CalendarDateCommand } from './infrastructure/command/calendar-date.command';
-import { CalendarDateModel } from './infrastructure/models/calendar-date.model';
-import { CalendarModel } from './infrastructure/models/calendar.model';
-import { CalendarDateQuery } from './infrastructure/queries/calendar-date.query';
-import { CalendarQuery } from './infrastructure/queries/calendar.query';
+import { CalendarDateCommand } from './infrastructure/command/calendar-date.command.js';
+import { CalendarDateModel } from './infrastructure/models/calendar-date.model.js';
+import { CalendarModel } from './infrastructure/models/calendar.model.js';
+import { CalendarDateQuery } from './infrastructure/queries/calendar-date.query.js';
+import { CalendarQuery } from './infrastructure/queries/calendar.query.js';
 
 @Module({
     imports: [

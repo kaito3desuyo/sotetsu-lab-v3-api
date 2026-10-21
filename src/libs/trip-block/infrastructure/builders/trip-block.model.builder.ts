@@ -1,6 +1,6 @@
-import { TripModelBuilder } from 'src/libs/trip/infrastructure/builders/trip.model.builder';
-import { TripBlock, TripBlocks } from '../../domain/trip-block.domain';
-import { TripBlockModel } from '../models/trip-block.model';
+import { TripModelBuilder } from '../../../trip/infrastructure/builders/trip.model.builder.js';
+import { TripBlock, TripBlocks } from '../../domain/trip-block.domain.js';
+import { TripBlockModel } from '../models/trip-block.model.js';
 
 export const TripBlockModelBuilder = {
     buildFromDomain: (domain: TripBlock): TripBlockModel => {

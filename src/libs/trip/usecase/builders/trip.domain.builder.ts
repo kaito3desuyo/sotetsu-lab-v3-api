@@ -1,10 +1,10 @@
-import { UniqueEntityId } from 'src/core/classes/unique-entity-id';
-import { Trip, Trips } from '../../domain/trip.domain';
-import { CreateTripDto } from '../dtos/create-trip.dto';
-import { ReplaceTripDto } from '../dtos/replace-trip.dto';
-import { TimesDomainBuilder } from './time.domain.builder';
-import { TripOperationListsDomainBuilder } from './trip-operation-list.domain.builder';
-import { TripDetailsDto } from '../dtos/trip-details.dto';
+import { UniqueEntityId } from '../../../../core/classes/unique-entity-id.js';
+import { Trip, Trips } from '../../domain/trip.domain.js';
+import { CreateTripDto } from '../dtos/create-trip.dto.js';
+import { ReplaceTripDto } from '../dtos/replace-trip.dto.js';
+import { TimesDomainBuilder } from './time.domain.builder.js';
+import { TripOperationListsDomainBuilder } from './trip-operation-list.domain.builder.js';
+import { TripDetailsDto } from '../dtos/trip-details.dto.js';
 
 export const TripDomainBuilder = {
     buildFromDetailsDto: (dto: TripDetailsDto): Trip => {

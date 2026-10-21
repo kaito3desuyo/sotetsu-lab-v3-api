@@ -7,9 +7,9 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
-import { isRole } from '../rbac/role.enum';
-import { AuthContext } from './auth-context';
-import { readUnverifiedIssuer } from './jwt-issuer';
+import { isRole } from '../rbac/role.enum.js';
+import { AuthContext } from './auth-context.js';
+import { readUnverifiedIssuer } from './jwt-issuer.js';
 
 const supabaseIssuer = `${process.env.SUPABASE_URL}/auth/v1`;
 

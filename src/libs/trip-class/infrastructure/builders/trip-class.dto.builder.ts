@@ -1,7 +1,7 @@
 import { plainToClass } from 'class-transformer';
-import { transformerOptions } from 'src/core/configs/transformer-options';
-import { TripClassModel } from 'src/libs/trip-class/infrastructure/models/trip-class.model';
-import { TripClassDetailsDto } from 'src/libs/trip-class/usecase/dtos/trip-class-details.dto';
+import { transformerOptions } from '../../../../core/configs/transformer-options.js';
+import { TripClassModel } from '../models/trip-class.model.js';
+import { TripClassDetailsDto } from '../../usecase/dtos/trip-class-details.dto.js';
 
 export const TripClassDtoBuilder = {
     buildFromModel: (model: TripClassModel): TripClassDetailsDto => {

@@ -1,9 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { TripDetailsDto } from '../../usecase/dtos/trip-details.dto';
-import { TripDtoBuilder, TripsDtoBuilder } from '../builders/trip.dto.builder';
-import { TripModel } from '../models/trip.model';
+import { TripDetailsDto } from '../../usecase/dtos/trip-details.dto.js';
+import {
+    TripDtoBuilder,
+    TripsDtoBuilder,
+} from '../builders/trip.dto.builder.js';
+import { TripModel } from '../models/trip.model.js';
 
 @Injectable()
 export class TripQuery {

@@ -2,9 +2,9 @@ import type { MockedFunction } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
-import customParseFormat from 'dayjs/plugin/customParseFormat';
-import { FormationModel } from '../models/formation.model';
-import { FormationQuery } from './formation.query';
+import customParseFormat from 'dayjs/plugin/customParseFormat.js';
+import { FormationModel } from '../models/formation.model.js';
+import { FormationQuery } from './formation.query.js';
 
 dayjs.extend(customParseFormat);
 

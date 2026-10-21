@@ -7,9 +7,9 @@ import {
     ManyToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
-    Relation,
+    type Relation,
 } from 'typeorm';
-import { CalendarModel } from './calendar.model';
+import { CalendarModel } from './calendar.model.js';
 
 /**
  * GTFS calendar_dates.txt 相当。

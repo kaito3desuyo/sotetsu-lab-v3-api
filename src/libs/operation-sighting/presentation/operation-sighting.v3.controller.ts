@@ -8,19 +8,19 @@ import {
     Query,
     UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from 'src/core/modules/auth/auth.guard';
-import { CACHE_CONTROL } from 'src/core/modules/cache-control/cache-control.constants';
-import { CacheControl } from 'src/core/modules/cache-control/cache-control.decorator';
-import { RBAC } from 'src/core/modules/rbac/rbac.decorator';
-import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
-import { Role } from 'src/core/modules/rbac/role.enum';
-import { InvalidateOperationSightingDto } from '../usecase/dtos/invalidate-operation-sighting.dto';
-import { OperationSightingDetailsDto } from '../usecase/dtos/operation-sighting-details.dto';
-import { parseCommaList } from 'src/core/utils/comma-list';
-import { OperationSightingTimeCrossSectionDto } from '../usecase/dtos/operation-sighting-time-cross-section.dto';
-import { PostOperationSightingDto } from '../usecase/dtos/post-operation-sighting.dto';
-import { RestoreOperationSightingDto } from '../usecase/dtos/restore-operation-sighting.dto';
-import { OperationSightingV3Service } from '../usecase/operation-sighting.v3.service';
+import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
+import { CACHE_CONTROL } from '../../../core/modules/cache-control/cache-control.constants.js';
+import { CacheControl } from '../../../core/modules/cache-control/cache-control.decorator.js';
+import { RBAC } from '../../../core/modules/rbac/rbac.decorator.js';
+import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
+import { Role } from '../../../core/modules/rbac/role.enum.js';
+import { InvalidateOperationSightingDto } from '../usecase/dtos/invalidate-operation-sighting.dto.js';
+import { OperationSightingDetailsDto } from '../usecase/dtos/operation-sighting-details.dto.js';
+import { parseCommaList } from '../../../core/utils/comma-list.js';
+import { OperationSightingTimeCrossSectionDto } from '../usecase/dtos/operation-sighting-time-cross-section.dto.js';
+import { PostOperationSightingDto } from '../usecase/dtos/post-operation-sighting.dto.js';
+import { RestoreOperationSightingDto } from '../usecase/dtos/restore-operation-sighting.dto.js';
+import { OperationSightingV3Service } from '../usecase/operation-sighting.v3.service.js';
 
 @Controller()
 @UseGuards(AuthGuard, RBACGuard)

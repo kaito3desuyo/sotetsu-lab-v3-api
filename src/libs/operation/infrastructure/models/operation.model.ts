@@ -1,6 +1,6 @@
-import { CalendarModel } from 'src/libs/calendar/infrastructure/models/calendar.model';
-import { OperationSightingModel } from 'src/libs/operation-sighting/infrastructure/models/operation-sighting.model';
-import { TripOperationListModel } from 'src/libs/trip/infrastructure/models/trip-operation-list.model';
+import { CalendarModel } from '../../../calendar/infrastructure/models/calendar.model.js';
+import { OperationSightingModel } from '../../../operation-sighting/infrastructure/models/operation-sighting.model.js';
+import { TripOperationListModel } from '../../../trip/infrastructure/models/trip-operation-list.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -11,7 +11,7 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
-    Relation,
+    type Relation,
 } from 'typeorm';
 
 @Entity({

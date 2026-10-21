@@ -1,17 +1,17 @@
 import { Module } from '@nestjs/common';
 import { RouterModule, Routes } from '@nestjs/core';
-import { AgencyV3Module } from 'src/libs/agency/agency.v3.module';
-import { CalendarDateV3Module } from 'src/libs/calendar/calendar-date.v3.module';
-import { CalendarV3Module } from 'src/libs/calendar/calendar.v3.module';
-import { FormationV3Module } from 'src/libs/formation/formation.v3.module';
-import { OperationSightingV3Module } from 'src/libs/operation-sighting/operation-sighting.v3.module';
-import { OperationV3Module } from 'src/libs/operation/operation.v3.module';
-import { RouteV3Module } from 'src/libs/route/route.v3.module';
-import { ServiceV3Module } from 'src/libs/service/service.v3.module';
-import { StationV3Module } from 'src/libs/station/station.v3.module';
-import { TripBlockV3Module } from 'src/libs/trip-block/trip-block.v3.module';
-import { TripClassV3Module } from 'src/libs/trip-class/trip-class.v3.module';
-import { TripV3Module } from 'src/libs/trip/trip.v3.module';
+import { AgencyV3Module } from '../../../libs/agency/agency.v3.module.js';
+import { CalendarDateV3Module } from '../../../libs/calendar/calendar-date.v3.module.js';
+import { CalendarV3Module } from '../../../libs/calendar/calendar.v3.module.js';
+import { FormationV3Module } from '../../../libs/formation/formation.v3.module.js';
+import { OperationSightingV3Module } from '../../../libs/operation-sighting/operation-sighting.v3.module.js';
+import { OperationV3Module } from '../../../libs/operation/operation.v3.module.js';
+import { RouteV3Module } from '../../../libs/route/route.v3.module.js';
+import { ServiceV3Module } from '../../../libs/service/service.v3.module.js';
+import { StationV3Module } from '../../../libs/station/station.v3.module.js';
+import { TripBlockV3Module } from '../../../libs/trip-block/trip-block.v3.module.js';
+import { TripClassV3Module } from '../../../libs/trip-class/trip-class.v3.module.js';
+import { TripV3Module } from '../../../libs/trip/trip.v3.module.js';
 
 const routes: Routes = [
     {

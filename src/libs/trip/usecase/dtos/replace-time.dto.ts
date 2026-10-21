@@ -1,6 +1,6 @@
 import { Exclude } from 'class-transformer';
 import { IsOptional, ValidateIf } from 'class-validator';
-import { ValidatableTimeDto } from './validatable-time.dto';
+import { ValidatableTimeDto } from './validatable-time.dto.js';
 
 export class ReplaceTimeDto extends ValidatableTimeDto {
     @ValidateIf((_, v) => v !== undefined)

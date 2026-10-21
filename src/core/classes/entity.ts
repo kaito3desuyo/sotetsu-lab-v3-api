@@ -1,4 +1,4 @@
-import { UniqueEntityId } from './unique-entity-id';
+import { UniqueEntityId } from './unique-entity-id.js';
 
 const isEntity = <T>(v: unknown): v is Entity<T> => {
     return v instanceof Entity;

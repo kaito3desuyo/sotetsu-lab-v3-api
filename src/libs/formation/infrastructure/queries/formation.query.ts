@@ -2,12 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import { Repository } from 'typeorm';
-import { FormationDetailsDto } from '../../usecase/dtos/formation-details.dto';
+import { FormationDetailsDto } from '../../usecase/dtos/formation-details.dto.js';
 import {
     FormationDtoBuilder,
     FormationsDtoBuilder,
-} from '../builders/formation.dto.builder';
-import { FormationModel } from '../models/formation.model';
+} from '../builders/formation.dto.builder.js';
+import { FormationModel } from '../models/formation.model.js';
 
 @Injectable()
 export class FormationQuery {

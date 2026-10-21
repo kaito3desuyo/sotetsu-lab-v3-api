@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { TripFindManyByStationIdQuery } from './trip-find-many-by-station-id.query';
+import { TripFindManyByStationIdQuery } from './trip-find-many-by-station-id.query.js';
 
 describe('TripFindManyByStationIdQuery', () => {
     it('tripDirection を number へ変換し検証を通過する', async () => {

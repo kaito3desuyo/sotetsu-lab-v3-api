@@ -1,8 +1,8 @@
-import { UseCaseError } from 'src/core/classes/custom-error';
+import { UseCaseError } from '../../../core/classes/custom-error.js';
 import {
     ItineraryLinkRule,
     ItinerarySegment,
-} from './itinerary-link-rule.domain';
+} from './itinerary-link-rule.domain.js';
 
 /** 送られた区間の運番・駅・時刻・列車のまとまり（決まり 1 を送られた値で組み直す材料） */
 export type ProposedSegmentShape = Omit<

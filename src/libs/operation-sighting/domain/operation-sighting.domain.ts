@@ -1,10 +1,10 @@
-import { AggregatedRoot } from 'src/core/classes/aggregated-root';
-import { UniqueEntityId } from 'src/core/classes/unique-entity-id';
-import { OperationSightingInvalidation } from 'src/libs/operation-sighting/domain/operation-sighting-invalidation.domain';
+import { AggregatedRoot } from '../../../core/classes/aggregated-root.js';
+import { UniqueEntityId } from '../../../core/classes/unique-entity-id.js';
+import { OperationSightingInvalidation } from './operation-sighting-invalidation.domain.js';
 import {
     OperationSightingManagementLog,
     OperationSightingManagementLogs,
-} from './operation-sighting-management-log.domain';
+} from './operation-sighting-management-log.domain.js';
 
 type OperationSightingProps = {
     formationId: string;

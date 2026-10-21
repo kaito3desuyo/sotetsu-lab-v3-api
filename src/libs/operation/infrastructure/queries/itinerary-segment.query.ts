@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { TripOperationListModel } from 'src/libs/trip/infrastructure/models/trip-operation-list.model';
-import { secondsOfServiceDay } from 'src/core/utils/datetime';
+import { TripOperationListModel } from '../../../trip/infrastructure/models/trip-operation-list.model.js';
+import { secondsOfServiceDay } from '../../../../core/utils/datetime.js';
 import { Repository } from 'typeorm';
-import { ItinerarySegment } from '../../domain/itinerary-link-rule.domain';
+import { ItinerarySegment } from '../../domain/itinerary-link-rule.domain.js';
 
 /** 行程表の材料（カレンダーの運用の区間すべて）を 1 回の問い合わせで引く */
 @Injectable()

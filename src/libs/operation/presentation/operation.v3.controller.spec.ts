@@ -1,14 +1,14 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { AuthGuard } from 'src/core/modules/auth/auth.guard';
-import { CacheControlModule } from 'src/core/modules/cache-control/cache-control.module';
-import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
-import { validationPipeOptions } from 'src/core/configs/validator-options';
-import { OperationV3Service } from '../usecase/operation.v3.service';
-import { OperationV3Controller } from './operation.v3.controller';
+import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
+import { CacheControlModule } from '../../../core/modules/cache-control/cache-control.module.js';
+import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
+import { validationPipeOptions } from '../../../core/configs/validator-options.js';
+import { OperationV3Service } from '../usecase/operation.v3.service.js';
+import { OperationV3Controller } from './operation.v3.controller.js';
 
-vi.mock('src/core/modules/auth/auth.guard', () => ({
+vi.mock('../../../core/modules/auth/auth.guard.js', () => ({
     AuthGuard: class {},
 }));
 

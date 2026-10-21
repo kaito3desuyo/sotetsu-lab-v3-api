@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { FormationModel } from './infrastructure/models/formation.model';
-import { VehicleFormationModel } from './infrastructure/models/vehicle-formation.model';
-import { FormationQuery } from './infrastructure/queries/formation.query';
+import { FormationModel } from './infrastructure/models/formation.model.js';
+import { VehicleFormationModel } from './infrastructure/models/vehicle-formation.model.js';
+import { FormationQuery } from './infrastructure/queries/formation.query.js';
 
 @Module({
     imports: [

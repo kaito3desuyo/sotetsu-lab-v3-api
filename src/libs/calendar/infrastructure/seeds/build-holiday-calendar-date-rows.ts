@@ -2,7 +2,7 @@ import {
     CALENDAR_DATE_EXCEPTION_TYPE_ADDED,
     CALENDAR_DATE_EXCEPTION_TYPE_REMOVED,
     CalendarDateExceptionType,
-} from '../models/calendar-date.model';
+} from '../models/calendar-date.model.js';
 
 export interface CalendarValidityRow {
     id: string;

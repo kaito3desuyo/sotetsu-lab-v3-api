@@ -1,7 +1,7 @@
-import { Nested } from 'src/core/types/nested';
+import type { Nested } from '../../../../core/types/nested.js';
 import { Expose, Type } from 'class-transformer';
-import { TripDetailsDto } from 'src/libs/trip/usecase/dtos/trip-details.dto';
-import { BaseTripBlockDto } from './base-trip-block.dto';
+import { TripDetailsDto } from '../../../trip/usecase/dtos/trip-details.dto.js';
+import { BaseTripBlockDto } from './base-trip-block.dto.js';
 
 export class TripBlockDetailsDto extends BaseTripBlockDto {
     @Expose()

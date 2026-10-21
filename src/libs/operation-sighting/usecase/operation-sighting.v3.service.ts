@@ -1,38 +1,38 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
-import { UniqueEntityId } from 'src/core/classes/unique-entity-id';
-import { UseCaseError } from 'src/core/classes/custom-error';
-import { UnexpectedError } from 'src/core/classes/unexpected-error';
-import { getBaseDate } from 'src/core/utils/datetime';
-import { CalendarQuery } from 'src/libs/calendar/infrastructure/queries/calendar.query';
-import { FormationQuery } from 'src/libs/formation/infrastructure/queries/formation.query';
-import { VehicleItineraryReadModel } from 'src/libs/operation/usecase/read-models/vehicle-itinerary.read-model';
-import { ItinerarySegmentQuery } from 'src/libs/operation/infrastructure/queries/itinerary-segment.query';
-import { OperationQuery } from 'src/libs/operation/infrastructure/queries/operation.query';
+import { UniqueEntityId } from '../../../core/classes/unique-entity-id.js';
+import { UseCaseError } from '../../../core/classes/custom-error.js';
+import { UnexpectedError } from '../../../core/classes/unexpected-error.js';
+import { getBaseDate } from '../../../core/utils/datetime.js';
+import { CalendarQuery } from '../../calendar/infrastructure/queries/calendar.query.js';
+import { FormationQuery } from '../../formation/infrastructure/queries/formation.query.js';
+import { VehicleItineraryReadModel } from '../../operation/usecase/read-models/vehicle-itinerary.read-model.js';
+import { ItinerarySegmentQuery } from '../../operation/infrastructure/queries/itinerary-segment.query.js';
+import { OperationQuery } from '../../operation/infrastructure/queries/operation.query.js';
 import {
     buildCirculationPath,
     getGroupMembers,
     operationNumberCirculateReverseMap,
-} from 'src/libs/operation/usecase/operation-number-circulation';
+} from '../../operation/usecase/operation-number-circulation.js';
 import { DataSource, EntityManager } from 'typeorm';
-import { OperationSightingLatestCache } from '../domain/operation-sighting-latest-cache.domain';
-import { OperationSightingLatestCacheCommand } from '../infrastructure/command/operation-sighting-latest-cache.command';
-import { OperationSightingCommand } from '../infrastructure/command/operation-sighting.command';
-import { OperationSightingLatestCacheQuery } from '../infrastructure/queries/operation-sighting-latest-cache.query';
-import { OperationSightingQuery } from '../infrastructure/queries/operation-sighting.query';
-import { OperationSightingDomainBuilder } from './builders/operation-sighting.domain.builder';
-import { InvalidateOperationSightingDto } from './dtos/invalidate-operation-sighting.dto';
-import { OperationSightingDetailsDto } from './dtos/operation-sighting-details.dto';
-import { OperationSightingLatestCacheDto } from './dtos/operation-sighting-latest-cache.dto';
-import { OperationSightingTimeCrossSectionDto } from './dtos/operation-sighting-time-cross-section.dto';
-import { PostOperationSightingDto } from './dtos/post-operation-sighting.dto';
-import { RestoreOperationSightingDto } from './dtos/restore-operation-sighting.dto';
+import { OperationSightingLatestCache } from '../domain/operation-sighting-latest-cache.domain.js';
+import { OperationSightingLatestCacheCommand } from '../infrastructure/command/operation-sighting-latest-cache.command.js';
+import { OperationSightingCommand } from '../infrastructure/command/operation-sighting.command.js';
+import { OperationSightingLatestCacheQuery } from '../infrastructure/queries/operation-sighting-latest-cache.query.js';
+import { OperationSightingQuery } from '../infrastructure/queries/operation-sighting.query.js';
+import { OperationSightingDomainBuilder } from './builders/operation-sighting.domain.builder.js';
+import { InvalidateOperationSightingDto } from './dtos/invalidate-operation-sighting.dto.js';
+import { OperationSightingDetailsDto } from './dtos/operation-sighting-details.dto.js';
+import { OperationSightingLatestCacheDto } from './dtos/operation-sighting-latest-cache.dto.js';
+import { OperationSightingTimeCrossSectionDto } from './dtos/operation-sighting-time-cross-section.dto.js';
+import { PostOperationSightingDto } from './dtos/post-operation-sighting.dto.js';
+import { RestoreOperationSightingDto } from './dtos/restore-operation-sighting.dto.js';
 import {
     CacheAction,
     selectMostRecentCandidateForOperationNumber,
-} from './operation-sighting.v3.circulation';
-import { SightingCarryOver } from './read-models/sighting-carry-over.read-model';
+} from './operation-sighting.v3.circulation.js';
+import { SightingCarryOver } from './read-models/sighting-carry-over.read-model.js';
 
 /** 時刻断面の判定が読む DB の口。1 件ずつの口とまとめて返す口とで読み方だけを替える。 */
 interface TimeCrossSectionSource {

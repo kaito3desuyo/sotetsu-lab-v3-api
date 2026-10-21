@@ -12,9 +12,6 @@
         "useDefineForClassFields": false,
         "sourceMap": true,
         "outDir": "./dist",
-        "paths": {
-            "src/*": ["./src/*"]
-        },
         "types": ["node", "vitest/globals"],
         "incremental": true,
         "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",

@@ -6,7 +6,7 @@ import {
     Logger,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { UseCaseError } from '../classes/custom-error';
+import { UseCaseError } from '../classes/custom-error.js';
 
 @Catch(UseCaseError)
 export class UseCaseErrorFilter implements ExceptionFilter {

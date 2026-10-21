@@ -1,11 +1,11 @@
 import type { MockedFunction } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ItinerarySegmentQuery } from 'src/libs/operation/infrastructure/queries/itinerary-segment.query';
-import { OperationQuery } from '../infrastructure/queries/operation.query';
-import { OperationCurrentPositionDto } from './dtos/operation-current-position.dto';
-import { OperationDetailsDto } from './dtos/operation-details.dto';
-import { OperationWithTripsDto } from './dtos/operation-with-trips.dto';
-import { OperationV3Service } from './operation.v3.service';
+import { ItinerarySegmentQuery } from '../infrastructure/queries/itinerary-segment.query.js';
+import { OperationQuery } from '../infrastructure/queries/operation.query.js';
+import { OperationCurrentPositionDto } from './dtos/operation-current-position.dto.js';
+import { OperationDetailsDto } from './dtos/operation-details.dto.js';
+import { OperationWithTripsDto } from './dtos/operation-with-trips.dto.js';
+import { OperationV3Service } from './operation.v3.service.js';
 
 type AnyMock = MockedFunction<(...args: any[]) => any>;
 

@@ -1,15 +1,15 @@
 import { join } from 'node:path';
 import { DataSourceOptions } from 'typeorm';
-import { TypeOrmNamingStrategy } from './typeorm-naming-strategy';
+import { TypeOrmNamingStrategy } from './typeorm-naming-strategy.js';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 export const DataSourceConfig: DataSourceOptions = {
     type: 'postgres',
     url: process.env.DATABASE_URL,
-    entities: [join(__dirname, '..', '..', '**', '*.model.{ts,js}')],
+    entities: [join(import.meta.dirname, '..', '..', '**', '*.model.{ts,js}')],
     migrations: [
         join(
-            __dirname,
+            import.meta.dirname,
             '..',
             '..',
             '..',

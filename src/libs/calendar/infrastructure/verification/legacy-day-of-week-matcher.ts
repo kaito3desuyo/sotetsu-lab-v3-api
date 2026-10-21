@@ -3,7 +3,7 @@ import {
     isHoliday,
     isNewYear,
     isSpecialCalendarAvailable,
-} from 'src/core/utils/day-of-week';
+} from '../../../../core/utils/day-of-week.js';
 
 export interface DayOfWeekFlags {
     sunday: boolean;

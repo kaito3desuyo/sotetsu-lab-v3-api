@@ -1,9 +1,9 @@
 import {
     CALENDAR_DATE_EXCEPTION_TYPE_ADDED,
     CALENDAR_DATE_EXCEPTION_TYPE_REMOVED,
-} from '../models/calendar-date.model';
-import { CalendarValidityRow } from './build-holiday-calendar-date-rows';
-import { buildNewYearCalendarDateRows } from './build-newyear-calendar-date-rows';
+} from '../models/calendar-date.model.js';
+import { CalendarValidityRow } from './build-holiday-calendar-date-rows.js';
+import { buildNewYearCalendarDateRows } from './build-newyear-calendar-date-rows.js';
 
 const NEW_YEAR_MONTH_DAYS = ['12-30', '12-31', '01-01', '01-02', '01-03'];
 

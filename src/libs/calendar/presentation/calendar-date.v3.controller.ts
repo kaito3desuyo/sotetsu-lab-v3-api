@@ -10,15 +10,15 @@ import {
     Query,
     UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from 'src/core/modules/auth/auth.guard';
-import { CACHE_CONTROL } from 'src/core/modules/cache-control/cache-control.constants';
-import { CacheControl } from 'src/core/modules/cache-control/cache-control.decorator';
-import { RBAC } from 'src/core/modules/rbac/rbac.decorator';
-import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
-import { Role } from 'src/core/modules/rbac/role.enum';
-import { CalendarDateV3Service } from '../usecase/calendar-date.v3.service';
-import { CalendarDateDetailsDto } from '../usecase/dtos/calendar-date-details.dto';
-import { CreateCalendarDateDto } from '../usecase/dtos/create-calendar-date.dto';
+import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
+import { CACHE_CONTROL } from '../../../core/modules/cache-control/cache-control.constants.js';
+import { CacheControl } from '../../../core/modules/cache-control/cache-control.decorator.js';
+import { RBAC } from '../../../core/modules/rbac/rbac.decorator.js';
+import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
+import { Role } from '../../../core/modules/rbac/role.enum.js';
+import { CalendarDateV3Service } from '../usecase/calendar-date.v3.service.js';
+import { CalendarDateDetailsDto } from '../usecase/dtos/calendar-date-details.dto.js';
+import { CreateCalendarDateDto } from '../usecase/dtos/create-calendar-date.dto.js';
 
 @Controller()
 @UseGuards(AuthGuard, RBACGuard)

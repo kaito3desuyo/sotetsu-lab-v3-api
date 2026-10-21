@@ -3,7 +3,7 @@ import {
     ItineraryLink,
     ItineraryLinkRule,
     ItinerarySegment,
-} from 'src/libs/operation/domain/itinerary-link-rule.domain';
+} from '../../domain/itinerary-link-rule.domain.js';
 
 /**
  * 車両の行程表の読み取り用モデル（spec 3.6）。区間の一覧から、車両 1 台ぶんの 1 日の行程を組み立てて引けるようにする。

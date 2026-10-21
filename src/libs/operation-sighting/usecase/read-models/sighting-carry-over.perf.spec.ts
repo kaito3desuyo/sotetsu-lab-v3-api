@@ -1,8 +1,8 @@
 import dayjs from 'dayjs';
-import { ItinerarySegment } from 'src/libs/operation/domain/itinerary-link-rule.domain';
-import { VehicleItineraryReadModel } from 'src/libs/operation/usecase/read-models/vehicle-itinerary.read-model';
-import { OperationSightingDetailsDto } from '../dtos/operation-sighting-details.dto';
-import { SightingCarryOver } from './sighting-carry-over.read-model';
+import { ItinerarySegment } from '../../../operation/domain/itinerary-link-rule.domain.js';
+import { VehicleItineraryReadModel } from '../../../operation/usecase/read-models/vehicle-itinerary.read-model.js';
+import { OperationSightingDetailsDto } from '../dtos/operation-sighting-details.dto.js';
+import { SightingCarryOver } from './sighting-carry-over.read-model.js';
 
 /**
  * 実データの規模（2026-10-05〜15: 1 日の目撃は最大 150 件、1 カレンダーの区間は最大 1865 個）で、

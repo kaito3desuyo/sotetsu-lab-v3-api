@@ -1,4 +1,4 @@
-import { secondsOfServiceDay } from './datetime';
+import { secondsOfServiceDay } from './datetime.js';
 
 const t = (hhmm: string) => {
     const [h, m] = hhmm.split(':').map(Number);

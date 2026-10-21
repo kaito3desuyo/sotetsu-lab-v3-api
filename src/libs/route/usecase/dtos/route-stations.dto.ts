@@ -1,7 +1,7 @@
-import { Nested } from 'src/core/types/nested';
+import type { Nested } from '../../../../core/types/nested.js';
 import { Expose, Type } from 'class-transformer';
-import { RouteDetailsDto } from './route-details.dto';
-import { StationDetailsDto } from 'src/libs/station/usecase/dtos/station-details.dto';
+import { RouteDetailsDto } from './route-details.dto.js';
+import { StationDetailsDto } from '../../../station/usecase/dtos/station-details.dto.js';
 
 export class RouteStationsDto {
     @Expose()

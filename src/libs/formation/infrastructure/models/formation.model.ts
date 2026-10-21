@@ -1,5 +1,5 @@
-import { AgencyModel } from 'src/libs/agency/infrastructure/models/agency.model';
-import { OperationSightingModel } from 'src/libs/operation-sighting/infrastructure/models/operation-sighting.model';
+import { AgencyModel } from '../../../agency/infrastructure/models/agency.model.js';
+import { OperationSightingModel } from '../../../operation-sighting/infrastructure/models/operation-sighting.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -10,9 +10,9 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
-    Relation,
+    type Relation,
 } from 'typeorm';
-import { VehicleFormationModel } from './vehicle-formation.model';
+import { VehicleFormationModel } from './vehicle-formation.model.js';
 
 @Entity({
     name: 'formations',

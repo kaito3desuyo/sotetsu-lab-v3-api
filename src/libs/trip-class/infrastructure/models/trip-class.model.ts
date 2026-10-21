@@ -1,5 +1,5 @@
-import { ServiceModel } from 'src/libs/service/infrastructure/models/service.model';
-import { TripModel } from 'src/libs/trip/infrastructure/models/trip.model';
+import { ServiceModel } from '../../../service/infrastructure/models/service.model.js';
+import { TripModel } from '../../../trip/infrastructure/models/trip.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -10,7 +10,7 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
-    Relation,
+    type Relation,
 } from 'typeorm';
 
 @Entity({

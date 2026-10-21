@@ -1,6 +1,6 @@
-import { CalendarModel } from 'src/libs/calendar/infrastructure/models/calendar.model';
-import { TripClassModel } from 'src/libs/trip-class/infrastructure/models/trip-class.model';
-import { TripModel } from 'src/libs/trip/infrastructure/models/trip.model';
+import { CalendarModel } from '../../../calendar/infrastructure/models/calendar.model.js';
+import { TripClassModel } from '../../../trip-class/infrastructure/models/trip-class.model.js';
+import { TripModel } from '../../../trip/infrastructure/models/trip.model.js';
 import {
     Entity,
     PrimaryGeneratedColumn,
@@ -8,9 +8,9 @@ import {
     CreateDateColumn,
     UpdateDateColumn,
     OneToMany,
-    Relation,
+    type Relation,
 } from 'typeorm';
-import { OperatingSystemModel } from './operating-system.model';
+import { OperatingSystemModel } from './operating-system.model.js';
 
 @Entity({
     name: 'services',

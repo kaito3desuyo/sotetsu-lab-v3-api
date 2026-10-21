@@ -1,5 +1,5 @@
-import { RouteStationListModel } from 'src/libs/route/infrastructure/models/route-station-list.model';
-import { TimeModel } from 'src/libs/trip/infrastructure/models/time.model';
+import { RouteStationListModel } from '../../../route/infrastructure/models/route-station-list.model.js';
+import { TimeModel } from '../../../trip/infrastructure/models/time.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -7,9 +7,9 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
-    Relation,
+    type Relation,
 } from 'typeorm';
-import { StopModel } from './stop.model';
+import { StopModel } from './stop.model.js';
 
 @Entity({
     name: 'stations',

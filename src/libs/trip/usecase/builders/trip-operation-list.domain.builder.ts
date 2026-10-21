@@ -1,11 +1,11 @@
-import { UniqueEntityId } from 'src/core/classes/unique-entity-id';
+import { UniqueEntityId } from '../../../../core/classes/unique-entity-id.js';
 import {
     TripOperationList,
     TripOperationLists,
-} from '../../domain/trip-operation-list.domain';
-import { CreateTripOperationListDto } from '../dtos/create-trip-operation-list.dto';
-import { ReplaceTripOperationListDto } from '../dtos/replace-trip-operation-list.dto';
-import { TripOperationListDetailsDto } from '../dtos/trip-operation-list-details.dto';
+} from '../../domain/trip-operation-list.domain.js';
+import { CreateTripOperationListDto } from '../dtos/create-trip-operation-list.dto.js';
+import { ReplaceTripOperationListDto } from '../dtos/replace-trip-operation-list.dto.js';
+import { TripOperationListDetailsDto } from '../dtos/trip-operation-list-details.dto.js';
 
 export const TripOperationListDomainBuilder = {
     buildFromDetailsDto: (

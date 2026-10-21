@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { FormationQuery } from '../infrastructure/queries/formation.query';
-import { FormationDetailsDto } from './dtos/formation-details.dto';
-import { FormationFindManyBySpecificPeriodParam } from './params/formation-find-many-by-specific-period.param';
+import { FormationQuery } from '../infrastructure/queries/formation.query.js';
+import { FormationDetailsDto } from './dtos/formation-details.dto.js';
+import { FormationFindManyBySpecificPeriodParam } from './params/formation-find-many-by-specific-period.param.js';
 
 @Injectable()
 export class FormationV3Service {

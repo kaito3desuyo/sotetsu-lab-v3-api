@@ -1,8 +1,8 @@
 import type { MockedFunction } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { TripBlockModel } from '../models/trip-block.model';
-import { TripBlockQuery } from './trip-block.query';
+import { TripBlockModel } from '../models/trip-block.model.js';
+import { TripBlockQuery } from './trip-block.query.js';
 
 type AnyMock = MockedFunction<(...args: any[]) => any>;
 

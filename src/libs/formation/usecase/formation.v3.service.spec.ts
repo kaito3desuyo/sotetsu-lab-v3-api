@@ -1,9 +1,9 @@
 import type { MockedFunction } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
-import { FormationQuery } from '../infrastructure/queries/formation.query';
-import { FormationDetailsDto } from './dtos/formation-details.dto';
-import { FormationV3Service } from './formation.v3.service';
-import { FormationFindManyBySpecificPeriodParam } from './params/formation-find-many-by-specific-period.param';
+import { FormationQuery } from '../infrastructure/queries/formation.query.js';
+import { FormationDetailsDto } from './dtos/formation-details.dto.js';
+import { FormationV3Service } from './formation.v3.service.js';
+import { FormationFindManyBySpecificPeriodParam } from './params/formation-find-many-by-specific-period.param.js';
 
 type AnyMock = MockedFunction<(...args: any[]) => any>;
 

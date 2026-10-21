@@ -1,8 +1,8 @@
 import type { Mock } from 'vitest';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { TripOperationListModel } from 'src/libs/trip/infrastructure/models/trip-operation-list.model';
-import { ItinerarySegmentQuery } from './itinerary-segment.query';
+import { TripOperationListModel } from '../../../trip/infrastructure/models/trip-operation-list.model.js';
+import { ItinerarySegmentQuery } from './itinerary-segment.query.js';
 
 const getRawMany = vi.fn();
 const qb: Record<string, Mock> = {};

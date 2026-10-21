@@ -1,5 +1,5 @@
-import { OperationModel } from 'src/libs/operation/infrastructure/models/operation.model';
-import { ServiceModel } from 'src/libs/service/infrastructure/models/service.model';
+import { OperationModel } from '../../../operation/infrastructure/models/operation.model.js';
+import { ServiceModel } from '../../../service/infrastructure/models/service.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -10,7 +10,7 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
-    Relation,
+    type Relation,
 } from 'typeorm';
 
 @Entity({

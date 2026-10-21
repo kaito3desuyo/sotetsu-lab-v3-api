@@ -1,19 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import dayjs from 'dayjs';
-import { VehicleItineraryReadModel } from './read-models/vehicle-itinerary.read-model';
-import { ItinerarySegmentQuery } from 'src/libs/operation/infrastructure/queries/itinerary-segment.query';
-import { OperationQuery } from '../infrastructure/queries/operation.query';
+import { VehicleItineraryReadModel } from './read-models/vehicle-itinerary.read-model.js';
+import { ItinerarySegmentQuery } from '../infrastructure/queries/itinerary-segment.query.js';
+import { OperationQuery } from '../infrastructure/queries/operation.query.js';
 import {
     buildNextSegmentCandidates,
     buildOperationItineraryLinks,
-} from './build-operation-itinerary-links';
-import { NextSegmentCandidateDto } from './dtos/next-segment-candidate.dto';
-import { OperationItineraryLinkDto } from './dtos/operation-itinerary-link.dto';
-import { OperationCurrentPositionDto } from './dtos/operation-current-position.dto';
-import { OperationDetailsDto } from './dtos/operation-details.dto';
-import { OperationGroupDto } from './dtos/operation-group.dto';
-import { OperationWithTripsDto } from './dtos/operation-with-trips.dto';
-import { getOperationGroups } from './operation-number-circulation';
+} from './build-operation-itinerary-links.js';
+import { NextSegmentCandidateDto } from './dtos/next-segment-candidate.dto.js';
+import { OperationItineraryLinkDto } from './dtos/operation-itinerary-link.dto.js';
+import { OperationCurrentPositionDto } from './dtos/operation-current-position.dto.js';
+import { OperationDetailsDto } from './dtos/operation-details.dto.js';
+import { OperationGroupDto } from './dtos/operation-group.dto.js';
+import { OperationWithTripsDto } from './dtos/operation-with-trips.dto.js';
+import { getOperationGroups } from './operation-number-circulation.js';
 
 @Injectable()
 export class OperationV3Service {

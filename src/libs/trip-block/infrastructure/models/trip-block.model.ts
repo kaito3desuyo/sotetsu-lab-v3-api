@@ -4,9 +4,9 @@ import {
     CreateDateColumn,
     UpdateDateColumn,
     OneToMany,
-    Relation,
+    type Relation,
 } from 'typeorm';
-import { TripModel } from '../../../trip/infrastructure/models/trip.model';
+import { TripModel } from '../../../trip/infrastructure/models/trip.model.js';
 
 @Entity({
     name: 'trip_blocks',

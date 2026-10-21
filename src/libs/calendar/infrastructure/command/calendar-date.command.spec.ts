@@ -2,9 +2,9 @@ import type { MockedFunction } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { QueryFailedError } from 'typeorm';
-import { UseCaseError } from 'src/core/classes/custom-error';
-import { CalendarDateModel } from '../models/calendar-date.model';
-import { CalendarDateCommand } from './calendar-date.command';
+import { UseCaseError } from '../../../../core/classes/custom-error.js';
+import { CalendarDateModel } from '../models/calendar-date.model.js';
+import { CalendarDateCommand } from './calendar-date.command.js';
 
 type AnyMock = MockedFunction<(...args: any[]) => any>;
 

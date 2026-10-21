@@ -1,6 +1,6 @@
-import { Nested } from 'src/core/types/nested';
+import type { Nested } from '../../../../core/types/nested.js';
 import { Expose, Type } from 'class-transformer';
-import { OperationSightingDetailsDto } from './operation-sighting-details.dto';
+import { OperationSightingDetailsDto } from './operation-sighting-details.dto.js';
 
 export class OperationSightingTimeCrossSectionDto {
     @Expose()

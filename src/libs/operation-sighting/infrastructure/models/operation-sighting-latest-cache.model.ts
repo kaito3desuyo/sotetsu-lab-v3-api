@@ -5,9 +5,9 @@ import {
     JoinColumn,
     ManyToOne,
     PrimaryGeneratedColumn,
-    Relation,
+    type Relation,
 } from 'typeorm';
-import { OperationSightingModel } from './operation-sighting.model';
+import { OperationSightingModel } from './operation-sighting.model.js';
 
 @Entity({ name: 'operation_sighting_latest_caches' })
 @Index(['formationNumber'], { unique: true })

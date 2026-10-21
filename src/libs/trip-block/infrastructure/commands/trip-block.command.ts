@@ -1,18 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository, SaveOptions } from 'typeorm';
-import { TripOperationListModel } from 'src/libs/trip/infrastructure/models/trip-operation-list.model';
-import { TripBlock, TripBlocks } from '../../domain/trip-block.domain';
-import { TripBlockDetailsDto } from '../../usecase/dtos/trip-block-details.dto';
+import { TripOperationListModel } from '../../../trip/infrastructure/models/trip-operation-list.model.js';
+import { TripBlock, TripBlocks } from '../../domain/trip-block.domain.js';
+import { TripBlockDetailsDto } from '../../usecase/dtos/trip-block-details.dto.js';
 import {
     TripBlockDtoBuilder,
     TripBlocksDtoBuilder,
-} from '../builders/trip-block.dto.builder';
+} from '../builders/trip-block.dto.builder.js';
 import {
     TripBlockModelBuilder,
     TripBlocksModelBuilder,
-} from '../builders/trip-block.model.builder';
-import { TripBlockModel } from '../models/trip-block.model';
+} from '../builders/trip-block.model.builder.js';
+import { TripBlockModel } from '../models/trip-block.model.js';
 
 @Injectable()
 export class TripBlockCommand {

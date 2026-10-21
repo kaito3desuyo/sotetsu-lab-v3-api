@@ -1,5 +1,5 @@
-import { FormationModel } from 'src/libs/formation/infrastructure/models/formation.model';
-import { OperationModel } from 'src/libs/operation/infrastructure/models/operation.model';
+import { FormationModel } from '../../../formation/infrastructure/models/formation.model.js';
+import { OperationModel } from '../../../operation/infrastructure/models/operation.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -10,10 +10,10 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
-    Relation,
+    type Relation,
 } from 'typeorm';
-import { OperationSightingInvalidationModel } from './operation-sighting-invalidation.model';
-import { OperationSightingManagementLogModel } from './operation-sighting-management-log.model';
+import { OperationSightingInvalidationModel } from './operation-sighting-invalidation.model.js';
+import { OperationSightingManagementLogModel } from './operation-sighting-management-log.model.js';
 
 @Entity({
     name: 'operation_sightings',

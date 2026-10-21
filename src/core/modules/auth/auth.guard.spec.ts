@@ -1,5 +1,5 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { AuthGuard } from './auth.guard';
+import { AuthGuard } from './auth.guard.js';
 
 // auth.guard は読み込んだ時点で SUPABASE_URL を使うので、import より前に（vi.hoisted で）入れる
 const { supabaseVerify } = vi.hoisted(() => {

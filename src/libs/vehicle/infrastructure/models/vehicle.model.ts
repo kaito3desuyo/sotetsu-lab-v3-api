@@ -1,4 +1,4 @@
-import { VehicleFormationModel } from 'src/libs/formation/infrastructure/models/vehicle-formation.model';
+import { VehicleFormationModel } from '../../../formation/infrastructure/models/vehicle-formation.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -6,7 +6,7 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
-    Relation,
+    type Relation,
 } from 'typeorm';
 
 @Entity({

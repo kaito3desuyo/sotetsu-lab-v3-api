@@ -2,7 +2,7 @@ import {
     getGroupMembers,
     getOperationGroups,
     operationNumberCirculateMap,
-} from './operation-number-circulation';
+} from './operation-number-circulation.js';
 
 describe('getOperationGroups', () => {
     it('実際の operationNumberCirculateMap から全群を導出する', () => {

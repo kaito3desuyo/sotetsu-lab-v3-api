@@ -1,8 +1,8 @@
-import { TripBlockModel } from '../models/trip-block.model';
-import { TripOperationListModel } from 'src/libs/trip/infrastructure/models/trip-operation-list.model';
-import { TripBlockCommand } from './trip-block.command';
-import { TripBlockModelBuilder } from '../builders/trip-block.model.builder';
-import { TripBlockDtoBuilder } from '../builders/trip-block.dto.builder';
+import { TripBlockModel } from '../models/trip-block.model.js';
+import { TripOperationListModel } from '../../../trip/infrastructure/models/trip-operation-list.model.js';
+import { TripBlockCommand } from './trip-block.command.js';
+import { TripBlockModelBuilder } from '../builders/trip-block.model.builder.js';
+import { TripBlockDtoBuilder } from '../builders/trip-block.dto.builder.js';
 
 describe('TripBlockCommand.replaceOneTripBlockByDomain - 次の区間の付け替え', () => {
     const calls: string[] = [];

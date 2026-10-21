@@ -4,8 +4,8 @@ import {
     UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { RBACGuard } from './rbac.guard';
-import { Role } from './role.enum';
+import { RBACGuard } from './rbac.guard.js';
+import { Role } from './role.enum.js';
 
 const contextWith = (auth: unknown) =>
     ({

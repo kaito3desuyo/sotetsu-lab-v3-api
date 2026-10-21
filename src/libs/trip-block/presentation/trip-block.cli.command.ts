@@ -1,5 +1,5 @@
 import { Command, CommandRunner, SubCommand } from 'nest-commander';
-import { TripBlockCliService } from '../usecase/trip-block.cli.service';
+import { TripBlockCliService } from '../usecase/trip-block.cli.service.js';
 
 @SubCommand({
     name: 'copy-trip-blocks',

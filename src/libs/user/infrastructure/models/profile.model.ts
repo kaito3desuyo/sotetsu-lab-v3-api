@@ -6,9 +6,9 @@ import {
     OneToOne,
     PrimaryColumn,
     UpdateDateColumn,
-    Relation,
+    type Relation,
 } from 'typeorm';
-import { AuthUserModel } from './auth-user.model';
+import { AuthUserModel } from './auth-user.model.js';
 
 /**
  * 利用者の表示名と役割。利用者そのもの（パスワード・セッション）は Supabase Auth の auth.users が持つ。

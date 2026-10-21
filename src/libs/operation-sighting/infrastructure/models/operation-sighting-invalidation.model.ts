@@ -7,9 +7,9 @@ import {
     ManyToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
-    Relation,
+    type Relation,
 } from 'typeorm';
-import { OperationSightingModel } from './operation-sighting.model';
+import { OperationSightingModel } from './operation-sighting.model.js';
 
 @Entity({
     name: 'operation_sighting_invalidations',

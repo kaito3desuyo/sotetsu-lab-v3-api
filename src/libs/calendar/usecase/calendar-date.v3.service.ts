@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { CalendarDateCommand } from '../infrastructure/command/calendar-date.command';
-import { CalendarDateModel } from '../infrastructure/models/calendar-date.model';
-import { CalendarDateQuery } from '../infrastructure/queries/calendar-date.query';
-import { CalendarDateDetailsDto } from './dtos/calendar-date-details.dto';
+import { CalendarDateCommand } from '../infrastructure/command/calendar-date.command.js';
+import { CalendarDateModel } from '../infrastructure/models/calendar-date.model.js';
+import { CalendarDateQuery } from '../infrastructure/queries/calendar-date.query.js';
+import { CalendarDateDetailsDto } from './dtos/calendar-date-details.dto.js';
 
 @Injectable()
 export class CalendarDateV3Service {

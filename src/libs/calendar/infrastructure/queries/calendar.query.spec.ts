@@ -1,9 +1,9 @@
 import type { MockedFunction } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { CalendarDateModel } from '../models/calendar-date.model';
-import { CalendarModel } from '../models/calendar.model';
-import { CalendarQuery } from './calendar.query';
+import { CalendarDateModel } from '../models/calendar-date.model.js';
+import { CalendarModel } from '../models/calendar.model.js';
+import { CalendarQuery } from './calendar.query.js';
 
 type AnyMock = MockedFunction<(...args: any[]) => any>;
 

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { RouteQuery } from '../infrastructure/queries/route.query';
-import { RouteDetailsDto } from './dtos/route-details.dto';
-import { RouteStationsDto } from './dtos/route-stations.dto';
+import { RouteQuery } from '../infrastructure/queries/route.query.js';
+import { RouteDetailsDto } from './dtos/route-details.dto.js';
+import { RouteStationsDto } from './dtos/route-stations.dto.js';
 
 @Injectable()
 export class RouteV3Service {

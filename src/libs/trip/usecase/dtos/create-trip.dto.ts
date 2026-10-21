@@ -1,10 +1,10 @@
-import { Nested } from 'src/core/types/nested';
+import type { Nested } from '../../../../core/types/nested.js';
 import { Exclude, Type } from 'class-transformer';
 import { ArrayNotEmpty, IsOptional, ValidateNested } from 'class-validator';
-import { ETripDirection } from '../../special/enums/trip.enum';
-import { CreateTimeDto } from './create-time.dto';
-import { CreateTripOperationListDto } from './create-trip-operation-list.dto';
-import { ValidatableTripDto } from './validatable-trip.dto';
+import { ETripDirection } from '../../special/enums/trip.enum.js';
+import { CreateTimeDto } from './create-time.dto.js';
+import { CreateTripOperationListDto } from './create-trip-operation-list.dto.js';
+import { ValidatableTripDto } from './validatable-trip.dto.js';
 
 export class CreateTripDto extends ValidatableTripDto {
     @IsOptional()

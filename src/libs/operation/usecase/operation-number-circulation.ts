@@ -1,4 +1,4 @@
-import { OperationGroupDto } from './dtos/operation-group.dto';
+import { OperationGroupDto } from './dtos/operation-group.dto.js';
 
 /**
  * 運用番号の循環経路（circulation）に関する純粋な算出ロジック。

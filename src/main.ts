@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import { createApp } from './app';
+import { createApp } from './app.js';
 
 let app: INestApplication;
 

@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { BaseOperationSightingInvalidationDto } from './base-operation-sighting-invalidation.dto';
+import { BaseOperationSightingInvalidationDto } from './base-operation-sighting-invalidation.dto.js';
 
 export class OperationSightingInvalidationDetailsDto extends BaseOperationSightingInvalidationDto {
     @Expose({ name: 'id' })

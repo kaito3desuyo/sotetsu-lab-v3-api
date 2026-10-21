@@ -1,8 +1,8 @@
 import type { MockedFunction } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { OperationModel } from '../models/operation.model';
-import { OperationQuery } from './operation.query';
+import { OperationModel } from '../models/operation.model.js';
+import { OperationQuery } from './operation.query.js';
 
 type AnyMock = MockedFunction<(...args: any[]) => any>;
 

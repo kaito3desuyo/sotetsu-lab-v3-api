@@ -1,5 +1,5 @@
-import { OperationModel } from 'src/libs/operation/infrastructure/models/operation.model';
-import { StationModel } from 'src/libs/station/infrastructure/models/station.model';
+import { OperationModel } from '../../../operation/infrastructure/models/operation.model.js';
+import { StationModel } from '../../../station/infrastructure/models/station.model.js';
 import {
     Check,
     Column,
@@ -10,10 +10,10 @@ import {
     ManyToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
-    Relation,
+    type Relation,
 } from 'typeorm';
-import { TimeModel } from './time.model';
-import { TripModel } from './trip.model';
+import { TimeModel } from './time.model.js';
+import { TripModel } from './trip.model.js';
 
 @Entity({
     name: 'trip_operation_lists',

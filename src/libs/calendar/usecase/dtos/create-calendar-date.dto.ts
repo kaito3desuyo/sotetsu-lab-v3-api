@@ -3,7 +3,7 @@ import {
     CALENDAR_DATE_EXCEPTION_TYPE_ADDED,
     CALENDAR_DATE_EXCEPTION_TYPE_REMOVED,
     CalendarDateExceptionType,
-} from '../../infrastructure/models/calendar-date.model';
+} from '../../infrastructure/models/calendar-date.model.js';
 
 export class CreateCalendarDateDto {
     @IsUUID()

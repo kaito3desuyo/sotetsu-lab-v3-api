@@ -8,11 +8,11 @@ import {
 } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { UseCaseError } from '../../classes/custom-error';
-import { UseCaseErrorFilter } from '../../filters/usecase-error.filter';
-import { CACHE_CONTROL } from './cache-control.constants';
-import { CacheControl } from './cache-control.decorator';
-import { CacheControlModule } from './cache-control.module';
+import { UseCaseError } from '../../classes/custom-error.js';
+import { UseCaseErrorFilter } from '../../filters/usecase-error.filter.js';
+import { CACHE_CONTROL } from './cache-control.constants.js';
+import { CacheControl } from './cache-control.decorator.js';
+import { CacheControlModule } from './cache-control.module.js';
 
 class DenyGuard implements CanActivate {
     canActivate(): boolean {

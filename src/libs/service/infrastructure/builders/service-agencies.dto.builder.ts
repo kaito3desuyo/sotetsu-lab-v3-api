@@ -1,8 +1,8 @@
 import { plainToClass } from 'class-transformer';
-import { transformerOptions } from 'src/core/configs/transformer-options';
-import { AgencyModel } from 'src/libs/agency/infrastructure/models/agency.model';
-import { ServiceAgenciesDto } from '../../usecase/dtos/service-agencies.dto';
-import { ServiceModel } from '../models/service.model';
+import { transformerOptions } from '../../../../core/configs/transformer-options.js';
+import { AgencyModel } from '../../../agency/infrastructure/models/agency.model.js';
+import { ServiceAgenciesDto } from '../../usecase/dtos/service-agencies.dto.js';
+import { ServiceModel } from '../models/service.model.js';
 
 export const ServiceAgenciesDtoBuilder = {
     buildFromModel: (model: {

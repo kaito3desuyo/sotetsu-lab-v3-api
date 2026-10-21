@@ -5,7 +5,7 @@ import {
     IsUUID,
     ValidateIf,
 } from 'class-validator';
-import { ETripDirection } from '../../special/enums/trip.enum';
+import { ETripDirection } from '../../special/enums/trip.enum.js';
 
 export abstract class ValidatableTripDto {
     @IsUUID()

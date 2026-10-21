@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { AgencyLibsModule } from './agency.libs.module';
-import { AgencyV3Controller } from './presentation/agency.v3.controller';
-import { AgencyV3Service } from './usecase/agency.v3.service';
+import { AgencyLibsModule } from './agency.libs.module.js';
+import { AgencyV3Controller } from './presentation/agency.v3.controller.js';
+import { AgencyV3Service } from './usecase/agency.v3.service.js';
 
 @Module({
     imports: [AgencyLibsModule],

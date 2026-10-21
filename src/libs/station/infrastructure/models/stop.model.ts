@@ -1,4 +1,4 @@
-import { TimeModel } from 'src/libs/trip/infrastructure/models/time.model';
+import { TimeModel } from '../../../trip/infrastructure/models/time.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -9,9 +9,9 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
-    Relation,
+    type Relation,
 } from 'typeorm';
-import { StationModel } from './station.model';
+import { StationModel } from './station.model.js';
 
 @Entity({
     name: 'stops',

@@ -1,11 +1,11 @@
-import { Entity } from 'src/core/classes/entity';
-import { UniqueEntityId } from 'src/core/classes/unique-entity-id';
-import { WatchedList } from 'src/core/classes/watched-list';
-import { Times } from './time.domain';
+import { Entity } from '../../../core/classes/entity.js';
+import { UniqueEntityId } from '../../../core/classes/unique-entity-id.js';
+import { WatchedList } from '../../../core/classes/watched-list.js';
+import { Times } from './time.domain.js';
 import {
     TripOperationList,
     TripOperationLists,
-} from './trip-operation-list.domain';
+} from './trip-operation-list.domain.js';
 
 interface ITripProps {
     serviceId: string;

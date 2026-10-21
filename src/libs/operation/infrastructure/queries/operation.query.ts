@@ -3,15 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import omit from 'just-omit';
 import { FindManyOptions, Repository } from 'typeorm';
-import { OperationCurrentPositionDto } from '../../usecase/dtos/operation-current-position.dto';
-import { OperationDetailsDto } from '../../usecase/dtos/operation-details.dto';
-import { OperationWithTripsDto } from '../../usecase/dtos/operation-with-trips.dto';
-import { OperationCurrentPositionDtoBuilder } from '../builders/operation-current-position.dto.builder';
+import { OperationCurrentPositionDto } from '../../usecase/dtos/operation-current-position.dto.js';
+import { OperationDetailsDto } from '../../usecase/dtos/operation-details.dto.js';
+import { OperationWithTripsDto } from '../../usecase/dtos/operation-with-trips.dto.js';
+import { OperationCurrentPositionDtoBuilder } from '../builders/operation-current-position.dto.builder.js';
 import {
     OperationDtoBuilder,
     OperationsDtoBuilder,
-} from '../builders/operation.dto.builder';
-import { OperationModel } from '../models/operation.model';
+} from '../builders/operation.dto.builder.js';
+import { OperationModel } from '../models/operation.model.js';
 
 @Injectable()
 export class OperationQuery {

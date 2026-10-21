@@ -1,9 +1,9 @@
-import { Nested } from 'src/core/types/nested';
+import type { Nested } from '../../../../core/types/nested.js';
 import { Expose, Type } from 'class-transformer';
-import { StationDetailsDto } from 'src/libs/station/usecase/dtos/station-details.dto';
-import { StopDetailsDto } from 'src/libs/station/usecase/dtos/stop-details.dto';
-import { TripDetailsDto } from './trip-details.dto';
-import { TripOperationListDetailsDto } from './trip-operation-list-details.dto';
+import { StationDetailsDto } from '../../../station/usecase/dtos/station-details.dto.js';
+import { StopDetailsDto } from '../../../station/usecase/dtos/stop-details.dto.js';
+import { TripDetailsDto } from './trip-details.dto.js';
+import { TripOperationListDetailsDto } from './trip-operation-list-details.dto.js';
 
 export class TimeDetailsDto {
     @Expose()

@@ -1,10 +1,10 @@
-import { ItineraryLink, ItinerarySegment } from 'src/libs/operation/domain/itinerary-link-rule.domain';
-import { VehicleItineraryReadModel } from 'src/libs/operation/usecase/read-models/vehicle-itinerary.read-model';
-import { NextSegmentCandidateDto } from './dtos/next-segment-candidate.dto';
+import { ItineraryLink, ItinerarySegment } from '../domain/itinerary-link-rule.domain.js';
+import { VehicleItineraryReadModel } from './read-models/vehicle-itinerary.read-model.js';
+import { NextSegmentCandidateDto } from './dtos/next-segment-candidate.dto.js';
 import {
     ItineraryLinkEndDto,
     OperationItineraryLinkDto,
-} from './dtos/operation-itinerary-link.dto';
+} from './dtos/operation-itinerary-link.dto.js';
 
 const end = (link: ItineraryLink, stationId: string): ItineraryLinkEndDto => ({
     tripOperationListId: link.segment.id,

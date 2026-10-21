@@ -1,9 +1,9 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
-import { AuthGuard } from 'src/core/modules/auth/auth.guard';
-import { RBACGuard } from 'src/core/modules/rbac/rbac.guard';
-import { TripDetailsDto } from '../usecase/dtos/trip-details.dto';
-import { TripFindManyByStationIdQuery } from '../usecase/params/trip-find-many-by-station-id.query';
-import { TripV3Service } from '../usecase/trip.v3.service';
+import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
+import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
+import { TripDetailsDto } from '../usecase/dtos/trip-details.dto.js';
+import { TripFindManyByStationIdQuery } from '../usecase/params/trip-find-many-by-station-id.query.js';
+import { TripV3Service } from '../usecase/trip.v3.service.js';
 
 @Controller()
 @UseGuards(AuthGuard, RBACGuard)

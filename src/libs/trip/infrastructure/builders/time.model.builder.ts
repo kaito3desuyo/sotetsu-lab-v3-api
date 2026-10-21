@@ -1,5 +1,5 @@
-import { Time, Times } from '../../domain/time.domain';
-import { TimeModel } from '../models/time.model';
+import { Time, Times } from '../../domain/time.domain.js';
+import { TimeModel } from '../models/time.model.js';
 
 export const TimeModelBuilder = {
     buildFromDomain: (domain: Time): TimeModel => {

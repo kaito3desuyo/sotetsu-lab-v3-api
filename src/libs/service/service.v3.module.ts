@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ServiceV3Controller } from './presentation/service.v3.controller';
-import { ServiceLibsModule } from './service.libs.module';
-import { ServiceV3Service } from './usecase/service.v3.service';
+import { ServiceV3Controller } from './presentation/service.v3.controller.js';
+import { ServiceLibsModule } from './service.libs.module.js';
+import { ServiceV3Service } from './usecase/service.v3.service.js';
 
 @Module({
     imports: [ServiceLibsModule],

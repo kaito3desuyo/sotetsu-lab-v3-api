@@ -1,21 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
-import { cloneDeep, sortBy } from 'lodash';
-import { DataSourceConfig } from 'src/core/configs/database.config';
-import { AgencyModel } from 'src/libs/agency/infrastructure/models/agency.model';
-import { RouteStationListModel } from 'src/libs/route/infrastructure/models/route-station-list.model';
-import { StationModel } from 'src/libs/station/infrastructure/models/station.model';
+import cloneDeep from 'lodash/cloneDeep.js';
+import sortBy from 'lodash/sortBy.js';
+import { DataSourceConfig } from '../../../../core/configs/database.config.js';
+import { AgencyModel } from '../../../agency/infrastructure/models/agency.model.js';
+import { RouteStationListModel } from '../../../route/infrastructure/models/route-station-list.model.js';
+import { StationModel } from '../../../station/infrastructure/models/station.model.js';
 import { EntityManager, Repository } from 'typeorm';
-import { ServiceDetailsDto } from '../../usecase/dtos/service-details.dto';
-import { ServiceRoutesDto } from '../../usecase/dtos/service-routes.dto';
-import { ServiceStationsDto } from '../../usecase/dtos/service-stations.dto';
-import { ServiceAgenciesDtoBuilder } from '../builders/service-agencies.dto.builder';
-import { ServiceRoutesDtoBuilder } from '../builders/service-routes.dto.builder';
-import { ServiceStationsDtoBuilder } from '../builders/service-stations.dto.builder';
+import { ServiceDetailsDto } from '../../usecase/dtos/service-details.dto.js';
+import { ServiceRoutesDto } from '../../usecase/dtos/service-routes.dto.js';
+import { ServiceStationsDto } from '../../usecase/dtos/service-stations.dto.js';
+import { ServiceAgenciesDtoBuilder } from '../builders/service-agencies.dto.builder.js';
+import { ServiceRoutesDtoBuilder } from '../builders/service-routes.dto.builder.js';
+import { ServiceStationsDtoBuilder } from '../builders/service-stations.dto.builder.js';
 import {
     ServicesDtoBuilder,
-} from '../builders/service.dto.builder';
-import { ServiceModel } from '../models/service.model';
+} from '../builders/service.dto.builder.js';
+import { ServiceModel } from '../models/service.model.js';
 
 @Injectable()
 export class ServiceQuery {

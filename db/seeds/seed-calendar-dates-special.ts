@@ -1,13 +1,13 @@
 import 'reflect-metadata';
-import { specialCalendarDays } from '../../src/core/utils/day-of-week';
-import { AppDataSource } from '../../src/core/utils/data-source';
-import { CalendarModel } from '../../src/libs/calendar/infrastructure/models/calendar.model';
-import { CalendarDateModel } from '../../src/libs/calendar/infrastructure/models/calendar-date.model';
+import { specialCalendarDays } from '../../src/core/utils/day-of-week.js';
+import { AppDataSource } from '../../src/core/utils/data-source.js';
+import { CalendarModel } from '../../src/libs/calendar/infrastructure/models/calendar.model.js';
+import { CalendarDateModel } from '../../src/libs/calendar/infrastructure/models/calendar-date.model.js';
 import {
     CalendarDateSeedRow,
     CalendarValidityRow,
-} from '../../src/libs/calendar/infrastructure/seeds/build-holiday-calendar-date-rows';
-import { buildSpecialCalendarDateRows } from '../../src/libs/calendar/infrastructure/seeds/build-special-calendar-date-rows';
+} from '../../src/libs/calendar/infrastructure/seeds/build-holiday-calendar-date-rows.js';
+import { buildSpecialCalendarDateRows } from '../../src/libs/calendar/infrastructure/seeds/build-special-calendar-date-rows.js';
 
 const INSERT_CHUNK_SIZE = 500;
 

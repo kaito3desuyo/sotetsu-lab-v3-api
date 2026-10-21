@@ -1,6 +1,6 @@
-import { Nested } from 'src/core/types/nested';
+import type { Nested } from '../../../../core/types/nested.js';
 import { Expose } from 'class-transformer';
-import { BaseCalendarDateDto } from './base-calendar-date.dto';
+import { BaseCalendarDateDto } from './base-calendar-date.dto.js';
 
 export class CalendarDateDetailsDto extends BaseCalendarDateDto {
     @Expose()

@@ -1,5 +1,5 @@
-import { StationModel } from 'src/libs/station/infrastructure/models/station.model';
-import { StopModel } from 'src/libs/station/infrastructure/models/stop.model';
+import { StationModel } from '../../../station/infrastructure/models/station.model.js';
+import { StopModel } from '../../../station/infrastructure/models/stop.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -10,10 +10,10 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
-    Relation,
+    type Relation,
 } from 'typeorm';
-import { TripOperationListModel } from './trip-operation-list.model';
-import { TripModel } from './trip.model';
+import { TripOperationListModel } from './trip-operation-list.model.js';
+import { TripModel } from './trip.model.js';
 
 @Entity({
     name: 'times',

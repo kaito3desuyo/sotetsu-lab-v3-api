@@ -1,12 +1,12 @@
 import { Module, OnApplicationBootstrap } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
-import { AppController } from './app.controller';
-import { AuthModule } from './core/modules/auth/auth.module';
-import { CacheControlModule } from './core/modules/cache-control/cache-control.module';
-import { DatabaseModule } from './core/modules/database/database.module';
-import { LoggerModule } from './core/modules/logger/logger.module';
-import { RBACModule } from './core/modules/rbac/rbac.module';
-import { ApiRoutingModule } from './routes/api-routing.module';
+import { AppController } from './app.controller.js';
+import { AuthModule } from './core/modules/auth/auth.module.js';
+import { CacheControlModule } from './core/modules/cache-control/cache-control.module.js';
+import { DatabaseModule } from './core/modules/database/database.module.js';
+import { LoggerModule } from './core/modules/logger/logger.module.js';
+import { RBACModule } from './core/modules/rbac/rbac.module.js';
+import { ApiRoutingModule } from './routes/api-routing.module.js';
 
 @Module({
     imports: [

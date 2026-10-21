@@ -1,8 +1,8 @@
 import {
     TripOperationList,
     TripOperationLists,
-} from '../../domain/trip-operation-list.domain';
-import { TripOperationListModel } from '../models/trip-operation-list.model';
+} from '../../domain/trip-operation-list.domain.js';
+import { TripOperationListModel } from '../models/trip-operation-list.model.js';
 
 export const TripOperationListModelBuilder = {
     buildFromDomain: (domain: TripOperationList): TripOperationListModel => {

@@ -1,8 +1,8 @@
 import dayjs from 'dayjs';
-import { ItinerarySegment } from 'src/libs/operation/domain/itinerary-link-rule.domain';
-import { VehicleItineraryReadModel } from 'src/libs/operation/usecase/read-models/vehicle-itinerary.read-model';
-import { OperationSightingDetailsDto } from '../dtos/operation-sighting-details.dto';
-import { SightingCarryOver } from './sighting-carry-over.read-model';
+import { ItinerarySegment } from '../../../operation/domain/itinerary-link-rule.domain.js';
+import { VehicleItineraryReadModel } from '../../../operation/usecase/read-models/vehicle-itinerary.read-model.js';
+import { OperationSightingDetailsDto } from '../dtos/operation-sighting-details.dto.js';
+import { SightingCarryOver } from './sighting-carry-over.read-model.js';
 
 const t = (hhmm: string) => {
     const [h, m] = hhmm.split(':').map(Number);

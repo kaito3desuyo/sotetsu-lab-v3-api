@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { TripOperationListModel } from 'src/libs/trip/infrastructure/models/trip-operation-list.model';
-import { OperationModel } from './infrastructure/models/operation.model';
-import { ItinerarySegmentQuery } from './infrastructure/queries/itinerary-segment.query';
-import { OperationQuery } from './infrastructure/queries/operation.query';
+import { TripOperationListModel } from '../trip/infrastructure/models/trip-operation-list.model.js';
+import { OperationModel } from './infrastructure/models/operation.model.js';
+import { ItinerarySegmentQuery } from './infrastructure/queries/itinerary-segment.query.js';
+import { OperationQuery } from './infrastructure/queries/operation.query.js';
 
 @Module({
     imports: [TypeOrmModule.forFeature([OperationModel, TripOperationListModel])],

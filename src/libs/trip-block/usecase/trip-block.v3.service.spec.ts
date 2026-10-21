@@ -1,11 +1,11 @@
 import type { MockedFunction } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ItinerarySegmentQuery } from 'src/libs/operation/infrastructure/queries/itinerary-segment.query';
-import { TripBlockCommand } from '../infrastructure/commands/trip-block.command';
-import { TripBlockQuery } from '../infrastructure/queries/trip-block.query';
-import { TripBlockDomainBuilder } from './builders/trip-block.domain.builder';
-import { TripBlockV3Service } from './trip-block.v3.service';
+import { ItinerarySegmentQuery } from '../../operation/infrastructure/queries/itinerary-segment.query.js';
+import { TripBlockCommand } from '../infrastructure/commands/trip-block.command.js';
+import { TripBlockQuery } from '../infrastructure/queries/trip-block.query.js';
+import { TripBlockDomainBuilder } from './builders/trip-block.domain.builder.js';
+import { TripBlockV3Service } from './trip-block.v3.service.js';
 
 type AnyMock = MockedFunction<(...args: any[]) => any>;
 

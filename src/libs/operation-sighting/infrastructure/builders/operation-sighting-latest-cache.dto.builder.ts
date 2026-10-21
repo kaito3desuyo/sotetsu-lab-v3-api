@@ -1,7 +1,7 @@
 import { plainToClass } from 'class-transformer';
-import { transformerOptions } from 'src/core/configs/transformer-options';
-import { OperationSightingLatestCacheDto } from '../../usecase/dtos/operation-sighting-latest-cache.dto';
-import { OperationSightingLatestCacheModel } from '../models/operation-sighting-latest-cache.model';
+import { transformerOptions } from '../../../../core/configs/transformer-options.js';
+import { OperationSightingLatestCacheDto } from '../../usecase/dtos/operation-sighting-latest-cache.dto.js';
+import { OperationSightingLatestCacheModel } from '../models/operation-sighting-latest-cache.model.js';
 
 export const OperationSightingLatestCacheDtoBuilder = {
     buildFromModel: (

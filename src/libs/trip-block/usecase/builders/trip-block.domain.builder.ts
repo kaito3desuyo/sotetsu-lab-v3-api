@@ -1,9 +1,9 @@
-import { UniqueEntityId } from 'src/core/classes/unique-entity-id';
-import { TripsDomainBuilder } from 'src/libs/trip/usecase/builders/trip.domain.builder';
-import { TripBlock, TripBlocks } from '../../domain/trip-block.domain';
-import { CreateTripBlockDto } from '../dtos/create-trip-block.dto';
-import { ReplaceTripBlockDto } from '../dtos/replace-trip-block.dto';
-import { TripBlockDetailsDto } from '../dtos/trip-block-details.dto';
+import { UniqueEntityId } from '../../../../core/classes/unique-entity-id.js';
+import { TripsDomainBuilder } from '../../../trip/usecase/builders/trip.domain.builder.js';
+import { TripBlock, TripBlocks } from '../../domain/trip-block.domain.js';
+import { CreateTripBlockDto } from '../dtos/create-trip-block.dto.js';
+import { ReplaceTripBlockDto } from '../dtos/replace-trip-block.dto.js';
+import { TripBlockDetailsDto } from '../dtos/trip-block-details.dto.js';
 
 export const TripBlockDomainBuilder = {
     buildFromDetailsDto: (dto: TripBlockDetailsDto) => {

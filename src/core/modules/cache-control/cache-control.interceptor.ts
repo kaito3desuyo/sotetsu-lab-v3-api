@@ -8,7 +8,7 @@ import { Reflector } from '@nestjs/core';
 import { Response } from 'express';
 import onHeaders from 'on-headers';
 import { Observable } from 'rxjs';
-import { CACHE_CONTROL_METADATA_KEY } from './cache-control.decorator';
+import { CACHE_CONTROL_METADATA_KEY } from './cache-control.decorator.js';
 
 /**
  * `@CacheControl` の値を、成功した返答（2xx）にだけ書く。

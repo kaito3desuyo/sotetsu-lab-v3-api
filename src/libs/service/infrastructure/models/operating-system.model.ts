@@ -1,5 +1,5 @@
-import { RouteStationListModel } from 'src/libs/route/infrastructure/models/route-station-list.model';
-import { RouteModel } from 'src/libs/route/infrastructure/models/route.model';
+import { RouteStationListModel } from '../../../route/infrastructure/models/route-station-list.model.js';
+import { RouteModel } from '../../../route/infrastructure/models/route.model.js';
 import {
     Column,
     CreateDateColumn,
@@ -9,9 +9,9 @@ import {
     ManyToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
-    Relation,
+    type Relation,
 } from 'typeorm';
-import { ServiceModel } from './service.model';
+import { ServiceModel } from './service.model.js';
 
 @Entity({
     name: 'operating_systems',

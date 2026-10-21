@@ -1,27 +1,27 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { secondsOfServiceDay } from 'src/core/utils/datetime';
-import { UseCaseError } from 'src/core/classes/custom-error';
-import { parseSparseFieldsets } from 'src/core/utils/sparse-fieldsets';
-import { NextOperationPolicy } from 'src/libs/operation/domain/next-operation-policy.domain';
-import { ItinerarySegmentQuery } from 'src/libs/operation/infrastructure/queries/itinerary-segment.query';
-import { Trips } from 'src/libs/trip/domain/trip.domain';
-import { TripBlock } from '../domain/trip-block.domain';
-import { TripBlockCommand } from '../infrastructure/commands/trip-block.command';
-import { TripBlockQuery } from '../infrastructure/queries/trip-block.query';
+import { secondsOfServiceDay } from '../../../core/utils/datetime.js';
+import { UseCaseError } from '../../../core/classes/custom-error.js';
+import { parseSparseFieldsets } from '../../../core/utils/sparse-fieldsets.js';
+import { NextOperationPolicy } from '../../operation/domain/next-operation-policy.domain.js';
+import { ItinerarySegmentQuery } from '../../operation/infrastructure/queries/itinerary-segment.query.js';
+import { Trips } from '../../trip/domain/trip.domain.js';
+import { TripBlock } from '../domain/trip-block.domain.js';
+import { TripBlockCommand } from '../infrastructure/commands/trip-block.command.js';
+import { TripBlockQuery } from '../infrastructure/queries/trip-block.query.js';
 import {
     TripBlockDomainBuilder,
     TripBlocksDomainBuilder,
-} from './builders/trip-block.domain.builder';
-import { AddTripToTripBlockDto } from './dtos/add-trip-to-trip-block.dto';
-import { CreateTripBlockDto } from './dtos/create-trip-block.dto';
-import { DeleteTripFromTripBlockDto } from './dtos/delete-trip-from-trip-block.dto';
-import { ReplaceTripBlockDto } from './dtos/replace-trip-block.dto';
-import { TripBlockDetailsDto } from './dtos/trip-block-details.dto';
-import { TripBlockSparseDto } from './dtos/trip-block-sparse.dto';
+} from './builders/trip-block.domain.builder.js';
+import { AddTripToTripBlockDto } from './dtos/add-trip-to-trip-block.dto.js';
+import { CreateTripBlockDto } from './dtos/create-trip-block.dto.js';
+import { DeleteTripFromTripBlockDto } from './dtos/delete-trip-from-trip-block.dto.js';
+import { ReplaceTripBlockDto } from './dtos/replace-trip-block.dto.js';
+import { TripBlockDetailsDto } from './dtos/trip-block-details.dto.js';
+import { TripBlockSparseDto } from './dtos/trip-block-sparse.dto.js';
 import {
     TRIP_BLOCK_FIELDSET_REQUIRES,
     TRIP_BLOCK_FIELDSET_WHITELIST,
-} from './trip-block-fieldsets';
+} from './trip-block-fieldsets.js';
 
 interface TripLike {
     id?: string;
