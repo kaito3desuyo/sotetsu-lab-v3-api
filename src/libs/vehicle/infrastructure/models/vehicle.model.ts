@@ -14,27 +14,27 @@ import {
 })
 export class VehicleModel {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column('varchar', {
         unique: true,
     })
-    vehicleNumber: string;
+    vehicleNumber!: string;
 
     @Column('varchar')
-    belongs: string;
+    belongs!: string;
 
     @Column('date', { nullable: true })
-    productionDate: string;
+    productionDate!: string | null;
 
     @Column('date', { nullable: true })
-    scrappedDate: string;
+    scrappedDate!: string | null;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
-    createdAt: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @OneToMany(
         () => VehicleFormationModel,

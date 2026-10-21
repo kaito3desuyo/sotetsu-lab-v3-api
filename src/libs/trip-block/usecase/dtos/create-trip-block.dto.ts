@@ -4,7 +4,7 @@ import { ArrayNotEmpty, IsOptional, ValidateNested } from 'class-validator';
 import { CreateTripDto } from '../../../trip/usecase/dtos/create-trip.dto.js';
 import { ValidatableTripBlockDto } from './validatable-trip-block.dto.js';
 
-export class CreateTripBlockDto extends ValidatableTripBlockDto {
+export class CreateTripBlockDto extends ValidatableTripBlockDto<undefined> {
     @IsOptional()
     @Exclude()
     id: undefined;
@@ -12,5 +12,5 @@ export class CreateTripBlockDto extends ValidatableTripBlockDto {
     @ValidateNested({ each: true })
     @Type(() => CreateTripDto)
     @ArrayNotEmpty()
-    trips: Nested<CreateTripDto[]>;
+    trips!: Nested<CreateTripDto[]>;
 }

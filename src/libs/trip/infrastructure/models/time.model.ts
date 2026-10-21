@@ -20,47 +20,47 @@ import { TripModel } from './trip.model.js';
 })
 export class TimeModel {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column('uuid')
     @Index()
-    tripId: string;
+    tripId!: string;
 
     @Column('uuid')
     @Index()
-    stationId: string;
+    stationId!: string;
 
     @Column('uuid', { nullable: true })
     @Index()
-    stopId: string;
+    stopId!: string | null;
 
     @Column('int')
     @Index()
-    stopSequence: number;
+    stopSequence!: number;
 
     @Column('smallint')
     @Index()
-    pickupType: number;
+    pickupType!: number;
 
     @Column('smallint')
     @Index()
-    dropoffType: number;
+    dropoffType!: number;
 
     @Column('smallint', { nullable: true })
     @Index()
-    arrivalDays: number;
+    arrivalDays!: number | null;
 
     @Column('time', { nullable: true })
     @Index()
-    arrivalTime: string;
+    arrivalTime!: string | null;
 
     @Column('smallint', { nullable: true })
     @Index()
-    departureDays: number;
+    departureDays!: number | null;
 
     @Column('time', { nullable: true })
     @Index()
-    departureTime: string;
+    departureTime!: string | null;
     /*
       @Column('bool')
       depot_in: boolean;

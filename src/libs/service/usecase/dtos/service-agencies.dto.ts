@@ -6,9 +6,9 @@ import { ServiceDetailsDto } from './service-details.dto.js';
 export class ServiceAgenciesDto {
     @Expose()
     @Type(() => ServiceDetailsDto)
-    service: Nested<ServiceDetailsDto>;
+    service!: Nested<ServiceDetailsDto>;
 
     @Expose()
     @Type(() => AgencyDetailsDto)
-    agencies: Nested<AgencyDetailsDto[]>;
+    agencies!: Nested<AgencyDetailsDto[]>;
 }

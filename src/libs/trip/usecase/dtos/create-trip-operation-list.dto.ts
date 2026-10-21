@@ -2,7 +2,7 @@ import { Exclude } from 'class-transformer';
 import { IsOptional } from 'class-validator';
 import { ValidatableTripOperationListDto } from './validatable-trip-operation-list.dto.js';
 
-export class CreateTripOperationListDto extends ValidatableTripOperationListDto {
+export class CreateTripOperationListDto extends ValidatableTripOperationListDto<undefined> {
     @IsOptional()
     @Exclude()
     id: undefined;
@@ -11,11 +11,11 @@ export class CreateTripOperationListDto extends ValidatableTripOperationListDto 
     @Exclude()
     tripId: undefined;
 
-    operationId: string;
+    operationId!: string;
 
-    startStationId: string;
+    startStationId!: string;
 
-    endStationId: string;
+    endStationId!: string;
 
     @IsOptional()
     @Exclude()

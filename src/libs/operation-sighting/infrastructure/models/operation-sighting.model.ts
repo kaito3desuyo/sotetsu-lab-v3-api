@@ -25,17 +25,17 @@ import { OperationSightingManagementLogModel } from './operation-sighting-manage
 @Index(['sightingTime', 'updatedAt', 'id'])
 export class OperationSightingModel {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column('uuid')
-    formationId: string;
+    formationId!: string;
 
     @Column('uuid')
-    operationId: string;
+    operationId!: string;
 
     @Column({ type: 'timestamptz', precision: 3 })
     @Index()
-    sightingTime: Date;
+    sightingTime!: Date;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
     createdAt?: Date;

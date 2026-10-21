@@ -19,33 +19,33 @@ import { VehicleFormationModel } from './vehicle-formation.model.js';
 })
 export class FormationModel {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column('uuid')
     @Index()
-    agencyId: string;
+    agencyId!: string;
 
     @Column('varchar')
-    vehicleType: string;
+    vehicleType!: string;
 
     @Column('varchar')
     @Index()
-    formationNumber: string;
+    formationNumber!: string;
 
     @Column('text', { nullable: true })
-    formationDescription: string;
+    formationDescription!: string | null;
 
     @Column('date', { nullable: true })
-    startDate: string;
+    startDate!: string | null;
 
     @Column('date', { nullable: true })
-    endDate: string;
+    endDate!: string | null;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
-    createdAt: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @ManyToOne(() => AgencyModel, (agency) => agency.formations)
     @JoinColumn({ name: 'agency_id' })

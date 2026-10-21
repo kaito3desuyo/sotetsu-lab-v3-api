@@ -112,7 +112,7 @@ export class OperationV3Controller {
     @CacheControl(CACHE_CONTROL.TIMETABLE)
     async findOneWithTrips(
         @Param('id') operationId: string,
-    ): Promise<OperationWithTripsDto> {
+    ): Promise<OperationWithTripsDto | null> {
         const result = await this.operationV3Service.findOneWithTrips({
             operationId,
         });
@@ -125,7 +125,7 @@ export class OperationV3Controller {
     async findOneWithCurrentPosition(
         @Param('id') operationId: string,
         @Query('searchTime') searchTime?: string,
-    ): Promise<OperationCurrentPositionDto> {
+    ): Promise<OperationCurrentPositionDto | null> {
         const result = await this.operationV3Service.findOneWithCurrentPosition(
             {
                 operationId,

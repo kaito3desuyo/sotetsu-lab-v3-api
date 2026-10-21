@@ -1,4 +1,4 @@
-import isEqual from 'lodash/isEqual.js';
+import { isDeepStrictEqual } from 'node:util';
 
 interface ValueObjectProps {
     [index: string]: any;
@@ -19,6 +19,6 @@ export abstract class ValueObject<T extends ValueObjectProps> {
             return false;
         }
 
-        return isEqual(this.props, vo.props);
+        return isDeepStrictEqual(this.props, vo.props);
     }
 }

@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import omit from 'just-omit';
 import { FindManyOptions, Repository } from 'typeorm';
+import { UnexpectedError } from '../../../../core/classes/unexpected-error.js';
+import { TripOperationListModel } from '../../../trip/infrastructure/models/trip-operation-list.model.js';
 import { OperationCurrentPositionDto } from '../../usecase/dtos/operation-current-position.dto.js';
 import { OperationDetailsDto } from '../../usecase/dtos/operation-details.dto.js';
 import { OperationWithTripsDto } from '../../usecase/dtos/operation-with-trips.dto.js';
@@ -91,7 +93,7 @@ export class OperationQuery {
     async findOneWithCurrentPosition(params: {
         operationId: string;
         searchTime?: string;
-    }): Promise<OperationCurrentPositionDto> {
+    }): Promise<OperationCurrentPositionDto | null> {
         const { operationId, searchTime } = params;
 
         const model = await this.#currentPositionQueryBuilder()
@@ -131,12 +133,14 @@ export class OperationQuery {
         model: OperationModel,
         searchTime: string | undefined,
     ): OperationCurrentPositionDto {
-        let prev = null;
-        let current = null;
-        let next = null;
+        let prev: TripOperationListModel | null = null;
+        let current: TripOperationListModel | null = null;
+        let next: TripOperationListModel | null = null;
+        // leftJoinAndSelect しているので、列車が無くても空の配列が入る
+        const tripOperationLists = model.tripOperationLists!;
 
         // 運用に紐づく列車情報が存在しない場合、現在位置はnullを返す
-        if (!model.tripOperationLists.length) {
+        if (!tripOperationLists.length) {
             return OperationCurrentPositionDtoBuilder.buildFromModel({
                 operation: omit(model, ['tripOperationLists']),
                 prev,
@@ -147,20 +151,39 @@ export class OperationQuery {
 
         const searchTimeInstance = searchTime ? dayjs(searchTime) : dayjs();
         const dateStr = searchTimeInstance.format('YYYY-MM-DD');
-        const targetTimeInstance = (days: number, time: string) =>
+        // 日数・時刻が null の列は、日数を 0 として扱い、時刻は不正な日時になる（比較はどれも成り立たない）
+        const targetTimeInstance = (days: number | null, time: string | null) =>
             dayjs(`${dateStr} ${time}`, 'YYYY-MM-DD HH:mm:ss')
                 .subtract(searchTimeInstance.hour() < 4 ? 1 : 0, 'day')
-                .add(days - 1, 'day');
+                .add((days ?? 0) - 1, 'day');
+        const departureOf = (item: TripOperationListModel) => {
+            if (!item.startTime) {
+                throw new UnexpectedError(
+                    '運用の列車に出発の時刻が結合できない',
+                    { tripOperationListId: item.id },
+                );
+            }
+            return targetTimeInstance(
+                item.startTime.departureDays,
+                item.startTime.departureTime,
+            );
+        };
+        const arrivalOf = (item: TripOperationListModel) => {
+            if (!item.endTime) {
+                throw new UnexpectedError(
+                    '運用の列車に到着の時刻が結合できない',
+                    { tripOperationListId: item.id },
+                );
+            }
+            return targetTimeInstance(
+                item.endTime.arrivalDays,
+                item.endTime.arrivalTime,
+            );
+        };
 
         // 検索日時が0番目の列車の発車時刻よりも前の場合
-        if (
-            searchTimeInstance <
-            targetTimeInstance(
-                model.tripOperationLists[0].startTime.departureDays,
-                model.tripOperationLists[0].startTime.departureTime,
-            )
-        ) {
-            next = model.tripOperationLists[0];
+        if (searchTimeInstance < departureOf(tripOperationLists[0])) {
+            next = tripOperationLists[0];
             return OperationCurrentPositionDtoBuilder.buildFromModel({
                 operation: omit(model, ['tripOperationLists']),
                 prev,
@@ -171,40 +194,26 @@ export class OperationQuery {
 
         // 検索日時が列車間の場合
         // n番目の列車の到着時刻 <= 検索日時 < n + 1番目の列車の出発時刻
-        const nToNPlus1 = model.tripOperationLists.find((_, i, arr) => {
+        const nToNPlus1 = tripOperationLists.find((_, i, arr) => {
             if (!arr[i + 1]) {
                 return undefined;
             }
 
             return (
-                targetTimeInstance(
-                    arr[i].endTime.arrivalDays,
-                    arr[i].endTime.arrivalTime,
-                ) <= searchTimeInstance &&
-                searchTimeInstance <
-                    targetTimeInstance(
-                        arr[i + 1].startTime.departureDays,
-                        arr[i + 1].startTime.departureTime,
-                    )
+                arrivalOf(arr[i]) <= searchTimeInstance &&
+                searchTimeInstance < departureOf(arr[i + 1])
             );
         });
 
         // n - 1番目の列車の到着時刻 <= 検索日時 < n番目の列車の出発時刻
-        const nMinus1ToN = model.tripOperationLists.find((_, i, arr) => {
+        const nMinus1ToN = tripOperationLists.find((_, i, arr) => {
             if (!arr[i - 1]) {
                 return undefined;
             }
 
             return (
-                targetTimeInstance(
-                    arr[i - 1].endTime.arrivalDays,
-                    arr[i - 1].endTime.arrivalTime,
-                ) <= searchTimeInstance &&
-                searchTimeInstance <
-                    targetTimeInstance(
-                        arr[i].startTime.departureDays,
-                        arr[i].startTime.departureTime,
-                    )
+                arrivalOf(arr[i - 1]) <= searchTimeInstance &&
+                searchTimeInstance < departureOf(arr[i])
             );
         });
 
@@ -221,17 +230,10 @@ export class OperationQuery {
 
         // 検索日時が列車運転中の場合
         // n番目の列車の出発時刻 <= 検索日時 < n番目の列車の到着時刻
-        const currentRunning = model.tripOperationLists.find((item) => {
+        const currentRunning = tripOperationLists.find((item) => {
             return (
-                targetTimeInstance(
-                    item.startTime.departureDays,
-                    item.startTime.departureTime,
-                ) <= searchTimeInstance &&
-                searchTimeInstance <
-                    targetTimeInstance(
-                        item.endTime.arrivalDays,
-                        item.endTime.arrivalTime,
-                    )
+                departureOf(item) <= searchTimeInstance &&
+                searchTimeInstance < arrivalOf(item)
             );
         });
 
@@ -246,13 +248,9 @@ export class OperationQuery {
         }
 
         // 検索日時が最終列車の到着時刻よりも後の場合
-        if (
-            targetTimeInstance(
-                model.tripOperationLists.at(-1).endTime.arrivalDays,
-                model.tripOperationLists.at(-1).endTime.arrivalTime,
-            ) <= searchTimeInstance
-        ) {
-            prev = model.tripOperationLists.at(-1);
+        const last = tripOperationLists[tripOperationLists.length - 1];
+        if (arrivalOf(last) <= searchTimeInstance) {
+            prev = last;
             return OperationCurrentPositionDtoBuilder.buildFromModel({
                 operation: omit(model, ['tripOperationLists']),
                 prev,

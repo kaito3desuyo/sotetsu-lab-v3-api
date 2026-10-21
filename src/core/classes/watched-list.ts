@@ -20,7 +20,9 @@ export abstract class WatchedList<T> {
         return this._current;
     }
 
-    public getItemByFn(fn: (value: T, index: number, obj: T[]) => boolean): T {
+    public getItemByFn(
+        fn: (value: T, index: number, obj: T[]) => boolean,
+    ): T | undefined {
         return this._current.find(fn);
     }
 

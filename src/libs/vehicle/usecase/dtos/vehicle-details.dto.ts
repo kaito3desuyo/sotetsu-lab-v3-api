@@ -5,25 +5,25 @@ import { BaseVehicleDto } from './base-vehicle.dto.js';
 
 export class VehicleDetailsDto extends BaseVehicleDto {
     @Expose()
-    id: string;
+    id!: string;
 
     @Expose()
-    vehicleNumber: string;
+    vehicleNumber!: string;
 
     @Expose()
-    belongs: string;
+    belongs!: string;
 
     @Expose()
-    productionDate: string;
+    productionDate!: string;
 
     @Expose()
-    scrappedDate: string;
+    scrappedDate!: string;
 
     @Expose()
-    createdAt: Date;
+    createdAt!: Date;
 
     @Expose()
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @Expose()
     @Type(() => VehicleFormationDetailsDto)

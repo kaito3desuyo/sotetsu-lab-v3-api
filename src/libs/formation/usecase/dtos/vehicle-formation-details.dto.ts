@@ -1,27 +1,27 @@
 import type { Nested } from '../../../../core/types/nested.js';
 import { Expose, Type } from 'class-transformer';
 import { VehicleDetailsDto } from '../../../vehicle/usecase/dtos/vehicle-details.dto.js';
-import { BaseVehicleFormationModel } from './base-vehicle-formation.dto.js';
+import { BaseVehicleFormationDto } from './base-vehicle-formation.dto.js';
 import { FormationDetailsDto } from './formation-details.dto.js';
 
-export class VehicleFormationDetailsDto extends BaseVehicleFormationModel {
+export class VehicleFormationDetailsDto extends BaseVehicleFormationDto {
     @Expose()
-    id: string;
+    id!: string;
 
     @Expose()
-    formationId: string;
+    formationId!: string;
 
     @Expose()
-    vehicleId: string;
+    vehicleId!: string;
 
     @Expose()
-    carNumber: number;
+    carNumber!: number;
 
     @Expose()
-    createdAt: Date;
+    createdAt!: Date;
 
     @Expose()
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @Expose()
     @Type(() => FormationDetailsDto)

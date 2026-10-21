@@ -4,46 +4,47 @@ import { StationDetailsDto } from '../../../station/usecase/dtos/station-details
 import { StopDetailsDto } from '../../../station/usecase/dtos/stop-details.dto.js';
 import { TripDetailsDto } from './trip-details.dto.js';
 import { TripOperationListDetailsDto } from './trip-operation-list-details.dto.js';
+import { BaseTimeDto } from './base-time.dto.js';
 
-export class TimeDetailsDto {
+export class TimeDetailsDto extends BaseTimeDto {
     @Expose()
-    id: string;
-
-    @Expose()
-    tripId: string;
+    id!: string;
 
     @Expose()
-    stationId: string;
+    tripId!: string;
 
     @Expose()
-    stopId: string;
+    stationId!: string;
 
     @Expose()
-    stopSequence: number;
+    stopId!: string | null;
 
     @Expose()
-    pickupType: number;
+    stopSequence!: number;
 
     @Expose()
-    dropoffType: number;
+    pickupType!: number;
 
     @Expose()
-    arrivalDays: number;
+    dropoffType!: number;
 
     @Expose()
-    arrivalTime: string;
+    arrivalDays!: number | null;
 
     @Expose()
-    departureDays: number;
+    arrivalTime!: string | null;
 
     @Expose()
-    departureTime: string;
+    departureDays!: number | null;
 
     @Expose()
-    createdAt: Date;
+    departureTime!: string | null;
 
     @Expose()
-    updatedAt: Date;
+    createdAt!: Date;
+
+    @Expose()
+    updatedAt!: Date;
 
     @Expose()
     @Type(() => TripDetailsDto)

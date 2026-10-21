@@ -6,40 +6,40 @@ import { CreateTimeDto } from './create-time.dto.js';
 import { CreateTripOperationListDto } from './create-trip-operation-list.dto.js';
 import { ValidatableTripDto } from './validatable-trip.dto.js';
 
-export class CreateTripDto extends ValidatableTripDto {
+export class CreateTripDto extends ValidatableTripDto<undefined> {
     @IsOptional()
     @Exclude()
     id: undefined;
 
-    serviceId: string;
+    serviceId!: string;
 
-    tripNumber: string;
+    tripNumber!: string;
 
-    tripClassId: string;
+    tripClassId!: string;
 
-    tripName: string | null;
+    tripName!: string | null;
 
-    tripDirection: ETripDirection;
+    tripDirection!: ETripDirection;
 
     @IsOptional()
     @Exclude()
     tripBlockId: undefined;
 
-    depotIn: boolean;
+    depotIn!: boolean;
 
-    depotOut: boolean;
+    depotOut!: boolean;
 
-    calendarId: string | null;
+    calendarId!: string | null;
 
-    extraCalendarId: string | null;
+    extraCalendarId!: string | null;
 
     @ValidateNested({ each: true })
     @Type(() => CreateTimeDto)
     @ArrayNotEmpty()
-    times: Nested<CreateTimeDto[]>;
+    times!: Nested<CreateTimeDto[]>;
 
     @ValidateNested({ each: true })
     @Type(() => CreateTripOperationListDto)
     // @ArrayNotEmpty()
-    tripOperationLists: Nested<CreateTripOperationListDto[]>;
+    tripOperationLists!: Nested<CreateTripOperationListDto[]>;
 }

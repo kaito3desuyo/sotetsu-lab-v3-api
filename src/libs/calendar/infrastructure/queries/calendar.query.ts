@@ -23,7 +23,7 @@ export class CalendarQuery {
 
     async findOneById(params: {
         id: string;
-    }): Promise<CalendarDetailsDto> {
+    }): Promise<CalendarDetailsDto | null> {
         const { id } = params;
 
         const model = await this.calendarRepository
@@ -63,7 +63,7 @@ export class CalendarQuery {
 
     async findOneBySpecificDate(params: {
         date: string;
-    }): Promise<CalendarDetailsDto> {
+    }): Promise<CalendarDetailsDto | undefined> {
         const { date } = params;
 
         const format = 'YYYY-MM-DD';
@@ -87,7 +87,7 @@ export class CalendarQuery {
             .getMany();
 
         if (candidates.length === 0) {
-            return CalendarDtoBuilder.buildFromModel(undefined);
+            return undefined;
         }
 
         const dayOfWeekMatches = this.buildDayOfWeekMatcher(dateString, format);
@@ -116,7 +116,7 @@ export class CalendarQuery {
             ? candidates.find((candidate) => candidate.id === resolvedCalendarId)
             : undefined;
 
-        return CalendarDtoBuilder.buildFromModel(result);
+        return result ? CalendarDtoBuilder.buildFromModel(result) : undefined;
     }
 
     /**

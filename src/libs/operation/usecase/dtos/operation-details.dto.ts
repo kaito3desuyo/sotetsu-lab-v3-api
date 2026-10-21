@@ -6,22 +6,22 @@ import { BaseOperationDto } from './base-operation.dto.js';
 
 export class OperationDetailsDto extends BaseOperationDto {
     @Expose()
-    id: string;
+    id!: string;
 
     @Expose()
-    operationId: string;
+    operationId!: string;
 
     @Expose()
-    calendarId: string;
+    calendarId!: string;
 
     @Expose()
-    operationNumber: string;
+    operationNumber!: string;
 
     @Expose()
-    createdAt: Date;
+    createdAt!: Date;
 
     @Expose()
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @Expose()
     @Type(() => CalendarDetailsDto)

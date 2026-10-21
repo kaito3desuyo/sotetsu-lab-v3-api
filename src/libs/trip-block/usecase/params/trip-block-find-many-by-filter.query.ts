@@ -10,11 +10,11 @@ import {
 export class TripBlockFindManyByFilterQuery {
     @IsString()
     @IsNotEmpty()
-    calendarId: string;
+    calendarId!: string;
 
     @Type(() => Number)
     @IsInt()
-    tripDirection: number;
+    tripDirection!: number;
 
     /**
      * 返す項目の選択 `fields[資源]=項目,項目`（docs/adr/0002-v3-sparse-fieldsets.md）。

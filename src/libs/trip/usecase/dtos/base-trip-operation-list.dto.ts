@@ -1,9 +1,11 @@
-export abstract class BaseTripOperationListDto {
-    id: string;
-    tripId: string;
-    operationId: string;
-    startStationId: string;
-    endStationId: string;
-    startTimeId: string;
-    endTimeId: string;
+export abstract class BaseTripOperationListDto<
+    Id extends string | undefined = string,
+> {
+    id!: Id;
+    tripId!: Id;
+    operationId!: string;
+    startStationId!: string;
+    endStationId!: string;
+    startTimeId!: Id;
+    endTimeId!: Id;
 }

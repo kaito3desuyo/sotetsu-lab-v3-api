@@ -6,9 +6,9 @@ import { OperationDetailsDto } from './operation-details.dto.js';
 export class OperationWithTripsDto {
     @Expose()
     @Type(() => OperationDetailsDto)
-    operation: Nested<OperationDetailsDto>;
+    operation!: Nested<OperationDetailsDto>;
 
     @Expose()
     @Type(() => TripOperationListDetailsDto)
-    trips: Nested<TripOperationListDetailsDto[]>;
+    trips!: Nested<TripOperationListDetailsDto[]>;
 }

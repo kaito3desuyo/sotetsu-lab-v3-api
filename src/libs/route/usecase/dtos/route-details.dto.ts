@@ -7,40 +7,40 @@ import { AgencyDetailsDto } from '../../../agency/usecase/dtos/agency-details.dt
 
 export class RouteDetailsDto extends BaseRouteDto {
     @Expose()
-    id: string;
+    id!: string;
 
     @Expose()
-    agencyId: string;
+    agencyId!: string;
 
     @Expose()
-    routeNumber: string;
+    routeNumber!: string;
 
     @Expose()
-    routeName: string;
+    routeName!: string;
 
     @Expose()
-    routeNickName: string;
+    routeNickName!: string;
 
     @Expose()
-    routeDescription: string;
+    routeDescription!: string;
 
     @Expose()
-    routeType: number;
+    routeType!: number;
 
     @Expose()
-    routeUrl: string;
+    routeUrl!: string;
 
     @Expose()
-    routeColor: string;
+    routeColor!: string;
 
     @Expose()
-    routeTextColor: string;
+    routeTextColor!: string;
 
     @Expose()
-    createdAt: Date;
+    createdAt!: Date;
 
     @Expose()
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @Expose()
     @Type(() => AgencyDetailsDto)

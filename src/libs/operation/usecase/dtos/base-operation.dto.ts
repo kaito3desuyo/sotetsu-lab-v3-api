@@ -1,5 +1,5 @@
 export abstract class BaseOperationDto {
-    id: string;
-    calendarId: string;
-    operationNumber: string;
+    id!: string;
+    calendarId!: string;
+    operationNumber!: string;
 }

@@ -1,4 +1,4 @@
 export abstract class BaseOperationSightingInvalidationDto {
-    operationSightingInvalidationId: string;
-    operationSightingId: string;
+    operationSightingInvalidationId!: string;
+    operationSightingId!: string;
 }

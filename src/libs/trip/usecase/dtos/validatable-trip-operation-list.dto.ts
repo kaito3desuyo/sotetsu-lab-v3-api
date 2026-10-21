@@ -1,26 +1,29 @@
 import { IsOptional, IsUUID } from 'class-validator';
+import { BaseTripOperationListDto } from './base-trip-operation-list.dto.js';
 
-export abstract class ValidatableTripOperationListDto {
+export abstract class ValidatableTripOperationListDto<
+    Id extends string | undefined = string,
+> extends BaseTripOperationListDto<Id> {
     @IsUUID()
-    id: string;
-
-    @IsUUID()
-    tripId: string;
-
-    @IsUUID()
-    operationId: string;
+    id!: Id;
 
     @IsUUID()
-    startStationId: string;
+    tripId!: Id;
 
     @IsUUID()
-    endStationId: string;
+    operationId!: string;
 
     @IsUUID()
-    startTimeId: string;
+    startStationId!: string;
 
     @IsUUID()
-    endTimeId: string;
+    endStationId!: string;
+
+    @IsUUID()
+    startTimeId!: Id;
+
+    @IsUUID()
+    endTimeId!: Id;
 
     @IsOptional()
     @IsUUID()

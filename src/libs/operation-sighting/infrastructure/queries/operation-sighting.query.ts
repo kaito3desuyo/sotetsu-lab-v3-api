@@ -233,13 +233,13 @@ export class OperationSightingQuery {
         const result = new Map<string, OperationSightingDetailsDto>();
         if (keys.length === 0) return result;
 
-        const connection = this.operationSightingRepository.manager.connection;
+        const dataSource = this.operationSightingRepository.manager.dataSource;
         const sightings = this.operationSightingRepository.metadata.tableName;
-        const invalidations = connection.getMetadata(OperationSightingInvalidationModel).tableName;
+        const invalidations = dataSource.getMetadata(OperationSightingInvalidationModel).tableName;
         const [joinTable, joinColumn, numberColumn] =
             keyColumn === 'operation.operationNumber'
-                ? [connection.getMetadata(OperationModel).tableName, 'operation_id', 'operation_number']
-                : [connection.getMetadata(FormationModel).tableName, 'formation_id', 'formation_number'];
+                ? [dataSource.getMetadata(OperationModel).tableName, 'operation_id', 'operation_number']
+                : [dataSource.getMetadata(FormationModel).tableName, 'formation_id', 'formation_number'];
 
         const rows: { id: string }[] = await this.operationSightingRepository.query(
             `SELECT latest.id

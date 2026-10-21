@@ -25,9 +25,7 @@ export class Time extends Entity<ITimeProps> {
     }
 
     update(props: Partial<ITimeProps>): void {
-        for (const key of Object.keys(props)) {
-            this._props[key] = props[key];
-        }
+        Object.assign(this._props, props);
     }
 }
 

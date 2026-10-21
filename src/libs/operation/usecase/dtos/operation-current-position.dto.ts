@@ -6,16 +6,16 @@ import { OperationDetailsDto } from './operation-details.dto.js';
 export class OperationCurrentPositionDto {
     @Expose()
     @Type(() => OperationDetailsDto)
-    operation: Nested<OperationDetailsDto>;
+    operation!: Nested<OperationDetailsDto>;
 
     @Expose()
     @Type(() => TripOperationListDetailsDto)
-    prev: Nested<TripOperationListDetailsDto | null>;
+    prev!: Nested<TripOperationListDetailsDto | null>;
 
     @Expose()
     @Type(() => TripOperationListDetailsDto)
-    current: Nested<TripOperationListDetailsDto | null>;
+    current!: Nested<TripOperationListDetailsDto | null>;
     @Expose()
     @Type(() => TripOperationListDetailsDto)
-    next: Nested<TripOperationListDetailsDto | null>;
+    next!: Nested<TripOperationListDetailsDto | null>;
 }

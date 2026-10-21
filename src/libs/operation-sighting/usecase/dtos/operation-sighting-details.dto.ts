@@ -8,25 +8,25 @@ import { OperationSightingManagementLogDetailsDto } from './operation-sighting-m
 
 export class OperationSightingDetailsDto extends BaseOperationSightingDto {
     @Expose()
-    id: string;
+    id!: string;
 
     @Expose()
-    operationSightingId: string;
+    operationSightingId!: string;
 
     @Expose()
-    formationId: string;
+    formationId!: string;
 
     @Expose()
-    operationId: string;
+    operationId!: string;
 
     @Expose()
-    sightingTime: Date;
+    sightingTime!: Date;
 
     @Expose()
-    createdAt: Date;
+    createdAt!: Date;
 
     @Expose()
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @Expose()
     @Type(() => OperationDetailsDto)

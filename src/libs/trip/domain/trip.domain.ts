@@ -34,12 +34,10 @@ export class Trip extends Entity<ITripProps> {
     }
 
     public update(props: Partial<ITripProps>): void {
-        for (const key of Object.keys(props)) {
-            this._props[key] = props[key];
-        }
+        Object.assign(this._props, props);
     }
 
-    public getFirstTripOperationList(): TripOperationList {
+    public getFirstTripOperationList(): TripOperationList | undefined {
         return this._props.tripOperationLists.getItemByFn((_, i) => i === 0);
     }
 

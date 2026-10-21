@@ -6,41 +6,44 @@ import {
     ValidateIf,
 } from 'class-validator';
 import { ETripDirection } from '../../special/enums/trip.enum.js';
+import { BaseTripDto } from './base-trip.dto.js';
 
-export abstract class ValidatableTripDto {
+export abstract class ValidatableTripDto<
+    Id extends string | undefined = string,
+> extends BaseTripDto<Id> {
     @IsUUID()
-    id: string;
+    id!: Id;
 
     @IsUUID()
-    serviceId: string;
+    serviceId!: string;
 
     @IsString()
-    tripNumber: string;
+    tripNumber!: string;
 
     @IsUUID()
-    tripClassId: string;
+    tripClassId!: string;
 
     @IsString()
     @ValidateIf((_, v) => v !== null)
-    tripName: string | null;
+    tripName!: string | null;
 
     @IsEnum(ETripDirection)
-    tripDirection: number;
+    tripDirection!: number;
 
     @IsUUID()
-    tripBlockId: string;
+    tripBlockId!: Id;
 
     @IsBoolean()
-    depotIn: boolean;
+    depotIn!: boolean;
 
     @IsBoolean()
-    depotOut: boolean;
+    depotOut!: boolean;
 
     @IsUUID()
     @ValidateIf((_, v) => v !== null)
-    calendarId: string | null;
+    calendarId!: string | null;
 
     @IsUUID()
     @ValidateIf((_, v) => v !== null)
-    extraCalendarId: string | null;
+    extraCalendarId!: string | null;
 }

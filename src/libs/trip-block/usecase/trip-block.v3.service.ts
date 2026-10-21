@@ -222,7 +222,7 @@ export class TripBlockV3Service {
     async addTripToTripBlock(params: {
         id: string;
         dto: AddTripToTripBlockDto;
-    }): Promise<TripBlockDetailsDto> {
+    }): Promise<TripBlockDetailsDto | null> {
         const { id, dto } = params;
 
         const tripBlockDto = {
@@ -241,7 +241,8 @@ export class TripBlockV3Service {
             to: TripBlockDomainBuilder.buildFromDetailsDto(tripBlockDto.to),
         };
 
-        const trip = tripBlock.from.getTripByTripId(dto.tripId);
+        // from は dto.tripId の列車を含む block として引いているので、列車は必ずある
+        const trip = tripBlock.from.getTripByTripId(dto.tripId)!;
 
         tripBlock.from.removeTrip(trip);
         tripBlock.to.addTrip(trip);
@@ -262,7 +263,7 @@ export class TripBlockV3Service {
     async deleteTripFromTripBlock(params: {
         id: string;
         dto: DeleteTripFromTripBlockDto;
-    }): Promise<TripBlockDetailsDto> {
+    }): Promise<TripBlockDetailsDto | null> {
         const { id, dto } = params;
 
         const tripBlockDto =

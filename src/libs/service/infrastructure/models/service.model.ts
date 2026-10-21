@@ -17,19 +17,19 @@ import { OperatingSystemModel } from './operating-system.model.js';
 })
 export class ServiceModel {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column('varchar')
-    serviceName: string;
+    serviceName!: string;
 
     @Column('text', { nullable: true })
-    serviceDescription: string;
+    serviceDescription!: string | null;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
-    createdAt: string;
+    createdAt!: string;
 
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
-    updatedAt: string;
+    updatedAt!: string;
 
     @OneToMany(() => CalendarModel, (calendar) => calendar.service)
     readonly calendars?: Relation<CalendarModel[]>;

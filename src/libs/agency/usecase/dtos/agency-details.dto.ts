@@ -5,37 +5,37 @@ import { BaseAgencyDto } from './base-agency.dto.js';
 
 export class AgencyDetailsDto extends BaseAgencyDto {
     @Expose()
-    id: string;
+    id!: string;
 
     @Expose()
-    agencyNumber: string;
+    agencyNumber!: string;
 
     @Expose()
-    parentAgencyNumber: string;
+    parentAgencyNumber!: string;
 
     @Expose()
-    agencyOfficialName: string;
+    agencyOfficialName!: string;
 
     @Expose()
-    agencyName: string;
+    agencyName!: string;
 
     @Expose()
-    agencyType: number;
+    agencyType!: number;
 
     @Expose()
-    agencyUrl: string;
+    agencyUrl!: string;
 
     @Expose()
-    agencyPhone: string;
+    agencyPhone!: string;
 
     @Expose()
-    agencyFareUrl: string;
+    agencyFareUrl!: string;
 
     @Expose()
-    createdAt: Date;
+    createdAt!: Date;
 
     @Expose()
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @Expose()
     @Type(() => RouteDetailsDto)

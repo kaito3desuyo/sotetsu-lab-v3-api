@@ -25,7 +25,7 @@ export class CalendarV3Controller {
     @CacheControl(CACHE_CONTROL.MASTER)
     async findOneBySpecificDate(
         @Param('date') date: string,
-    ): Promise<CalendarDetailsDto> {
+    ): Promise<CalendarDetailsDto | undefined> {
         const result = await this.calendarV3Service.findOneBySpecificDate({
             date,
         });
@@ -35,7 +35,7 @@ export class CalendarV3Controller {
 
     @Get('/:id')
     @CacheControl(CACHE_CONTROL.MASTER)
-    async findOne(@Param('id') id: string): Promise<CalendarDetailsDto> {
+    async findOne(@Param('id') id: string): Promise<CalendarDetailsDto | null> {
         const result = await this.calendarV3Service.findOne({ id });
 
         return result;

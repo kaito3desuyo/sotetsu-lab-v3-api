@@ -47,7 +47,9 @@ export class TripBlockV3Controller {
 
     @Get('/:id')
     @CacheControl(CACHE_CONTROL.TIMETABLE)
-    async findOneById(@Param('id') id: string): Promise<TripBlockDetailsDto> {
+    async findOneById(
+        @Param('id') id: string,
+    ): Promise<TripBlockDetailsDto | null> {
         const result = await this.tripBlockV3Service.findOneById({ id });
 
         return result;
@@ -79,7 +81,7 @@ export class TripBlockV3Controller {
     async addTripToTripBlock(
         @Param() param: AddTripToTripBlockParam,
         @Body() dto: AddTripToTripBlockDto,
-    ): Promise<TripBlockDetailsDto> {
+    ): Promise<TripBlockDetailsDto | null> {
         const result = await this.tripBlockV3Service.addTripToTripBlock({
             id: param.id,
             dto,
@@ -92,7 +94,7 @@ export class TripBlockV3Controller {
     async deleteTripFromTripBlock(
         @Param() param: DeleteTripFromTripBlockParam,
         @Body() dto: DeleteTripFromTripBlockDto,
-    ): Promise<TripBlockDetailsDto> {
+    ): Promise<TripBlockDetailsDto | null> {
         const result = await this.tripBlockV3Service.deleteTripFromTripBlock({
             id: param.id,
             dto,

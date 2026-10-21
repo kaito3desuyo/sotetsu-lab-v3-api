@@ -1,3 +1,4 @@
+import { UnexpectedError } from '../../../../core/classes/unexpected-error.js';
 import { UniqueEntityId } from '../../../../core/classes/unique-entity-id.js';
 import { Trip, Trips } from '../../domain/trip.domain.js';
 import { CreateTripDto } from '../dtos/create-trip.dto.js';
@@ -8,6 +9,12 @@ import { TripDetailsDto } from '../dtos/trip-details.dto.js';
 
 export const TripDomainBuilder = {
     buildFromDetailsDto: (dto: TripDetailsDto): Trip => {
+        if (!dto.times || !dto.tripOperationLists) {
+            throw new UnexpectedError(
+                '列車の時刻か運用のつながりが結合されていない',
+                { tripId: dto.id },
+            );
+        }
         return Trip.create(
             {
                 serviceId: dto.serviceId,

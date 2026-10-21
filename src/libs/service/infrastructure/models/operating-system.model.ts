@@ -18,32 +18,32 @@ import { ServiceModel } from './service.model.js';
 })
 export class OperatingSystemModel {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column('uuid')
     @Index()
-    serviceId: string;
+    serviceId!: string;
 
     @Column('uuid')
     @Index()
-    routeId: string;
+    routeId!: string;
 
     @Column('uuid')
     @Index()
-    startRouteStationListId: string;
+    startRouteStationListId!: string;
 
     @Column('uuid')
     @Index()
-    endRouteStationListId: string;
+    endRouteStationListId!: string;
 
     @Column('smallint')
-    sequence: number;
+    sequence!: number;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
-    createdAt: string;
+    createdAt!: string;
 
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
-    updatedAt: string;
+    updatedAt!: string;
 
     @ManyToOne(() => ServiceModel, (service) => service.operatingSystems)
     @JoinColumn({ name: 'service_id' })

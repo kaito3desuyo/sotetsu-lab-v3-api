@@ -13,7 +13,7 @@ import { TripModel } from '../../../trip/infrastructure/models/trip.model.js';
 })
 export class TripBlockModel {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
     readonly createdAt?: Date;

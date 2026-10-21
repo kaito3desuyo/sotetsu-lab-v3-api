@@ -11,39 +11,39 @@ import { ReplaceTimeDto } from './replace-time.dto.js';
 import { ReplaceTripOperationListDto } from './replace-trip-operation-list.dto.js';
 import { ValidatableTripDto } from './validatable-trip.dto.js';
 
-export class ReplaceTripDto extends ValidatableTripDto {
+export class ReplaceTripDto extends ValidatableTripDto<string | undefined> {
     @ValidateIf((_, v) => v !== undefined)
     id: string | undefined;
 
-    serviceId: string;
+    serviceId!: string;
 
-    tripNumber: string;
+    tripNumber!: string;
 
-    tripClassId: string;
+    tripClassId!: string;
 
-    tripName: string | null;
+    tripName!: string | null;
 
-    tripDirection: ETripDirection;
+    tripDirection!: ETripDirection;
 
     @IsOptional()
     @Exclude()
     tripBlockId: undefined;
 
-    depotIn: boolean;
+    depotIn!: boolean;
 
-    depotOut: boolean;
+    depotOut!: boolean;
 
-    calendarId: string | null;
+    calendarId!: string | null;
 
-    extraCalendarId: string | null;
+    extraCalendarId!: string | null;
 
     @ValidateNested({ each: true })
     @Type(() => ReplaceTimeDto)
     @ArrayNotEmpty()
-    times: Nested<ReplaceTimeDto[]>;
+    times!: Nested<ReplaceTimeDto[]>;
 
     @ValidateNested({ each: true })
     @Type(() => ReplaceTripOperationListDto)
     // @ArrayNotEmpty()
-    tripOperationLists: Nested<ReplaceTripOperationListDto[]>;
+    tripOperationLists!: Nested<ReplaceTripOperationListDto[]>;
 }

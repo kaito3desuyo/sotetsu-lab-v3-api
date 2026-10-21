@@ -15,10 +15,11 @@ export class TripQuery {
         private readonly tripRepository: Repository<TripModel>,
     ) {}
 
-    async findOneTripById(tripId: string): Promise<TripDetailsDto> {
+    async findOneTripById(tripId: string): Promise<TripDetailsDto | null> {
         const model = await this.tripRepository.findOne({
             where: { id: tripId },
         });
+        if (!model) return null;
         return TripDtoBuilder.buildFromModel(model);
     }
 

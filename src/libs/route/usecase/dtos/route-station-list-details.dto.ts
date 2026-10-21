@@ -6,19 +6,19 @@ import { RouteDetailsDto } from './route-details.dto.js';
 
 export class RouteStationListDetailsDto extends BaseRouteStationListDto {
     @Expose()
-    id: string;
+    id!: string;
 
     @Expose()
-    routeId: string;
+    routeId!: string;
 
     @Expose()
-    stationId: string;
+    stationId!: string;
 
     @Expose()
-    stationSequence: number;
+    stationSequence!: number;
 
     @Expose()
-    stationNumbering: string;
+    stationNumbering!: string;
 
     @Expose()
     @Type(() => RouteDetailsDto)

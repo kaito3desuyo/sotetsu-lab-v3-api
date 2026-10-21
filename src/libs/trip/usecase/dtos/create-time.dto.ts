@@ -2,7 +2,7 @@ import { Exclude } from 'class-transformer';
 import { IsOptional } from 'class-validator';
 import { ValidatableTimeDto } from './validatable-time.dto.js';
 
-export class CreateTimeDto extends ValidatableTimeDto {
+export class CreateTimeDto extends ValidatableTimeDto<undefined> {
     @IsOptional()
     @Exclude()
     id: undefined;
@@ -11,21 +11,21 @@ export class CreateTimeDto extends ValidatableTimeDto {
     @Exclude()
     tripId: undefined;
 
-    stationId: string;
+    stationId!: string;
 
-    stopId: string | null;
+    stopId!: string | null;
 
-    stopSequence: number;
+    stopSequence!: number;
 
-    pickupType: number;
+    pickupType!: number;
 
-    dropoffType: number;
+    dropoffType!: number;
 
-    arrivalDays: number | null;
+    arrivalDays!: number | null;
 
-    arrivalTime: string | null;
+    arrivalTime!: string | null;
 
-    departureDays: number | null;
+    departureDays!: number | null;
 
-    departureTime: string | null;
+    departureTime!: string | null;
 }

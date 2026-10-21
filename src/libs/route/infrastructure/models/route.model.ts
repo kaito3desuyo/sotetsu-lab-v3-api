@@ -19,41 +19,41 @@ import { RouteStationListModel } from './route-station-list.model.js';
 })
 export class RouteModel {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column('uuid')
     @Index()
-    agencyId: string;
+    agencyId!: string;
 
     @Column('varchar', { nullable: true })
-    routeNumber: string;
+    routeNumber!: string | null;
 
     @Column('varchar')
-    routeName: string;
+    routeName!: string;
 
     @Column('varchar', { nullable: true })
-    routeNickname: string;
+    routeNickname!: string | null;
 
     @Column('text', { nullable: true })
-    routeDescription: string;
+    routeDescription!: string | null;
 
     @Column('smallint')
-    routeType: number;
+    routeType!: number;
 
     @Column('varchar', { nullable: true })
-    routeUrl: string;
+    routeUrl!: string | null;
 
     @Column('varchar', { nullable: true })
-    routeColor: string;
+    routeColor!: string | null;
 
     @Column('varchar', { nullable: true })
-    routeTextColor: string;
+    routeTextColor!: string | null;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
-    createdAt: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @ManyToOne(() => AgencyModel, (agency) => agency.routes)
     @JoinColumn({ name: 'agency_id' })

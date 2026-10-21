@@ -105,7 +105,7 @@ describe('CalendarQuery - findOneBySpecificDate', () => {
             date: '2027-07-19', // Monday, 祝日一覧・特別ダイヤ一覧に含まれない日
         });
 
-        expect(result.id).toBe('weekday-id');
+        expect(result?.id).toBe('weekday-id');
     });
 
     it('平日ダイヤの祝日（未登録の新規祝日）に type2 + 休日ダイヤに type1 を登録すると休日ダイヤ判定になる', async () => {
@@ -129,7 +129,7 @@ describe('CalendarQuery - findOneBySpecificDate', () => {
             date: '2027-07-19', // Monday
         });
 
-        expect(result.id).toBe('holiday-id');
+        expect(result?.id).toBe('holiday-id');
     });
 
     it('土曜（曜日規則では非該当）に type1 を登録すると、当該カレンダーが判定に含まれる', async () => {
@@ -156,7 +156,7 @@ describe('CalendarQuery - findOneBySpecificDate', () => {
             date: '2027-08-14', // Saturday
         });
 
-        expect(result.id).toBe('special-event-id');
+        expect(result?.id).toBe('special-event-id');
     });
 
     it('期間内に候補カレンダーが存在しない場合は例外テーブルへの IN 句クエリを発行しない', async () => {

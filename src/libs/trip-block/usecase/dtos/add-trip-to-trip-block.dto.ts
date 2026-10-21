@@ -6,5 +6,5 @@ export class AddTripToTripBlockDto {
     id: string | undefined;
 
     @IsUUID()
-    tripId: string;
+    tripId!: string;
 }

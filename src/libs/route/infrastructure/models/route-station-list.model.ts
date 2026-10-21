@@ -19,35 +19,35 @@ import { RouteModel } from './route.model.js';
 })
 export class RouteStationListModel {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column('uuid')
     @Index()
-    routeId: string;
+    routeId!: string;
 
     @Column('uuid')
     @Index()
-    stationId: string;
+    stationId!: string;
 
     @Column('smallint')
-    stationSequence: number;
+    stationSequence!: number;
 
     @Column('varchar', { nullable: true })
-    stationNumbering: string;
+    stationNumbering!: string | null;
 
     @CreateDateColumn({ type: 'timestamptz', precision: 3 })
-    createdAt: string;
+    createdAt!: string;
 
     @UpdateDateColumn({ type: 'timestamptz', precision: 3 })
-    updatedAt: string;
+    updatedAt!: string;
 
     @ManyToOne(() => RouteModel, (route) => route.routeStationLists)
     @JoinColumn({ name: 'route_id' })
-    route: Relation<RouteModel>;
+    route!: Relation<RouteModel>;
 
     @ManyToOne(() => StationModel, (station) => station.routeStationLists)
     @JoinColumn({ name: 'station_id' })
-    station: Relation<StationModel>;
+    station!: Relation<StationModel>;
 
     @OneToMany(
         () => OperatingSystemModel,

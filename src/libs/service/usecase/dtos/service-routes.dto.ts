@@ -6,20 +6,20 @@ import { ServiceDetailsDto } from './service-details.dto.js';
 export class ServiceRoutesDto {
     @Expose()
     @Type(() => ServiceDetailsDto)
-    service: Nested<ServiceDetailsDto>;
+    service!: Nested<ServiceDetailsDto>;
 
     @Expose()
     @Type(() => ServiceRouteDto)
-    routes: Nested<ServiceRouteDto[]>;
+    routes!: Nested<ServiceRouteDto[]>;
 }
 
 export class ServiceRouteDto extends RouteDetailsDto {
     @Expose()
-    sequence: number;
+    sequence!: number;
 
     @Expose()
-    startRouteStationListId: string;
+    startRouteStationListId!: string;
 
     @Expose()
-    endRouteStationListId: string;
+    endRouteStationListId!: string;
 }

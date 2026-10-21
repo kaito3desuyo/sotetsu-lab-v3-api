@@ -2,17 +2,17 @@ import { Expose } from 'class-transformer';
 
 export class OperationSightingLatestCacheDto {
     @Expose()
-    id: string;
+    id!: string;
 
     @Expose()
-    operationSightingId: string;
+    operationSightingId!: string;
 
     @Expose()
-    operationNumber: string;
+    operationNumber!: string;
 
     @Expose()
-    formationNumber: string;
+    formationNumber!: string;
 
     @Expose()
-    sightingTime: Date;
+    sightingTime!: Date;
 }

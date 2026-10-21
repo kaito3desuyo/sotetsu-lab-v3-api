@@ -1,3 +1,4 @@
+import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
@@ -5,7 +6,7 @@ import { AppModule } from '../src/app.module.js';
 import { AgencyModel } from '../src/libs/agency/infrastructure/models/agency.model.js';
 
 describe('AppController (e2e)', () => {
-  let app;
+  let app: INestApplication;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({

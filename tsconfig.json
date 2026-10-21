@@ -8,7 +8,6 @@
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
         "target": "ES2023",
-        "strict": false,
         "useDefineForClassFields": false,
         "sourceMap": true,
         "outDir": "./dist",
