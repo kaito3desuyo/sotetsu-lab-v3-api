@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
-import cloneDeep from 'lodash/cloneDeep.js';
-import sortBy from 'lodash/sortBy.js';
 import { DataSourceConfig } from '../../../../core/configs/database.config.js';
 import { AgencyModel } from '../../../agency/infrastructure/models/agency.model.js';
 import { RouteStationListModel } from '../../../route/infrastructure/models/route-station-list.model.js';
@@ -144,18 +142,16 @@ export class ServiceQuery {
                 operatingSystem.startRouteStationList.stationSequence <
                 operatingSystem.endRouteStationList.stationSequence;
 
+            const byStationSequence =
+                operatingSystem.route.routeStationLists.toSorted(
+                    (a, b) => a.stationSequence - b.stationSequence,
+                );
             const sortedRSLs = isAscending
-                ? sortBy(
-                      operatingSystem.route.routeStationLists,
-                      (o) => o.stationSequence,
-                  )
-                : sortBy(
-                      operatingSystem.route.routeStationLists,
-                      (o) => o.stationSequence,
-                  ).reverse();
+                ? byStationSequence
+                : byStationSequence.toReversed();
 
-            const initialPosition = cloneDeep(pickedRouteStationLists)
-                .reverse()
+            const initialPosition = pickedRouteStationLists
+                .toReversed()
                 .findIndex(
                     (o) =>
                         o.stationId ===
