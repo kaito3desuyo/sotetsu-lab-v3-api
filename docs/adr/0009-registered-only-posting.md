@@ -68,3 +68,36 @@
   - 投稿で `operation_sighting_authors` に `sub` が入り、無効化で `management_logs.user_id` に `sub` が入る（api のテスト）
   - SocketSignal は失敗しても例外を投げない・既定のクライアントが 1 回・300ms・1 秒の上限で作られる（単体テスト）
   - 本番: ゲストで投稿が 403、登録者で投稿すると別の端末の real-time が更新される、trip-blocks を保存すると別の端末の時刻表が更新される、CloudWatch に「socket への合図に失敗しました」が出ていない
+
+## 追記: 公開の切り替え（フィーチャーフラグ・2026-10-23）
+
+- **日時**: 2026-10-23。実装の後に、ユーザーの判断で足した（spec の 9 章）。
+- 目的: コードを先に本番へ出しておき、告知した日に登録制を始める。切り替えはデプロイ無しで行う。
+
+## 決定（追記分）
+
+- フラグは DB の表 `feature_flags`（`key`・`enabled`・`updated_at`）に置く。行が無いキーは off として扱う。migration は行を入れない。
+  - 切り替えは SQL で行う。Supabase MCP は読み取り専用なので、ユーザーが流す。始める・戻すは同じ文で `true`・`false` を入れる。
+
+    ```sql
+    insert into feature_flags (key, enabled) values ('registered_only_posting', true) on conflict (key) do update set enabled = excluded.enabled, updated_at = now();
+    ```
+
+  - api は Lambda ごとにフラグを 60 秒覚えておく。切り替えが効くまで最大 1 分かかる。
+- フラグの範囲は、目撃の投稿に役割を求めるかどうかだけ。`RBACGuard` に `@RBACWhenFlag('registered_only_posting')` を付け、フラグが off のときだけ役割を見ずに通す。トークンの検証（AuthGuard）はフラグに関わらず行う。
+  - trip-blocks の書き込みの制限・socket への合図・無効化と復元で `userId` を受けない形・ログインと登録のページは、フラグに関わらず常に有効。
+- 投稿者の行（`operation_sighting_authors`）は、役割のある利用者が投稿したときだけ作る。匿名の利用者の行は作らない。匿名の利用者を記録すると、`ON DELETE NO ACTION` の FK のせいで後から匿名の利用者を消せなくなるため。
+- `GET /v3/feature-flags` を足す。全キーを `{ "registered_only_posting": false }` の形で返す。AuthGuard だけを掛け、役割は問わない。`Cache-Control: no-store`。
+- migration `1792747997252-AddFeatureFlags` は `1792739673780-AddOperationSightingAuthors` の後に流し、api をデプロイする前に本番へ流す。流さずに api を出すと、表が無いため目撃の投稿が 500 になる。
+- 出す順は spec の 9.4 による。socket（broadcast 関数）→ api（migration 込み）→ client → socket（`sendSighting` を消す）→ 告知した日に SQL でフラグを on。この順が、上の「影響」の出す順に替わる。
+
+## 却下した案（追記分）
+
+- 日時で自動に切り替える。変更・戻しにデプロイが要る。
+- api の環境変数で切り替える。変更・戻しにデプロイが要る。
+- client だけで隠す。api を直接呼べば投稿できてしまう。
+
+## 影響（追記分）
+
+- フラグが off の間は、匿名の投稿が今までどおり通る。上の「決定」の「匿名は 403」は、フラグが on のときに成り立つ。
+- 確かめ方（spec の 9.5）: api のテストで、off の匿名投稿は通り投稿者の行は入らない・on の匿名投稿は 403・登録者の投稿は投稿者の行が入る・60 秒以内は DB を引き直さない・行が無いキーは false。本番では、off でゲストの投稿が通る → SQL で on → 1 分後にゲストが 403 で画面に案内が出る → off で元に戻る。
