@@ -1,10 +1,14 @@
 import type { MockedFunction } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { SocketSignal } from '../../../core/modules/socket-signal/socket-signal.js';
 import { ItinerarySegmentQuery } from '../../operation/infrastructure/queries/itinerary-segment.query.js';
 import { TripBlockCommand } from '../infrastructure/commands/trip-block.command.js';
 import { TripBlockQuery } from '../infrastructure/queries/trip-block.query.js';
-import { TripBlockDomainBuilder } from './builders/trip-block.domain.builder.js';
+import {
+    TripBlockDomainBuilder,
+    TripBlocksDomainBuilder,
+} from './builders/trip-block.domain.builder.js';
 import { TripBlockV3Service } from './trip-block.v3.service.js';
 
 type AnyMock = MockedFunction<(...args: any[]) => any>;
@@ -14,10 +18,15 @@ const mockItinerarySegmentQuery = {
 };
 const mockTripBlockCommand = {
     replaceOneTripBlockByDomain: vi.fn() as AnyMock,
+    bulkCreate: vi.fn() as AnyMock,
+    deleteOneTripBlockByDomain: vi.fn() as AnyMock,
 };
+const mockSignalSend = vi.fn() as AnyMock;
 
 const mockTripBlockQuery = {
     findOneTripBlockByTripBlockId: vi.fn() as AnyMock,
+    findOneTripBlockByTripId: vi.fn() as AnyMock,
+    findOneById: vi.fn() as AnyMock,
     findManyByFilter: vi.fn() as AnyMock,
     findManyByFilterWithFields: vi.fn() as AnyMock,
 };
@@ -39,6 +48,7 @@ describe('TripBlockV3Service - findManyByFilter', () => {
                     provide: ItinerarySegmentQuery,
                     useValue: mockItinerarySegmentQuery,
                 },
+                { provide: SocketSignal, useValue: { send: mockSignalSend } },
             ],
         }).compile();
         service = module.get(TripBlockV3Service);
@@ -121,6 +131,7 @@ describe('TripBlockV3Service - 次の運用の検め', () => {
                     provide: ItinerarySegmentQuery,
                     useValue: mockItinerarySegmentQuery,
                 },
+                { provide: SocketSignal, useValue: { send: mockSignalSend } },
             ],
         }).compile();
         service = module.get(TripBlockV3Service);
@@ -149,6 +160,7 @@ describe('TripBlockV3Service - 次の運用の検め', () => {
         expect(
             mockTripBlockCommand.replaceOneTripBlockByDomain,
         ).not.toHaveBeenCalled();
+        expect(mockSignalSend).not.toHaveBeenCalled();
     });
 
     const seg = (id: string, next: string | null) => ({
@@ -186,10 +198,9 @@ describe('TripBlockV3Service - 次の運用の検め', () => {
                 },
             ],
         };
-        vi.spyOn(
-            TripBlockDomainBuilder,
-            'buildFromReplaceDto',
-        ).mockReturnValue({} as never);
+        vi.spyOn(TripBlockDomainBuilder, 'buildFromReplaceDto').mockReturnValue(
+            {} as never,
+        );
         mockTripBlockCommand.replaceOneTripBlockByDomain.mockResolvedValue({});
         await expect(
             service.replaceOneTripBlock({ id: 'blk', dto: dto as never }),
@@ -197,6 +208,7 @@ describe('TripBlockV3Service - 次の運用の検め', () => {
         expect(
             mockTripBlockCommand.replaceOneTripBlockByDomain,
         ).toHaveBeenCalledTimes(1);
+        expect(mockSignalSend).toHaveBeenCalledWith({ type: 'timetable' });
     });
 
     it('置き換えで消える区間の指していた先は、新しい区間が指せる', async () => {
@@ -208,10 +220,9 @@ describe('TripBlockV3Service - 次の運用の検め', () => {
         mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue({
             trips: [{ tripOperationLists: [{ id: 'c' }, { id: 'a' }] }],
         });
-        vi.spyOn(
-            TripBlockDomainBuilder,
-            'buildFromReplaceDto',
-        ).mockReturnValue({} as never);
+        vi.spyOn(TripBlockDomainBuilder, 'buildFromReplaceDto').mockReturnValue(
+            {} as never,
+        );
         mockTripBlockCommand.replaceOneTripBlockByDomain.mockResolvedValue({});
         await expect(
             service.replaceOneTripBlock({
@@ -349,5 +360,127 @@ describe('TripBlockV3Service - 次の運用の検め', () => {
                 },
             ] as never),
         ).rejects.toThrow('列車の途中で運番が替わる区間には');
+    });
+});
+
+describe('TripBlockV3Service - 保存を socket に知らせる', () => {
+    let service: TripBlockV3Service;
+
+    afterEach(() => vi.restoreAllMocks());
+
+    beforeEach(async () => {
+        vi.clearAllMocks();
+        const module: TestingModule = await Test.createTestingModule({
+            providers: [
+                TripBlockV3Service,
+                { provide: TripBlockQuery, useValue: mockTripBlockQuery },
+                { provide: TripBlockCommand, useValue: mockTripBlockCommand },
+                {
+                    provide: ItinerarySegmentQuery,
+                    useValue: mockItinerarySegmentQuery,
+                },
+                { provide: SocketSignal, useValue: { send: mockSignalSend } },
+            ],
+        }).compile();
+        service = module.get(TripBlockV3Service);
+    });
+
+    it('createManyTripBlocks は保存後に timetable を知らせる', async () => {
+        vi.spyOn(TripBlocksDomainBuilder, 'buildFromCreateDto').mockReturnValue(
+            [] as never,
+        );
+        mockTripBlockCommand.bulkCreate.mockResolvedValue([]);
+        await service.createManyTripBlocks([]);
+        expect(mockSignalSend).toHaveBeenCalledWith({ type: 'timetable' });
+    });
+
+    it('createManyTripBlocks の保存が失敗したら知らせない', async () => {
+        vi.spyOn(TripBlocksDomainBuilder, 'buildFromCreateDto').mockReturnValue(
+            [] as never,
+        );
+        mockTripBlockCommand.bulkCreate.mockRejectedValue(new Error('db'));
+        await expect(service.createManyTripBlocks([])).rejects.toThrow('db');
+        expect(mockSignalSend).not.toHaveBeenCalled();
+    });
+
+    it('replaceOneTripBlock は保存後に timetable を知らせる', async () => {
+        vi.spyOn(TripBlockDomainBuilder, 'buildFromReplaceDto').mockReturnValue(
+            {} as never,
+        );
+        mockTripBlockCommand.replaceOneTripBlockByDomain.mockResolvedValue({});
+        await service.replaceOneTripBlock({
+            id: 'blk',
+            dto: { trips: [] } as never,
+        });
+        expect(mockSignalSend).toHaveBeenCalledWith({ type: 'timetable' });
+    });
+
+    it('addTripToTripBlock は保存後に timetable を知らせる', async () => {
+        const trip = {};
+        const from = {
+            getTripByTripId: vi.fn().mockReturnValue(trip),
+            removeTrip: vi.fn(),
+            isTripEmpty: vi.fn().mockReturnValue(true),
+        };
+        const to = { addTrip: vi.fn() };
+        mockTripBlockQuery.findOneTripBlockByTripId.mockResolvedValue({});
+        mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue({});
+        mockTripBlockQuery.findOneById.mockResolvedValue({ id: 'to' });
+        vi.spyOn(TripBlockDomainBuilder, 'buildFromDetailsDto')
+            .mockReturnValueOnce(from as never)
+            .mockReturnValueOnce(to as never);
+        mockTripBlockCommand.replaceOneTripBlockByDomain.mockResolvedValue({});
+        mockTripBlockCommand.deleteOneTripBlockByDomain.mockResolvedValue(
+            undefined,
+        );
+        await service.addTripToTripBlock({
+            id: 'to',
+            dto: { tripId: 't1' } as never,
+        });
+        expect(mockSignalSend).toHaveBeenCalledWith({ type: 'timetable' });
+    });
+
+    it('addTripToTripBlock が見つからなければ知らせない', async () => {
+        mockTripBlockQuery.findOneTripBlockByTripId.mockResolvedValue(null);
+        mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue({});
+        await expect(
+            service.addTripToTripBlock({
+                id: 'to',
+                dto: { tripId: 't1' } as never,
+            }),
+        ).rejects.toThrow();
+        expect(mockSignalSend).not.toHaveBeenCalled();
+    });
+
+    it('deleteTripFromTripBlock は保存後に timetable を知らせる', async () => {
+        const block = {
+            getTripByTripId: vi.fn().mockReturnValue({}),
+            removeTrip: vi.fn(),
+            isTripEmpty: vi.fn().mockReturnValue(false),
+        };
+        mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue({});
+        mockTripBlockQuery.findOneById.mockResolvedValue({ id: 'blk' });
+        vi.spyOn(TripBlockDomainBuilder, 'buildFromDetailsDto').mockReturnValue(
+            block as never,
+        );
+        mockTripBlockCommand.replaceOneTripBlockByDomain.mockResolvedValue({});
+        await service.deleteTripFromTripBlock({
+            id: 'blk',
+            dto: { tripId: 't1', holdAsAnotherTripBlock: false } as never,
+        });
+        expect(mockSignalSend).toHaveBeenCalledWith({ type: 'timetable' });
+    });
+
+    it('deleteTripFromTripBlock が見つからなければ知らせない', async () => {
+        mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue(
+            null,
+        );
+        await expect(
+            service.deleteTripFromTripBlock({
+                id: 'blk',
+                dto: { tripId: 't1' } as never,
+            }),
+        ).rejects.toThrow();
+        expect(mockSignalSend).not.toHaveBeenCalled();
     });
 });

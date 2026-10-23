@@ -12,7 +12,9 @@ import {
 import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
 import { CACHE_CONTROL } from '../../../core/modules/cache-control/cache-control.constants.js';
 import { CacheControl } from '../../../core/modules/cache-control/cache-control.decorator.js';
+import { RBAC } from '../../../core/modules/rbac/rbac.decorator.js';
 import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
+import { Role } from '../../../core/modules/rbac/role.enum.js';
 import { AddTripToTripBlockDto } from '../usecase/dtos/add-trip-to-trip-block.dto.js';
 import { CreateTripBlockDto } from '../usecase/dtos/create-trip-block.dto.js';
 import { DeleteTripFromTripBlockDto } from '../usecase/dtos/delete-trip-from-trip-block.dto.js';
@@ -56,6 +58,7 @@ export class TripBlockV3Controller {
     }
 
     @Post('/bulk')
+    @RBAC(Role.EDITOR, Role.MANAGER)
     async createManyTripBlocks(
         @Body() dtos: CreateTripBlockDto[],
     ): Promise<TripBlockDetailsDto[]> {
@@ -65,6 +68,7 @@ export class TripBlockV3Controller {
     }
 
     @Put('/:id')
+    @RBAC(Role.EDITOR, Role.MANAGER)
     async replaceOneTripBlock(
         @Param() param: ReplaceTripBlockParam,
         @Body() dto: ReplaceTripBlockDto,
@@ -78,6 +82,7 @@ export class TripBlockV3Controller {
     }
 
     @Patch('/:id/add-trip')
+    @RBAC(Role.EDITOR, Role.MANAGER)
     async addTripToTripBlock(
         @Param() param: AddTripToTripBlockParam,
         @Body() dto: AddTripToTripBlockDto,
@@ -91,6 +96,7 @@ export class TripBlockV3Controller {
     }
 
     @Patch('/:id/delete-trip')
+    @RBAC(Role.EDITOR, Role.MANAGER)
     async deleteTripFromTripBlock(
         @Param() param: DeleteTripFromTripBlockParam,
         @Body() dto: DeleteTripFromTripBlockDto,

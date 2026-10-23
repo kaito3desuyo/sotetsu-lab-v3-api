@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { SocketSignal } from '../../../core/modules/socket-signal/socket-signal.js';
 import { secondsOfServiceDay } from '../../../core/utils/datetime.js';
 import { UseCaseError } from '../../../core/classes/custom-error.js';
 import { parseSparseFieldsets } from '../../../core/utils/sparse-fieldsets.js';
@@ -59,6 +60,7 @@ export class TripBlockV3Service {
         private readonly tripBlockCommand: TripBlockCommand,
         private readonly tripBlockQuery: TripBlockQuery,
         private readonly itinerarySegmentQuery: ItinerarySegmentQuery,
+        private readonly socketSignal: SocketSignal,
     ) {}
 
     /**
@@ -186,7 +188,9 @@ export class TripBlockV3Service {
             dtos.flatMap((o, i) => o.trips.map(() => `new-block-${i}`)),
         );
         const domains = TripBlocksDomainBuilder.buildFromCreateDto(dtos);
-        return this.tripBlockCommand.bulkCreate(domains);
+        const result = await this.tripBlockCommand.bulkCreate(domains);
+        await this.socketSignal.send({ type: 'timetable' });
+        return result;
     }
 
     async replaceOneTripBlock(params: {
@@ -216,7 +220,10 @@ export class TripBlockV3Service {
             ...dto,
             id,
         });
-        return this.tripBlockCommand.replaceOneTripBlockByDomain(domain);
+        const result =
+            await this.tripBlockCommand.replaceOneTripBlockByDomain(domain);
+        await this.socketSignal.send({ type: 'timetable' });
+        return result;
     }
 
     async addTripToTripBlock(params: {
@@ -257,6 +264,7 @@ export class TripBlockV3Service {
             );
         }
 
+        await this.socketSignal.send({ type: 'timetable' });
         return result;
     }
 
@@ -312,6 +320,7 @@ export class TripBlockV3Service {
             await this.tripBlockCommand.deleteOneTripBlockByDomain(tripBlock);
         }
 
+        await this.socketSignal.send({ type: 'timetable' });
         return result;
     }
 }
