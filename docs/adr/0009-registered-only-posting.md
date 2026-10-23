@@ -35,6 +35,7 @@
   - 目撃を保存したら `{"type":"sighting"}`、trip-blocks を保存したら `{"type":"timetable"}` を `InvocationType: Event` で送る。本文は空の合図だけ。
   - 部品は `src/core/modules/socket-signal/` の Nest モジュールにする（RBAC と同じ置き方・名前に Service を付けない）。`@aws-sdk/client-lambda` を依存に足した。
   - Invoke に失敗しても書き込みの応答は成功のまま返し、失敗は warn のログ（「socket への合図に失敗しました」）に残すだけにする。合図が届かなくても、次に取り直したときに見える。
+  - 合図は書き込みの応答の前に待つ（api の Lambda の timeout は 3 秒）ので、詰まった Invoke が書き込み済みの応答を 504 にしないよう、Invoke は 1 回・接続 300ms・応答 1 秒で打ち切る。
   - 関数名は環境変数 `SOCKET_BROADCAST_FUNCTION_NAME` で渡す。未設定（ローカル・テスト）なら何もしない。
   - api の Lambda の IAM に、broadcast 関数 1 つへの `lambda:InvokeFunction` だけを足した（`serverless.ts`）。
 - migration は `migration:generate` で作る（`1792739673780-AddOperationSightingAuthors`）。`auth.users` への FK は ① と同じく synchronize:false のモデル経由で張り、制約名は既定のハッシュ名に任せた。
@@ -60,9 +61,10 @@
   - api を出す時点では古い client の `sendSighting` も動いているので、合図は二重に出る。害は無い。
   - 最後に socket の `sendSighting` のルートを消す。Service Worker に残った古い client が送ってきても、ルートが無いだけで害は無い。
 - デプロイの前に、socket の broadcast 関数がデプロイ済みであることと、migration が本番に流れていることを確かめる。ローカルの api は本番 DB を読むので、migration を先に流してからローカルで動かす。
+- `operation_sighting_authors` と `management_logs` の `user_id` は ON DELETE NO ACTION なので、記録のある利用者は削除できない。処分は ban（`banned_until`）で行う（記録を残すため）。
 - 範囲外: 相鉄館・v2 の過去の投稿者名の取り込み（M5）、投稿者を処分する画面（処分は SQL と Supabase の管理画面で手作業）、`next-operation-candidates` の絞り込み、古い匿名利用者（`is_anonymous`）の掃除（M0）。
 - 確かめ方:
   - 匿名（役割なし）の投稿は 403、reporter の trip-blocks の書き込みは 403（api のテスト）
   - 投稿で `operation_sighting_authors` に `sub` が入り、無効化で `management_logs.user_id` に `sub` が入る（api のテスト）
-  - Invoke に失敗しても 201（api のテスト）
+  - SocketSignal は失敗しても例外を投げない・既定のクライアントが 1 回・300ms・1 秒の上限で作られる（単体テスト）
   - 本番: ゲストで投稿が 403、登録者で投稿すると別の端末の real-time が更新される、trip-blocks を保存すると別の端末の時刻表が更新される、CloudWatch に「socket への合図に失敗しました」が出ていない
