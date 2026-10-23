@@ -11,7 +11,7 @@ M0 後始末 → M1 登録制 ② → M2 SSR → M3 臨時列車 → M4 API の�
 | # | 名前 | api でやること | 着手前に決める・確かめること |
 |---|---|---|---|
 | M0 | 後始末 | 古い匿名利用者（`is_anonymous`）の掃除、v2 撤去の後始末 SQL | 匿名の掃除は対象を列挙して確認してから |
-| M1 | 登録制 ② | 目撃投稿を登録者だけにする、投稿者の記録、trip-blocks の書き込み（POST /bulk・PUT /:id・PATCH add-trip/delete-trip）に `@RBAC`、socket への配信を書き込み成功時に移す（socket の案 d を採る場合） | v2 の書き込みを reporter で使う利用者がいないか、編集者トークンの scope が 1 つか（RBACGuard は完全一致）、`next-operation-candidates` を EDITOR/MANAGER に絞るか |
+| M1 | 登録制 ② | 目撃投稿を登録者だけにする（DB のフィーチャーフラグ `registered_only_posting` で公開日を選ぶ）、投稿者の記録（`operation_sighting_authors`）、trip-blocks の書き込みを EDITOR・MANAGER に、書き込み成功時に socket の broadcast 関数を Invoke（d′） | 決定・実装済み（2026-10-23・`docs/superpowers/specs/2026-10-23-registered-only-posting-design.md`・ADR-0009・PR #186）。`next-operation-candidates` の絞り込みは範囲外 |
 | M3 | 臨時列車 | 派生カレンダー＋`calendar_dates`、運用の割り当て変更 | `calendars.parent_calendar_id` が「GTFS のメインテーブルに列を足さない」原則とぶつかる件を M2 の最中に決める。spec は `feature/special-trips` |
 | M4 | API の外部公開 | Supabase OAuth 2.1 Server のトークンを今の JWKS 検証と RBAC で受ける、外部向けの手引き | M1 の後。着手時に beta が外れたか、refresh token の寿命を確かめ直す |
 | M5 | 過去の目撃データの補完 | 段1：相鉄館の 2004-09〜2014 の日次ログを正規化・重複除去し、中間 CSV と件数レポートを作る（DB には触らない）。段2 以降の器づくり（退役編成、2009-11 より前のダイヤ・運番）と取り込みも、ここになる見込み | 段1 のスクリプトを置く場所は着手時に決める。段2 以降の範囲は段1 の結果を見て決める |
