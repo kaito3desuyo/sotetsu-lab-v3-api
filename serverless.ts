@@ -55,6 +55,15 @@ const serverlessConfiguration: AWS = {
         iam: {
             role: {
                 name: '${param:prefix}-lambda-role',
+                statements: [
+                    {
+                        Effect: 'Allow',
+                        Action: ['lambda:InvokeFunction'],
+                        Resource: [
+                            `arn:aws:lambda:ap-northeast-1:\${aws:accountId}:function:sotetsu-lab-v3-\${sls:stage}-socket-broadcast-lambda`,
+                        ],
+                    },
+                ],
             },
         },
         environment: {
@@ -67,6 +76,7 @@ const serverlessConfiguration: AWS = {
             DATABASE_URL:
                 'postgresql://${self:custom.databaseSecrets.username}:${self:custom.databaseSecrets.password}@${self:custom.databaseSecrets.host}:${self:custom.databaseSecrets.port}/${self:custom.databaseSecrets.dbname}',
             SUPABASE_URL: '${ssm:sotetsu-lab-v3-supabase-url}',
+            SOCKET_BROADCAST_FUNCTION_NAME: `sotetsu-lab-v3-\${sls:stage}-socket-broadcast-lambda`,
         },
     },
     // import the function via paths
