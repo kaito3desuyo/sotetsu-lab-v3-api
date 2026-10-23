@@ -1,7 +1,25 @@
-import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
+import {
+    InvokeCommand,
+    LambdaClient,
+    type LambdaClientConfig,
+} from '@aws-sdk/client-lambda';
 import { Injectable, Logger, Optional } from '@nestjs/common';
 
 export type SocketSignalType = 'sighting' | 'timetable';
+
+/**
+ * 合図は書き込みの応答の前に await される（api Lambda の timeout は 3 秒）。
+ * 詰まった Invoke が書き込み済みの応答を 504 にしないよう、再試行なし・接続 300ms・応答 1 秒で打ち切る。
+ * requestTimeout は throwOnRequestTimeout を付けないと警告ログだけで打ち切られない。
+ */
+export const SOCKET_SIGNAL_CLIENT_CONFIG = {
+    maxAttempts: 1,
+    requestHandler: {
+        connectionTimeout: 300,
+        requestTimeout: 1000,
+        throwOnRequestTimeout: true,
+    },
+} as const satisfies LambdaClientConfig;
 
 /**
  * 書き込みに成功したことを、socket の broadcast 関数に知らせる。
@@ -14,7 +32,7 @@ export class SocketSignal {
     readonly #client: LambdaClient;
 
     constructor(@Optional() client?: LambdaClient) {
-        this.#client = client ?? new LambdaClient({});
+        this.#client = client ?? new LambdaClient(SOCKET_SIGNAL_CLIENT_CONFIG);
     }
 
     async send(params: { type: SocketSignalType }): Promise<void> {

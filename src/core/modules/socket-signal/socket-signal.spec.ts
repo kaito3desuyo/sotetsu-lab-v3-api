@@ -1,5 +1,8 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { SocketSignal } from './socket-signal.js';
+import {
+    SOCKET_SIGNAL_CLIENT_CONFIG,
+    SocketSignal,
+} from './socket-signal.js';
 
 describe('SocketSignal', () => {
     const send = vi.fn();
@@ -41,5 +44,21 @@ describe('SocketSignal', () => {
         await expect(
             new SocketSignal(client).send({ type: 'sighting' }),
         ).resolves.toBeUndefined();
+    });
+
+    it('既定のクライアントは再試行せず、接続 300ms・応答 1 秒で打ち切る', async () => {
+        expect(SOCKET_SIGNAL_CLIENT_CONFIG).toEqual({
+            maxAttempts: 1,
+            requestHandler: {
+                connectionTimeout: 300,
+                requestTimeout: 1000,
+                throwOnRequestTimeout: true,
+            },
+        });
+        const built = new LambdaClient({
+            ...SOCKET_SIGNAL_CLIENT_CONFIG,
+            region: 'ap-northeast-1',
+        });
+        await expect(built.config.maxAttempts()).resolves.toBe(1);
     });
 });
