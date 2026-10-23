@@ -754,3 +754,117 @@ socket の broadcast 関数がデプロイ済みであること（`aws-vault exe
 - 登録者で投稿すると `operation_sighting_authors` に行ができ、別の端末の real-time が更新される
 - 編集者で trip-blocks を保存すると、別の端末の時刻表のキャッシュが捨てられる
 - CloudWatch の api のログに「socket への合図に失敗しました」が出ていない
+
+---
+
+## 追補: 公開の切り替え（フィーチャーフラグ・2026-10-23）
+
+spec 9 章。Task 1〜5 の後に足す。フラグの下は「目撃の投稿に役割を求めるか」だけ（キー `registered_only_posting`）。
+
+### Task 6: feature_flags と RBAC の条件付け
+
+**Files:**
+- Create: `src/core/modules/feature-flag/feature-flag.model.ts`・`feature-flags.ts`・`feature-flags.spec.ts`・`feature-flag.controller.ts`・`feature-flag.controller.spec.ts`・`feature-flag.module.ts`
+- Create: `src/core/modules/rbac/rbac-when-flag.decorator.ts`
+- Modify: `src/core/modules/rbac/rbac.guard.ts`・`rbac.guard.spec.ts`
+- Modify: `src/core/configs/entities.ts`・`src/app.module.ts`
+- Modify: `src/libs/operation-sighting/presentation/operation-sighting.v3.controller.ts`・その spec
+- Modify: `src/libs/operation-sighting/usecase/operation-sighting.v3.service.ts`・その spec
+- Create: `db/migrations/<generate>-AddFeatureFlags.ts`
+
+**Interfaces:**
+- Produces: `FeatureFlags.isEnabled(key: string): Promise<boolean>`、`FeatureFlags.all(): Promise<Record<string, boolean>>`、`RBACWhenFlag(key: string)`（メタデータ `RBAC_WHEN_FLAG_KEY`）、`GET /v3/feature-flags` → `Record<string, boolean>`
+- Consumes: `RBAC`・`RBACGuard`・`AuthGuard`・`CacheControl`（既存）、`OperationSightingV3Service.post`（Task 3）
+
+- [ ] **Step 1: モデル**
+
+```ts
+// src/core/modules/feature-flag/feature-flag.model.ts
+// 既存のモデル（例: operation-sighting-author.model.ts）の書き方・import にそろえる
+@Entity({ name: 'feature_flags' })
+export class FeatureFlagModel {
+    @PrimaryColumn('text')
+    key!: string;
+
+    @Column('boolean', { default: false })
+    enabled!: boolean;
+
+    @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+    updatedAt!: Date;
+}
+```
+
+`entities.ts` に足す（`entities.spec.ts` が漏れを見る）。
+
+- [ ] **Step 2: FeatureFlags のテストを書く（失敗する）**
+
+`feature-flags.spec.ts`: repository の `createQueryBuilder` を mock して次を確かめる。
+- 行がある・`enabled: true` → `isEnabled('registered_only_posting')` が true
+- 行が無いキー → false
+- 2 回続けて呼ぶと DB を 1 回しか引かない（60 秒以内）。`vi.useFakeTimers()` で 61 秒進めると引き直す
+- DB が reject したら `isEnabled` も reject する
+- `all()` は `{ key: enabled }` の形で全行を返す
+
+- [ ] **Step 3: FeatureFlags を実装する**
+
+- `@Injectable()`。`@InjectRepository(FeatureFlagModel)` で受け、`createQueryBuilder('f').select(['f.key', 'f.enabled']).getMany()` で全行を読む（行数は数行なので、キーごとでなく全部を 1 度に読む）
+- 結果を `Map<string, boolean>` と読んだ時刻で覚え、60 秒（`FEATURE_FLAG_TTL_MS = 60_000`）以内なら使い回す
+- 同時に来た読み込みは、1 本の Promise を共有する
+- 失敗した Promise は覚えない（次の呼び出しで引き直す）
+
+- [ ] **Step 4: RBAC の条件付けのテストを書く（失敗する）**
+
+`rbac.guard.spec.ts` に足す（`FeatureFlags` は `{ isEnabled: vi.fn() }` の mock）:
+- `@RBAC(REPORTER)` と `@RBACWhenFlag('x')` があり、フラグ off → 役割が null でも true
+- 同じ組み合わせでフラグ on → 役割が null なら ForbiddenException
+- `@RBACWhenFlag` が無い口は、フラグを見ずに今までどおり（`isEnabled` を呼ばない）
+- `req.auth` が無ければ、フラグに関わらず UnauthorizedException（AuthGuard の後なので普通は起きないが、今の振る舞いを保つ）
+
+- [ ] **Step 5: 実装する**
+
+```ts
+// src/core/modules/rbac/rbac-when-flag.decorator.ts
+import { SetMetadata } from '@nestjs/common';
+
+export const RBAC_WHEN_FLAG_KEY = 'rbac-when-flag';
+/** フラグが on のときだけ @RBAC を効かせる。off なら役割を見ずに通す（トークンの検証は AuthGuard が行う） */
+export const RBACWhenFlag = (key: string) => SetMetadata(RBAC_WHEN_FLAG_KEY, key);
+```
+
+`RBACGuard` は `constructor(private reflector: Reflector, private featureFlags: FeatureFlags)` にし、`canActivate` を `async` にする。`requiredRoles` が無ければ true のまま。`req.auth` の検査の後に、`RBAC_WHEN_FLAG_KEY` があって `await this.featureFlags.isEnabled(key)` が false なら true を返す。
+
+`FeatureFlagModule` は `@Global()` で `TypeOrmModule.forFeature([FeatureFlagModel])`・providers/exports に `FeatureFlags`・controllers に `FeatureFlagController`。`app.module.ts` の imports に足す（RBACGuard は各 controller の module で作られるので、Global でないと DI が解けない）。
+
+- [ ] **Step 6: 公開の口**
+
+`feature-flag.controller.ts`: `@Controller('v3/feature-flags')`（既存の v3 controller の path の書き方にそろえる）、`@UseGuards(AuthGuard)`、`@Get()`、`@CacheControl('no-store')`、`return this.featureFlags.all()`。spec で、トークンがあれば 200 で `{ registered_only_posting: true }` の形、トークンが無ければ 401 を確かめる。
+
+- [ ] **Step 7: 目撃の投稿**
+
+テストを先に足す:
+- controller spec: フラグ off（`FeatureFlags` を mock して差し込む）で匿名の投稿 → 201 で、service に `userId: null` が渡る。フラグ on で匿名 → 403（既存のテストは on の前提に直す）。reporter はフラグに関わらず `userId` が渡る
+- service spec: `userId: null` なら `OperationSightingAuthorCommand.create` を呼ばない。合図は送る
+
+実装:
+- controller: `@RBACWhenFlag('registered_only_posting')` を足す。`const userId = req.auth?.role ? req.auth.userId : null;`
+- service: `post(params: PostOperationSightingDto & { userId: string | null })`。`userId` があるときだけ投稿者の行を入れる
+
+- [ ] **Step 8: migration**
+
+サンドボックスの外で `npm run migration:generate -- db/migrations/AddFeatureFlags`（既存の generate の手順・命名にそろえる）。差分が `feature_flags` の作成だけであることを確かめる。行は入れない。本番の migration:run はユーザーに頼む。
+
+- [ ] **Step 9: 確かめてコミット**
+
+`npm test`・`npm run lint`・`npm run build`（サンドボックスの外）。
+
+```bash
+git commit -m "feat: :sparkles: 目撃の投稿の登録制をフィーチャーフラグで切り替える"
+```
+
+### Task 7: ADR-0009 に追記
+
+ADR-0009 に「公開の切り替え」を足す: フラグは DB の `feature_flags`（デプロイ無しで切り替え・最大 1 分の遅れ）、フラグの範囲は目撃の投稿の役割だけ、投稿者の記録は役割のある利用者だけ（匿名を記録すると消せなくなる）、切り替えの SQL、出す順（spec 9.4）。却下した案: 日時で自動に切り替える（変更・戻しにデプロイが要る）、api の環境変数（同じ）、client だけで隠す（api を直接呼べば投稿できる）。
+
+```bash
+git commit -m "docs: :memo: ADR-0009 に登録制の切り替えを書き足す"
+```

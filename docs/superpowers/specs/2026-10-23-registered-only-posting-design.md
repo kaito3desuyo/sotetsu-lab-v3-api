@@ -102,3 +102,60 @@ socket（broadcast 関数を足す）→ api → client → socket（sendSightin
 -   投稿者を処分する画面（処分は SQL と Supabase の管理画面で手作業）
 -   `next-operation-candidates` の絞り込み
 -   古い匿名利用者（`is_anonymous`）の掃除（M0）
+
+## 9. 公開の切り替え（フィーチャーフラグ・2026-10-23 追記）
+
+実装の後に、ユーザーの指示で足した。目的は、コードを先に本番へ出しておき、告知した日に登録制を始めること。切り替えは DB で行い、デプロイは要らない。
+
+### 9.1 フラグの範囲
+
+-   フラグの下に入れるのは「目撃の投稿に役割を求めるか」だけ。キーは `registered_only_posting`
+-   フラグの外（常に有効）: trip-blocks の書き込みの制限（ゲストが時刻表を書ける穴を塞ぐ）・socket への合図・無効化と復元で `userId` を受けない・ログインと登録のページ・時刻表の入力の出し分け
+-   投稿者の記録（`operation_sighting_authors`）は、フラグに関わらず役割のある利用者が投稿したときだけ残す。匿名の利用者も `auth.users` に居るが、記録すると FK（`ON DELETE NO ACTION`）のせいで後から匿名の利用者を消せなくなる
+
+### 9.2 データ
+
+`feature_flags`（GTFS の本体とは別の新しい表）
+
+| 列 | 型 | |
+| --- | --- | --- |
+| `key` | `text` | 主キー |
+| `enabled` | `boolean` | not null・既定 false |
+| `updated_at` | `timestamptz` | not null・既定 now()・`@UpdateDateColumn` |
+
+-   migration は generate で作り、行は入れない。行が無いキーは off として扱う
+-   切り替えはユーザーが SQL で行う（Supabase MCP は読み取り専用）:
+    -   始める: `insert into feature_flags (key, enabled) values ('registered_only_posting', true) on conflict (key) do update set enabled = excluded.enabled, updated_at = now();`
+    -   戻す: 同じ文で `false`
+
+### 9.3 api
+
+-   `src/core/modules/feature-flag/` に `FeatureFlagModule`（`@Global()`）を置く。中身は次のとおり
+    -   `FeatureFlagModel`
+    -   `FeatureFlags`: `isEnabled(key): Promise<boolean>` と `all(): Promise<Record<string, boolean>>` を持つ。`createQueryBuilder` で読む。Lambda ごとに 60 秒覚えておくので、切り替えが効くまで最大 1 分かかる。読めなければ例外をそのまま投げる（500）
+    -   `FeatureFlagController`
+-   `@RBAC` は今のまま残し、`@RBACWhenFlag(key)` を足す。`RBACGuard` は、この印があってフラグが off のときだけ、役割を見ずに通す。トークンの検証（AuthGuard）はフラグに関わらず行う
+-   目撃の投稿の口に `@RBACWhenFlag('registered_only_posting')` を足す。controller は `req.auth.role` があるときだけ `userId` を service に渡し、無ければ `null` を渡す。service は `userId` が `null` なら投稿者の行を入れない
+-   `GET /v3/feature-flags` は、全キーを `{ "registered_only_posting": false }` の形で返す。AuthGuard だけを掛け、役割は問わない。`Cache-Control: no-store`
+-   `entities.ts` に `FeatureFlagModel` を足す
+
+### 9.4 出す順（6 章を置き換える）
+
+1. socket: broadcast 関数を足してデプロイする
+2. api: migration（`operation_sighting_authors` と `feature_flags`）→ デプロイ。フラグは off なので、目撃の投稿は今までどおりゲストもできる。trip-blocks の制限と合図はこの時点で効く
+3. client: デプロイ。フラグが off ならゲストにもフォームを出す
+4. socket: `sendSighting` を消す
+5. 告知した日: ユーザーが 9.2 の SQL でフラグを on にする。1 分以内に api が投稿に役割を求め始め、client も次に開いたページから案内を出す
+
+### 9.5 確かめること（7 章に足す）
+
+-   api のテスト
+    -   フラグが off なら匿名の投稿が通り、投稿者の行は入らない
+    -   フラグが on なら匿名の投稿は 403
+    -   登録者の投稿は、フラグに関わらず投稿者の行が入る
+    -   `FeatureFlags` は 60 秒以内なら DB を引き直さない
+    -   行が無いキーは false
+-   本番
+    -   フラグが off で、ゲストの投稿が通る
+    -   SQL で on にして 1 分後、ゲストの投稿が 403 になり、画面にも案内が出る
+    -   off に戻すと元に戻る
