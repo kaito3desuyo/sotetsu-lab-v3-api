@@ -2,6 +2,7 @@ import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import {
     SOCKET_SIGNAL_CLIENT_CONFIG,
     SocketSignal,
+    socketSignalClientConfig,
 } from './socket-signal.js';
 
 describe('SocketSignal', () => {
@@ -60,5 +61,25 @@ describe('SocketSignal', () => {
             region: 'ap-northeast-1',
         });
         await expect(built.config.maxAttempts()).resolves.toBe(1);
+    });
+
+    it('送り先の指定が無ければ、既定の設定のまま（本番）', () => {
+        expect(socketSignalClientConfig({})).toEqual(
+            SOCKET_SIGNAL_CLIENT_CONFIG,
+        );
+    });
+
+    it('送り先の指定があれば、そこに向け、手元用のリージョンと認証情報を付ける（serverless-offline）', () => {
+        expect(
+            socketSignalClientConfig({
+                SOCKET_BROADCAST_LAMBDA_ENDPOINT:
+                    'http://host.docker.internal:3022',
+            }),
+        ).toEqual({
+            ...SOCKET_SIGNAL_CLIENT_CONFIG,
+            endpoint: 'http://host.docker.internal:3022',
+            region: 'ap-northeast-1',
+            credentials: { accessKeyId: 'local', secretAccessKey: 'local' },
+        });
     });
 });

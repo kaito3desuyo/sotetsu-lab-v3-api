@@ -22,9 +22,28 @@ export const SOCKET_SIGNAL_CLIENT_CONFIG = {
 } as const satisfies LambdaClientConfig;
 
 /**
+ * 手元では SOCKET_BROADCAST_LAMBDA_ENDPOINT に socket の serverless-offline（lambdaPort）を入れ、そこへ Invoke する。
+ * offline は署名を検めないので、認証情報は形だけでよい。本番は空のままにし、既定の設定で AWS の Lambda を呼ぶ。
+ */
+export function socketSignalClientConfig(
+    env: NodeJS.ProcessEnv = process.env,
+): LambdaClientConfig {
+    const endpoint = env.SOCKET_BROADCAST_LAMBDA_ENDPOINT;
+    if (!endpoint) {
+        return SOCKET_SIGNAL_CLIENT_CONFIG;
+    }
+    return {
+        ...SOCKET_SIGNAL_CLIENT_CONFIG,
+        endpoint,
+        region: 'ap-northeast-1',
+        credentials: { accessKeyId: 'local', secretAccessKey: 'local' },
+    };
+}
+
+/**
  * 書き込みに成功したことを、socket の broadcast 関数に知らせる。
  * 待たずに頼むだけ（InvocationType: Event）。失敗しても書き込みは成功のまま返したいので、例外を投げずにログだけ残す。
- * 関数名が無い（ローカル・テスト）なら何もしない。
+ * 関数名が無い（テスト・socket を起動していない手元）なら何もしない。
  */
 @Injectable()
 export class SocketSignal {
@@ -32,7 +51,7 @@ export class SocketSignal {
     readonly #client: LambdaClient;
 
     constructor(@Optional() client?: LambdaClient) {
-        this.#client = client ?? new LambdaClient(SOCKET_SIGNAL_CLIENT_CONFIG);
+        this.#client = client ?? new LambdaClient(socketSignalClientConfig());
     }
 
     async send(params: { type: SocketSignalType }): Promise<void> {
