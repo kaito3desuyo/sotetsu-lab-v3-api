@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { SocketSignalModule } from '../../core/modules/socket-signal/socket-signal.module.js';
 import { FormationLibsModule } from '../formation/formation.libs.module.js';
 import { OperationLibsModule } from '../operation/operation.libs.module.js';
 import { OperationSightingLibsModule } from './operation-sighting.libs.module.js';
@@ -12,6 +13,7 @@ import { CalendarLibsModule } from '../calendar/calendar.libs.module.js';
         CalendarLibsModule,
         OperationLibsModule,
         FormationLibsModule,
+        SocketSignalModule,
     ],
     controllers: [OperationSightingV3Controller],
     providers: [OperationSightingV3Service],

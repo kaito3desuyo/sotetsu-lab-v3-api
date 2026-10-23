@@ -6,8 +6,10 @@ import {
     Patch,
     Post,
     Query,
+    Req,
     UseGuards,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
 import { CACHE_CONTROL } from '../../../core/modules/cache-control/cache-control.constants.js';
 import { CacheControl } from '../../../core/modules/cache-control/cache-control.decorator.js';
@@ -118,10 +120,18 @@ export class OperationSightingV3Controller {
     }
 
     @Post()
+    @RBAC(Role.REPORTER, Role.EDITOR, Role.MANAGER)
     async post(
+        @Req() req: Request,
         @Body() body: PostOperationSightingDto,
     ): Promise<OperationSightingDetailsDto> {
-        const result = await this.operationSightingV3Service.post(body);
+        // @RBAC を通った時点で req.auth.userId はある
+        const userId = req.auth!.userId!;
+
+        const result = await this.operationSightingV3Service.post({
+            ...body,
+            userId,
+        });
 
         return result;
     }
@@ -129,15 +139,14 @@ export class OperationSightingV3Controller {
     @Patch('/:id/invalidate')
     @RBAC(Role.EDITOR, Role.MANAGER)
     async invalidate(
+        @Req() req: Request,
         @Param('id') id: string,
         @Body() body: InvalidateOperationSightingDto,
     ): Promise<OperationSightingDetailsDto> {
-        const { userId, reason } = body;
-
         const result = await this.operationSightingV3Service.invalidate({
             operationSightingId: id,
-            userId,
-            reason,
+            userId: req.auth!.userId!,
+            reason: body.reason,
         });
 
         return result;
@@ -146,15 +155,14 @@ export class OperationSightingV3Controller {
     @Patch('/:id/restore')
     @RBAC(Role.EDITOR, Role.MANAGER)
     async restore(
+        @Req() req: Request,
         @Param('id') id: string,
         @Body() body: RestoreOperationSightingDto,
     ): Promise<OperationSightingDetailsDto> {
-        const { userId, reason } = body;
-
         const result = await this.operationSightingV3Service.restore({
             operationSightingId: id,
-            userId,
-            reason,
+            userId: req.auth!.userId!,
+            reason: body.reason,
         });
 
         return result;
