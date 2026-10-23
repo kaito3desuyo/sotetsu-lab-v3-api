@@ -5,6 +5,7 @@ import { CalendarModel } from '../../libs/calendar/infrastructure/models/calenda
 import { FormationModel } from '../../libs/formation/infrastructure/models/formation.model.js';
 import { OperatingSystemModel } from '../../libs/service/infrastructure/models/operating-system.model.js';
 import { OperationModel } from '../../libs/operation/infrastructure/models/operation.model.js';
+import { OperationSightingAuthorModel } from '../../libs/operation-sighting/infrastructure/models/operation-sighting-author.model.js';
 import { OperationSightingInvalidationModel } from '../../libs/operation-sighting/infrastructure/models/operation-sighting-invalidation.model.js';
 import { OperationSightingLatestCacheModel } from '../../libs/operation-sighting/infrastructure/models/operation-sighting-latest-cache.model.js';
 import { OperationSightingManagementLogModel } from '../../libs/operation-sighting/infrastructure/models/operation-sighting-management-log.model.js';
@@ -36,6 +37,7 @@ export const ENTITIES = [
     FormationModel,
     OperatingSystemModel,
     OperationModel,
+    OperationSightingAuthorModel,
     OperationSightingInvalidationModel,
     OperationSightingLatestCacheModel,
     OperationSightingManagementLogModel,

@@ -9,6 +9,7 @@ import {
     UpdateDateColumn,
     type Relation,
 } from 'typeorm';
+import { AuthUserModel } from '../../../user/infrastructure/models/auth-user.model.js';
 import { OperationSightingModel } from './operation-sighting.model.js';
 
 @Entity({
@@ -24,6 +25,10 @@ export class OperationSightingManagementLogModel {
 
     @Column('uuid')
     userId!: string;
+
+    @ManyToOne(() => AuthUserModel)
+    @JoinColumn({ name: 'user_id' })
+    readonly authUser?: Relation<AuthUserModel>;
 
     @Column('text')
     action!: string;
