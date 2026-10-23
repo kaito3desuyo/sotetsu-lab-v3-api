@@ -1,14 +1,6 @@
-import { Exclude } from 'class-transformer';
-import { IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsString } from 'class-validator';
 
 export class RestoreOperationSightingDto {
-    @IsOptional()
-    @Exclude()
-    operationSightingId!: string;
-
-    @IsUUID()
-    userId!: string;
-
     @IsString()
     reason!: string;
 }

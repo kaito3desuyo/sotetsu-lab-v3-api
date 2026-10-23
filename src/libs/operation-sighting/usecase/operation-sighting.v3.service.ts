@@ -19,15 +19,15 @@ import { DataSource, EntityManager } from 'typeorm';
 import { OperationSightingLatestCache } from '../domain/operation-sighting-latest-cache.domain.js';
 import { OperationSightingLatestCacheCommand } from '../infrastructure/command/operation-sighting-latest-cache.command.js';
 import { OperationSightingCommand } from '../infrastructure/command/operation-sighting.command.js';
+import { OperationSightingAuthorCommand } from '../infrastructure/command/operation-sighting-author.command.js';
+import { SocketSignal } from '../../../core/modules/socket-signal/socket-signal.js';
 import { OperationSightingLatestCacheQuery } from '../infrastructure/queries/operation-sighting-latest-cache.query.js';
 import { OperationSightingQuery } from '../infrastructure/queries/operation-sighting.query.js';
 import { OperationSightingDomainBuilder } from './builders/operation-sighting.domain.builder.js';
-import { InvalidateOperationSightingDto } from './dtos/invalidate-operation-sighting.dto.js';
 import { OperationSightingDetailsDto } from './dtos/operation-sighting-details.dto.js';
 import { OperationSightingLatestCacheDto } from './dtos/operation-sighting-latest-cache.dto.js';
 import { OperationSightingTimeCrossSectionDto } from './dtos/operation-sighting-time-cross-section.dto.js';
 import { PostOperationSightingDto } from './dtos/post-operation-sighting.dto.js';
-import { RestoreOperationSightingDto } from './dtos/restore-operation-sighting.dto.js';
 import {
     CacheAction,
     selectMostRecentCandidateForOperationNumber,
@@ -60,6 +60,8 @@ export class OperationSightingV3Service {
         private readonly operationQuery: OperationQuery,
         private readonly formationQuery: FormationQuery,
         private readonly itinerarySegmentQuery: ItinerarySegmentQuery,
+        private readonly operationSightingAuthorCommand: OperationSightingAuthorCommand,
+        private readonly socketSignal: SocketSignal,
     ) {}
 
     async findManyBySpecificPeriod(params: {
@@ -583,7 +585,7 @@ export class OperationSightingV3Service {
     }
 
     async post(
-        params: PostOperationSightingDto,
+        params: PostOperationSightingDto & { userId: string | null },
     ): Promise<OperationSightingDetailsDto> {
         const { agencyId, formationOrVehicleNumber } = params;
         const { sightingTimeInstance, sightingTimeInJst, date } =
@@ -635,11 +637,21 @@ export class OperationSightingV3Service {
                   }
                 : { type: 'none' };
 
-        return this.dataSource.transaction(async (manager) => {
+        const saved = await this.dataSource.transaction(async (manager) => {
             const saved = await this.operationSightingCommand.save(
                 domain,
                 manager,
             );
+            // 匿名の利用者は記録しない（FK のせいで後から匿名の利用者を消せなくなる）
+            if (params.userId) {
+                await this.operationSightingAuthorCommand.create(
+                    {
+                        operationSightingId: saved.operationSightingId,
+                        userId: params.userId,
+                    },
+                    manager,
+                );
+            }
             await this.#applyCacheAction(
                 cacheAction,
                 saved.operationSightingId,
@@ -647,10 +659,12 @@ export class OperationSightingV3Service {
             );
             return saved;
         });
+        await this.socketSignal.send({ type: 'sighting' });
+        return saved;
     }
 
     async invalidate(
-        params: InvalidateOperationSightingDto,
+        params: { operationSightingId: string; userId: string; reason: string },
     ): Promise<OperationSightingDetailsDto> {
         const { operationSightingId, userId, reason } = params;
 
@@ -721,7 +735,7 @@ export class OperationSightingV3Service {
             }
         }
 
-        return this.dataSource.transaction(async (manager) => {
+        const saved = await this.dataSource.transaction(async (manager) => {
             const saved = await this.operationSightingCommand.save(
                 domain,
                 manager,
@@ -733,10 +747,12 @@ export class OperationSightingV3Service {
             );
             return saved;
         });
+        await this.socketSignal.send({ type: 'sighting' });
+        return saved;
     }
 
     async restore(
-        params: RestoreOperationSightingDto,
+        params: { operationSightingId: string; userId: string; reason: string },
     ): Promise<OperationSightingDetailsDto> {
         const { operationSightingId, userId, reason } = params;
 
@@ -783,7 +799,7 @@ export class OperationSightingV3Service {
                   }
                 : { type: 'none' };
 
-        return this.dataSource.transaction(async (manager) => {
+        const saved = await this.dataSource.transaction(async (manager) => {
             const saved = await this.operationSightingCommand.save(
                 domain,
                 manager,
@@ -795,6 +811,8 @@ export class OperationSightingV3Service {
             );
             return saved;
         });
+        await this.socketSignal.send({ type: 'sighting' });
+        return saved;
     }
 
     async #applyCacheAction(

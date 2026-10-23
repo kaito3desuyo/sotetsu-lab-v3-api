@@ -4,6 +4,7 @@ import { AppController } from './app.controller.js';
 import { AuthModule } from './core/modules/auth/auth.module.js';
 import { CacheControlModule } from './core/modules/cache-control/cache-control.module.js';
 import { DatabaseModule } from './core/modules/database/database.module.js';
+import { FeatureFlagModule } from './core/modules/feature-flag/feature-flag.module.js';
 import { LoggerModule } from './core/modules/logger/logger.module.js';
 import { RBACModule } from './core/modules/rbac/rbac.module.js';
 import { ApiRoutingModule } from './routes/api-routing.module.js';
@@ -14,6 +15,7 @@ import { ApiRoutingModule } from './routes/api-routing.module.js';
         RBACModule,
         CacheControlModule,
         DatabaseModule,
+        FeatureFlagModule,
         LoggerModule,
         ApiRoutingModule,
     ],

@@ -7,6 +7,8 @@ import utc from 'dayjs/plugin/utc.js';
 import { DataSource } from 'typeorm';
 import { OperationSightingLatestCacheCommand } from '../infrastructure/command/operation-sighting-latest-cache.command.js';
 import { OperationSightingCommand } from '../infrastructure/command/operation-sighting.command.js';
+import { OperationSightingAuthorCommand } from '../infrastructure/command/operation-sighting-author.command.js';
+import { SocketSignal } from '../../../core/modules/socket-signal/socket-signal.js';
 import { OperationSightingLatestCacheQuery } from '../infrastructure/queries/operation-sighting-latest-cache.query.js';
 import { OperationSightingQuery } from '../infrastructure/queries/operation-sighting.query.js';
 import { CalendarQuery } from '../../calendar/infrastructure/queries/calendar.query.js';
@@ -26,6 +28,10 @@ type AnyMock = MockedFunction<(...args: any[]) => any>;
 const mockManager: any = {};
 const mockSave: AnyMock = vi.fn();
 const mockOperationSightingCommand = { save: mockSave };
+const mockAuthorCreate: AnyMock = vi.fn();
+const mockOperationSightingAuthorCommand = { create: mockAuthorCreate };
+const mockSignalSend: AnyMock = vi.fn().mockResolvedValue(undefined);
+const mockSocketSignal = { send: mockSignalSend };
 const mockOperationSightingLatestCacheCommand = {
     save: vi.fn() as AnyMock,
     remove: vi.fn() as AnyMock,
@@ -72,6 +78,11 @@ async function buildService(): Promise<OperationSightingV3Service> {
                 provide: OperationSightingCommand,
                 useValue: mockOperationSightingCommand,
             },
+            {
+                provide: OperationSightingAuthorCommand,
+                useValue: mockOperationSightingAuthorCommand,
+            },
+            { provide: SocketSignal, useValue: mockSocketSignal },
             {
                 provide: OperationSightingLatestCacheCommand,
                 useValue: mockOperationSightingLatestCacheCommand,
@@ -148,6 +159,7 @@ describe('OperationSightingV3Service - write side cache', () => {
         expect(
             mockOperationSightingLatestCacheCommand.save,
         ).not.toHaveBeenCalled();
+        expect(mockSignalSend).toHaveBeenCalledWith({ type: 'sighting' });
     });
 
     it('invalidate: キャッシュターゲットかつ前の有効目撃がある場合、cache が付け替えられる', async () => {
@@ -197,6 +209,7 @@ describe('OperationSightingV3Service - write side cache', () => {
         expect(
             mockOperationSightingLatestCacheCommand.remove,
         ).not.toHaveBeenCalled();
+        expect(mockSignalSend).toHaveBeenCalledWith({ type: 'sighting' });
     });
 
     it('invalidate: キャッシュターゲットでない場合、cache は変更されない', async () => {
@@ -235,6 +248,7 @@ describe('OperationSightingV3Service - write side cache', () => {
         expect(
             mockOperationSightingLatestCacheCommand.remove,
         ).not.toHaveBeenCalled();
+        expect(mockSignalSend).toHaveBeenCalledWith({ type: 'sighting' });
     });
 
     it('restore: 現在のキャッシュより新しい場合、cache が更新される', async () => {
@@ -276,6 +290,7 @@ describe('OperationSightingV3Service - write side cache', () => {
         const savedCache = mockOperationSightingLatestCacheCommand.save.mock.calls[0][0] as any;
         expect(savedCache.props.operationSightingId).toBe(sightingId);
         expect(savedCache.props.operationNumber).toBe('62');
+        expect(mockSignalSend).toHaveBeenCalledWith({ type: 'sighting' });
     });
 });
 
@@ -780,7 +795,7 @@ describe('OperationSightingV3Service - post', () => {
             null,
         );
 
-        const result = await service.post({ ...baseParams });
+        const result = await service.post({ ...baseParams, userId: 'user-1' });
 
         expect(result.operationSightingId).toBe('new-sighting-uuid');
         expect(mockSave).toHaveBeenCalled();
@@ -799,6 +814,7 @@ describe('OperationSightingV3Service - post', () => {
 
         const result = await service.post({
             ...baseParams,
+            userId: 'user-1',
             sightingTime: '2026-05-01T04:10:00+09:00',
         });
 
@@ -814,7 +830,7 @@ describe('OperationSightingV3Service - post', () => {
         );
 
         await expect(
-            service.post({ ...baseParams, operationNumber: '11' }),
+            service.post({ ...baseParams, userId: 'user-1', operationNumber: '11' }),
         ).rejects.toThrow('対象運用の始発時刻を特定できません');
     });
 
@@ -829,10 +845,51 @@ describe('OperationSightingV3Service - post', () => {
         await expect(
             service.post({
                 ...baseParams,
+                userId: 'user-1',
                 operationNumber: '11',
                 sightingTime: '2026-05-01T09:00:00+09:00',
             }),
         ).rejects.toThrow('始発時刻の30分前より前の時刻は投稿できません');
+    });
+
+    it('post: 投稿者を同じトランザクションで記録し、保存の後に sighting の合図を送る', async () => {
+        mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
+            { id: 'op-100', operationNumber: '100' },
+        );
+        mockSave.mockResolvedValue({ operationSightingId: 'new-id' });
+
+        await service.post({ ...baseParams, userId: 'user-1' });
+
+        expect(mockAuthorCreate).toHaveBeenCalledWith(
+            { operationSightingId: 'new-id', userId: 'user-1' },
+            mockManager,
+        );
+        expect(mockSignalSend).toHaveBeenCalledWith({ type: 'sighting' });
+    });
+
+    it('post: userId が null なら投稿者を記録せず、合図は送る', async () => {
+        mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
+            { id: 'op-100', operationNumber: '100' },
+        );
+        mockSave.mockResolvedValue({ operationSightingId: 'new-id' });
+
+        const result = await service.post({ ...baseParams, userId: null });
+
+        expect(result.operationSightingId).toBe('new-id');
+        expect(mockAuthorCreate).not.toHaveBeenCalled();
+        expect(mockSignalSend).toHaveBeenCalledWith({ type: 'sighting' });
+    });
+
+    it('post: 保存に失敗したら合図を送らない', async () => {
+        mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
+            { id: 'op-100', operationNumber: '100' },
+        );
+        mockSave.mockRejectedValue(new Error('db down'));
+
+        await expect(
+            service.post({ ...baseParams, userId: 'user-1' }),
+        ).rejects.toThrow('db down');
+        expect(mockSignalSend).not.toHaveBeenCalled();
     });
 });
 
