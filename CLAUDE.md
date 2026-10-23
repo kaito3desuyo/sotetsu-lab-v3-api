@@ -109,6 +109,7 @@ npm run deploy               # Serverless Framework でデプロイ
 - `.env.local` で設定（dotenvx で読み込み）
 - タイムゾーン - 全体で Asia/Tokyo に統一
 - CORS - `CORS_HEADER_ORIGIN` で設定（デフォルト `*`）
+- socket への合図 - `SOCKET_BROADCAST_FUNCTION_NAME` が空なら送らない。手元で socket の serverless-offline（`npm run dev:host`）に送るときは `.env.local` に `SOCKET_BROADCAST_FUNCTION_NAME=sotetsu-lab-v3-dev-socket-broadcast-lambda` と `SOCKET_BROADCAST_LAMBDA_ENDPOINT=http://host.docker.internal:3022` を書き、コンテナを作り直す（手順は socket の README）
 - TypeScript は strict。値を外から詰めるプロパティ（エンティティ・DTO）は `!`。`as any`・`@ts-ignore` は使わない
 
 ### ESM
