@@ -2,6 +2,7 @@ import { AgencyModel } from '../../libs/agency/infrastructure/models/agency.mode
 import { AuthUserModel } from '../../libs/user/infrastructure/models/auth-user.model.js';
 import { CalendarDateModel } from '../../libs/calendar/infrastructure/models/calendar-date.model.js';
 import { CalendarModel } from '../../libs/calendar/infrastructure/models/calendar.model.js';
+import { FeatureFlagModel } from '../modules/feature-flag/feature-flag.model.js';
 import { FormationModel } from '../../libs/formation/infrastructure/models/formation.model.js';
 import { OperatingSystemModel } from '../../libs/service/infrastructure/models/operating-system.model.js';
 import { OperationModel } from '../../libs/operation/infrastructure/models/operation.model.js';
@@ -34,6 +35,7 @@ export const ENTITIES = [
     AuthUserModel,
     CalendarDateModel,
     CalendarModel,
+    FeatureFlagModel,
     FormationModel,
     OperatingSystemModel,
     OperationModel,

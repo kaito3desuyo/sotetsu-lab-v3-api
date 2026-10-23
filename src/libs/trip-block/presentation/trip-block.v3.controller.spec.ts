@@ -5,6 +5,7 @@ import { AuthContext } from '../../../core/modules/auth/auth-context.js';
 import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
 import { CacheControlModule } from '../../../core/modules/cache-control/cache-control.module.js';
 import { validationPipeOptions } from '../../../core/configs/validator-options.js';
+import { FeatureFlags } from '../../../core/modules/feature-flag/feature-flags.js';
 import { Role } from '../../../core/modules/rbac/role.enum.js';
 import { TripBlockV3Service } from '../usecase/trip-block.v3.service.js';
 import { TripBlockV3Controller } from './trip-block.v3.controller.js';
@@ -18,6 +19,7 @@ const ID = '3f0b6a5e-8a52-4c1c-9d0a-2b5d1b8e7a11';
 describe('TripBlockV3Controller（書き込みの役割）', () => {
     let app: INestApplication;
     let auth: AuthContext;
+    const featureFlags = { isEnabled: vi.fn() };
     const service = {
         createManyTripBlocks: vi.fn(),
         replaceOneTripBlock: vi.fn(),
@@ -29,7 +31,10 @@ describe('TripBlockV3Controller（書き込みの役割）', () => {
         const moduleRef = await Test.createTestingModule({
             imports: [CacheControlModule],
             controllers: [TripBlockV3Controller],
-            providers: [{ provide: TripBlockV3Service, useValue: service }],
+            providers: [
+                { provide: TripBlockV3Service, useValue: service },
+                { provide: FeatureFlags, useValue: featureFlags },
+            ],
         })
             .overrideGuard(AuthGuard)
             .useValue({

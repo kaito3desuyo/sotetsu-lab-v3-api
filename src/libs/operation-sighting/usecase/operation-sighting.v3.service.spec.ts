@@ -867,6 +867,19 @@ describe('OperationSightingV3Service - post', () => {
         expect(mockSignalSend).toHaveBeenCalledWith({ type: 'sighting' });
     });
 
+    it('post: userId が null なら投稿者を記録せず、合図は送る', async () => {
+        mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
+            { id: 'op-100', operationNumber: '100' },
+        );
+        mockSave.mockResolvedValue({ operationSightingId: 'new-id' });
+
+        const result = await service.post({ ...baseParams, userId: null });
+
+        expect(result.operationSightingId).toBe('new-id');
+        expect(mockAuthorCreate).not.toHaveBeenCalled();
+        expect(mockSignalSend).toHaveBeenCalledWith({ type: 'sighting' });
+    });
+
     it('post: 保存に失敗したら合図を送らない', async () => {
         mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
             { id: 'op-100', operationNumber: '100' },

@@ -585,7 +585,7 @@ export class OperationSightingV3Service {
     }
 
     async post(
-        params: PostOperationSightingDto & { userId: string },
+        params: PostOperationSightingDto & { userId: string | null },
     ): Promise<OperationSightingDetailsDto> {
         const { agencyId, formationOrVehicleNumber } = params;
         const { sightingTimeInstance, sightingTimeInJst, date } =
@@ -642,13 +642,16 @@ export class OperationSightingV3Service {
                 domain,
                 manager,
             );
-            await this.operationSightingAuthorCommand.create(
-                {
-                    operationSightingId: saved.operationSightingId,
-                    userId: params.userId,
-                },
-                manager,
-            );
+            // 匿名の利用者は記録しない（FK のせいで後から匿名の利用者を消せなくなる）
+            if (params.userId) {
+                await this.operationSightingAuthorCommand.create(
+                    {
+                        operationSightingId: saved.operationSightingId,
+                        userId: params.userId,
+                    },
+                    manager,
+                );
+            }
             await this.#applyCacheAction(
                 cacheAction,
                 saved.operationSightingId,

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { RouterModule, Routes } from '@nestjs/core';
+import { FeatureFlagV3Module } from '../../../core/modules/feature-flag/feature-flag.v3.module.js';
 import { AgencyV3Module } from '../../../libs/agency/agency.v3.module.js';
 import { CalendarDateV3Module } from '../../../libs/calendar/calendar-date.v3.module.js';
 import { CalendarV3Module } from '../../../libs/calendar/calendar.v3.module.js';
@@ -28,6 +29,10 @@ const routes: Routes = [
             {
                 path: '/calendar-dates',
                 module: CalendarDateV3Module,
+            },
+            {
+                path: '/feature-flags',
+                module: FeatureFlagV3Module,
             },
             {
                 path: '/formations',
@@ -75,6 +80,7 @@ const routes: Routes = [
         AgencyV3Module,
         CalendarV3Module,
         CalendarDateV3Module,
+        FeatureFlagV3Module,
         FormationV3Module,
         OperationV3Module,
         OperationSightingV3Module,
