@@ -397,7 +397,11 @@ export class OperationQuery {
             }
             if (selection.paths.has('trips.endTime')) {
                 qb.addSelect(
-                    selectColumns('endTime', trips.relations.endTime, selection),
+                    selectColumns(
+                        'endTime',
+                        trips.relations.endTime,
+                        selection,
+                    ),
                 );
             }
             if (selection.paths.has('trips.trip')) {

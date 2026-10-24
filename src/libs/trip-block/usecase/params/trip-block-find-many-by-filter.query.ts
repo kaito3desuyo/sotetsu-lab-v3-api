@@ -18,11 +18,11 @@ export class TripBlockFindManyByFilterQuery {
 
     /**
      * 結合する関連の道筋 `include=trips.times,trips.tripClass`（docs/adr/0010-v3-include-and-fields.md）。
-     * 中身の検め（木）はサービスで行う。繰り返し指定した配列も受ける。
+     * 形の検め（文字列または文字列の配列）と中身の検め（木）は、サービスの parseSelection で行い、崩れていれば 400 を返す。
+     * ここでは検めない（ValidationPipe の 422 にしない）が、whitelist で落とされないよう装飾は残す。
      */
     @IsOptional()
-    @IsString({ each: true })
-    include?: string | string[];
+    include?: unknown;
 
     /**
      * 返す項目の選択 `fields[資源]=項目,項目`（docs/adr/0010-v3-include-and-fields.md）。

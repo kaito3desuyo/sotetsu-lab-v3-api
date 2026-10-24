@@ -140,6 +140,16 @@ describe('TripBlockV3Service - findManyByFilter', () => {
             }),
         ).rejects.toThrow(BadRequestException);
     });
+
+    it('include が崩れた形（オブジェクト）なら 400', async () => {
+        await expect(
+            service.findManyByFilter({
+                calendarId: 'c1',
+                tripDirection: 0,
+                include: { a: 'b' },
+            }),
+        ).rejects.toThrow(BadRequestException);
+    });
 });
 
 describe('TripBlockV3Service - 次の運用の検め', () => {

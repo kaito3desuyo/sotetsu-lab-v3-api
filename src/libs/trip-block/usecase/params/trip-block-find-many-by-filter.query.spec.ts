@@ -90,4 +90,17 @@ describe('TripBlockFindManyByFilterQuery', () => {
 
         expect(errors).toHaveLength(0);
     });
+
+    it('include が崩れた形（オブジェクト）でも DTO では落とさない（サービスの parseSelection が 400 にする）', async () => {
+        const query = plainToInstance(TripBlockFindManyByFilterQuery, {
+            calendarId: 'cal-1',
+            tripDirection: '0',
+            include: { a: 'b' },
+        });
+
+        const errors = await validate(query, validatorOptions);
+
+        expect(errors.some((e) => e.property === 'include')).toBe(false);
+        expect(query.include).toEqual({ a: 'b' });
+    });
 });
