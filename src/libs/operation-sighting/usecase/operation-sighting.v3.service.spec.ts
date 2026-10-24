@@ -1325,6 +1325,26 @@ describe('OperationSightingV3Service - findManyBySpecificPeriod includeCarriedOv
         expect(result.find((o) => o.id === 'a')).toEqual({ id: 'a', sightingTime: at('07:00') });
     });
 
+    it('fields だけでも無効化の印は ID だけで残り、無効化の無い目撃には invalidation が付かない', async () => {
+        const invalidated = {
+            ...(sighting('a', '11K', '10701', '07:00') as object),
+            invalidation: {
+                operationSightingInvalidationId: 'inv-1', operationSightingId: 'a', createdAt: at('08:00'), updatedAt: at('08:00'),
+            },
+        } as never;
+        mockOperationSightingQuery.findManyBySpecificPeriod.mockResolvedValue([invalidated, sighting('b', '12K', '10702', '09:00')]);
+        const result = (await service.findManyBySpecificPeriod({
+            start: '2026-10-12', end: '2026-10-12', includeInvalidated: true,
+            fields: { operationSighting: 'sightingTime' },
+        })) as Record<string, unknown>[];
+
+        expect(result).toEqual([
+            { id: 'a', sightingTime: at('07:00'), invalidation: { operationSightingInvalidationId: 'inv-1' } },
+            { id: 'b', sightingTime: at('09:00') },
+        ]);
+        expect(result[1]).not.toHaveProperty('invalidation');
+    });
+
     it('include に木に無い道筋があれば、問い合わせる前に 400', async () => {
         await expect(
             service.findManyBySpecificPeriod({ start: '2026-10-12', end: '2026-10-12', include: 'trips' }),

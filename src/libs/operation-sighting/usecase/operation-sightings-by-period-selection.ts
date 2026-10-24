@@ -33,9 +33,11 @@ export const OPERATION_SIGHTINGS_BY_PERIOD_SELECTION_TREE = defineSelectionTree(
                 columns: { ...FORMATION_COLUMNS, formationId: 'formationId' },
                 alwaysKeys: ['id'],
             },
+            // 無効化の印なので外せない（fields だけのときは ID だけを返す）
             invalidation: {
                 property: 'invalidation',
                 many: false,
+                required: true,
                 resource: 'operationSightingInvalidation',
                 columns: OPERATION_SIGHTING_INVALIDATION_COLUMNS,
                 alwaysKeys: ['operationSightingInvalidationId'],
