@@ -150,6 +150,20 @@ describe('TripBlockV3Service - findManyByFilter', () => {
             }),
         ).rejects.toThrow(BadRequestException);
     });
+
+    it('fields が崩れた形（文字列）なら 400', async () => {
+        await expect(
+            service.findManyByFilter({
+                calendarId: 'c1',
+                tripDirection: 0,
+                fields: 'tripNumber',
+            }),
+        ).rejects.toThrow(
+            new BadRequestException(
+                'fields は fields[資源]=項目,項目 の形で指定する',
+            ),
+        );
+    });
 });
 
 describe('TripBlockV3Service - 次の運用の検め', () => {
