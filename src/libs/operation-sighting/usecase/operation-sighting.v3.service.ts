@@ -5,7 +5,10 @@ import { UniqueEntityId } from '../../../core/classes/unique-entity-id.js';
 import { UseCaseError } from '../../../core/classes/custom-error.js';
 import { UnexpectedError } from '../../../core/classes/unexpected-error.js';
 import { getBaseDate } from '../../../core/utils/datetime.js';
-import { parseSelection } from '../../../core/utils/selection/parse-selection.js';
+import {
+    parseFieldsOnly,
+    parseSelection,
+} from '../../../core/utils/selection/parse-selection.js';
 import { serializeSelection } from '../../../core/utils/selection/serialize-selection.js';
 import { CalendarQuery } from '../../calendar/infrastructure/queries/calendar.query.js';
 import { FormationQuery } from '../../formation/infrastructure/queries/formation.query.js';
@@ -34,6 +37,7 @@ import {
     CacheAction,
     selectMostRecentCandidateForOperationNumber,
 } from './operation-sighting.v3.circulation.js';
+import { OPERATION_SIGHTING_TIME_CROSS_SECTION_SELECTION_TREE } from './operation-sighting-time-cross-section-selection.js';
 import { OPERATION_SIGHTINGS_BY_PERIOD_SELECTION_TREE } from './operation-sightings-by-period-selection.js';
 import { SightingCarryOver } from './read-models/sighting-carry-over.read-model.js';
 
@@ -160,11 +164,32 @@ export class OperationSightingV3Service {
      * /time-cross-section/operation-number/:n を束ねる）。キーは運用番号。
      * 判定は 1 件ずつの口と同じで、DB の読み方だけを「先にまとめて引いて表から取る」に替える。
      * 時刻は全件で同じ瞬間にそろえる。休車の 100 は 1 件ずつの口と同じく扱えないので省く。
+     * `fields` があれば選んだ項目だけを返す（read-model なので include は受けない。docs/adr/0010-v3-include-and-fields.md）。
      */
     async findManyTimeCrossSectionsByOperationNumbers(params: {
         operationNumbers: string[];
         searchTime?: string;
-    }): Promise<Record<string, OperationSightingTimeCrossSectionDto>> {
+        include?: undefined;
+        fields?: undefined;
+    }): Promise<Record<string, OperationSightingTimeCrossSectionDto>>;
+    async findManyTimeCrossSectionsByOperationNumbers(params: {
+        operationNumbers: string[];
+        searchTime?: string;
+        include?: unknown;
+        fields?: unknown;
+    }): Promise<
+        Record<string, OperationSightingTimeCrossSectionDto | Record<string, unknown>>
+    >;
+    async findManyTimeCrossSectionsByOperationNumbers(params: {
+        operationNumbers: string[];
+        searchTime?: string;
+        include?: unknown;
+        fields?: unknown;
+    }): Promise<
+        Record<string, OperationSightingTimeCrossSectionDto | Record<string, unknown>>
+    > {
+        const tree = OPERATION_SIGHTING_TIME_CROSS_SECTION_SELECTION_TREE;
+        const selection = parseFieldsOnly(params, tree);
         const searchTimeInstance = params.searchTime ? dayjs(params.searchTime) : dayjs();
         const operationNumbers = params.operationNumbers.filter((o) => o !== '100');
         const source = await this.#createBulkSource(searchTimeInstance, { operationNumbers });
@@ -176,14 +201,43 @@ export class OperationSightingV3Service {
                 await this.#timeCrossSectionByOperationNumber(operationNumber, searchTimeInstance, source),
             ] as const);
         }
-        return Object.fromEntries(entries);
+        const result = Object.fromEntries(entries);
+        if (!selection) {
+            return result;
+        }
+        return Object.fromEntries(
+            Object.entries(result).map(([key, value]) => [key, serializeSelection(value, tree, selection)]),
+        );
     }
 
-    /** 複数の編成番号の時刻断面をまとめて返す（編成番号ごとの口を束ねる）。キーは編成番号。 */
+    /**
+     * 複数の編成番号の時刻断面をまとめて返す（編成番号ごとの口を束ねる）。キーは編成番号。
+     * `fields` があれば選んだ項目だけを返す（include は受けない。docs/adr/0010-v3-include-and-fields.md）。
+     */
     async findManyTimeCrossSectionsByFormationNumbers(params: {
         formationNumbers: string[];
         searchTime?: string;
-    }): Promise<Record<string, OperationSightingTimeCrossSectionDto>> {
+        include?: undefined;
+        fields?: undefined;
+    }): Promise<Record<string, OperationSightingTimeCrossSectionDto>>;
+    async findManyTimeCrossSectionsByFormationNumbers(params: {
+        formationNumbers: string[];
+        searchTime?: string;
+        include?: unknown;
+        fields?: unknown;
+    }): Promise<
+        Record<string, OperationSightingTimeCrossSectionDto | Record<string, unknown>>
+    >;
+    async findManyTimeCrossSectionsByFormationNumbers(params: {
+        formationNumbers: string[];
+        searchTime?: string;
+        include?: unknown;
+        fields?: unknown;
+    }): Promise<
+        Record<string, OperationSightingTimeCrossSectionDto | Record<string, unknown>>
+    > {
+        const tree = OPERATION_SIGHTING_TIME_CROSS_SECTION_SELECTION_TREE;
+        const selection = parseFieldsOnly(params, tree);
         const searchTimeInstance = params.searchTime ? dayjs(params.searchTime) : dayjs();
         const { formationNumbers } = params;
         const source = await this.#createBulkSource(searchTimeInstance, { formationNumbers });
@@ -195,14 +249,37 @@ export class OperationSightingV3Service {
                 await this.#timeCrossSectionByFormationNumber(formationNumber, searchTimeInstance, source),
             ] as const);
         }
-        return Object.fromEntries(entries);
+        const result = Object.fromEntries(entries);
+        if (!selection) {
+            return result;
+        }
+        return Object.fromEntries(
+            Object.entries(result).map(([key, value]) => [key, serializeSelection(value, tree, selection)]),
+        );
     }
 
+    /** `fields` があれば選んだ項目だけを返す（include は受けない。docs/adr/0010-v3-include-and-fields.md） */
     async findOneTimeCrossSectionByOperationNumber(params: {
         operationNumber: string;
         searchTime?: string;
-    }): Promise<OperationSightingTimeCrossSectionDto> {
+        include?: undefined;
+        fields?: undefined;
+    }): Promise<OperationSightingTimeCrossSectionDto>;
+    async findOneTimeCrossSectionByOperationNumber(params: {
+        operationNumber: string;
+        searchTime?: string;
+        include?: unknown;
+        fields?: unknown;
+    }): Promise<OperationSightingTimeCrossSectionDto | Record<string, unknown>>;
+    async findOneTimeCrossSectionByOperationNumber(params: {
+        operationNumber: string;
+        searchTime?: string;
+        include?: unknown;
+        fields?: unknown;
+    }): Promise<OperationSightingTimeCrossSectionDto | Record<string, unknown>> {
         const { operationNumber, searchTime } = params;
+        const tree = OPERATION_SIGHTING_TIME_CROSS_SECTION_SELECTION_TREE;
+        const selection = parseFieldsOnly(params, tree);
 
         if (operationNumber === '100') {
             throw new UseCaseError(
@@ -215,25 +292,44 @@ export class OperationSightingV3Service {
         }
 
         const searchTimeInstance = searchTime ? dayjs(searchTime) : dayjs();
-        return this.#timeCrossSectionByOperationNumber(
+        const result = await this.#timeCrossSectionByOperationNumber(
             operationNumber,
             searchTimeInstance,
             this.#createDirectSource(searchTimeInstance),
         );
+        return selection ? serializeSelection(result, tree, selection) : result;
     }
 
+    /** `fields` があれば選んだ項目だけを返す（include は受けない。docs/adr/0010-v3-include-and-fields.md） */
     async findOneTimeCrossSectionByFormationNumber(params: {
         formationNumber: string;
         searchTime?: string;
-    }): Promise<OperationSightingTimeCrossSectionDto> {
+        include?: undefined;
+        fields?: undefined;
+    }): Promise<OperationSightingTimeCrossSectionDto>;
+    async findOneTimeCrossSectionByFormationNumber(params: {
+        formationNumber: string;
+        searchTime?: string;
+        include?: unknown;
+        fields?: unknown;
+    }): Promise<OperationSightingTimeCrossSectionDto | Record<string, unknown>>;
+    async findOneTimeCrossSectionByFormationNumber(params: {
+        formationNumber: string;
+        searchTime?: string;
+        include?: unknown;
+        fields?: unknown;
+    }): Promise<OperationSightingTimeCrossSectionDto | Record<string, unknown>> {
         const { formationNumber, searchTime } = params;
+        const tree = OPERATION_SIGHTING_TIME_CROSS_SECTION_SELECTION_TREE;
+        const selection = parseFieldsOnly(params, tree);
 
         const searchTimeInstance = searchTime ? dayjs(searchTime) : dayjs();
-        return this.#timeCrossSectionByFormationNumber(
+        const result = await this.#timeCrossSectionByFormationNumber(
             formationNumber,
             searchTimeInstance,
             this.#createDirectSource(searchTimeInstance),
         );
+        return selection ? serializeSelection(result, tree, selection) : result;
     }
 
     async #timeCrossSectionByOperationNumber(

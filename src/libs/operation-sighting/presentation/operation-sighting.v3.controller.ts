@@ -56,69 +56,97 @@ export class OperationSightingV3Controller {
         return result;
     }
 
-    /** 複数の運用番号の時刻断面をまとめて返す。`operationNumbers=11,12,…`。キーは運用番号 */
+    /** 複数の運用番号の時刻断面をまとめて返す。`operationNumbers=11,12,…`。キーは運用番号。`fields` で返す項目を選べる（include は受けない。docs/adr/0010-v3-include-and-fields.md） */
     @Get('/time-cross-section/operation-numbers')
     @CacheControl(CACHE_CONTROL.REALTIME)
     async findManyTimeCrossSectionsByOperationNumbers(
         @Query('operationNumbers') operationNumbers: string,
         @Query('searchTime') searchTime?: string,
-    ): Promise<Record<string, OperationSightingTimeCrossSectionDto>> {
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<
+        Record<
+            string,
+            OperationSightingTimeCrossSectionDto | Record<string, unknown>
+        >
+    > {
         const result =
             await this.operationSightingV3Service.findManyTimeCrossSectionsByOperationNumbers(
                 {
                     operationNumbers: parseCommaList(operationNumbers),
                     searchTime,
+                    include,
+                    fields,
                 },
             );
 
         return result;
     }
 
-    /** 複数の編成番号の時刻断面をまとめて返す。`formationNumbers=10701,…`。キーは編成番号 */
+    /** 複数の編成番号の時刻断面をまとめて返す。`formationNumbers=10701,…`。キーは編成番号。`fields` で返す項目を選べる（include は受けない。docs/adr/0010-v3-include-and-fields.md） */
     @Get('/time-cross-section/formation-numbers')
     @CacheControl(CACHE_CONTROL.REALTIME)
     async findManyTimeCrossSectionsByFormationNumbers(
         @Query('formationNumbers') formationNumbers: string,
         @Query('searchTime') searchTime?: string,
-    ): Promise<Record<string, OperationSightingTimeCrossSectionDto>> {
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<
+        Record<
+            string,
+            OperationSightingTimeCrossSectionDto | Record<string, unknown>
+        >
+    > {
         const result =
             await this.operationSightingV3Service.findManyTimeCrossSectionsByFormationNumbers(
                 {
                     formationNumbers: parseCommaList(formationNumbers),
                     searchTime,
+                    include,
+                    fields,
                 },
             );
 
         return result;
     }
 
+    /** 運用番号の時刻断面を返す。`fields` で返す項目を選べる（include は受けない。docs/adr/0010-v3-include-and-fields.md） */
     @Get('/time-cross-section/operation-number/:operationNumber')
     @CacheControl(CACHE_CONTROL.REALTIME)
     async findOneTimeCrossSectionByOperationNumber(
         @Param('operationNumber') operationNumber: string,
         @Query('searchTime') searchTime?: string,
-    ): Promise<OperationSightingTimeCrossSectionDto> {
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<OperationSightingTimeCrossSectionDto | Record<string, unknown>> {
         const result =
             await this.operationSightingV3Service.findOneTimeCrossSectionByOperationNumber(
                 {
                     operationNumber,
                     searchTime,
+                    include,
+                    fields,
                 },
             );
 
         return result;
     }
 
+    /** 編成番号の時刻断面を返す。`fields` で返す項目を選べる（include は受けない。docs/adr/0010-v3-include-and-fields.md） */
     @Get('/time-cross-section/formation-number/:formationNumber')
     async findOneTimeCrossSectionByFormationNumber(
         @Param('formationNumber') formationNumber: string,
         @Query('searchTime') searchTime?: string,
-    ): Promise<OperationSightingTimeCrossSectionDto> {
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<OperationSightingTimeCrossSectionDto | Record<string, unknown>> {
         const result =
             await this.operationSightingV3Service.findOneTimeCrossSectionByFormationNumber(
                 {
                     formationNumber,
                     searchTime,
+                    include,
+                    fields,
                 },
             );
 

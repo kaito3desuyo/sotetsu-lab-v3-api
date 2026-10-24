@@ -942,6 +942,56 @@ describe('OperationSightingV3Service - 時刻断面をまとめて返す', () =>
         expect(mockCalendarQuery.findOneBySpecificDate).toHaveBeenCalledTimes(1);
     });
 
+    it('fields があれば各断面を削り、キー（運用番号）は今と同じ', async () => {
+        mockOperationSightingQuery.findManyLatestByOperationNumbersAndBeforeSightingTime.mockResolvedValue(
+            new Map([
+                ['65', {
+                    id: 'sighting-1',
+                    operation: { operationNumber: '65' },
+                    formation: { formationNumber: '7001' },
+                    sightingTime: '2026-05-29T15:00:00.000+09:00',
+                }],
+            ]),
+        );
+        mockOperationSightingLatestCacheQuery.findManyByFormationNumbers.mockResolvedValue(new Map());
+        mockOperationSightingLatestCacheQuery.findManyLatestGroupByFormationByOperationNumbersAndSightingTimeRange.mockResolvedValue([
+            {
+                id: 'cache-1',
+                operationNumber: '63',
+                formationNumber: '8001',
+                operationSightingId: 'sighting-2',
+                sightingTime: '2026-05-28T15:00:00.000+09:00',
+            },
+        ]);
+        mockFormationQuery.findManyBySpecificPeriod.mockResolvedValue([{ id: 'f-1', formationNumber: '8001' }]);
+
+        const result = (await service.findManyTimeCrossSectionsByOperationNumbers({
+            operationNumbers: ['65', '100', '61'],
+            searchTime,
+            fields: { formation: 'formationNumber' },
+        })) as Record<string, Record<string, unknown>>;
+
+        expect(Object.keys(result).sort()).toEqual(['61', '65']);
+        expect(result['65'].expectedSighting).toMatchObject({
+            formation: { id: 'f-1', formationNumber: '8001' },
+        });
+        // 断面が無いもの（null）は省く
+        expect(result['61']).toEqual({});
+    });
+
+    it('include は問い合わせる前に 400', async () => {
+        await expect(
+            service.findManyTimeCrossSectionsByOperationNumbers({
+                operationNumbers: ['65'],
+                searchTime,
+                include: 'latestSighting',
+            }),
+        ).rejects.toThrow(BadRequestException);
+        expect(
+            mockOperationSightingQuery.findManyLatestByOperationNumbersAndBeforeSightingTime,
+        ).not.toHaveBeenCalled();
+    });
+
     it('運用番号: 同じ群の番号が並んでも群のキャッシュ・編成一覧は 1 回だけ引く', async () => {
         const sighting = (operationNumber: string) => ({
             id: `s-${operationNumber}`,
