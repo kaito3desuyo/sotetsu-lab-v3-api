@@ -16,6 +16,7 @@ import { OperationGroupDto } from './dtos/operation-group.dto.js';
 import { OperationWithTripsDto } from './dtos/operation-with-trips.dto.js';
 import { getOperationGroups } from './operation-number-circulation.js';
 import { OPERATION_WITH_TRIPS_SELECTION_TREE } from './operation-with-trips-selection.js';
+import { OPERATIONS_BY_PERIOD_SELECTION_TREE } from './operations-by-period-selection.js';
 
 @Injectable()
 export class OperationV3Service {
@@ -38,16 +39,28 @@ export class OperationV3Service {
         });
     }
 
-    findManyBySpecificPeriod(params: {
+    /** `include`・`fields` があれば選んだ関連・列だけを返す（docs/adr/0010-v3-include-and-fields.md） */
+    async findManyBySpecificPeriod(params: {
         start: string;
         end: string;
-    }): Promise<OperationDetailsDto[]> {
-        const { start, end } = params;
-
-        return this.operationQuery.findManyBySpecificPeriod({
-            start,
-            end,
-        });
+        include?: unknown;
+        fields?: unknown;
+    }): Promise<OperationDetailsDto[] | Record<string, unknown>[]> {
+        const { start, end, include, fields } = params;
+        const selection = parseSelection(
+            { include, fields },
+            OPERATIONS_BY_PERIOD_SELECTION_TREE,
+        );
+        if (!selection) {
+            return this.operationQuery.findManyBySpecificPeriod({
+                start,
+                end,
+            });
+        }
+        return this.operationQuery.findManyBySpecificPeriodWithSelection(
+            { start, end },
+            selection,
+        );
     }
 
     findOneWithCurrentPosition(params: {
@@ -98,10 +111,24 @@ export class OperationV3Service {
         );
     }
 
-    findOneWithTrips(params: {
+    /** `include`・`fields` があれば選んだ関連・列だけを返す（docs/adr/0010-v3-include-and-fields.md） */
+    async findOneWithTrips(params: {
         operationId: string;
-    }): Promise<OperationWithTripsDto | null> {
-        return this.operationQuery.findOneWithTrips(params);
+        include?: unknown;
+        fields?: unknown;
+    }): Promise<OperationWithTripsDto | Record<string, unknown> | null> {
+        const { operationId, include, fields } = params;
+        const selection = parseSelection(
+            { include, fields },
+            OPERATION_WITH_TRIPS_SELECTION_TREE,
+        );
+        if (!selection) {
+            return this.operationQuery.findOneWithTrips({ operationId });
+        }
+        return this.operationQuery.findOneWithTripsWithSelection(
+            { operationId },
+            selection,
+        );
     }
 
     async findManyItineraryLinks(params: {

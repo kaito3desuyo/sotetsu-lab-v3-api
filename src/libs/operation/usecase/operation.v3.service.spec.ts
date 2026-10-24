@@ -13,6 +13,9 @@ type AnyMock = MockedFunction<(...args: any[]) => any>;
 const mockOperationQuery = {
     findManyByCalendarId: vi.fn() as AnyMock,
     findManyBySpecificPeriod: vi.fn() as AnyMock,
+    findManyBySpecificPeriodWithSelection: vi.fn() as AnyMock,
+    findOneWithTrips: vi.fn() as AnyMock,
+    findOneWithTripsWithSelection: vi.fn() as AnyMock,
     findOneWithCurrentPosition: vi.fn() as AnyMock,
     findManyWithCurrentPosition: vi.fn() as AnyMock,
     findManyWithTrips: vi.fn() as AnyMock,
@@ -50,7 +53,9 @@ describe('OperationV3Service', () => {
                 calendarId: 'cal-1',
             });
 
-            expect(mockOperationQuery.findManyByCalendarId).toHaveBeenCalledWith({ calendarId: 'cal-1' });
+            expect(
+                mockOperationQuery.findManyByCalendarId,
+            ).toHaveBeenCalledWith({ calendarId: 'cal-1' });
             expect(result).toBe(expected);
         });
     });
@@ -60,14 +65,18 @@ describe('OperationV3Service', () => {
             const expected: OperationDetailsDto[] = [
                 { operationId: 'op-2' } as OperationDetailsDto,
             ];
-            mockOperationQuery.findManyBySpecificPeriod.mockResolvedValue(expected);
+            mockOperationQuery.findManyBySpecificPeriod.mockResolvedValue(
+                expected,
+            );
 
             const result = await service.findManyBySpecificPeriod({
                 start: '2024-01-01',
                 end: '2024-01-31',
             });
 
-            expect(mockOperationQuery.findManyBySpecificPeriod).toHaveBeenCalledWith({
+            expect(
+                mockOperationQuery.findManyBySpecificPeriod,
+            ).toHaveBeenCalledWith({
                 start: '2024-01-01',
                 end: '2024-01-31',
             });
@@ -80,14 +89,18 @@ describe('OperationV3Service', () => {
             const expected = {
                 operationId: 'op-3',
             } as unknown as OperationCurrentPositionDto;
-            mockOperationQuery.findOneWithCurrentPosition.mockResolvedValue(expected);
+            mockOperationQuery.findOneWithCurrentPosition.mockResolvedValue(
+                expected,
+            );
 
             const result = await service.findOneWithCurrentPosition({
                 operationId: 'op-3',
                 searchTime: '12:00:00',
             });
 
-            expect(mockOperationQuery.findOneWithCurrentPosition).toHaveBeenCalledWith({
+            expect(
+                mockOperationQuery.findOneWithCurrentPosition,
+            ).toHaveBeenCalledWith({
                 operationId: 'op-3',
                 searchTime: '12:00:00',
             });
@@ -98,13 +111,17 @@ describe('OperationV3Service', () => {
             const expected = {
                 operationId: 'op-4',
             } as unknown as OperationCurrentPositionDto;
-            mockOperationQuery.findOneWithCurrentPosition.mockResolvedValue(expected);
+            mockOperationQuery.findOneWithCurrentPosition.mockResolvedValue(
+                expected,
+            );
 
             const result = await service.findOneWithCurrentPosition({
                 operationId: 'op-4',
             });
 
-            expect(mockOperationQuery.findOneWithCurrentPosition).toHaveBeenCalledWith({
+            expect(
+                mockOperationQuery.findOneWithCurrentPosition,
+            ).toHaveBeenCalledWith({
                 operationId: 'op-4',
                 searchTime: undefined,
             });
@@ -198,15 +215,23 @@ describe('OperationV3Service', () => {
 
     describe('findManyWithCurrentPosition', () => {
         it('運用 id と時刻を OperationQuery にまとめて渡してそのまま返す', async () => {
-            const expected = [{ operation: { operationId: 'op-1' } } as OperationCurrentPositionDto];
-            mockOperationQuery.findManyWithCurrentPosition.mockResolvedValue(expected);
+            const expected = [
+                {
+                    operation: { operationId: 'op-1' },
+                } as OperationCurrentPositionDto,
+            ];
+            mockOperationQuery.findManyWithCurrentPosition.mockResolvedValue(
+                expected,
+            );
 
             const result = await service.findManyWithCurrentPosition({
                 operationIds: ['op-1', 'op-2'],
                 searchTime: '2026-05-30T15:00:00+09:00',
             });
 
-            expect(mockOperationQuery.findManyWithCurrentPosition).toHaveBeenCalledWith({
+            expect(
+                mockOperationQuery.findManyWithCurrentPosition,
+            ).toHaveBeenCalledWith({
                 operationIds: ['op-1', 'op-2'],
                 searchTime: '2026-05-30T15:00:00+09:00',
             });
@@ -214,11 +239,66 @@ describe('OperationV3Service', () => {
         });
 
         it('時刻を指定しなければその瞬間の時刻を 1 つ決めて渡す', async () => {
-            mockOperationQuery.findManyWithCurrentPosition.mockResolvedValue([]);
+            mockOperationQuery.findManyWithCurrentPosition.mockResolvedValue(
+                [],
+            );
 
-            await service.findManyWithCurrentPosition({ operationIds: ['op-1'] });
+            await service.findManyWithCurrentPosition({
+                operationIds: ['op-1'],
+            });
 
-            expect(mockOperationQuery.findManyWithCurrentPosition.mock.calls[0][0].searchTime).toEqual(expect.any(String));
+            expect(
+                mockOperationQuery.findManyWithCurrentPosition.mock.calls[0][0]
+                    .searchTime,
+            ).toEqual(expect.any(String));
         });
+    });
+});
+
+describe('OperationV3Service - 運用の from/to・:id/trips の選択', () => {
+    let service: OperationV3Service;
+
+    beforeEach(async () => {
+        vi.clearAllMocks();
+        service = await buildService();
+    });
+
+    it('from/to: 指定が無ければ今の取得', async () => {
+        mockOperationQuery.findManyBySpecificPeriod.mockResolvedValue([]);
+        await service.findManyBySpecificPeriod({
+            start: '2026-10-24',
+            end: '2026-10-24',
+        });
+        expect(mockOperationQuery.findManyBySpecificPeriod).toHaveBeenCalled();
+        expect(
+            mockOperationQuery.findManyBySpecificPeriodWithSelection,
+        ).not.toHaveBeenCalled();
+    });
+
+    it('from/to: 木に無い道筋は 400', async () => {
+        await expect(
+            service.findManyBySpecificPeriod({
+                start: '2026-10-24',
+                end: '2026-10-24',
+                include: 'trips',
+            }),
+        ).rejects.toThrow(BadRequestException);
+    });
+
+    it(':id/trips: 指定があれば選んだ取得', async () => {
+        mockOperationQuery.findOneWithTripsWithSelection.mockResolvedValue(
+            null,
+        );
+        await service.findOneWithTrips({
+            operationId: 'op1',
+            include: 'trips',
+        });
+        expect(
+            mockOperationQuery.findOneWithTripsWithSelection,
+        ).toHaveBeenCalledWith(
+            { operationId: 'op1' },
+            expect.objectContaining({ paths: new Set(['operation', 'trips']) }),
+        );
+        expect(mockOperationQuery.findOneWithTrips).not.toHaveBeenCalled();
     });
 });

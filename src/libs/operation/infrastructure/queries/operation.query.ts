@@ -12,6 +12,7 @@ import { OperationCurrentPositionDto } from '../../usecase/dtos/operation-curren
 import { OperationDetailsDto } from '../../usecase/dtos/operation-details.dto.js';
 import { OperationWithTripsDto } from '../../usecase/dtos/operation-with-trips.dto.js';
 import { OPERATION_WITH_TRIPS_SELECTION_TREE } from '../../usecase/operation-with-trips-selection.js';
+import { OPERATIONS_BY_PERIOD_SELECTION_TREE } from '../../usecase/operations-by-period-selection.js';
 import { OperationCurrentPositionDtoBuilder } from '../builders/operation-current-position.dto.builder.js';
 import {
     OperationDtoBuilder,
@@ -74,6 +75,46 @@ export class OperationQuery {
             .getMany();
 
         return OperationsDtoBuilder.buildFromModel(result);
+    }
+
+    /**
+     * `findManyBySpecificPeriod` と同じ条件で、`include`・`fields` で選んだ関連・列だけを返す
+     * （docs/adr/0010-v3-include-and-fields.md）。
+     */
+    async findManyBySpecificPeriodWithSelection(
+        params: { start: string; end: string },
+        selection: Selection,
+    ): Promise<Record<string, unknown>[]> {
+        const { start, end } = params;
+        const tree = OPERATIONS_BY_PERIOD_SELECTION_TREE;
+
+        const format = 'YYYY-MM-DD';
+        const startDate = dayjs(start, format);
+        const endDate = dayjs(end, format);
+
+        const qb = this.operationRepository
+            .createQueryBuilder('operation')
+            .select(selectColumns('operation', tree, selection))
+            // 期間の絞り込みに使うので、ダイヤを返さないときも結合だけはする
+            .leftJoin('operation.calendar', 'calendar')
+            .where(
+                '(calendar.start_date <= :endDate OR calendar.start_date IS NULL)',
+                { endDate: endDate.format(format) },
+            )
+            .andWhere(
+                '(calendar.end_date >= :startDate OR calendar.end_date IS NULL)',
+                { startDate: startDate.format(format) },
+            );
+        if (selection.paths.has('calendar')) {
+            qb.addSelect(
+                selectColumns('calendar', tree.relations.calendar, selection),
+            );
+        }
+
+        const models = await qb.getMany();
+        return models.map((model) =>
+            serializeSelection(model, tree, selection),
+        );
     }
 
     /** 現在位置の計算に要る列車と始終着の時刻を結合し、出発 → 到着の時刻順に並べる。 */
@@ -271,7 +312,9 @@ export class OperationQuery {
         });
     }
 
-    async findOneWithTrips(params: { operationId: string }): Promise<OperationWithTripsDto | null> {
+    async findOneWithTrips(params: {
+        operationId: string;
+    }): Promise<OperationWithTripsDto | null> {
         const { operationId } = params;
 
         const model = await this.operationRepository
@@ -348,21 +391,16 @@ export class OperationQuery {
     }
 
     /**
-     * `findManyWithTrips` と同じ条件で、`include`・`fields` で選んだ関連・列だけを返す
-     * （docs/adr/0010-v3-include-and-fields.md）。区間の並びは返す列に関わらず時刻順のまま。
+     * `findManyWithTrips`・`findOneWithTrips` と同じ形で、`include`・`fields` で選んだ関連・列だけを返す
+     * 問い合わせを組み立てる（docs/adr/0010-v3-include-and-fields.md）。区間の並びは返す列に関わらず時刻順のまま。
      */
-    async findManyWithTripsWithSelection(
-        params: { calendarId: string },
-        selection: Selection,
-    ): Promise<Record<string, unknown>[]> {
-        const { calendarId } = params;
+    #withTripsSelectionQuery(selection: Selection) {
         const tree = OPERATION_WITH_TRIPS_SELECTION_TREE;
         const { operation, trips } = tree.relations;
 
         const qb = this.operationRepository
             .createQueryBuilder('operation')
-            .select(selectColumns('operation', operation, selection))
-            .where('operation.calendar_id = :calendarId', { calendarId });
+            .select(selectColumns('operation', operation, selection));
 
         if (selection.paths.has('operation.calendar')) {
             qb.leftJoin('operation.calendar', 'calendar').addSelect(
@@ -420,13 +458,48 @@ export class OperationQuery {
             }
         }
 
-        const models = await qb.getMany();
+        return qb;
+    }
+
+    /**
+     * `findManyWithTrips` と同じ条件で、`include`・`fields` で選んだ関連・列だけを返す
+     * （docs/adr/0010-v3-include-and-fields.md）。区間の並びは返す列に関わらず時刻順のまま。
+     */
+    async findManyWithTripsWithSelection(
+        params: { calendarId: string },
+        selection: Selection,
+    ): Promise<Record<string, unknown>[]> {
+        const { calendarId } = params;
+
+        const models = await this.#withTripsSelectionQuery(selection)
+            .where('operation.calendar_id = :calendarId', { calendarId })
+            .getMany();
         return models.map((model) =>
             serializeSelection(
                 { operation: model, trips: model.tripOperationLists },
-                tree,
+                OPERATION_WITH_TRIPS_SELECTION_TREE,
                 selection,
             ),
+        );
+    }
+
+    /** `findOneWithTrips` の選択の版（`findManyWithTripsWithSelection` と同じ形・並び） */
+    async findOneWithTripsWithSelection(
+        params: { operationId: string },
+        selection: Selection,
+    ): Promise<Record<string, unknown> | null> {
+        const { operationId } = params;
+
+        const model = await this.#withTripsSelectionQuery(selection)
+            .where('operation.id = :operationId', { operationId })
+            .getOne();
+        if (!model) {
+            return null;
+        }
+        return serializeSelection(
+            { operation: model, trips: model.tripOperationLists },
+            OPERATION_WITH_TRIPS_SELECTION_TREE,
+            selection,
         );
     }
 

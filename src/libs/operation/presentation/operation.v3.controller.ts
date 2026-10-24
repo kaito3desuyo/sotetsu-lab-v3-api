@@ -101,27 +101,37 @@ export class OperationV3Controller {
         return result;
     }
 
+    /** `include`・`fields` で返す関連・列を選べる（docs/adr/0010-v3-include-and-fields.md） */
     @Get('/from/:start/to/:end')
     @CacheControl(CACHE_CONTROL.TIMETABLE)
     async findManyBySpecificPeriod(
         @Param('start') start: string,
         @Param('end') end: string,
-    ): Promise<OperationDetailsDto[]> {
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<OperationDetailsDto[] | Record<string, unknown>[]> {
         const result = await this.operationV3Service.findManyBySpecificPeriod({
             start,
             end,
+            include,
+            fields,
         });
 
         return result;
     }
 
+    /** `include`・`fields` で返す関連・列を選べる（docs/adr/0010-v3-include-and-fields.md） */
     @Get('/:id/trips')
     @CacheControl(CACHE_CONTROL.TIMETABLE)
     async findOneWithTrips(
         @Param('id') operationId: string,
-    ): Promise<OperationWithTripsDto | null> {
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<OperationWithTripsDto | Record<string, unknown> | null> {
         const result = await this.operationV3Service.findOneWithTrips({
             operationId,
+            include,
+            fields,
         });
 
         return result;
