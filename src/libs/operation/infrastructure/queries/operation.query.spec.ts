@@ -1,11 +1,16 @@
 import type { MockedFunction } from 'vitest';
+import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat.js';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { OperationModel } from '../models/operation.model.js';
 import { UnexpectedError } from '../../../../core/classes/unexpected-error.js';
 import { parseSelection } from '../../../../core/utils/selection/parse-selection.js';
 import { OPERATION_WITH_TRIPS_SELECTION_TREE } from '../../usecase/operation-with-trips-selection.js';
+import { OPERATIONS_BY_PERIOD_SELECTION_TREE } from '../../usecase/operations-by-period-selection.js';
 import { OperationQuery } from './operation.query.js';
+
+dayjs.extend(customParseFormat);
 
 type AnyMock = MockedFunction<(...args: any[]) => any>;
 
@@ -433,5 +438,164 @@ describe('OperationQuery - findManyWithTripsWithSelection', () => {
             'calendar',
         );
         expect(qb.leftJoin).toHaveBeenCalledWith('trip.tripClass', 'tripClass');
+    });
+});
+
+describe('OperationQuery - findManyBySpecificPeriodWithSelection', () => {
+    let qb: any;
+    let query: OperationQuery;
+
+    beforeEach(async () => {
+        qb = {};
+        for (const method of [
+            'select',
+            'addSelect',
+            'leftJoin',
+            'where',
+            'andWhere',
+        ]) {
+            qb[method] = vi.fn().mockReturnValue(qb);
+        }
+        qb.getMany = vi.fn().mockResolvedValue([
+            {
+                id: 'op1',
+                operationNumber: '54',
+                calendar: { id: 'c1', calendarName: '平日' },
+            },
+        ]);
+        mockCreateQueryBuilder.mockReturnValue(qb);
+        query = await buildQuery();
+    });
+
+    afterEach(() => vi.clearAllMocks());
+
+    it('ダイヤを返さないときも、期間の絞り込みのため結合だけはする', async () => {
+        const result = await query.findManyBySpecificPeriodWithSelection(
+            { start: '2026-10-24', end: '2026-10-24' },
+            parseSelection(
+                { fields: { operation: 'operationNumber' } },
+                OPERATIONS_BY_PERIOD_SELECTION_TREE,
+            )!,
+        );
+
+        expect(qb.select).toHaveBeenCalledWith([
+            'operation.id',
+            'operation.operationNumber',
+        ]);
+        expect(qb.leftJoin).toHaveBeenCalledWith(
+            'operation.calendar',
+            'calendar',
+        );
+        expect(qb.addSelect).not.toHaveBeenCalled();
+        expect(qb.where).toHaveBeenCalledWith(
+            '(calendar.start_date <= :endDate OR calendar.start_date IS NULL)',
+            { endDate: '2026-10-24' },
+        );
+        expect(qb.andWhere).toHaveBeenCalledWith(
+            '(calendar.end_date >= :startDate OR calendar.end_date IS NULL)',
+            { startDate: '2026-10-24' },
+        );
+        expect(result).toEqual([{ id: 'op1', operationNumber: '54' }]);
+    });
+
+    it('include=calendar ならダイヤの列も選んで返す', async () => {
+        const result = await query.findManyBySpecificPeriodWithSelection(
+            { start: '2026-10-24', end: '2026-10-24' },
+            parseSelection(
+                {
+                    include: 'calendar',
+                    fields: {
+                        operation: 'operationNumber',
+                        calendar: 'calendarName',
+                    },
+                },
+                OPERATIONS_BY_PERIOD_SELECTION_TREE,
+            )!,
+        );
+
+        expect(qb.addSelect).toHaveBeenCalledWith([
+            'calendar.id',
+            'calendar.calendarName',
+        ]);
+        expect(result).toEqual([
+            {
+                id: 'op1',
+                operationNumber: '54',
+                calendar: { id: 'c1', calendarName: '平日' },
+            },
+        ]);
+    });
+});
+
+describe('OperationQuery - findOneWithTripsWithSelection', () => {
+    let qb: any;
+    let query: OperationQuery;
+
+    beforeEach(async () => {
+        qb = {};
+        for (const method of [
+            'select',
+            'addSelect',
+            'leftJoin',
+            'where',
+            'orderBy',
+            'addOrderBy',
+        ]) {
+            qb[method] = vi.fn().mockReturnValue(qb);
+        }
+        qb.getOne = vi.fn();
+        mockCreateQueryBuilder.mockReturnValue(qb);
+        query = await buildQuery();
+    });
+
+    afterEach(() => vi.clearAllMocks());
+
+    it('運用 1 件を、運用表の trips と同じ形で返す', async () => {
+        qb.getOne.mockResolvedValue({
+            id: 'op1',
+            operationNumber: '54',
+            tripOperationLists: [{ id: 'tol1', tripId: 't1' }],
+        });
+
+        const result = await query.findOneWithTripsWithSelection(
+            { operationId: 'op1' },
+            parseSelection(
+                {
+                    include: 'trips',
+                    fields: {
+                        operation: 'operationNumber',
+                        tripOperationList: 'tripId',
+                    },
+                },
+                OPERATION_WITH_TRIPS_SELECTION_TREE,
+            )!,
+        );
+
+        expect(qb.where).toHaveBeenCalledWith('operation.id = :operationId', {
+            operationId: 'op1',
+        });
+        expect(qb.orderBy).toHaveBeenCalledWith(
+            'startTime.departureDays',
+            'ASC',
+            'NULLS LAST',
+        );
+        expect(result).toEqual({
+            operation: { id: 'op1', operationNumber: '54' },
+            trips: [{ id: 'tol1', tripId: 't1' }],
+        });
+    });
+
+    it('見つからなければ null', async () => {
+        qb.getOne.mockResolvedValue(null);
+
+        const result = await query.findOneWithTripsWithSelection(
+            { operationId: 'none' },
+            parseSelection(
+                { include: '' },
+                OPERATION_WITH_TRIPS_SELECTION_TREE,
+            )!,
+        );
+
+        expect(result).toBeNull();
     });
 });

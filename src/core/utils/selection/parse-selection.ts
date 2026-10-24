@@ -81,6 +81,27 @@ export function parseSelection(
     return { paths, fields };
 }
 
+/**
+ * read-model の口（計算した DTO を返す口）の `fields` を読む。`include` は受けない。
+ * 関連はすべて返し、`fields` に挙げた資源だけ項目を削る（挙げない資源は全項目）。
+ */
+export function parseFieldsOnly(
+    query: { include?: unknown; fields?: unknown },
+    tree: SelectionTree,
+): Selection | undefined {
+    if (query.include !== undefined && query.include !== null) {
+        throw new BadRequestException('この口は include を指定できない');
+    }
+    if (query.fields === undefined || query.fields === null) {
+        return undefined;
+    }
+    const relations = flattenRelations(tree);
+    return {
+        paths: new Set(relations.map((r) => r.path)),
+        fields: parseFields(query.fields, tree, relations),
+    };
+}
+
 function parseFields(
     raw: unknown,
     tree: SelectionTree,

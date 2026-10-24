@@ -1,9 +1,11 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
 import { CacheControlModule } from '../../../core/modules/cache-control/cache-control.module.js';
 import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
+import { configureExpress } from '../../../core/configs/express-settings.js';
 import { validationPipeOptions } from '../../../core/configs/validator-options.js';
 import { OperationV3Service } from '../usecase/operation.v3.service.js';
 import { OperationV3Controller } from './operation.v3.controller.js';
@@ -15,7 +17,7 @@ vi.mock('../../../core/modules/auth/auth.guard.js', () => ({
 const CALENDAR_ID = '3f0b6a5e-8a52-4c1c-9d0a-2b5d1b8e7a11';
 
 describe('OperationV3Controller (itinerary-links / next-operation-candidates)', () => {
-    let app: INestApplication;
+    let app: NestExpressApplication;
     const service = {
         findManyItineraryLinks: vi.fn(),
         findManyNextSegmentCandidates: vi.fn(),
@@ -33,7 +35,8 @@ describe('OperationV3Controller (itinerary-links / next-operation-candidates)', 
             .overrideGuard(RBACGuard)
             .useValue({ canActivate: () => true })
             .compile();
-        app = moduleRef.createNestApplication();
+        app = moduleRef.createNestApplication<NestExpressApplication>();
+        configureExpress(app);
         app.useGlobalPipes(new ValidationPipe(validationPipeOptions));
         await app.init();
     });
@@ -89,14 +92,31 @@ describe('OperationV3Controller (itinerary-links / next-operation-candidates)', 
         });
     });
 
-    it('stationId が無ければ空配列を返し、サービスを呼ばない', async () => {
+    it('stationId が無くても stationId なしでサービスに渡す（空にするのはサービス）', async () => {
         const res = await request(app.getHttpServer()).get(
             `/next-operation-candidates?calendarId=${CALENDAR_ID}`,
         );
 
         expect(res.status).toBe(200);
         expect(res.body).toEqual([]);
-        expect(service.findManyNextSegmentCandidates).not.toHaveBeenCalled();
+        expect(service.findManyNextSegmentCandidates).toHaveBeenCalledWith({
+            calendarId: CALENDAR_ID,
+            stationId: undefined,
+            afterSeconds: 0,
+        });
+    });
+
+    it('/next-operation-candidates は fields をサービスに渡す', async () => {
+        await request(app.getHttpServer()).get(
+            `/next-operation-candidates?calendarId=${CALENDAR_ID}&stationId=st1&fields[nextSegmentCandidate]=isTaken`,
+        );
+
+        expect(service.findManyNextSegmentCandidates).toHaveBeenCalledWith({
+            calendarId: CALENDAR_ID,
+            stationId: 'st1',
+            afterSeconds: 0,
+            fields: { nextSegmentCandidate: 'isTaken' },
+        });
     });
 
     it('旧 URL は残らない', async () => {

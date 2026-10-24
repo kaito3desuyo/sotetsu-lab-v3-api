@@ -54,7 +54,7 @@ describe('TripBlockFindManyByFilterQuery', () => {
         });
     });
 
-    it('fields が入れ子でなければ検証エラー', async () => {
+    it('fields の形はここで検めない（サービスの parseSelection が 400 を返す）', async () => {
         const query = plainToInstance(TripBlockFindManyByFilterQuery, {
             calendarId: 'cal-1',
             tripDirection: '0',
@@ -63,7 +63,8 @@ describe('TripBlockFindManyByFilterQuery', () => {
 
         const errors = await validate(query, validatorOptions);
 
-        expect(errors.some((e) => e.property === 'fields')).toBe(true);
+        expect(errors).toHaveLength(0);
+        expect(query.fields).toBe('tripNumber');
     });
 
     it('include をカンマ区切りの文字列で受け取り、アプリ全体と同じ設定（whitelist）で落とさない', async () => {

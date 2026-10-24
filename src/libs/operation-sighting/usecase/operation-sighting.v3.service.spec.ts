@@ -1,4 +1,5 @@
 import type { MockedFunction } from 'vitest';
+import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat.js';
@@ -941,6 +942,56 @@ describe('OperationSightingV3Service - 時刻断面をまとめて返す', () =>
         expect(mockCalendarQuery.findOneBySpecificDate).toHaveBeenCalledTimes(1);
     });
 
+    it('fields があれば各断面を削り、キー（運用番号）は今と同じ', async () => {
+        mockOperationSightingQuery.findManyLatestByOperationNumbersAndBeforeSightingTime.mockResolvedValue(
+            new Map([
+                ['65', {
+                    id: 'sighting-1',
+                    operation: { operationNumber: '65' },
+                    formation: { formationNumber: '7001' },
+                    sightingTime: '2026-05-29T15:00:00.000+09:00',
+                }],
+            ]),
+        );
+        mockOperationSightingLatestCacheQuery.findManyByFormationNumbers.mockResolvedValue(new Map());
+        mockOperationSightingLatestCacheQuery.findManyLatestGroupByFormationByOperationNumbersAndSightingTimeRange.mockResolvedValue([
+            {
+                id: 'cache-1',
+                operationNumber: '63',
+                formationNumber: '8001',
+                operationSightingId: 'sighting-2',
+                sightingTime: '2026-05-28T15:00:00.000+09:00',
+            },
+        ]);
+        mockFormationQuery.findManyBySpecificPeriod.mockResolvedValue([{ id: 'f-1', formationNumber: '8001' }]);
+
+        const result = (await service.findManyTimeCrossSectionsByOperationNumbers({
+            operationNumbers: ['65', '100', '61'],
+            searchTime,
+            fields: { formation: 'formationNumber' },
+        })) as Record<string, Record<string, unknown>>;
+
+        expect(Object.keys(result).sort()).toEqual(['61', '65']);
+        expect(result['65'].expectedSighting).toMatchObject({
+            formation: { id: 'f-1', formationNumber: '8001' },
+        });
+        // 断面が無いもの（null）は省く
+        expect(result['61']).toEqual({});
+    });
+
+    it('include は問い合わせる前に 400', async () => {
+        await expect(
+            service.findManyTimeCrossSectionsByOperationNumbers({
+                operationNumbers: ['65'],
+                searchTime,
+                include: 'latestSighting',
+            }),
+        ).rejects.toThrow(BadRequestException);
+        expect(
+            mockOperationSightingQuery.findManyLatestByOperationNumbersAndBeforeSightingTime,
+        ).not.toHaveBeenCalled();
+    });
+
     it('運用番号: 同じ群の番号が並んでも群のキャッシュ・編成一覧は 1 回だけ引く', async () => {
         const sighting = (operationNumber: string) => ({
             id: `s-${operationNumber}`,
@@ -1257,6 +1308,48 @@ describe('OperationSightingV3Service - findManyBySpecificPeriod includeCarriedOv
             { operationId: 'op-11K', operationNumber: '11K' },
             { operationId: 'op-12K', operationNumber: '12K' },
         ]);
+    });
+
+    it('fields があれば作った一覧を削り、引き継いだ目撃の印は全項目で残す', async () => {
+        const result = (await service.findManyBySpecificPeriod({
+            start: '2026-10-12', end: '2026-10-12', includeCarriedOver: true,
+            fields: { operationSighting: 'sightingTime' },
+        })) as Record<string, unknown>[];
+
+        const carried = result.find((o) => o.sightedAsOperation);
+        expect(carried).toEqual({
+            id: expect.any(String),
+            sightingTime: expect.any(Date),
+            sightedAsOperation: { operationId: 'op-11K', operationNumber: '11K' },
+        });
+        expect(result.find((o) => o.id === 'a')).toEqual({ id: 'a', sightingTime: at('07:00') });
+    });
+
+    it('fields だけでも無効化の印は ID だけで残り、無効化の無い目撃には invalidation が付かない', async () => {
+        const invalidated = {
+            ...(sighting('a', '11K', '10701', '07:00') as object),
+            invalidation: {
+                operationSightingInvalidationId: 'inv-1', operationSightingId: 'a', createdAt: at('08:00'), updatedAt: at('08:00'),
+            },
+        } as never;
+        mockOperationSightingQuery.findManyBySpecificPeriod.mockResolvedValue([invalidated, sighting('b', '12K', '10702', '09:00')]);
+        const result = (await service.findManyBySpecificPeriod({
+            start: '2026-10-12', end: '2026-10-12', includeInvalidated: true,
+            fields: { operationSighting: 'sightingTime' },
+        })) as Record<string, unknown>[];
+
+        expect(result).toEqual([
+            { id: 'a', sightingTime: at('07:00'), invalidation: { operationSightingInvalidationId: 'inv-1' } },
+            { id: 'b', sightingTime: at('09:00') },
+        ]);
+        expect(result[1]).not.toHaveProperty('invalidation');
+    });
+
+    it('include に木に無い道筋があれば、問い合わせる前に 400', async () => {
+        await expect(
+            service.findManyBySpecificPeriod({ start: '2026-10-12', end: '2026-10-12', include: 'trips' }),
+        ).rejects.toThrow(BadRequestException);
+        expect(mockOperationSightingQuery.findManyBySpecificPeriod).not.toHaveBeenCalled();
     });
 
     it('指定しないときは今と同じ応答で、引き継ぎの材料を引かない', async () => {

@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { parseSelection } from './parse-selection.js';
+import { parseFieldsOnly, parseSelection } from './parse-selection.js';
 import { columnsOf, defineSelectionTree } from './selection-tree.js';
 
 const TREE = defineSelectionTree({
@@ -232,6 +232,81 @@ describe('parseSelection - include', () => {
         expect400(
             () => parseSelection({ include: '' }, REQUIRED_ONLY_TREE),
             'この口は include を指定できない',
+        );
+    });
+});
+
+describe('parseFieldsOnly', () => {
+    const tree = defineSelectionTree({
+        resource: null,
+        columns: {},
+        relations: {
+            operation: {
+                property: 'operation',
+                many: false,
+                resource: 'operation',
+                columns: columnsOf('id', 'operationNumber'),
+                alwaysKeys: ['id'],
+            },
+            current: {
+                property: 'current',
+                many: false,
+                resource: 'tripOperationList',
+                columns: columnsOf('id', 'tripId'),
+                alwaysKeys: ['id'],
+                relations: {
+                    trip: {
+                        property: 'trip',
+                        many: false,
+                        resource: 'trip',
+                        columns: columnsOf('tripNumber', 'depotIn'),
+                        alwaysKeys: ['id'],
+                    },
+                },
+            },
+        },
+    });
+
+    it('fields が無ければ undefined', () => {
+        expect(parseFieldsOnly({}, tree)).toBeUndefined();
+    });
+
+    it('挙げた資源だけを削り、関連はすべて返す', () => {
+        expect(
+            parseFieldsOnly({ fields: { trip: 'tripNumber' } }, tree),
+        ).toEqual({
+            paths: new Set(['operation', 'current', 'current.trip']),
+            fields: new Map([['trip', new Set(['tripNumber'])]]),
+        });
+    });
+
+    it('include は空でも 400', () => {
+        expect(() => parseFieldsOnly({ include: '' }, tree)).toThrow(
+            new BadRequestException('この口は include を指定できない'),
+        );
+        expect(() =>
+            parseFieldsOnly(
+                { include: 'current', fields: { trip: 'tripNumber' } },
+                tree,
+            ),
+        ).toThrow(BadRequestException);
+    });
+
+    it('fields の検めは parseSelection と同じ', () => {
+        expect(() => parseFieldsOnly({ fields: 'tripNumber' }, tree)).toThrow(
+            new BadRequestException(
+                'fields は fields[資源]=項目,項目 の形で指定する',
+            ),
+        );
+        expect(() =>
+            parseFieldsOnly({ fields: { user: 'password' } }, tree),
+        ).toThrow(new BadRequestException('fields に指定できない資源: user'));
+        expect(() =>
+            parseFieldsOnly({ fields: { trip: 'password' } }, tree),
+        ).toThrow(
+            new BadRequestException(
+                'fields[trip] に指定できない項目: password',
+            ),
         );
     });
 });

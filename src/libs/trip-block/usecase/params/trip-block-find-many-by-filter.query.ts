@@ -1,11 +1,5 @@
 import { Type } from 'class-transformer';
-import {
-    IsInt,
-    IsNotEmpty,
-    IsObject,
-    IsOptional,
-    IsString,
-} from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class TripBlockFindManyByFilterQuery {
     @IsString()
@@ -26,9 +20,8 @@ export class TripBlockFindManyByFilterQuery {
 
     /**
      * 返す項目の選択 `fields[資源]=項目,項目`（docs/adr/0010-v3-include-and-fields.md）。
-     * 中身の検め（木）はサービスで行う。
+     * 形と中身の検めは include と同じくサービスの parseSelection で行い、崩れていれば 400 を返す。
      */
     @IsOptional()
-    @IsObject()
-    fields?: Record<string, string | string[]>;
+    fields?: unknown;
 }

@@ -57,86 +57,119 @@ export class OperationV3Controller {
         return result;
     }
 
-    /** 運番が変わる車両のつながり（運用表・行路図の前後の運用用）。`?calendarId=` 必須 */
+    /**
+     * 運番が変わる車両のつながり（運用表・行路図の前後の運用用）。`?calendarId=` 必須。
+     * `fields` で返す項目を選べる（include は受けない。docs/adr/0010-v3-include-and-fields.md）
+     */
     @Get('/itinerary-links')
     @CacheControl(CACHE_CONTROL.TIMETABLE)
     findManyItineraryLinks(
         @Query() query: OperationCalendarQuery,
-    ): Promise<OperationItineraryLinkDto[]> {
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<OperationItineraryLinkDto[] | Record<string, unknown>[]> {
         return this.operationV3Service.findManyItineraryLinks({
             calendarId: query.calendarId,
+            include,
+            fields,
         });
     }
 
-    /** 「次の運用」の候補。`stationId` で始まり、`afterSeconds`（鉄道日の 0 時からの秒）以降の区間 */
+    /**
+     * 「次の運用」の候補。`stationId` で始まり、`afterSeconds`（鉄道日の 0 時からの秒）以降の区間。
+     * `fields` で返す項目を選べる（include は受けない。docs/adr/0010-v3-include-and-fields.md）
+     */
     @Get('/next-operation-candidates')
     @CacheControl(CACHE_CONTROL.TIMETABLE)
     async findManyNextSegmentCandidates(
         @Query() query: NextOperationCandidatesQuery,
-    ): Promise<NextSegmentCandidateDto[]> {
-        if (!query.stationId) return [];
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<NextSegmentCandidateDto[] | Record<string, unknown>[]> {
         return this.operationV3Service.findManyNextSegmentCandidates({
             calendarId: query.calendarId,
             stationId: query.stationId,
             afterSeconds: Number(query.afterSeconds) || 0,
+            include,
+            fields,
         });
     }
 
     /**
      * 複数の運用の現在位置をまとめて返す（リアルタイム運用情報用。運用ごとの
-     * /:id/current-position を束ねる）。`operationIds=a,b,c`
+     * /:id/current-position を束ねる）。`operationIds=a,b,c`。
+     * `fields` で返す項目を選べる（include は受けない。docs/adr/0010-v3-include-and-fields.md）
      */
     @Get('/current-positions')
     @CacheControl(CACHE_CONTROL.REALTIME)
     async findManyWithCurrentPosition(
         @Query('operationIds') operationIds: string,
         @Query('searchTime') searchTime?: string,
-    ): Promise<OperationCurrentPositionDto[]> {
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<OperationCurrentPositionDto[] | Record<string, unknown>[]> {
         const result =
             await this.operationV3Service.findManyWithCurrentPosition({
                 operationIds: parseCommaList(operationIds),
                 searchTime,
+                include,
+                fields,
             });
 
         return result;
     }
 
+    /** `include`・`fields` で返す関連・列を選べる（docs/adr/0010-v3-include-and-fields.md） */
     @Get('/from/:start/to/:end')
     @CacheControl(CACHE_CONTROL.TIMETABLE)
     async findManyBySpecificPeriod(
         @Param('start') start: string,
         @Param('end') end: string,
-    ): Promise<OperationDetailsDto[]> {
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<OperationDetailsDto[] | Record<string, unknown>[]> {
         const result = await this.operationV3Service.findManyBySpecificPeriod({
             start,
             end,
+            include,
+            fields,
         });
 
         return result;
     }
 
+    /** `include`・`fields` で返す関連・列を選べる（docs/adr/0010-v3-include-and-fields.md） */
     @Get('/:id/trips')
     @CacheControl(CACHE_CONTROL.TIMETABLE)
     async findOneWithTrips(
         @Param('id') operationId: string,
-    ): Promise<OperationWithTripsDto | null> {
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<OperationWithTripsDto | Record<string, unknown> | null> {
         const result = await this.operationV3Service.findOneWithTrips({
             operationId,
+            include,
+            fields,
         });
 
         return result;
     }
 
+    /** `fields` で返す項目を選べる（include は受けない。docs/adr/0010-v3-include-and-fields.md） */
     @Get('/:id/current-position')
     @CacheControl(CACHE_CONTROL.REALTIME)
     async findOneWithCurrentPosition(
         @Param('id') operationId: string,
         @Query('searchTime') searchTime?: string,
-    ): Promise<OperationCurrentPositionDto | null> {
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<OperationCurrentPositionDto | Record<string, unknown> | null> {
         const result = await this.operationV3Service.findOneWithCurrentPosition(
             {
                 operationId,
                 searchTime,
+                include,
+                fields,
             },
         );
 
