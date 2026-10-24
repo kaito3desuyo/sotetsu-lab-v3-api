@@ -37,14 +37,21 @@ export class OperationV3Controller {
         return result;
     }
 
-    /** ダイヤ内の全運用を列車つきで返す（運用表用。運用ごとの /:id/trips を束ねる） */
+    /**
+     * ダイヤ内の全運用を列車つきで返す（運用表用。運用ごとの /:id/trips を束ねる）。
+     * `include`・`fields` で返す関連・列を選べる（docs/adr/0010-v3-include-and-fields.md）
+     */
     @Get('/calendar/:calendarId/trips')
     @CacheControl(CACHE_CONTROL.TIMETABLE)
     async findManyWithTrips(
         @Param('calendarId') calendarId: string,
-    ): Promise<OperationWithTripsDto[]> {
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<OperationWithTripsDto[] | Record<string, unknown>[]> {
         const result = await this.operationV3Service.findManyWithTrips({
             calendarId,
+            include,
+            fields,
         });
 
         return result;
