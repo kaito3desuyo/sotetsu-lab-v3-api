@@ -32,6 +32,7 @@ export class OperationSightingV3Controller {
         private readonly operationSightingV3Service: OperationSightingV3Service,
     ) {}
 
+    /** `include`・`fields` で返す関連・列を選べる（docs/adr/0010-v3-include-and-fields.md） */
     @Get('/from/:start/to/:end')
     @CacheControl(CACHE_CONTROL.REALTIME)
     async findManyBySpecificPeriod(
@@ -39,13 +40,17 @@ export class OperationSightingV3Controller {
         @Param('end') end: string,
         @Query('includeInvalidated') includeInvalidated?: boolean,
         @Query('includeCarriedOver') includeCarriedOver?: string,
-    ): Promise<OperationSightingDetailsDto[]> {
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<OperationSightingDetailsDto[] | Record<string, unknown>[]> {
         const result =
             await this.operationSightingV3Service.findManyBySpecificPeriod({
                 start,
                 end,
                 includeInvalidated,
                 includeCarriedOver: includeCarriedOver === 'true',
+                include,
+                fields,
             });
 
         return result;

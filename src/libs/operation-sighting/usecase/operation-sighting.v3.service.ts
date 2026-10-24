@@ -5,6 +5,8 @@ import { UniqueEntityId } from '../../../core/classes/unique-entity-id.js';
 import { UseCaseError } from '../../../core/classes/custom-error.js';
 import { UnexpectedError } from '../../../core/classes/unexpected-error.js';
 import { getBaseDate } from '../../../core/utils/datetime.js';
+import { parseSelection } from '../../../core/utils/selection/parse-selection.js';
+import { serializeSelection } from '../../../core/utils/selection/serialize-selection.js';
 import { CalendarQuery } from '../../calendar/infrastructure/queries/calendar.query.js';
 import { FormationQuery } from '../../formation/infrastructure/queries/formation.query.js';
 import { VehicleItineraryReadModel } from '../../operation/usecase/read-models/vehicle-itinerary.read-model.js';
@@ -32,6 +34,7 @@ import {
     CacheAction,
     selectMostRecentCandidateForOperationNumber,
 } from './operation-sighting.v3.circulation.js';
+import { OPERATION_SIGHTINGS_BY_PERIOD_SELECTION_TREE } from './operation-sightings-by-period-selection.js';
 import { SightingCarryOver } from './read-models/sighting-carry-over.read-model.js';
 
 /** 時刻断面の判定が読む DB の口。1 件ずつの口とまとめて返す口とで読み方だけを替える。 */
@@ -64,7 +67,26 @@ export class OperationSightingV3Service {
         private readonly socketSignal: SocketSignal,
     ) {}
 
+    /** `include`・`fields` があれば、作った一覧を選んだ関連・列だけに削る（docs/adr/0010-v3-include-and-fields.md） */
     async findManyBySpecificPeriod(params: {
+        start: string;
+        end: string;
+        includeInvalidated?: boolean;
+        includeCarriedOver?: boolean;
+        include?: unknown;
+        fields?: unknown;
+    }): Promise<OperationSightingDetailsDto[] | Record<string, unknown>[]> {
+        const { include, fields, ...rest } = params;
+        const tree = OPERATION_SIGHTINGS_BY_PERIOD_SELECTION_TREE;
+        const selection = parseSelection({ include, fields }, tree);
+        const sightings = await this.#findManyBySpecificPeriodFull(rest);
+        if (!selection) {
+            return sightings;
+        }
+        return sightings.map((o) => serializeSelection(o, tree, selection));
+    }
+
+    async #findManyBySpecificPeriodFull(params: {
         start: string;
         end: string;
         includeInvalidated?: boolean;

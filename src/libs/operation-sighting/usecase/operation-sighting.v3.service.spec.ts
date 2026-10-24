@@ -1,4 +1,5 @@
 import type { MockedFunction } from 'vitest';
+import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat.js';
@@ -1257,6 +1258,28 @@ describe('OperationSightingV3Service - findManyBySpecificPeriod includeCarriedOv
             { operationId: 'op-11K', operationNumber: '11K' },
             { operationId: 'op-12K', operationNumber: '12K' },
         ]);
+    });
+
+    it('fields があれば作った一覧を削り、引き継いだ目撃の印は全項目で残す', async () => {
+        const result = (await service.findManyBySpecificPeriod({
+            start: '2026-10-12', end: '2026-10-12', includeCarriedOver: true,
+            fields: { operationSighting: 'sightingTime' },
+        })) as Record<string, unknown>[];
+
+        const carried = result.find((o) => o.sightedAsOperation);
+        expect(carried).toEqual({
+            id: expect.any(String),
+            sightingTime: expect.any(Date),
+            sightedAsOperation: { operationId: 'op-11K', operationNumber: '11K' },
+        });
+        expect(result.find((o) => o.id === 'a')).toEqual({ id: 'a', sightingTime: at('07:00') });
+    });
+
+    it('include に木に無い道筋があれば、問い合わせる前に 400', async () => {
+        await expect(
+            service.findManyBySpecificPeriod({ start: '2026-10-12', end: '2026-10-12', include: 'trips' }),
+        ).rejects.toThrow(BadRequestException);
+        expect(mockOperationSightingQuery.findManyBySpecificPeriod).not.toHaveBeenCalled();
     });
 
     it('指定しないときは今と同じ応答で、引き継ぎの材料を引かない', async () => {
