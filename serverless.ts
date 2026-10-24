@@ -16,7 +16,9 @@ const serverlessConfiguration: AWS = {
         region: 'ap-northeast-1',
         architecture: 'arm64',
         runtime: 'nodejs24.x',
-        memorySize: 885, // 1 vCPU
+        // 1769MB で vCPU 1 つ分。885MB は約半分で、trip-blocks・運用表の trips の組み立てが CPU で詰まっていた
+        // （手元の CPU で trips が 2.3 倍速い。料金はメモリ×時間なので、縮んだ分で増え方は 2 倍未満）
+        memorySize: 1769,
         timeout: 3,
         logRetentionInDays: 30,
         stackName: '${param:prefix}-cfstack',
