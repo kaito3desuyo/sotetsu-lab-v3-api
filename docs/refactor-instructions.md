@@ -136,7 +136,7 @@ npm run lint      # 注意: このスクリプトは --fix 付きでファイル
 - レスポンス DTO の形は **v2 の同名リソースのレスポンスと同一**にする（client の `../sotetsu-lab-v3-client/src/app/libs/<domain>/infrastructure/models/*.model.ts` が期待形。読み取り専用で参照可）。ネストされたリレーションは下表の「含めるリレーション」をすべて埋める。
 - ページネーションは**実装しない**（下表の呼び出し元はいずれも非ページングで全件取得している）。
 - 下表にない機能（任意 filter、任意 join、任意 sort）は実装しない。
-  - 例外（2026-09-26 追記）: 返す項目の選択 `fields`（資源ごとの許可リスト付き）は `docs/adr/0002-v3-sparse-fieldsets.md` に従って実装してよい。`@dataui/crud` は使わず `src/core/utils/sparse-fieldsets.ts` を使う。
+  - 例外（2026-09-26 追記）: 返す項目の選択 `fields`（資源ごとの許可リスト付き）は `docs/adr/0002-v3-sparse-fieldsets.md` に従って実装してよい。`@dataui/crud` は使わず `src/core/utils/selection/`（ADR-0010）を使う。
   - 例外（2026-10-24 追記）: 結合する関連の選択 `include` と列の選択 `fields` は `docs/adr/0010-v3-include-and-fields.md` に従って実装してよい。選べる範囲は口ごとの選択の木（`src/core/utils/selection/`）に限る。`sparse-fieldsets.ts` は `selection/` に置き換わった。
 - v2 のコード（コントローラー・サービス・クエリ）には一切手を入れない。例外: trip-block（4-C 参照）。
 
