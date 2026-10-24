@@ -5,10 +5,13 @@ import { DataSourceConfig } from '../../../../core/configs/database.config.js';
 import { AgencyModel } from '../../../agency/infrastructure/models/agency.model.js';
 import { RouteStationListModel } from '../../../route/infrastructure/models/route-station-list.model.js';
 import { StationModel } from '../../../station/infrastructure/models/station.model.js';
+import type { Selection } from '../../../../core/utils/selection/parse-selection.js';
+import { serializeSelection } from '../../../../core/utils/selection/serialize-selection.js';
 import { EntityManager, Repository } from 'typeorm';
 import { ServiceDetailsDto } from '../../usecase/dtos/service-details.dto.js';
 import { ServiceRoutesDto } from '../../usecase/dtos/service-routes.dto.js';
 import { ServiceStationsDto } from '../../usecase/dtos/service-stations.dto.js';
+import { SERVICE_STATIONS_SELECTION_TREE } from '../../usecase/service-stations-selection.js';
 import { ServiceAgenciesDtoBuilder } from '../builders/service-agencies.dto.builder.js';
 import { ServiceRoutesDtoBuilder } from '../builders/service-routes.dto.builder.js';
 import { ServiceStationsDtoBuilder } from '../builders/service-stations.dto.builder.js';
@@ -105,20 +108,65 @@ export class ServiceQuery {
     async findOneStationsForService(params: {
         serviceId: string;
     }): Promise<ServiceStationsDto | null> {
-        const { serviceId } = params;
-
-        const service = await this.serviceRepository
-            .createQueryBuilder('service')
-            .leftJoinAndSelect('service.operatingSystems', 'operatingSystems')
-            .leftJoinAndSelect('operatingSystems.route', 'route')
-            .leftJoinAndSelect('route.routeStationLists', 'routeStationLists')
-            .leftJoinAndSelect('routeStationLists.station', 'station')
+        const service = await this.#stationsForServiceQuery(params.serviceId)
             .leftJoinAndSelect(
                 'station.routeStationLists',
                 'stationRouteStationLists',
             )
             .leftJoinAndSelect('stationRouteStationLists.route', 'stationRoute')
             .leftJoinAndSelect('station.stops', 'stops')
+            .getOne();
+
+        if (!service) return null;
+
+        const stations = this.#pickStations(service);
+        return ServiceStationsDtoBuilder.buildFromModel({ service, stations });
+    }
+
+    /**
+     * `findOneStationsForService` と同じ並びで、`include`・`fields` で選んだ関連・列だけを返す
+     * （docs/adr/0010-v3-include-and-fields.md）。並びの計算に要る結合は常にする。
+     */
+    async findOneStationsForServiceWithSelection(
+        params: { serviceId: string },
+        selection: Selection,
+    ): Promise<Record<string, unknown> | null> {
+        const qb = this.#stationsForServiceQuery(params.serviceId);
+        if (selection.paths.has('stations.routeStationLists')) {
+            qb.leftJoinAndSelect(
+                'station.routeStationLists',
+                'stationRouteStationLists',
+            );
+        }
+        if (selection.paths.has('stations.routeStationLists.route')) {
+            qb.leftJoinAndSelect(
+                'stationRouteStationLists.route',
+                'stationRoute',
+            );
+        }
+        if (selection.paths.has('stations.stops')) {
+            qb.leftJoinAndSelect('station.stops', 'stops');
+        }
+
+        const service = await qb.getOne();
+        if (!service) return null;
+
+        const stations = this.#pickStations(service);
+        return serializeSelection(
+            { service, stations },
+            SERVICE_STATIONS_SELECTION_TREE,
+            selection,
+        );
+    }
+
+    /** 駅の並びの計算に要る結合（運行系統・路線・路線の駅・始終点） */
+    #stationsForServiceQuery(serviceId: string) {
+        return this.serviceRepository
+            .createQueryBuilder('service')
+            .leftJoinAndSelect('service.operatingSystems', 'operatingSystems')
+            .leftJoinAndSelect('operatingSystems.route', 'route')
+            .leftJoinAndSelect('route.routeStationLists', 'routeStationLists')
+            .leftJoinAndSelect('routeStationLists.station', 'station')
             .leftJoinAndSelect(
                 'operatingSystems.startRouteStationList',
                 'startRSL',
@@ -129,11 +177,10 @@ export class ServiceQuery {
             )
             .where('service.id = :serviceId', { serviceId })
             .orderBy('operatingSystems.sequence', 'ASC')
-            .addOrderBy('routeStationLists.stationSequence', 'ASC')
-            .getOne();
+            .addOrderBy('routeStationLists.stationSequence', 'ASC');
+    }
 
-        if (!service) return null;
-
+    #pickStations(service: ServiceModel): StationModel[] {
         const pickedRouteStationLists: (RouteStationListModel & {
             priority?: number;
         })[] = [];
@@ -272,6 +319,6 @@ export class ServiceQuery {
             stations.push(pickedRouteStationLists[i].station);
         }
 
-        return ServiceStationsDtoBuilder.buildFromModel({ service, stations });
+        return stations;
     }
 }
