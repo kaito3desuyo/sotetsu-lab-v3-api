@@ -28,7 +28,7 @@ const mockTripBlockQuery = {
     findOneTripBlockByTripId: vi.fn() as AnyMock,
     findOneById: vi.fn() as AnyMock,
     findManyByFilter: vi.fn() as AnyMock,
-    findManyByFilterWithFields: vi.fn() as AnyMock,
+    findManyByFilterWithSelection: vi.fn() as AnyMock,
 };
 
 describe('TripBlockV3Service - findManyByFilter', () => {
@@ -68,14 +68,14 @@ describe('TripBlockV3Service - findManyByFilter', () => {
             tripDirection: 0,
         });
         expect(
-            mockTripBlockQuery.findManyByFilterWithFields,
+            mockTripBlockQuery.findManyByFilterWithSelection,
         ).not.toHaveBeenCalled();
         expect(result).toBe(expected);
     });
 
-    it('fields があれば許可リストで検めてから項目を絞った取得をする', async () => {
+    it('fields があれば木で検めてから項目を絞った取得をする', async () => {
         const expected = [{ id: 'b1', trips: [] }];
-        mockTripBlockQuery.findManyByFilterWithFields.mockResolvedValue(
+        mockTripBlockQuery.findManyByFilterWithSelection.mockResolvedValue(
             expected,
         );
 
@@ -86,13 +86,16 @@ describe('TripBlockV3Service - findManyByFilter', () => {
         });
 
         expect(
-            mockTripBlockQuery.findManyByFilterWithFields,
+            mockTripBlockQuery.findManyByFilterWithSelection,
         ).toHaveBeenCalledWith(
             { calendarId: 'c1', tripDirection: 1 },
-            new Map([
-                ['trip', new Set(['tripNumber'])],
-                ['time', new Set(['stationId', 'arrivalTime'])],
-            ]),
+            {
+                paths: new Set(['trips', 'trips.times']),
+                fields: new Map([
+                    ['trip', new Set(['tripNumber'])],
+                    ['time', new Set(['stationId', 'arrivalTime'])],
+                ]),
+            },
         );
         expect(mockTripBlockQuery.findManyByFilter).not.toHaveBeenCalled();
         expect(result).toBe(expected);
@@ -107,8 +110,45 @@ describe('TripBlockV3Service - findManyByFilter', () => {
             }),
         ).rejects.toThrow(BadRequestException);
         expect(
-            mockTripBlockQuery.findManyByFilterWithFields,
+            mockTripBlockQuery.findManyByFilterWithSelection,
         ).not.toHaveBeenCalled();
+    });
+
+    it('include があれば木で検めてから関連を選んだ取得をする', async () => {
+        mockTripBlockQuery.findManyByFilterWithSelection.mockResolvedValue([]);
+
+        await service.findManyByFilter({
+            calendarId: 'c1',
+            tripDirection: 0,
+            include: 'trips.tripClass',
+        });
+
+        expect(
+            mockTripBlockQuery.findManyByFilterWithSelection,
+        ).toHaveBeenCalledWith(
+            { calendarId: 'c1', tripDirection: 0 },
+            { paths: new Set(['trips', 'trips.tripClass']), fields: new Map() },
+        );
+    });
+
+    it('木に無い道筋は 400', async () => {
+        await expect(
+            service.findManyByFilter({
+                calendarId: 'c1',
+                tripDirection: 0,
+                include: 'trips.service',
+            }),
+        ).rejects.toThrow(BadRequestException);
+    });
+
+    it('include が崩れた形（オブジェクト）なら 400', async () => {
+        await expect(
+            service.findManyByFilter({
+                calendarId: 'c1',
+                tripDirection: 0,
+                include: { a: 'b' },
+            }),
+        ).rejects.toThrow(BadRequestException);
     });
 });
 

@@ -65,4 +65,42 @@ describe('TripBlockFindManyByFilterQuery', () => {
 
         expect(errors.some((e) => e.property === 'fields')).toBe(true);
     });
+
+    it('include をカンマ区切りの文字列で受け取り、アプリ全体と同じ設定（whitelist）で落とさない', async () => {
+        const query = plainToInstance(TripBlockFindManyByFilterQuery, {
+            calendarId: 'cal-1',
+            tripDirection: '0',
+            include: 'trips.times,trips.tripClass',
+        });
+
+        const errors = await validate(query, validatorOptions);
+
+        expect(errors).toHaveLength(0);
+        expect(query.include).toBe('trips.times,trips.tripClass');
+    });
+
+    it('include を繰り返し指定した配列でも受け取る', async () => {
+        const query = plainToInstance(TripBlockFindManyByFilterQuery, {
+            calendarId: 'cal-1',
+            tripDirection: '0',
+            include: ['trips.times', 'trips.tripClass'],
+        });
+
+        const errors = await validate(query, validatorOptions);
+
+        expect(errors).toHaveLength(0);
+    });
+
+    it('include が崩れた形（オブジェクト）でも DTO では落とさない（サービスの parseSelection が 400 にする）', async () => {
+        const query = plainToInstance(TripBlockFindManyByFilterQuery, {
+            calendarId: 'cal-1',
+            tripDirection: '0',
+            include: { a: 'b' },
+        });
+
+        const errors = await validate(query, validatorOptions);
+
+        expect(errors.some((e) => e.property === 'include')).toBe(false);
+        expect(query.include).toEqual({ a: 'b' });
+    });
 });

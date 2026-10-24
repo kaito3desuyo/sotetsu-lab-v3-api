@@ -20,7 +20,6 @@ import { CreateTripBlockDto } from '../usecase/dtos/create-trip-block.dto.js';
 import { DeleteTripFromTripBlockDto } from '../usecase/dtos/delete-trip-from-trip-block.dto.js';
 import { ReplaceTripBlockDto } from '../usecase/dtos/replace-trip-block.dto.js';
 import { TripBlockDetailsDto } from '../usecase/dtos/trip-block-details.dto.js';
-import { TripBlockSparseDto } from '../usecase/dtos/trip-block-sparse.dto.js';
 import { AddTripToTripBlockParam } from '../usecase/params/add-trip-to-trip-block.param.js';
 import { DeleteTripFromTripBlockParam } from '../usecase/params/delete-trip-from-trip-block.param.js';
 import { ReplaceTripBlockParam } from '../usecase/params/replace-trip-block.param.js';
@@ -32,15 +31,16 @@ import { TripBlockV3Service } from '../usecase/trip-block.v3.service.js';
 export class TripBlockV3Controller {
     constructor(private readonly tripBlockV3Service: TripBlockV3Service) {}
 
-    /** `fields[資源]=項目,項目` で返す項目を選べる（docs/adr/0002-v3-sparse-fieldsets.md） */
+    /** `include=道筋` で結合する関連を、`fields[資源]=項目,項目` で返す列を選べる（docs/adr/0010-v3-include-and-fields.md） */
     @Get('/')
     @CacheControl(CACHE_CONTROL.TIMETABLE)
     async findManyByFilter(
         @Query() query: TripBlockFindManyByFilterQuery,
-    ): Promise<TripBlockDetailsDto[] | TripBlockSparseDto[]> {
+    ): Promise<TripBlockDetailsDto[] | Record<string, unknown>[]> {
         const result = await this.tripBlockV3Service.findManyByFilter({
             calendarId: query.calendarId,
             tripDirection: query.tripDirection,
+            include: query.include,
             fields: query.fields,
         });
 

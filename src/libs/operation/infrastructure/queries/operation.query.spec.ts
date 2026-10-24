@@ -3,6 +3,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { OperationModel } from '../models/operation.model.js';
 import { UnexpectedError } from '../../../../core/classes/unexpected-error.js';
+import { parseSelection } from '../../../../core/utils/selection/parse-selection.js';
+import { OPERATION_WITH_TRIPS_SELECTION_TREE } from '../../usecase/operation-with-trips-selection.js';
 import { OperationQuery } from './operation.query.js';
 
 type AnyMock = MockedFunction<(...args: any[]) => any>;
@@ -247,5 +249,189 @@ describe('OperationQuery - 現在位置の計算', () => {
                 searchTime: '2026-10-21T10:30:00+09:00',
             }),
         ).rejects.toThrow(UnexpectedError);
+    });
+});
+
+describe('OperationQuery - findManyWithTripsWithSelection', () => {
+    let qb: any;
+    let query: OperationQuery;
+
+    const select = (raw: { include?: unknown; fields?: unknown }) =>
+        parseSelection(raw, OPERATION_WITH_TRIPS_SELECTION_TREE)!;
+
+    beforeEach(async () => {
+        qb = {};
+        for (const method of [
+            'select',
+            'addSelect',
+            'leftJoin',
+            'where',
+            'orderBy',
+            'addOrderBy',
+        ]) {
+            qb[method] = vi.fn().mockReturnValue(qb);
+        }
+        qb.getMany = vi.fn().mockResolvedValue([
+            {
+                id: 'op1',
+                operationNumber: '54',
+                calendarId: 'c1',
+                tripOperationLists: [
+                    {
+                        id: 'tol1',
+                        tripId: 't1',
+                        nextTripOperationListId: null,
+                        trip: { id: 't1', tripNumber: '6000', depotOut: true },
+                        startTime: {
+                            id: 'tm1',
+                            stationId: 's1',
+                            departureTime: '04:39:00',
+                            arrivalTime: null,
+                        },
+                    },
+                ],
+            },
+        ]);
+        mockCreateQueryBuilder.mockReturnValue(qb);
+        query = await buildQuery();
+    });
+
+    afterEach(() => vi.clearAllMocks());
+
+    it('運用だけ（空の include）なら区間を結合せず、並べ替えもしない', async () => {
+        const result = await query.findManyWithTripsWithSelection(
+            { calendarId: 'c1' },
+            select({ include: '', fields: { operation: 'operationNumber' } }),
+        );
+
+        expect(qb.select).toHaveBeenCalledWith([
+            'operation.id',
+            'operation.operationNumber',
+        ]);
+        expect(qb.where).toHaveBeenCalledWith(
+            'operation.calendar_id = :calendarId',
+            { calendarId: 'c1' },
+        );
+        expect(qb.leftJoin).not.toHaveBeenCalled();
+        expect(qb.orderBy).not.toHaveBeenCalled();
+        expect(result).toEqual([
+            { operation: { id: 'op1', operationNumber: '54' } },
+        ]);
+    });
+
+    it('時刻を返さなくても、区間は今と同じ出発 → 到着の時刻順', async () => {
+        await query.findManyWithTripsWithSelection(
+            { calendarId: 'c1' },
+            select({ include: 'trips' }),
+        );
+
+        expect(qb.leftJoin).toHaveBeenCalledWith(
+            'operation.tripOperationLists',
+            'tripOperationLists',
+        );
+        expect(qb.leftJoin).toHaveBeenCalledWith(
+            'tripOperationLists.startTime',
+            'startTime',
+        );
+        expect(qb.leftJoin).toHaveBeenCalledWith(
+            'tripOperationLists.endTime',
+            'endTime',
+        );
+        expect(qb.orderBy).toHaveBeenCalledWith(
+            'startTime.departureDays',
+            'ASC',
+            'NULLS LAST',
+        );
+        expect(qb.addOrderBy).toHaveBeenCalledWith(
+            'startTime.departureTime',
+            'ASC',
+            'NULLS LAST',
+        );
+        expect(qb.addOrderBy).toHaveBeenCalledWith(
+            'endTime.arrivalDays',
+            'ASC',
+            'NULLS LAST',
+        );
+        expect(qb.addOrderBy).toHaveBeenCalledWith(
+            'endTime.arrivalTime',
+            'ASC',
+            'NULLS LAST',
+        );
+        // 時刻の列は選ばない
+        expect(qb.addSelect).not.toHaveBeenCalledWith(
+            expect.arrayContaining(['startTime.id']),
+        );
+        expect(qb.leftJoin).not.toHaveBeenCalledWith(
+            'tripOperationLists.trip',
+            'trip',
+        );
+    });
+
+    it('列車と出発の時刻を挙げれば、指定の列だけで返す', async () => {
+        const result = await query.findManyWithTripsWithSelection(
+            { calendarId: 'c1' },
+            select({
+                include: 'trips.trip,trips.startTime',
+                fields: {
+                    operation: 'operationNumber',
+                    tripOperationList: 'tripId',
+                    trip: 'tripNumber,depotOut',
+                    time: 'stationId,departureTime',
+                },
+            }),
+        );
+
+        expect(qb.addSelect).toHaveBeenCalledWith([
+            'tripOperationLists.id',
+            'tripOperationLists.tripId',
+        ]);
+        expect(qb.leftJoin).toHaveBeenCalledWith(
+            'tripOperationLists.trip',
+            'trip',
+        );
+        expect(qb.addSelect).toHaveBeenCalledWith([
+            'trip.id',
+            'trip.tripNumber',
+            'trip.depotOut',
+        ]);
+        expect(qb.addSelect).toHaveBeenCalledWith([
+            'startTime.id',
+            'startTime.stationId',
+            'startTime.departureTime',
+        ]);
+        expect(qb.leftJoin).not.toHaveBeenCalledWith(
+            'trip.tripClass',
+            'tripClass',
+        );
+        expect(result).toEqual([
+            {
+                operation: { id: 'op1', operationNumber: '54' },
+                trips: [
+                    {
+                        id: 'tol1',
+                        tripId: 't1',
+                        trip: { id: 't1', tripNumber: '6000', depotOut: true },
+                        startTime: {
+                            id: 'tm1',
+                            stationId: 's1',
+                            departureTime: '04:39:00',
+                        },
+                    },
+                ],
+            },
+        ]);
+    });
+
+    it('ダイヤと種別を挙げればそれぞれ結合する', async () => {
+        await query.findManyWithTripsWithSelection(
+            { calendarId: 'c1' },
+            select({ include: 'operation.calendar,trips.trip.tripClass' }),
+        );
+
+        expect(qb.leftJoin).toHaveBeenCalledWith(
+            'operation.calendar',
+            'calendar',
+        );
+        expect(qb.leftJoin).toHaveBeenCalledWith('trip.tripClass', 'tripClass');
     });
 });

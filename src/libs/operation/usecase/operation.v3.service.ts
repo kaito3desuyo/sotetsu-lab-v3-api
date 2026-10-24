@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import dayjs from 'dayjs';
+import { parseSelection } from '../../../core/utils/selection/parse-selection.js';
 import { VehicleItineraryReadModel } from './read-models/vehicle-itinerary.read-model.js';
 import { ItinerarySegmentQuery } from '../infrastructure/queries/itinerary-segment.query.js';
 import { OperationQuery } from '../infrastructure/queries/operation.query.js';
@@ -14,6 +15,7 @@ import { OperationDetailsDto } from './dtos/operation-details.dto.js';
 import { OperationGroupDto } from './dtos/operation-group.dto.js';
 import { OperationWithTripsDto } from './dtos/operation-with-trips.dto.js';
 import { getOperationGroups } from './operation-number-circulation.js';
+import { OPERATION_WITH_TRIPS_SELECTION_TREE } from './operation-with-trips-selection.js';
 
 @Injectable()
 export class OperationV3Service {
@@ -76,10 +78,24 @@ export class OperationV3Service {
         });
     }
 
-    findManyWithTrips(params: {
+    /** `include`・`fields` があれば選んだ関連・列だけを返す（docs/adr/0010-v3-include-and-fields.md） */
+    async findManyWithTrips(params: {
         calendarId: string;
-    }): Promise<OperationWithTripsDto[]> {
-        return this.operationQuery.findManyWithTrips(params);
+        include?: unknown;
+        fields?: unknown;
+    }): Promise<OperationWithTripsDto[] | Record<string, unknown>[]> {
+        const { calendarId, include, fields } = params;
+        const selection = parseSelection(
+            { include, fields },
+            OPERATION_WITH_TRIPS_SELECTION_TREE,
+        );
+        if (!selection) {
+            return this.operationQuery.findManyWithTrips({ calendarId });
+        }
+        return this.operationQuery.findManyWithTripsWithSelection(
+            { calendarId },
+            selection,
+        );
     }
 
     findOneWithTrips(params: {

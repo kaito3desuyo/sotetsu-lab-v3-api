@@ -24,13 +24,18 @@ export class ServiceV3Controller {
         return result;
     }
 
+    /** `include`・`fields` で返す関連・列を選べる（docs/adr/0010-v3-include-and-fields.md） */
     @Get('/:id/stations')
     @CacheControl(CACHE_CONTROL.MASTER)
     async findOneStations(
         @Param('id') serviceId: string,
-    ): Promise<ServiceStationsDto> {
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<ServiceStationsDto | Record<string, unknown>> {
         const result = await this.serviceV3Service.findOneStations({
             serviceId,
+            include,
+            fields,
         });
 
         return result;

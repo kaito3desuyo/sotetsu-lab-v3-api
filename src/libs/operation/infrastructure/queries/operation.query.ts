@@ -4,10 +4,14 @@ import dayjs from 'dayjs';
 import omit from 'just-omit';
 import { FindManyOptions, Repository } from 'typeorm';
 import { UnexpectedError } from '../../../../core/classes/unexpected-error.js';
+import type { Selection } from '../../../../core/utils/selection/parse-selection.js';
+import { selectColumns } from '../../../../core/utils/selection/select-columns.js';
+import { serializeSelection } from '../../../../core/utils/selection/serialize-selection.js';
 import { TripOperationListModel } from '../../../trip/infrastructure/models/trip-operation-list.model.js';
 import { OperationCurrentPositionDto } from '../../usecase/dtos/operation-current-position.dto.js';
 import { OperationDetailsDto } from '../../usecase/dtos/operation-details.dto.js';
 import { OperationWithTripsDto } from '../../usecase/dtos/operation-with-trips.dto.js';
+import { OPERATION_WITH_TRIPS_SELECTION_TREE } from '../../usecase/operation-with-trips-selection.js';
 import { OperationCurrentPositionDtoBuilder } from '../builders/operation-current-position.dto.builder.js';
 import {
     OperationDtoBuilder,
@@ -341,6 +345,89 @@ export class OperationQuery {
                 trips: dto.tripOperationLists ?? [],
             };
         });
+    }
+
+    /**
+     * `findManyWithTrips` と同じ条件で、`include`・`fields` で選んだ関連・列だけを返す
+     * （docs/adr/0010-v3-include-and-fields.md）。区間の並びは返す列に関わらず時刻順のまま。
+     */
+    async findManyWithTripsWithSelection(
+        params: { calendarId: string },
+        selection: Selection,
+    ): Promise<Record<string, unknown>[]> {
+        const { calendarId } = params;
+        const tree = OPERATION_WITH_TRIPS_SELECTION_TREE;
+        const { operation, trips } = tree.relations;
+
+        const qb = this.operationRepository
+            .createQueryBuilder('operation')
+            .select(selectColumns('operation', operation, selection))
+            .where('operation.calendar_id = :calendarId', { calendarId });
+
+        if (selection.paths.has('operation.calendar')) {
+            qb.leftJoin('operation.calendar', 'calendar').addSelect(
+                selectColumns(
+                    'calendar',
+                    operation.relations.calendar,
+                    selection,
+                ),
+            );
+        }
+        if (selection.paths.has('trips')) {
+            qb.leftJoin('operation.tripOperationLists', 'tripOperationLists')
+                .addSelect(
+                    selectColumns('tripOperationLists', trips, selection),
+                )
+                // 並べ替えに使うので、時刻を返さないときも結合だけはする
+                .leftJoin('tripOperationLists.startTime', 'startTime')
+                .leftJoin('tripOperationLists.endTime', 'endTime')
+                .orderBy('startTime.departureDays', 'ASC', 'NULLS LAST')
+                .addOrderBy('startTime.departureTime', 'ASC', 'NULLS LAST')
+                .addOrderBy('endTime.arrivalDays', 'ASC', 'NULLS LAST')
+                .addOrderBy('endTime.arrivalTime', 'ASC', 'NULLS LAST');
+
+            if (selection.paths.has('trips.startTime')) {
+                qb.addSelect(
+                    selectColumns(
+                        'startTime',
+                        trips.relations.startTime,
+                        selection,
+                    ),
+                );
+            }
+            if (selection.paths.has('trips.endTime')) {
+                qb.addSelect(
+                    selectColumns(
+                        'endTime',
+                        trips.relations.endTime,
+                        selection,
+                    ),
+                );
+            }
+            if (selection.paths.has('trips.trip')) {
+                qb.leftJoin('tripOperationLists.trip', 'trip').addSelect(
+                    selectColumns('trip', trips.relations.trip, selection),
+                );
+            }
+            if (selection.paths.has('trips.trip.tripClass')) {
+                qb.leftJoin('trip.tripClass', 'tripClass').addSelect(
+                    selectColumns(
+                        'tripClass',
+                        trips.relations.trip.relations.tripClass,
+                        selection,
+                    ),
+                );
+            }
+        }
+
+        const models = await qb.getMany();
+        return models.map((model) =>
+            serializeSelection(
+                { operation: model, trips: model.tripOperationLists },
+                tree,
+                selection,
+            ),
+        );
     }
 
     async findAllOperationNumbers(calendarId: string): Promise<string[]> {

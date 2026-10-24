@@ -1,4 +1,5 @@
 import type { MockedFunction } from 'vitest';
+import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ItinerarySegmentQuery } from '../infrastructure/queries/itinerary-segment.query.js';
 import { OperationQuery } from '../infrastructure/queries/operation.query.js';
@@ -15,6 +16,7 @@ const mockOperationQuery = {
     findOneWithCurrentPosition: vi.fn() as AnyMock,
     findManyWithCurrentPosition: vi.fn() as AnyMock,
     findManyWithTrips: vi.fn() as AnyMock,
+    findManyWithTripsWithSelection: vi.fn() as AnyMock,
 };
 
 async function buildService(): Promise<OperationV3Service> {
@@ -125,6 +127,55 @@ describe('OperationV3Service', () => {
                 calendarId: 'cal-2',
             });
             expect(result).toBe(expected);
+        });
+
+        it('include・fields が無ければ全部入りの口を呼び、選択の口は呼ばない', async () => {
+            mockOperationQuery.findManyWithTrips.mockResolvedValue([]);
+
+            await service.findManyWithTrips({ calendarId: 'c1' });
+
+            expect(mockOperationQuery.findManyWithTrips).toHaveBeenCalledWith({
+                calendarId: 'c1',
+            });
+            expect(
+                mockOperationQuery.findManyWithTripsWithSelection,
+            ).not.toHaveBeenCalled();
+        });
+
+        it('include があれば選択の口に解釈した指定を渡す', async () => {
+            const expected = [{ operation: { id: 'op-1' } }];
+            mockOperationQuery.findManyWithTripsWithSelection.mockResolvedValue(
+                expected,
+            );
+
+            const result = await service.findManyWithTrips({
+                calendarId: 'c1',
+                include: 'trips.startTime',
+            });
+
+            expect(
+                mockOperationQuery.findManyWithTripsWithSelection,
+            ).toHaveBeenCalledWith(
+                { calendarId: 'c1' },
+                {
+                    paths: new Set(['operation', 'trips', 'trips.startTime']),
+                    fields: new Map(),
+                },
+            );
+            expect(mockOperationQuery.findManyWithTrips).not.toHaveBeenCalled();
+            expect(result).toBe(expected);
+        });
+
+        it('指定できない資源は BadRequestException で reject する', async () => {
+            await expect(
+                service.findManyWithTrips({
+                    calendarId: 'c1',
+                    fields: { user: 'password' },
+                }),
+            ).rejects.toBeInstanceOf(BadRequestException);
+            expect(
+                mockOperationQuery.findManyWithTripsWithSelection,
+            ).not.toHaveBeenCalled();
         });
     });
 

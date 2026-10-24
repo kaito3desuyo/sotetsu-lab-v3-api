@@ -1,8 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { parseSelection } from '../../../core/utils/selection/parse-selection.js';
 import { ServiceQuery } from '../infrastructure/queries/service.query.js';
 import { ServiceDetailsDto } from './dtos/service-details.dto.js';
 import { ServiceRoutesDto } from './dtos/service-routes.dto.js';
 import { ServiceStationsDto } from './dtos/service-stations.dto.js';
+import { SERVICE_STATIONS_SELECTION_TREE } from './service-stations-selection.js';
 
 @Injectable()
 export class ServiceV3Service {
@@ -12,15 +14,27 @@ export class ServiceV3Service {
         return this.serviceQuery.findManyByServiceName(params);
     }
 
+    /** `include`・`fields` があれば選んだ関連・列だけを返す（docs/adr/0010-v3-include-and-fields.md） */
     async findOneStations(params: {
         serviceId: string;
-    }): Promise<ServiceStationsDto> {
-        const result =
-            await this.serviceQuery.findOneStationsForService(params);
+        include?: unknown;
+        fields?: unknown;
+    }): Promise<ServiceStationsDto | Record<string, unknown>> {
+        const { serviceId, include, fields } = params;
+        const selection = parseSelection(
+            { include, fields },
+            SERVICE_STATIONS_SELECTION_TREE,
+        );
+        const result = selection
+            ? await this.serviceQuery.findOneStationsForServiceWithSelection(
+                  { serviceId },
+                  selection,
+              )
+            : await this.serviceQuery.findOneStationsForService({ serviceId });
 
         if (!result) {
             throw new NotFoundException(
-                `Service with ID "${params.serviceId}" not found.`,
+                `Service with ID "${serviceId}" not found.`,
             );
         }
 
