@@ -45,7 +45,7 @@ GET /v3/operations/calendar/:id/trips
 - 同じ資源が複数の道筋に出ても、同じ指定が効く（`startTime`・`endTime` はどちらも `fields[time]`）
 - 結合する資源で `fields` の無いものは全列を返す
 - `include` と併せたとき、結合されない資源の `fields` は 400
-- `include` が無く `fields` だけのときは今の trip-blocks と同じ: 名前のある資源を結合し、親の資源が欠けていれば 400
+- `include` が無く `fields` だけのときは今の trip-blocks と同じ: 名前のある資源を結合し、親の資源が欠けていれば 400。常に結合する関連（`required`）の資源で名前の無いものは、`alwaysKeys` だけを返す（今の trip-blocks の trip が id だけになるのと同じ）
 - 木の `columns` に無い項目は 400
 
 ### 3.3 応答
@@ -63,19 +63,22 @@ GET /v3/operations/calendar/:id/trips
 
 ```ts
 interface SelectionNode {
-    resource: string;                  // fields のキー
-    alias: string;                     // query builder の別名
-    columns: Record<string, string>;   // 応答の項目名 → エンティティのプロパティ
-    alwaysKeys: readonly string[];     // 常に返す項目（関連をつなぐ ID）
+    resource: string | null;           // fields のキー。null は fields で選べない入れ物
+    columns: Record<string, string>;   // 応答の項目名 → 元のプロパティ
+    alwaysKeys?: readonly string[];    // 常に返す項目（関連をつなぐ ID）
     relations?: Record<string, SelectionRelation>; // 応答のキー → 子
 }
 interface SelectionRelation extends SelectionNode {
-    property: string;                  // 親エンティティの関連名（leftJoin に使う）
+    property: string;                  // 親のオブジェクトのプロパティ名
+    many: boolean;                     // 配列か 1 件か
+    required?: boolean;                // include で外せない（常に結合・常に返す）
 }
 ```
 
+- 木は応答の形を表す。根は応答をまとめるだけの入れ物（`{ operation, trips }` など。`resource: null`）でもよい
 - 許可リストと親子の関係はすべてこの木から出す（ADR-0002 の `requires` は不要になる）
-- 木は各ドメインの `usecase/` に置く（今の `trip-block-fieldsets.ts` と同じ場所）
+- 木は各ドメインの `usecase/` に置く（今の `trip-block-fieldsets.ts` と同じ場所）。資源ごとの `columns` は、その資源のドメインの `usecase/*-selection-columns.ts` に置いて木どうしで共有する
+- `columns` は、今の全部入りの応答に出ている項目に限る（指定で返す項目を広げない）
 
 ### 4.2 parseSelection(query, tree) → Selection | undefined
 
@@ -83,10 +86,11 @@ interface SelectionRelation extends SelectionNode {
 - どちらも無ければ `undefined`。そのときは今の全部入りの道を通る
 - controller は `@Query()` の生の値を渡すだけ
 
-### 4.3 applySelection(qb, tree, selection)
+### 4.3 selectColumns(alias, node, selection) と各 query の結合
 
-- 選ばれた道筋だけ `leftJoin` と `addSelect`（主キー・`alwaysKeys`・指定の列）を足す
-- 絞り込みのための結合（`filterTrip` など）と `orderBy` は各 query が書く。並べ替えに使う関連が外れたときは、その query が `orderBy` を足さない
+- 応答の入れ物と SQL の別名が 1 対 1 でない口（`{ operation, trips }`・駅一覧の計算）があるので、結合そのものは各 query が `selection.paths.has('道筋')` を見て明示的に書く
+- `selectColumns` は、その別名で選ぶ列（主キー `id`・`alwaysKeys`・指定の列。指定が無ければ全列）を返す。`addSelect` に渡す
+- 絞り込みのための結合（`filterTrip` など）と `orderBy` は各 query が書く。並べ替えに使う関連は、返さないときも結合だけはして順番を保つ（`addSelect` しない）。ただし trip-blocks の時刻順は、時刻を返すときだけ（今の `fields` の動きのまま）
 
 ### 4.4 serializeSelection(models, tree, selection)
 
