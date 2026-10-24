@@ -26,6 +26,17 @@
 4. **適用の順**: PR 1 で部品と trip-blocks・運用表の trips・運行系統の駅一覧。残りの v3 の読み取りの口は PR 2・PR 3 で入れる（関連の木を持つ口は `include`・`fields`、計算した形や結合の無い口は `fields` だけ）。
 5. ADR-0002 は本 ADR で一部置き換える（`fields` の書き方は同じ。部品は `sparse-fieldsets.ts` から `selection/` に移った）。
 
+### PR 2（2026-10-24）: 計算した応答の口
+
+- 計算した DTO を返す口は、SQL を変えず、作った DTO を木に沿って削る。目撃の `from/to`（引き継いだ目撃を計算で足す）と read-model の口（運用の現在位置・つながり・次の運用の候補、目撃の時刻断面）がこれにあたる
+- read-model の口は `parseFieldsOnly` で読む。`include` は空でも 400。関連はすべて返し、`fields` に挙げた資源だけ項目を削る（挙げない資源は全項目。`fields` だけのときに required の資源を ID だけにする決まりは使わない）
+- `fields` を付けると、値が null の関連（現在位置の `prev`・`current`・`next`、つながりの `previous`・`next`、時刻断面の `latestSighting`・`expectedSighting` など）はキーごと省かれる（全部入りでは null で返る）。使う側は「無い」と「null」を同じに扱う
+- DTO を削る木では、`operationId`・`formationId` の別名は DTO の同じ名前の項目を指す。今の応答に無い項目は足さない
+- 引き継いだ目撃の `sightedAsOperation` は外せない（required で全項目を alwaysKeys）
+- trip-blocks の崩れた `fields` も、`include` と同じく 400 にした（PR 1 までは DTO の検めで 422）
+- 運用 `next-operation-candidates` の「駅が無ければ空」は、`fields` を検めてから返すよう service へ移した
+- 計算した応答の口の service は、指定の無い呼び出しの型を DTO のまま保つため overload で書いた所がある（時刻断面 4 本）
+
 ## 結果
 
 - 使う側は要る関連と列だけを取れる。結合・SELECT・組み立て・転送量がそろって減る。
