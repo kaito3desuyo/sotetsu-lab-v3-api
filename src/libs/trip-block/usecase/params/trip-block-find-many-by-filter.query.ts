@@ -17,8 +17,16 @@ export class TripBlockFindManyByFilterQuery {
     tripDirection!: number;
 
     /**
-     * 返す項目の選択 `fields[資源]=項目,項目`（docs/adr/0002-v3-sparse-fieldsets.md）。
-     * 中身の検め（許可リスト）はサービスで行う。
+     * 結合する関連の道筋 `include=trips.times,trips.tripClass`（docs/adr/0010-v3-include-and-fields.md）。
+     * 中身の検め（木）はサービスで行う。繰り返し指定した配列も受ける。
+     */
+    @IsOptional()
+    @IsString({ each: true })
+    include?: string | string[];
+
+    /**
+     * 返す項目の選択 `fields[資源]=項目,項目`（docs/adr/0010-v3-include-and-fields.md）。
+     * 中身の検め（木）はサービスで行う。
      */
     @IsOptional()
     @IsObject()

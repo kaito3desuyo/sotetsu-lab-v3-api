@@ -1,6 +1,8 @@
 import type { MockedFunction } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { parseSelection } from '../../../../core/utils/selection/parse-selection.js';
+import { TRIP_BLOCK_SELECTION_TREE } from '../../usecase/trip-block-selection.js';
 import { TripBlockModel } from '../models/trip-block.model.js';
 import { TripBlockQuery } from './trip-block.query.js';
 
@@ -22,9 +24,12 @@ function buildQueryBuilderMock(getManyResult: unknown[]) {
     return qb;
 }
 
-describe('TripBlockQuery - findManyByFilterWithFields', () => {
+describe('TripBlockQuery - findManyByFilterWithSelection', () => {
     let qb: Record<string, AnyMock>;
     let query: TripBlockQuery;
+
+    const select = (raw: { include?: unknown; fields?: unknown }) =>
+        parseSelection(raw, TRIP_BLOCK_SELECTION_TREE)!;
 
     beforeEach(async () => {
         qb = buildQueryBuilderMock([
@@ -56,15 +61,12 @@ describe('TripBlockQuery - findManyByFilterWithFields', () => {
         query = module.get(TripBlockQuery);
     });
 
-    it('指定した資源の関連だけを結合し、指定した列と主キーだけを選ぶ', async () => {
-        const fieldsets = new Map([
-            ['trip', new Set(['tripNumber'])],
-            ['time', new Set(['stationId', 'arrivalTime'])],
-        ]);
-
-        const result = await query.findManyByFilterWithFields(
+    it('fields だけ: 指定した資源の関連だけを結合し、指定した列と主キーだけを選ぶ', async () => {
+        const result = await query.findManyByFilterWithSelection(
             { calendarId: 'c1', tripDirection: 0 },
-            fieldsets,
+            select({
+                fields: { trip: 'tripNumber', time: 'stationId,arrivalTime' },
+            }),
         );
 
         expect(qb.select).toHaveBeenCalledWith(['tripBlock.id']);
@@ -85,7 +87,6 @@ describe('TripBlockQuery - findManyByFilterWithFields', () => {
             'times.stationId',
             'times.arrivalTime',
         ]);
-        // 指定の無い関連は結合しない
         expect(qb.leftJoin).not.toHaveBeenCalledWith(
             'trips.tripOperationLists',
             'tripOperationLists',
@@ -94,7 +95,6 @@ describe('TripBlockQuery - findManyByFilterWithFields', () => {
             'trips.tripClass',
             'tripClass',
         );
-        // 時刻を結合したときは既存の口と同じ時刻順
         expect(qb.orderBy).toHaveBeenCalledWith(
             'times.departureDays',
             'ASC',
@@ -114,19 +114,20 @@ describe('TripBlockQuery - findManyByFilterWithFields', () => {
         ]);
     });
 
-    it('運用の一覧・運用・種別を指定すればそれぞれ結合する', async () => {
-        const fieldsets = new Map([
-            ['trip', new Set<string>()],
-            ['tripOperationList', new Set(['operationId'])],
-            ['operation', new Set(['operationNumber'])],
-            ['tripClass', new Set(['tripClassName'])],
-        ]);
-
-        await query.findManyByFilterWithFields(
+    it('fields だけ: 運用の一覧・運用・種別を指定すればそれぞれ結合する', async () => {
+        await query.findManyByFilterWithSelection(
             { calendarId: 'c1', tripDirection: 1 },
-            fieldsets,
+            select({
+                fields: {
+                    trip: '',
+                    tripOperationList: 'operationId',
+                    operation: 'operationNumber',
+                    tripClass: 'tripClassName',
+                },
+            }),
         );
 
+        expect(qb.addSelect).toHaveBeenCalledWith(['trips.id']);
         expect(qb.leftJoin).toHaveBeenCalledWith(
             'trips.tripOperationLists',
             'tripOperationLists',
@@ -151,8 +152,55 @@ describe('TripBlockQuery - findManyByFilterWithFields', () => {
             'tripClass.id',
             'tripClass.tripClassName',
         ]);
-        // 時刻を結合しないときは時刻順の並べ替えもしない
         expect(qb.orderBy).not.toHaveBeenCalled();
+    });
+
+    it('空の include: 列車は全列で返し、ほかの関連は結合しない', async () => {
+        await query.findManyByFilterWithSelection(
+            { calendarId: 'c1', tripDirection: 0 },
+            select({ include: '' }),
+        );
+
+        expect(qb.addSelect).toHaveBeenCalledWith([
+            'trips.id',
+            'trips.serviceId',
+            'trips.tripNumber',
+            'trips.tripClassId',
+            'trips.tripName',
+            'trips.tripDirection',
+            'trips.tripBlockId',
+            'trips.depotIn',
+            'trips.depotOut',
+            'trips.calendarId',
+            'trips.extraCalendarId',
+            'trips.createdAt',
+            'trips.updatedAt',
+        ]);
+        expect(qb.leftJoin).toHaveBeenCalledTimes(1);
+        expect(qb.orderBy).not.toHaveBeenCalled();
+    });
+
+    it('include で運用を挙げれば、運用の一覧も結合する', async () => {
+        await query.findManyByFilterWithSelection(
+            { calendarId: 'c1', tripDirection: 0 },
+            select({
+                include: 'trips.tripOperationLists.operation',
+                fields: { operation: 'operationNumber' },
+            }),
+        );
+
+        expect(qb.leftJoin).toHaveBeenCalledWith(
+            'trips.tripOperationLists',
+            'tripOperationLists',
+        );
+        expect(qb.leftJoin).toHaveBeenCalledWith(
+            'tripOperationLists.operation',
+            'operation',
+        );
+        expect(qb.addSelect).toHaveBeenCalledWith([
+            'operation.id',
+            'operation.operationNumber',
+        ]);
     });
 });
 

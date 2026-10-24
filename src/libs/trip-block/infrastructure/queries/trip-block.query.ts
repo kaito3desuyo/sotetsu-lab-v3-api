@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { SparseFieldsets } from '../../../../core/utils/sparse-fieldsets.js';
+import type { Selection } from '../../../../core/utils/selection/parse-selection.js';
+import { selectColumns } from '../../../../core/utils/selection/select-columns.js';
+import { serializeSelection } from '../../../../core/utils/selection/serialize-selection.js';
 import { FindManyOptions, Repository } from 'typeorm';
 import { TripBlockDetailsDto } from '../../usecase/dtos/trip-block-details.dto.js';
-import { TripBlockSparseDto } from '../../usecase/dtos/trip-block-sparse.dto.js';
-import { TripBlockSparseDtoBuilder } from '../builders/trip-block-sparse.dto.builder.js';
+import { TRIP_BLOCK_SELECTION_TREE } from '../../usecase/trip-block-selection.js';
 import {
     TripBlockDtoBuilder,
     TripBlocksDtoBuilder,
@@ -96,25 +97,21 @@ export class TripBlockQuery {
     }
 
     /**
-     * `findManyByFilter` と同じ条件で、`fields` で指定した資源・列だけを返す
-     * （docs/adr/0002-v3-sparse-fieldsets.md）。指定の無い関連は結合しない。
+     * `findManyByFilter` と同じ条件で、`include`・`fields` で選んだ関連・列だけを返す
+     * （docs/adr/0010-v3-include-and-fields.md）。選ばれない関連は結合しない。
      * 関連を組み立てるため、結合した資源の主キーは常に選ぶ（応答には指定したときだけ出す）。
      */
-    async findManyByFilterWithFields(
+    async findManyByFilterWithSelection(
         params: { calendarId: string; tripDirection: number },
-        fieldsets: SparseFieldsets,
-    ): Promise<TripBlockSparseDto[]> {
+        selection: Selection,
+    ): Promise<Record<string, unknown>[]> {
         const { calendarId, tripDirection } = params;
-        const columns = (alias: string, resource: string): string[] => [
-            `${alias}.id`,
-            ...[...(fieldsets.get(resource) ?? [])]
-                .filter((field) => field !== 'id')
-                .map((field) => `${alias}.${field}`),
-        ];
+        const tree = TRIP_BLOCK_SELECTION_TREE;
+        const trips = tree.relations.trips;
 
         const qb = this.tripBlockRepository
             .createQueryBuilder('tripBlock')
-            .select(['tripBlock.id'])
+            .select(selectColumns('tripBlock', tree, selection))
             .innerJoin(
                 'tripBlock.trips',
                 'filterTrip',
@@ -122,30 +119,44 @@ export class TripBlockQuery {
                 { calendarId, tripDirection },
             )
             .leftJoin('tripBlock.trips', 'trips')
-            .addSelect(columns('trips', 'trip'));
+            .addSelect(selectColumns('trips', trips, selection));
 
-        if (fieldsets.has('time')) {
+        if (selection.paths.has('trips.times')) {
             qb.leftJoin('trips.times', 'times').addSelect(
-                columns('times', 'time'),
+                selectColumns('times', trips.relations.times, selection),
             );
         }
-        if (fieldsets.has('tripOperationList')) {
+        if (selection.paths.has('trips.tripOperationLists')) {
             qb.leftJoin(
                 'trips.tripOperationLists',
                 'tripOperationLists',
-            ).addSelect(columns('tripOperationLists', 'tripOperationList'));
+            ).addSelect(
+                selectColumns(
+                    'tripOperationLists',
+                    trips.relations.tripOperationLists,
+                    selection,
+                ),
+            );
         }
-        if (fieldsets.has('operation')) {
+        if (selection.paths.has('trips.tripOperationLists.operation')) {
             qb.leftJoin('tripOperationLists.operation', 'operation').addSelect(
-                columns('operation', 'operation'),
+                selectColumns(
+                    'operation',
+                    trips.relations.tripOperationLists.relations.operation,
+                    selection,
+                ),
             );
         }
-        if (fieldsets.has('tripClass')) {
+        if (selection.paths.has('trips.tripClass')) {
             qb.leftJoin('trips.tripClass', 'tripClass').addSelect(
-                columns('tripClass', 'tripClass'),
+                selectColumns(
+                    'tripClass',
+                    trips.relations.tripClass,
+                    selection,
+                ),
             );
         }
-        if (fieldsets.has('time')) {
+        if (selection.paths.has('trips.times')) {
             qb.orderBy('times.departureDays', 'ASC', 'NULLS LAST').addOrderBy(
                 'times.departureTime',
                 'ASC',
@@ -154,7 +165,9 @@ export class TripBlockQuery {
         }
 
         const models = await qb.getMany();
-        return TripBlockSparseDtoBuilder.buildFromModel(models, fieldsets);
+        return models.map((model) =>
+            serializeSelection(model, tree, selection),
+        );
     }
 
     async findOneById(params: {

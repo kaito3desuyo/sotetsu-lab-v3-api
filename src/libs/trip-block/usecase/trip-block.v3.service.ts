@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { SocketSignal } from '../../../core/modules/socket-signal/socket-signal.js';
 import { secondsOfServiceDay } from '../../../core/utils/datetime.js';
 import { UseCaseError } from '../../../core/classes/custom-error.js';
-import { parseSparseFieldsets } from '../../../core/utils/sparse-fieldsets.js';
+import { parseSelection } from '../../../core/utils/selection/parse-selection.js';
 import { NextOperationPolicy } from '../../operation/domain/next-operation-policy.domain.js';
 import { ItinerarySegmentQuery } from '../../operation/infrastructure/queries/itinerary-segment.query.js';
 import { Trips } from '../../trip/domain/trip.domain.js';
@@ -18,11 +18,7 @@ import { CreateTripBlockDto } from './dtos/create-trip-block.dto.js';
 import { DeleteTripFromTripBlockDto } from './dtos/delete-trip-from-trip-block.dto.js';
 import { ReplaceTripBlockDto } from './dtos/replace-trip-block.dto.js';
 import { TripBlockDetailsDto } from './dtos/trip-block-details.dto.js';
-import { TripBlockSparseDto } from './dtos/trip-block-sparse.dto.js';
-import {
-    TRIP_BLOCK_FIELDSET_REQUIRES,
-    TRIP_BLOCK_FIELDSET_WHITELIST,
-} from './trip-block-fieldsets.js';
+import { TRIP_BLOCK_SELECTION_TREE } from './trip-block-selection.js';
 
 interface TripLike {
     id?: string;
@@ -150,29 +146,29 @@ export class TripBlockV3Service {
     }
 
     /**
-     * `fields` が無ければ全項目、あれば許可リストで検めて指定の項目だけを返す
-     * （docs/adr/0002-v3-sparse-fieldsets.md）。
+     * `include`・`fields` が無ければ全項目、あれば木で検めて選んだ関連・列だけを返す
+     * （docs/adr/0010-v3-include-and-fields.md）。
      */
     async findManyByFilter(params: {
         calendarId: string;
         tripDirection: number;
+        include?: unknown;
         fields?: unknown;
-    }): Promise<TripBlockDetailsDto[] | TripBlockSparseDto[]> {
-        const { calendarId, tripDirection, fields } = params;
-        const fieldsets = parseSparseFieldsets(
-            fields,
-            TRIP_BLOCK_FIELDSET_WHITELIST,
-            TRIP_BLOCK_FIELDSET_REQUIRES,
+    }): Promise<TripBlockDetailsDto[] | Record<string, unknown>[]> {
+        const { calendarId, tripDirection, include, fields } = params;
+        const selection = parseSelection(
+            { include, fields },
+            TRIP_BLOCK_SELECTION_TREE,
         );
-        if (!fieldsets) {
+        if (!selection) {
             return this.tripBlockQuery.findManyByFilter({
                 calendarId,
                 tripDirection,
             });
         }
-        return this.tripBlockQuery.findManyByFilterWithFields(
+        return this.tripBlockQuery.findManyByFilterWithSelection(
             { calendarId, tripDirection },
-            fieldsets,
+            selection,
         );
     }
 
