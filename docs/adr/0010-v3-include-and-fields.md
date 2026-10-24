@@ -33,6 +33,8 @@
 - `fields` を付けると、値が null の関連（現在位置の `prev`・`current`・`next`、つながりの `previous`・`next`、時刻断面の `latestSighting`・`expectedSighting` など）はキーごと省かれる（全部入りでは null で返る）。使う側は「無い」と「null」を同じに扱う
 - DTO を削る木では、`operationId`・`formationId` の別名は DTO の同じ名前の項目を指す。今の応答に無い項目は足さない
 - 引き継いだ目撃の `sightedAsOperation` は外せない（required で全項目を alwaysKeys）
+- 目撃の `from/to` の `include=operation`・`formation` は、引き継いだ目撃にだけ効く（直接の目撃は元から運用・編成を持たない）
+- 無効化（`invalidation`）も引き継ぎの印と同じく外せない。`fields` だけのときは `operationSightingInvalidationId` だけを返す
 - trip-blocks の崩れた `fields` も、`include` と同じく 400 にした（PR 1 までは DTO の検めで 422）
 - 運用 `next-operation-candidates` の「駅が無ければ空」は、`fields` を検めてから返すよう service へ移した
 - 計算した応答の口の service は、指定の無い呼び出しの型を DTO のまま保つため overload で書いた所がある（時刻断面 4 本）
