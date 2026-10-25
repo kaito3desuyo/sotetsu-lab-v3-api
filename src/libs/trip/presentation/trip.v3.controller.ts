@@ -10,15 +10,20 @@ import { TripV3Service } from '../usecase/trip.v3.service.js';
 export class TripV3Controller {
     constructor(private readonly tripV3Service: TripV3Service) {}
 
+    /** `include`・`fields` で返す関連・列を選べる（docs/adr/0010-v3-include-and-fields.md） */
     @Get('/station/:stationId')
     async findManyByStationId(
         @Param('stationId') stationId: string,
         @Query() query: TripFindManyByStationIdQuery,
-    ): Promise<TripDetailsDto[]> {
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<TripDetailsDto[] | Record<string, unknown>[]> {
         const result = await this.tripV3Service.findManyByStationId({
             stationId,
             calendarId: query.calendarId,
             tripDirection: query.tripDirection,
+            include,
+            fields,
         });
 
         return result;
