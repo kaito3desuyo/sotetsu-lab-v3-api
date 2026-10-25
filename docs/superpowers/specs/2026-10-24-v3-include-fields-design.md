@@ -90,7 +90,7 @@ interface SelectionRelation extends SelectionNode {
 
 - 応答の入れ物と SQL の別名が 1 対 1 でない口（`{ operation, trips }`・駅一覧の計算）があるので、結合そのものは各 query が `selection.paths.has('道筋')` を見て明示的に書く
 - `selectColumns` は、その別名で選ぶ列（主キー `id`・`alwaysKeys`・指定の列。指定が無ければ全列）を返す。`addSelect` に渡す
-- 絞り込みのための結合（`filterTrip` など）と `orderBy` は各 query が書く。並べ替えに使う関連は、返さないときも結合だけはして順番を保つ（`addSelect` しない）。ただし trip-blocks の時刻順は、時刻を返すときだけ（今の `fields` の動きのまま）
+- 絞り込みのための結合（`filterTrip` など）と `orderBy` は各 query が書く。並べ替えに使う関連は、返さないときも結合だけはして順番を保つ（`addSelect` しない）。ただし trip-blocks の時刻順は、時刻を返すときだけ（今の `fields` の動きのまま）。路線の一覧も例外で、全部入りでも路線どうしの並びが決まっていないので、路線の駅を返さないときは結合しない（ADR-0010 PR 3）
 
 ### 4.4 serializeSelection(models, tree, selection)
 
