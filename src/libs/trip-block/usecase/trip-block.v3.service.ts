@@ -172,8 +172,20 @@ export class TripBlockV3Service {
         );
     }
 
-    findOneById(params: { id: string }): Promise<TripBlockDetailsDto | null> {
-        return this.tripBlockQuery.findOneById(params);
+    /** `include`・`fields` があれば選んだ関連・列だけを返す（docs/adr/0010-v3-include-and-fields.md） */
+    async findOneById(params: {
+        id: string;
+        include?: unknown;
+        fields?: unknown;
+    }): Promise<TripBlockDetailsDto | Record<string, unknown> | null> {
+        const { id, include, fields } = params;
+        const selection = parseSelection(
+            { include, fields },
+            TRIP_BLOCK_SELECTION_TREE,
+        );
+        return selection
+            ? this.tripBlockQuery.findOneByIdWithSelection({ id }, selection)
+            : this.tripBlockQuery.findOneById({ id });
     }
 
     async createManyTripBlocks(
