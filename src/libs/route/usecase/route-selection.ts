@@ -3,7 +3,10 @@ import {
     defineSelectionTree,
 } from '../../../core/utils/selection/selection-tree.js';
 import { STATION_COLUMNS } from '../../station/usecase/station-selection-columns.js';
-import { ROUTE_COLUMNS } from './route-selection-columns.js';
+import {
+    ROUTE_COLUMNS,
+    ROUTE_STATION_LIST_COLUMNS,
+} from './route-selection-columns.js';
 
 /**
  * `GET /v3/routes/:id/stations` の `include`・`fields` で選べる範囲
@@ -31,6 +34,31 @@ export const ROUTE_STATIONS_SELECTION_TREE = defineSelectionTree({
                 ...columnsOf('stationSequence', 'stationNumbering'),
             },
             alwaysKeys: ['id'],
+        },
+    },
+});
+
+/** `GET /v3/routes` の `include`・`fields` で選べる範囲（docs/adr/0010-v3-include-and-fields.md） */
+export const ROUTES_SELECTION_TREE = defineSelectionTree({
+    resource: 'route',
+    columns: ROUTE_COLUMNS,
+    alwaysKeys: ['id'],
+    relations: {
+        routeStationLists: {
+            property: 'routeStationLists',
+            many: true,
+            resource: 'routeStationList',
+            columns: ROUTE_STATION_LIST_COLUMNS,
+            alwaysKeys: ['id'],
+            relations: {
+                station: {
+                    property: 'station',
+                    many: false,
+                    resource: 'station',
+                    columns: STATION_COLUMNS,
+                    alwaysKeys: ['id'],
+                },
+            },
         },
     },
 });

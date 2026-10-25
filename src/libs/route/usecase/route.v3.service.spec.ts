@@ -87,3 +87,42 @@ describe('RouteV3Service - 駅一覧の include・fields', () => {
         ).rejects.toThrow(NotFoundException);
     });
 });
+
+describe('RouteV3Service - 一覧の include・fields', () => {
+    const query = {
+        findOneWithStations: vi.fn(),
+        findManyByServiceName: vi.fn().mockResolvedValue([]),
+        findManyByServiceNameWithSelection: vi.fn().mockResolvedValue([]),
+    };
+    const service = new RouteV3Service(query as unknown as RouteQuery);
+
+    beforeEach(() => vi.clearAllMocks());
+
+    it('指定が無ければ今の取得', async () => {
+        await service.findMany({ serviceName: '相鉄線' });
+        expect(query.findManyByServiceName).toHaveBeenCalledWith({
+            serviceName: '相鉄線',
+        });
+        expect(query.findManyByServiceNameWithSelection).not.toHaveBeenCalled();
+    });
+
+    it('指定があれば選択の取得', async () => {
+        await service.findMany({ serviceName: '相鉄線', include: '' });
+        expect(query.findManyByServiceNameWithSelection).toHaveBeenCalledWith(
+            { serviceName: '相鉄線' },
+            { paths: new Set(), fields: new Map() },
+        );
+    });
+
+    it('崩れた指定は 400 で、query を呼ばない', async () => {
+        await expect(
+            service.findMany({ include: 'operatingSystems' }),
+        ).rejects.toThrow(
+            new BadRequestException(
+                'include に指定できない道筋: operatingSystems',
+            ),
+        );
+        expect(query.findManyByServiceName).not.toHaveBeenCalled();
+        expect(query.findManyByServiceNameWithSelection).not.toHaveBeenCalled();
+    });
+});

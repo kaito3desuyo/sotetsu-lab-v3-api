@@ -4,14 +4,34 @@ import { serializeSelection } from '../../../core/utils/selection/serialize-sele
 import { RouteQuery } from '../infrastructure/queries/route.query.js';
 import { RouteDetailsDto } from './dtos/route-details.dto.js';
 import { RouteStationsDto } from './dtos/route-stations.dto.js';
-import { ROUTE_STATIONS_SELECTION_TREE } from './route-selection.js';
+import {
+    ROUTE_STATIONS_SELECTION_TREE,
+    ROUTES_SELECTION_TREE,
+} from './route-selection.js';
 
 @Injectable()
 export class RouteV3Service {
     constructor(private readonly routeQuery: RouteQuery) {}
 
-    findMany(params?: { serviceName?: string }): Promise<RouteDetailsDto[]> {
-        return this.routeQuery.findManyByServiceName(params);
+    /** `include`・`fields` があれば選んだ関連・列だけを返す（docs/adr/0010-v3-include-and-fields.md） */
+    async findMany(
+        params: {
+            serviceName?: string;
+            include?: unknown;
+            fields?: unknown;
+        } = {},
+    ): Promise<RouteDetailsDto[] | Record<string, unknown>[]> {
+        const { serviceName, include, fields } = params;
+        const selection = parseSelection(
+            { include, fields },
+            ROUTES_SELECTION_TREE,
+        );
+        return selection
+            ? this.routeQuery.findManyByServiceNameWithSelection(
+                  { serviceName },
+                  selection,
+              )
+            : this.routeQuery.findManyByServiceName({ serviceName });
     }
 
     /** `include`・`fields` があれば選んだ関連・列だけを返す（docs/adr/0010-v3-include-and-fields.md） */
