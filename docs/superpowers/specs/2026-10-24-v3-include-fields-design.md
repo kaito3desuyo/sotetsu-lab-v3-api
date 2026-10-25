@@ -104,9 +104,11 @@ interface SelectionRelation extends SelectionNode {
 |---|---|---|
 | 関連の木を持つ | `include`・`fields` | trip-blocks（一覧・`:id`）、operations（`calendar/:id/trips`・`from/to`・`:id/trips`）、operation-sightings（`from/to`）、formations（2 本）、services（`:id/stations`・`:id/agencies`・`:id/routes`）、routes（一覧・`:id/stations`）、trips（`station/:id`） |
 | read-model（計算した形） | `fields` だけ（DTO を木に沿って削る） | operations（`current-positions`・`:id/current-position`・`itinerary-links`・`next-operation-candidates`）、operation-sightings（`time-cross-section/*` の 4 本） |
-| 結合なし | `fields` だけ | calendars（3 本）、calendar-dates、agencies、trip-classes、stations、services（一覧）、operations（`groups`・`calendar/:id`） |
+| 結合なし | `fields` だけ | calendars（3 本）、calendar-dates、agencies、trip-classes、stations、services（一覧）、operations（`calendar/:id`） |
 
 read-model と結合なしの口は `include` を 400 にする。どの口がどの種類かは実装時に query を読んで確定し、表と違えば plan で直す。
+
+`operations/groups` は DB を読まない決まった表（項目 2 つ）なので対象から外した（PR 3 で確定。ADR-0010）。
 
 ### 4.6 全部入りの道は触らない
 

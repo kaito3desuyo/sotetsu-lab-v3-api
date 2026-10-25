@@ -39,6 +39,15 @@
 - 運用 `next-operation-candidates` の「駅が無ければ空」は、`fields` を検めてから返すよう service へ移した
 - 計算した応答の口の service は、指定の無い呼び出しの型を DTO のまま保つため overload で書いた所がある（時刻断面 4 本）
 
+### PR 3（2026-10-25）: 残りの口
+
+- 重い口（路線の一覧・駅別の列車・列車ブロック 1 件）は PR 1 と同じく SQL の列と結合を絞る。駅別の列車は、その駅の時刻での絞り込みと並べ替えの結合を常にする（返さないときも並びは今と同じ）
+- 列車ブロック 1 件は一覧と同じ木を使う。根の列車ブロックの列は `id` だけなので、指定があるときは `createdAt`・`updatedAt` を返さない
+- 路線の一覧は、路線の駅を結合するときだけ駅の並びで並べる（全部入りも路線の並びは指定していない）
+- 路線や事業者に運行系統・路線の駅の項目を足して作る口（`routes/:id/stations`・`services/:id/agencies`・`services/:id/routes`）は、SQL を変えず作った DTO を削る。`include` で `route`・`service` を外せる。足された項目（駅の `stationSequence`・`stationNumbering`、路線の `sequence`・`startRouteStationListId`・`endRouteStationListId`）は、その口の木の中でだけ `fields[station]`・`fields[route]` で選べる
+- 結合の無い口（ダイヤ 3 本・ダイヤの例外日・事業者・種別・駅・運行系統の一覧・ダイヤ内の運用）は `parseFieldsOnly` で読み、作った DTO を削る。どれもマスタで小さく、SQL を絞っても待ちは変わらない
+- `operations/groups` は対象から外した。DB を読まない決まった表（372B・項目 2 つ）で、列を選んでも得るものが無い
+
 ## 結果
 
 - 使う側は要る関連と列だけを取れる。結合・SELECT・組み立て・転送量がそろって減る。
