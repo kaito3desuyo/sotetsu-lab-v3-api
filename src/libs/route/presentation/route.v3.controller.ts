@@ -22,13 +22,18 @@ export class RouteV3Controller {
         return result;
     }
 
+    /** `include`・`fields` で返す関連・列を選べる（docs/adr/0010-v3-include-and-fields.md） */
     @Get('/:id/stations')
     @CacheControl(CACHE_CONTROL.MASTER)
     async findOneWithStations(
         @Param('id') routeId: string,
-    ): Promise<RouteStationsDto> {
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<RouteStationsDto | Record<string, unknown>> {
         const result = await this.routeV3Service.findOneWithStations({
             routeId,
+            include,
+            fields,
         });
 
         return result;

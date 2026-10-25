@@ -123,3 +123,96 @@ describe('ServiceV3Service - 一覧の fields', () => {
         expect(query.findManyByServiceName).not.toHaveBeenCalled();
     });
 });
+
+describe('ServiceV3Service - 事業者・路線の include・fields', () => {
+    const query = {
+        findOneWithAgencies: vi.fn(),
+        findOneWithRoutes: vi.fn(),
+    };
+    const service = new ServiceV3Service(query as unknown as ServiceQuery);
+    const serviceRow = {
+        id: 's1',
+        serviceName: '相鉄線',
+        serviceDescription: null,
+    };
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        query.findOneWithAgencies.mockResolvedValue({
+            service: serviceRow,
+            agencies: [{ id: 'a1', agencyName: '相鉄', agencyUrl: null }],
+        });
+        query.findOneWithRoutes.mockResolvedValue({
+            service: serviceRow,
+            routes: [
+                {
+                    id: 'r1',
+                    routeName: '本線',
+                    sequence: 1,
+                    startRouteStationListId: 'rsl1',
+                },
+            ],
+        });
+    });
+
+    it('事業者: 指定が無ければ今の応答をそのまま返す', async () => {
+        const result = await service.findOneWithAgencies({ serviceId: 's1' });
+        expect(result).toEqual({
+            service: serviceRow,
+            agencies: [{ id: 'a1', agencyName: '相鉄', agencyUrl: null }],
+        });
+        expect(query.findOneWithAgencies).toHaveBeenCalledWith({
+            serviceId: 's1',
+        });
+    });
+
+    it('事業者: include= なら運行系統を出さない', async () => {
+        await expect(
+            service.findOneWithAgencies({
+                serviceId: 's1',
+                include: '',
+                fields: { agency: 'agencyName' },
+            }),
+        ).resolves.toEqual({ agencies: [{ id: 'a1', agencyName: '相鉄' }] });
+    });
+
+    it('事業者: fields[service] だけなら、外せない事業者は id だけ', async () => {
+        await expect(
+            service.findOneWithAgencies({
+                serviceId: 's1',
+                fields: { service: 'serviceName' },
+            }),
+        ).resolves.toEqual({
+            service: { id: 's1', serviceName: '相鉄線' },
+            agencies: [{ id: 'a1' }],
+        });
+    });
+
+    it('路線: fields[route] で運行系統の並びも選べる', async () => {
+        await expect(
+            service.findOneWithRoutes({
+                serviceId: 's1',
+                include: '',
+                fields: { route: 'routeName,sequence' },
+            }),
+        ).resolves.toEqual({
+            routes: [{ id: 'r1', routeName: '本線', sequence: 1 }],
+        });
+    });
+
+    it('路線: 崩れた include は 400 で、query を呼ばない', async () => {
+        await expect(
+            service.findOneWithRoutes({ serviceId: 's1', include: 'agencies' }),
+        ).rejects.toThrow(
+            new BadRequestException('include に指定できない道筋: agencies'),
+        );
+        expect(query.findOneWithRoutes).not.toHaveBeenCalled();
+    });
+
+    it('路線: 見つからなければ指定があっても 404', async () => {
+        query.findOneWithRoutes.mockResolvedValue(null);
+        await expect(
+            service.findOneWithRoutes({ serviceId: 'x', include: '' }),
+        ).rejects.toThrow(NotFoundException);
+    });
+});
