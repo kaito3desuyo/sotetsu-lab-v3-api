@@ -17,3 +17,14 @@ export const CALENDAR_COLUMNS = columnsOf(
     'createdAt',
     'updatedAt',
 );
+
+/** `fields[calendarDate]` で選べる列 */
+export const CALENDAR_DATE_COLUMNS = columnsOf(
+    'id',
+    'calendarId',
+    'date',
+    'exceptionType',
+    'memo',
+    'createdAt',
+    'updatedAt',
+);

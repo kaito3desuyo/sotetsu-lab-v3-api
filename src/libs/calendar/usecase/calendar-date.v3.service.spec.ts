@@ -1,4 +1,5 @@
 import type { Mock } from 'vitest';
+import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CalendarDateCommand } from '../infrastructure/command/calendar-date.command.js';
 import { CalendarDateQuery } from '../infrastructure/queries/calendar-date.query.js';
@@ -61,5 +62,26 @@ describe('CalendarDateV3Service', () => {
         await service.deleteOneById({ id: 'target-id' });
 
         expect(deleteOneById).toHaveBeenCalledWith({ id: 'target-id' });
+    });
+
+    it('findMany は fields[calendarDate] の項目と id だけを返す', async () => {
+        findMany.mockResolvedValue([
+            { id: 'a', date: '2026-11-03', exceptionType: 1, memo: null },
+        ]);
+
+        const result = await service.findMany({
+            calendarId: 'calendar-1',
+            fields: { calendarDate: 'date,memo' },
+        });
+
+        expect(findMany).toHaveBeenCalledWith({ calendarId: 'calendar-1' });
+        expect(result).toEqual([{ id: 'a', date: '2026-11-03' }]);
+    });
+
+    it('findMany は include を 400 にし、query を呼ばない', async () => {
+        await expect(service.findMany({ include: '' })).rejects.toThrow(
+            new BadRequestException('この口は include を指定できない'),
+        );
+        expect(findMany).not.toHaveBeenCalled();
     });
 });
