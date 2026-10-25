@@ -91,3 +91,35 @@ describe('ServiceV3Service.findOneStations', () => {
         ).not.toHaveBeenCalled();
     });
 });
+
+describe('ServiceV3Service - 一覧の fields', () => {
+    const query = { findManyByServiceName: vi.fn() };
+    const service = new ServiceV3Service(query as unknown as ServiceQuery);
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        query.findManyByServiceName.mockResolvedValue([
+            { id: 's1', serviceName: '相鉄線', serviceDescription: null },
+        ]);
+    });
+
+    it('指定が無ければ今の取得をそのまま返す', async () => {
+        await service.findMany({ serviceName: '相鉄線' });
+        expect(query.findManyByServiceName).toHaveBeenCalledWith({
+            serviceName: '相鉄線',
+        });
+    });
+
+    it('fields[service] の項目と id だけを返す', async () => {
+        await expect(
+            service.findMany({ fields: { service: 'serviceName' } }),
+        ).resolves.toEqual([{ id: 's1', serviceName: '相鉄線' }]);
+    });
+
+    it('include は 400 で、query を呼ばない', async () => {
+        await expect(service.findMany({ include: '' })).rejects.toThrow(
+            new BadRequestException('この口は include を指定できない'),
+        );
+        expect(query.findManyByServiceName).not.toHaveBeenCalled();
+    });
+});

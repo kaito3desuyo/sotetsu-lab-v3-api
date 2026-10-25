@@ -14,12 +14,19 @@ import { ServiceV3Service } from '../usecase/service.v3.service.js';
 export class ServiceV3Controller {
     constructor(private readonly serviceV3Service: ServiceV3Service) {}
 
+    /** `fields` で返す列を選べる（docs/adr/0010-v3-include-and-fields.md） */
     @Get('/')
     @CacheControl(CACHE_CONTROL.MASTER)
     async findMany(
         @Query('serviceName') serviceName?: string,
-    ): Promise<ServiceDetailsDto[]> {
-        const result = await this.serviceV3Service.findMany({ serviceName });
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<ServiceDetailsDto[] | Record<string, unknown>[]> {
+        const result = await this.serviceV3Service.findMany({
+            serviceName,
+            include,
+            fields,
+        });
 
         return result;
     }

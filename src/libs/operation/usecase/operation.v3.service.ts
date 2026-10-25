@@ -25,6 +25,7 @@ import {
     OPERATION_ITINERARY_LINK_SELECTION_TREE,
 } from './operation-read-model-selection.js';
 import { OPERATION_WITH_TRIPS_SELECTION_TREE } from './operation-with-trips-selection.js';
+import { OPERATIONS_BY_CALENDAR_SELECTION_TREE } from './operations-by-calendar-selection.js';
 import { OPERATIONS_BY_PERIOD_SELECTION_TREE } from './operations-by-period-selection.js';
 
 @Injectable()
@@ -38,14 +39,20 @@ export class OperationV3Service {
         return getOperationGroups();
     }
 
-    findManyByCalendarId(params: {
+    /** `fields` があれば選んだ列だけを返す（docs/adr/0010-v3-include-and-fields.md） */
+    async findManyByCalendarId(params: {
         calendarId: string;
-    }): Promise<OperationDetailsDto[]> {
-        const { calendarId } = params;
-
-        return this.operationQuery.findManyByCalendarId({
+        include?: unknown;
+        fields?: unknown;
+    }): Promise<OperationDetailsDto[] | Record<string, unknown>[]> {
+        const { calendarId, include, fields } = params;
+        const tree = OPERATIONS_BY_CALENDAR_SELECTION_TREE;
+        const selection = parseFieldsOnly({ include, fields }, tree);
+        const result = await this.operationQuery.findManyByCalendarId({
             calendarId,
         });
+        if (!selection) return result;
+        return result.map((o) => serializeSelection(o, tree, selection));
     }
 
     /** `include`・`fields` があれば選んだ関連・列だけを返す（docs/adr/0010-v3-include-and-fields.md） */
