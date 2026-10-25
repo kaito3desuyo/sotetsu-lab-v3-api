@@ -12,23 +12,35 @@ import { RouteV3Service } from '../usecase/route.v3.service.js';
 export class RouteV3Controller {
     constructor(private readonly routeV3Service: RouteV3Service) {}
 
+    /** `include`・`fields` で返す関連・列を選べる（docs/adr/0010-v3-include-and-fields.md） */
     @Get('/')
     @CacheControl(CACHE_CONTROL.MASTER)
     async findMany(
         @Query('serviceName') serviceName?: string,
-    ): Promise<RouteDetailsDto[]> {
-        const result = await this.routeV3Service.findMany({ serviceName });
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<RouteDetailsDto[] | Record<string, unknown>[]> {
+        const result = await this.routeV3Service.findMany({
+            serviceName,
+            include,
+            fields,
+        });
 
         return result;
     }
 
+    /** `include`・`fields` で返す関連・列を選べる（docs/adr/0010-v3-include-and-fields.md） */
     @Get('/:id/stations')
     @CacheControl(CACHE_CONTROL.MASTER)
     async findOneWithStations(
         @Param('id') routeId: string,
-    ): Promise<RouteStationsDto> {
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<RouteStationsDto | Record<string, unknown>> {
         const result = await this.routeV3Service.findOneWithStations({
             routeId,
+            include,
+            fields,
         });
 
         return result;

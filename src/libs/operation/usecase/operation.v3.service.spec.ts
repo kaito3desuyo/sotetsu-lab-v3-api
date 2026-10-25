@@ -65,6 +65,44 @@ describe('OperationV3Service', () => {
             ).toHaveBeenCalledWith({ calendarId: 'cal-1' });
             expect(result).toBe(expected);
         });
+
+        it('fields[operation] の項目と id だけを返す。operationId は挙げたときだけ', async () => {
+            mockOperationQuery.findManyByCalendarId.mockResolvedValue([
+                {
+                    id: 'o1',
+                    operationId: 'o1',
+                    calendarId: 'c1',
+                    operationNumber: '11',
+                },
+            ]);
+
+            await expect(
+                service.findManyByCalendarId({
+                    calendarId: 'c1',
+                    fields: { operation: 'operationNumber' },
+                }),
+            ).resolves.toEqual([{ id: 'o1', operationNumber: '11' }]);
+            await expect(
+                service.findManyByCalendarId({
+                    calendarId: 'c1',
+                    fields: { operation: 'operationId' },
+                }),
+            ).resolves.toEqual([{ id: 'o1', operationId: 'o1' }]);
+            expect(
+                mockOperationQuery.findManyByCalendarId,
+            ).toHaveBeenCalledWith({ calendarId: 'c1' });
+        });
+
+        it('include は 400 で、query を呼ばない', async () => {
+            await expect(
+                service.findManyByCalendarId({ calendarId: 'c1', include: '' }),
+            ).rejects.toThrow(
+                new BadRequestException('この口は include を指定できない'),
+            );
+            expect(
+                mockOperationQuery.findManyByCalendarId,
+            ).not.toHaveBeenCalled();
+        });
     });
 
     describe('findManyBySpecificPeriod', () => {

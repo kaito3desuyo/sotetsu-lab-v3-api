@@ -14,12 +14,19 @@ import { ServiceV3Service } from '../usecase/service.v3.service.js';
 export class ServiceV3Controller {
     constructor(private readonly serviceV3Service: ServiceV3Service) {}
 
+    /** `fields` で返す列を選べる（docs/adr/0010-v3-include-and-fields.md） */
     @Get('/')
     @CacheControl(CACHE_CONTROL.MASTER)
     async findMany(
         @Query('serviceName') serviceName?: string,
-    ): Promise<ServiceDetailsDto[]> {
-        const result = await this.serviceV3Service.findMany({ serviceName });
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<ServiceDetailsDto[] | Record<string, unknown>[]> {
+        const result = await this.serviceV3Service.findMany({
+            serviceName,
+            include,
+            fields,
+        });
 
         return result;
     }
@@ -41,25 +48,35 @@ export class ServiceV3Controller {
         return result;
     }
 
+    /** `include`・`fields` で返す関連・列を選べる（docs/adr/0010-v3-include-and-fields.md） */
     @Get('/:id/agencies')
     @CacheControl(CACHE_CONTROL.MASTER)
     async findOneServiceWithAgencies(
         @Param('id') serviceId: string,
-    ): Promise<ServiceAgenciesDto> {
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<ServiceAgenciesDto | Record<string, unknown>> {
         const result = await this.serviceV3Service.findOneWithAgencies({
             serviceId,
+            include,
+            fields,
         });
 
         return result;
     }
 
+    /** `include`・`fields` で返す関連・列を選べる（docs/adr/0010-v3-include-and-fields.md） */
     @Get('/:id/routes')
     @CacheControl(CACHE_CONTROL.MASTER)
     async findOneServiceWithRoutes(
         @Param('id') serviceId: string,
-    ): Promise<ServiceRoutesDto> {
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<ServiceRoutesDto | Record<string, unknown>> {
         const result = await this.serviceV3Service.findOneWithRoutes({
             serviceId,
+            include,
+            fields,
         });
 
         return result;

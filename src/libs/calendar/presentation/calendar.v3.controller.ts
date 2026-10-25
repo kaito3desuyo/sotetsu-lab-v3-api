@@ -11,32 +11,53 @@ import { CalendarDetailsDto } from '../usecase/dtos/calendar-details.dto.js';
 export class CalendarV3Controller {
     constructor(private readonly calendarV3Service: CalendarV3Service) {}
 
+    /** `fields` で返す列を選べる（docs/adr/0010-v3-include-and-fields.md） */
     @Get('/')
     @CacheControl(CACHE_CONTROL.MASTER)
     async findMany(
         @Query('serviceName') serviceName?: string,
-    ): Promise<CalendarDetailsDto[]> {
-        const result = await this.calendarV3Service.findMany({ serviceName });
-
-        return result;
-    }
-
-    @Get('/as/of/:date')
-    @CacheControl(CACHE_CONTROL.MASTER)
-    async findOneBySpecificDate(
-        @Param('date') date: string,
-    ): Promise<CalendarDetailsDto | undefined> {
-        const result = await this.calendarV3Service.findOneBySpecificDate({
-            date,
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<CalendarDetailsDto[] | Record<string, unknown>[]> {
+        const result = await this.calendarV3Service.findMany({
+            serviceName,
+            include,
+            fields,
         });
 
         return result;
     }
 
+    /** `fields` で返す列を選べる（docs/adr/0010-v3-include-and-fields.md） */
+    @Get('/as/of/:date')
+    @CacheControl(CACHE_CONTROL.MASTER)
+    async findOneBySpecificDate(
+        @Param('date') date: string,
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<CalendarDetailsDto | Record<string, unknown> | undefined> {
+        const result = await this.calendarV3Service.findOneBySpecificDate({
+            date,
+            include,
+            fields,
+        });
+
+        return result;
+    }
+
+    /** `fields` で返す列を選べる（docs/adr/0010-v3-include-and-fields.md） */
     @Get('/:id')
     @CacheControl(CACHE_CONTROL.MASTER)
-    async findOne(@Param('id') id: string): Promise<CalendarDetailsDto | null> {
-        const result = await this.calendarV3Service.findOne({ id });
+    async findOne(
+        @Param('id') id: string,
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<CalendarDetailsDto | Record<string, unknown> | null> {
+        const result = await this.calendarV3Service.findOne({
+            id,
+            include,
+            fields,
+        });
 
         return result;
     }

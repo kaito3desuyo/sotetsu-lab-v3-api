@@ -47,12 +47,19 @@ export class TripBlockV3Controller {
         return result;
     }
 
+    /** `include`・`fields` で返す関連・列を選べる（docs/adr/0010-v3-include-and-fields.md） */
     @Get('/:id')
     @CacheControl(CACHE_CONTROL.TIMETABLE)
     async findOneById(
         @Param('id') id: string,
-    ): Promise<TripBlockDetailsDto | null> {
-        const result = await this.tripBlockV3Service.findOneById({ id });
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<TripBlockDetailsDto | Record<string, unknown> | null> {
+        const result = await this.tripBlockV3Service.findOneById({
+            id,
+            include,
+            fields,
+        });
 
         return result;
     }

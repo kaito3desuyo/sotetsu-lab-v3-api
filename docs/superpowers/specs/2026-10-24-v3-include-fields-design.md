@@ -90,7 +90,7 @@ interface SelectionRelation extends SelectionNode {
 
 - 応答の入れ物と SQL の別名が 1 対 1 でない口（`{ operation, trips }`・駅一覧の計算）があるので、結合そのものは各 query が `selection.paths.has('道筋')` を見て明示的に書く
 - `selectColumns` は、その別名で選ぶ列（主キー `id`・`alwaysKeys`・指定の列。指定が無ければ全列）を返す。`addSelect` に渡す
-- 絞り込みのための結合（`filterTrip` など）と `orderBy` は各 query が書く。並べ替えに使う関連は、返さないときも結合だけはして順番を保つ（`addSelect` しない）。ただし trip-blocks の時刻順は、時刻を返すときだけ（今の `fields` の動きのまま）
+- 絞り込みのための結合（`filterTrip` など）と `orderBy` は各 query が書く。並べ替えに使う関連は、返さないときも結合だけはして順番を保つ（`addSelect` しない）。ただし trip-blocks の時刻順は、時刻を返すときだけ（今の `fields` の動きのまま）。路線の一覧も例外で、全部入りでも路線どうしの並びが決まっていないので、路線の駅を返さないときは結合しない（ADR-0010 PR 3）
 
 ### 4.4 serializeSelection(models, tree, selection)
 
@@ -104,9 +104,11 @@ interface SelectionRelation extends SelectionNode {
 |---|---|---|
 | 関連の木を持つ | `include`・`fields` | trip-blocks（一覧・`:id`）、operations（`calendar/:id/trips`・`from/to`・`:id/trips`）、operation-sightings（`from/to`）、formations（2 本）、services（`:id/stations`・`:id/agencies`・`:id/routes`）、routes（一覧・`:id/stations`）、trips（`station/:id`） |
 | read-model（計算した形） | `fields` だけ（DTO を木に沿って削る） | operations（`current-positions`・`:id/current-position`・`itinerary-links`・`next-operation-candidates`）、operation-sightings（`time-cross-section/*` の 4 本） |
-| 結合なし | `fields` だけ | calendars（3 本）、calendar-dates、agencies、trip-classes、stations、services（一覧）、operations（`groups`・`calendar/:id`） |
+| 結合なし | `fields` だけ | calendars（3 本）、calendar-dates、agencies、trip-classes、stations、services（一覧）、operations（`calendar/:id`） |
 
 read-model と結合なしの口は `include` を 400 にする。どの口がどの種類かは実装時に query を読んで確定し、表と違えば plan で直す。
+
+`operations/groups` は DB を読まない決まった表（項目 2 つ）なので対象から外した（PR 3 で確定。ADR-0010）。
 
 ### 4.6 全部入りの道は触らない
 

@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import type { Selection } from '../../../../core/utils/selection/parse-selection.js';
 import { selectColumns } from '../../../../core/utils/selection/select-columns.js';
 import { serializeSelection } from '../../../../core/utils/selection/serialize-selection.js';
-import { FindManyOptions, Repository } from 'typeorm';
+import { FindManyOptions, Repository, SelectQueryBuilder } from 'typeorm';
 import { TripBlockDetailsDto } from '../../usecase/dtos/trip-block-details.dto.js';
 import { TRIP_BLOCK_SELECTION_TREE } from '../../usecase/trip-block-selection.js';
 import {
@@ -107,7 +107,6 @@ export class TripBlockQuery {
     ): Promise<Record<string, unknown>[]> {
         const { calendarId, tripDirection } = params;
         const tree = TRIP_BLOCK_SELECTION_TREE;
-        const trips = tree.relations.trips;
 
         const qb = this.tripBlockRepository
             .createQueryBuilder('tripBlock')
@@ -119,7 +118,64 @@ export class TripBlockQuery {
                 { calendarId, tripDirection },
             )
             .leftJoin('tripBlock.trips', 'trips')
-            .addSelect(selectColumns('trips', trips, selection));
+            .addSelect(selectColumns('trips', tree.relations.trips, selection));
+        this.#joinTripRelations(qb, selection);
+
+        const models = await qb.getMany();
+        return models.map((model) =>
+            serializeSelection(model, tree, selection),
+        );
+    }
+
+    async findOneById(params: {
+        id: string;
+    }): Promise<TripBlockDetailsDto | null> {
+        const { id } = params;
+        const model = await this.tripBlockRepository
+            .createQueryBuilder('tripBlock')
+            .select('tripBlock')
+            .leftJoinAndSelect('tripBlock.trips', 'trips')
+            .leftJoinAndSelect('trips.times', 'times')
+            .leftJoinAndSelect('trips.tripOperationLists', 'tripOperationLists')
+            .leftJoinAndSelect('tripOperationLists.operation', 'operation')
+            .leftJoinAndSelect('trips.tripClass', 'tripClass')
+            .where('tripBlock.id = :id', { id })
+            .orderBy('times.departureDays', 'ASC', 'NULLS LAST')
+            .addOrderBy('times.departureTime', 'ASC', 'NULLS LAST')
+            .getOne();
+        if (!model) return null;
+        return TripBlockDtoBuilder.buildFromModel(model);
+    }
+
+    /**
+     * `findOneById` の、`include`・`fields` で選んだ関連・列だけを返す版
+     * （docs/adr/0010-v3-include-and-fields.md）。一覧と同じ木を使う。
+     */
+    async findOneByIdWithSelection(
+        params: { id: string },
+        selection: Selection,
+    ): Promise<Record<string, unknown> | null> {
+        const { id } = params;
+        const tree = TRIP_BLOCK_SELECTION_TREE;
+
+        const qb = this.tripBlockRepository
+            .createQueryBuilder('tripBlock')
+            .select(selectColumns('tripBlock', tree, selection))
+            .leftJoin('tripBlock.trips', 'trips')
+            .addSelect(selectColumns('trips', tree.relations.trips, selection))
+            .where('tripBlock.id = :id', { id });
+        this.#joinTripRelations(qb, selection);
+
+        const model = await qb.getOne();
+        return model ? serializeSelection(model, tree, selection) : null;
+    }
+
+    /** 列車の下の関連のうち選ばれたものを結合する。時刻を返すときだけ時刻順に並べる */
+    #joinTripRelations(
+        qb: SelectQueryBuilder<TripBlockModel>,
+        selection: Selection,
+    ): void {
+        const trips = TRIP_BLOCK_SELECTION_TREE.relations.trips;
 
         if (selection.paths.has('trips.times')) {
             qb.leftJoin('trips.times', 'times').addSelect(
@@ -163,30 +219,5 @@ export class TripBlockQuery {
                 'NULLS LAST',
             );
         }
-
-        const models = await qb.getMany();
-        return models.map((model) =>
-            serializeSelection(model, tree, selection),
-        );
-    }
-
-    async findOneById(params: {
-        id: string;
-    }): Promise<TripBlockDetailsDto | null> {
-        const { id } = params;
-        const model = await this.tripBlockRepository
-            .createQueryBuilder('tripBlock')
-            .select('tripBlock')
-            .leftJoinAndSelect('tripBlock.trips', 'trips')
-            .leftJoinAndSelect('trips.times', 'times')
-            .leftJoinAndSelect('trips.tripOperationLists', 'tripOperationLists')
-            .leftJoinAndSelect('tripOperationLists.operation', 'operation')
-            .leftJoinAndSelect('trips.tripClass', 'tripClass')
-            .where('tripBlock.id = :id', { id })
-            .orderBy('times.departureDays', 'ASC', 'NULLS LAST')
-            .addOrderBy('times.departureTime', 'ASC', 'NULLS LAST')
-            .getOne();
-        if (!model) return null;
-        return TripBlockDtoBuilder.buildFromModel(model);
     }
 }

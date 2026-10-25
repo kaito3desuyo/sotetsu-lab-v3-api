@@ -17,10 +17,12 @@ function buildQueryBuilderMock(getManyResult: unknown[]) {
         'leftJoin',
         'orderBy',
         'addOrderBy',
+        'where',
     ]) {
         qb[method] = vi.fn().mockReturnValue(qb);
     }
     qb.getMany = vi.fn().mockResolvedValue(getManyResult);
+    qb.getOne = vi.fn().mockResolvedValue(getManyResult[0] ?? null);
     return qb;
 }
 
@@ -201,6 +203,105 @@ describe('TripBlockQuery - findManyByFilterWithSelection', () => {
             'operation.id',
             'operation.operationNumber',
         ]);
+    });
+});
+
+describe('TripBlockQuery - findOneByIdWithSelection', () => {
+    let qb: Record<string, AnyMock>;
+    let query: TripBlockQuery;
+
+    const select = (raw: { include?: unknown; fields?: unknown }) =>
+        parseSelection(raw, TRIP_BLOCK_SELECTION_TREE)!;
+
+    beforeEach(async () => {
+        qb = buildQueryBuilderMock([
+            {
+                id: 'b1',
+                trips: [
+                    {
+                        id: 't1',
+                        tripNumber: '1001',
+                        times: [{ id: 'tm1', departureTime: '05:00:00' }],
+                        tripClass: { id: 'k1', tripClassName: '各停' },
+                    },
+                ],
+            },
+        ]);
+        const module: TestingModule = await Test.createTestingModule({
+            providers: [
+                TripBlockQuery,
+                {
+                    provide: getRepositoryToken(TripBlockModel),
+                    useValue: { createQueryBuilder: () => qb },
+                },
+            ],
+        }).compile();
+        query = module.get(TripBlockQuery);
+    });
+
+    it('id で絞り、列車だけなら時刻を結合も並べ替えもしない', async () => {
+        const result = await query.findOneByIdWithSelection(
+            { id: 'b1' },
+            select({ include: '', fields: { trip: 'tripNumber' } }),
+        );
+
+        expect(qb.where).toHaveBeenCalledWith('tripBlock.id = :id', {
+            id: 'b1',
+        });
+        expect(qb.innerJoin).not.toHaveBeenCalled();
+        expect(qb.leftJoin).toHaveBeenCalledWith('tripBlock.trips', 'trips');
+        expect(qb.leftJoin).not.toHaveBeenCalledWith('trips.times', 'times');
+        expect(qb.orderBy).not.toHaveBeenCalled();
+        expect(result).toEqual({
+            id: 'b1',
+            trips: [{ id: 't1', tripNumber: '1001' }],
+        });
+    });
+
+    it('include=trips.times,trips.tripClass なら結合し、時刻で並べる', async () => {
+        const result = await query.findOneByIdWithSelection(
+            { id: 'b1' },
+            select({
+                include: 'trips.times,trips.tripClass',
+                fields: {
+                    trip: 'tripNumber',
+                    time: 'departureTime',
+                    tripClass: 'tripClassName',
+                },
+            }),
+        );
+
+        expect(qb.leftJoin).toHaveBeenCalledWith('trips.times', 'times');
+        expect(qb.leftJoin).toHaveBeenCalledWith(
+            'trips.tripClass',
+            'tripClass',
+        );
+        expect(qb.orderBy).toHaveBeenCalledWith(
+            'times.departureDays',
+            'ASC',
+            'NULLS LAST',
+        );
+        expect(result).toEqual({
+            id: 'b1',
+            trips: [
+                {
+                    id: 't1',
+                    tripNumber: '1001',
+                    times: [{ departureTime: '05:00:00' }],
+                    tripClass: { tripClassName: '各停' },
+                },
+            ],
+        });
+    });
+
+    it('見つからなければ null', async () => {
+        qb.getOne.mockResolvedValue(null);
+        await expect(
+            query.findOneByIdWithSelection(
+                { id: 'x' },
+                select({ include: '' }),
+            ),
+        ).resolves.toBeNull();
     });
 });
 

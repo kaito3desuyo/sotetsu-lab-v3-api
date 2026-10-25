@@ -25,13 +25,18 @@ export class OperationV3Controller {
         return this.operationV3Service.findAllGroups();
     }
 
+    /** `fields` で返す列を選べる（docs/adr/0010-v3-include-and-fields.md） */
     @Get('/calendar/:calendarId')
     @CacheControl(CACHE_CONTROL.TIMETABLE)
     async findManyByCalendarId(
         @Param('calendarId') calendarId: string,
-    ): Promise<OperationDetailsDto[]> {
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<OperationDetailsDto[] | Record<string, unknown>[]> {
         const result = await this.operationV3Service.findManyByCalendarId({
             calendarId,
+            include,
+            fields,
         });
 
         return result;

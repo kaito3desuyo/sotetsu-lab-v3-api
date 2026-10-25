@@ -29,6 +29,7 @@ const mockTripBlockQuery = {
     findOneById: vi.fn() as AnyMock,
     findManyByFilter: vi.fn() as AnyMock,
     findManyByFilterWithSelection: vi.fn() as AnyMock,
+    findOneByIdWithSelection: vi.fn() as AnyMock,
 };
 
 describe('TripBlockV3Service - findManyByFilter', () => {
@@ -163,6 +164,71 @@ describe('TripBlockV3Service - findManyByFilter', () => {
                 'fields は fields[資源]=項目,項目 の形で指定する',
             ),
         );
+    });
+});
+
+describe('TripBlockV3Service - findOneById の include・fields', () => {
+    let service: TripBlockV3Service;
+
+    beforeEach(async () => {
+        vi.clearAllMocks();
+        const module: TestingModule = await Test.createTestingModule({
+            providers: [
+                TripBlockV3Service,
+                { provide: TripBlockQuery, useValue: mockTripBlockQuery },
+                { provide: TripBlockCommand, useValue: mockTripBlockCommand },
+                {
+                    provide: ItinerarySegmentQuery,
+                    useValue: mockItinerarySegmentQuery,
+                },
+                { provide: SocketSignal, useValue: { send: mockSignalSend } },
+            ],
+        }).compile();
+        service = module.get(TripBlockV3Service);
+    });
+
+    it('指定が無ければ今の取得', async () => {
+        mockTripBlockQuery.findOneById.mockResolvedValue({ id: 'b1' });
+        await expect(service.findOneById({ id: 'b1' })).resolves.toEqual({
+            id: 'b1',
+        });
+        expect(mockTripBlockQuery.findOneById).toHaveBeenCalledWith({
+            id: 'b1',
+        });
+        expect(
+            mockTripBlockQuery.findOneByIdWithSelection,
+        ).not.toHaveBeenCalled();
+    });
+
+    it('指定があれば選択の取得', async () => {
+        mockTripBlockQuery.findOneByIdWithSelection.mockResolvedValue({
+            id: 'b1',
+        });
+        await service.findOneById({
+            id: 'b1',
+            fields: { trip: 'tripNumber' },
+        });
+        expect(
+            mockTripBlockQuery.findOneByIdWithSelection,
+        ).toHaveBeenCalledWith(
+            { id: 'b1' },
+            {
+                paths: new Set(['trips']),
+                fields: new Map([['trip', new Set(['tripNumber'])]]),
+            },
+        );
+    });
+
+    it('崩れた指定は 400 で、query を呼ばない', async () => {
+        await expect(
+            service.findOneById({ id: 'b1', include: 'operation' }),
+        ).rejects.toThrow(
+            new BadRequestException('include に指定できない道筋: operation'),
+        );
+        expect(mockTripBlockQuery.findOneById).not.toHaveBeenCalled();
+        expect(
+            mockTripBlockQuery.findOneByIdWithSelection,
+        ).not.toHaveBeenCalled();
     });
 });
 

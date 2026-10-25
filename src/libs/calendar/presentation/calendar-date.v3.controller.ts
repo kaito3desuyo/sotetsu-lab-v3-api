@@ -27,17 +27,22 @@ export class CalendarDateV3Controller {
         private readonly calendarDateV3Service: CalendarDateV3Service,
     ) {}
 
+    /** `fields` で返す列を選べる（docs/adr/0010-v3-include-and-fields.md） */
     @Get('/')
     @CacheControl(CACHE_CONTROL.MASTER)
     async findMany(
         @Query('calendarId') calendarId?: string,
         @Query('from') from?: string,
         @Query('to') to?: string,
-    ): Promise<CalendarDateDetailsDto[]> {
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<CalendarDateDetailsDto[] | Record<string, unknown>[]> {
         const result = await this.calendarDateV3Service.findMany({
             calendarId,
             from,
             to,
+            include,
+            fields,
         });
 
         return result;
