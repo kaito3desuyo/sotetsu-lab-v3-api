@@ -222,7 +222,9 @@ describe('TripBlockV3Service - findOneById の include・fields', () => {
     it('崩れた指定は 400 で、query を呼ばない', async () => {
         await expect(
             service.findOneById({ id: 'b1', include: 'operation' }),
-        ).rejects.toThrow(BadRequestException);
+        ).rejects.toThrow(
+            new BadRequestException('include に指定できない道筋: operation'),
+        );
         expect(mockTripBlockQuery.findOneById).not.toHaveBeenCalled();
         expect(
             mockTripBlockQuery.findOneByIdWithSelection,
