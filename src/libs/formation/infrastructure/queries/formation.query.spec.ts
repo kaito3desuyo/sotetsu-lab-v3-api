@@ -210,7 +210,7 @@ describe('FormationQuery - 選択の取得', () => {
             'agency.id',
             'agency.agencyName',
         ]);
-        expect(qb.where).toHaveBeenCalledWith(
+        expect(qb.andWhere).toHaveBeenCalledWith(
             '(formation.start_date <= :endDate OR formation.start_date IS NULL)',
             { endDate: '2026-10-24' },
         );
