@@ -166,6 +166,13 @@ describe('ServiceV3Service - 事業者・路線の include・fields', () => {
         });
     });
 
+    it('事業者: 見つからなければ 404', async () => {
+        query.findOneWithAgencies.mockResolvedValue(null);
+        await expect(
+            service.findOneWithAgencies({ serviceId: 'x' }),
+        ).rejects.toThrow(NotFoundException);
+    });
+
     it('事業者: include= なら運行系統を出さない', async () => {
         await expect(
             service.findOneWithAgencies({

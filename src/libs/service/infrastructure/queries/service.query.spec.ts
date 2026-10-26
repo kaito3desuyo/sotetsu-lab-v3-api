@@ -212,3 +212,43 @@ describe('ServiceQuery.findOneStationsForServiceWithSelection', () => {
         ).resolves.toBeNull();
     });
 });
+
+describe('ServiceQuery.findOneWithAgencies', () => {
+    async function buildQueryWithManager(serviceResult: unknown) {
+        const getRepository = vi.fn().mockReturnValue({
+            createQueryBuilder: () => {
+                const qb = chain(serviceResult);
+                qb.select = vi.fn().mockReturnValue(qb);
+                return qb;
+            },
+        });
+        const entityManager = {
+            transaction: vi.fn(
+                async (run: (manager: unknown) => Promise<unknown>) =>
+                    run({ getRepository }),
+            ),
+        };
+        const module: TestingModule = await Test.createTestingModule({
+            providers: [
+                ServiceQuery,
+                { provide: getRepositoryToken(ServiceModel), useValue: {} },
+                {
+                    provide: getEntityManagerToken(DataSourceConfig),
+                    useValue: entityManager,
+                },
+            ],
+        }).compile();
+        return { query: module.get(ServiceQuery), getRepository };
+    }
+
+    it('運行系統が見つからなければ事業者を引かずに null', async () => {
+        const { query, getRepository } = await buildQueryWithManager(null);
+
+        await expect(
+            query.findOneWithAgencies({ serviceId: 'none' }),
+        ).resolves.toBeNull();
+        // 運行系統の取得の 1 回だけで、事業者の取得（AgencyModel）には進まない
+        expect(getRepository).toHaveBeenCalledTimes(1);
+        expect(getRepository).toHaveBeenCalledWith(ServiceModel);
+    });
+});
