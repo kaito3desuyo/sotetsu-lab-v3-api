@@ -120,6 +120,69 @@ describe('parseSelection - fields だけ（今の trip-blocks と同じ動き）
         );
     });
 
+    it('同じ資源が別々の親の下に出てくるときは、親の候補をすべて挙げる', () => {
+        const tree = defineSelectionTree({
+            resource: null,
+            columns: {},
+            relations: {
+                operation: {
+                    property: 'operation',
+                    many: false,
+                    resource: 'operation',
+                    columns: columnsOf('operationNumber'),
+                    relations: {
+                        calendar: {
+                            property: 'calendar',
+                            many: false,
+                            resource: 'calendar',
+                            columns: columnsOf('calendarName'),
+                        },
+                    },
+                },
+                service: {
+                    property: 'service',
+                    many: false,
+                    resource: 'service',
+                    columns: columnsOf('serviceName'),
+                    relations: {
+                        // 資源名の無い中間の関連をはさんでも、最も近い資源名の祖先を挙げる
+                        group: {
+                            property: 'group',
+                            many: false,
+                            resource: null,
+                            columns: {},
+                            relations: {
+                                calendar: {
+                                    property: 'calendar',
+                                    many: false,
+                                    resource: 'calendar',
+                                    columns: columnsOf('calendarName'),
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        expect400(
+            () =>
+                parseSelection({ fields: { calendar: 'calendarName' } }, tree),
+            'fields[calendar] には fields[operation] か fields[service] の指定も要る',
+        );
+        // どちらかの親を挙げれば結合される
+        expect(
+            parseSelection(
+                {
+                    fields: {
+                        operation: 'operationNumber',
+                        calendar: 'calendarName',
+                    },
+                },
+                tree,
+            )?.paths,
+        ).toEqual(new Set(['operation', 'operation.calendar']));
+    });
+
     it('fields が文字列の入れ子でなければ 400', () => {
         expect400(
             () => parseSelection({ fields: 'tripNumber' }, TREE),

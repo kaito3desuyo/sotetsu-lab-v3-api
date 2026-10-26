@@ -218,12 +218,21 @@ function pathsFromFields(
             (r) => r.node.resource === resource,
         );
         if (occurrences.some((r) => paths.has(r.path))) continue;
-        let parent = byPath.get(occurrences[0].parentPath ?? '');
-        while (parent && parent.node.resource === null) {
-            parent = byPath.get(parent.parentPath ?? '');
-        }
+        // 出てくる場所すべてについて、資源名を持つ最も近い祖先を集める（重複は除き、木の順）
+        const parents = new Set(
+            occurrences.map((occurrence) => {
+                let parent = byPath.get(occurrence.parentPath ?? '');
+                while (parent && parent.node.resource === null) {
+                    parent = byPath.get(parent.parentPath ?? '');
+                }
+                return parent?.node.resource ?? '?';
+            }),
+        );
+        const candidates = [...parents]
+            .map((parent) => `fields[${parent}]`)
+            .join(' か ');
         throw new BadRequestException(
-            `fields[${resource}] には fields[${parent?.node.resource ?? '?'}] の指定も要る`,
+            `fields[${resource}] には ${candidates} の指定も要る`,
         );
     }
     return paths;
