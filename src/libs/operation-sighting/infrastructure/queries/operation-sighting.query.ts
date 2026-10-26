@@ -221,8 +221,9 @@ export class OperationSightingQuery {
 
     /**
      * 番号ごとに「その時刻以前の最新の有効な目撃」を 1 回の問い合わせで引く。
-     * 1 件ずつの口と同じ「時刻の降順に 1 件」を LATERAL で番号ごとに回すので、
-     * (operation_id|formation_id, sighting_time) の索引がそのまま効く（DISTINCT ON だと全履歴を読む）。
+     * 番号から運用・編成の行を先に引き、行ごとに (operation_id|formation_id, sighting_time) の索引で
+     * 最新を 1 件取って、その中の最新を選ぶ。存在しない番号は行が無いので目撃を読まない
+     * （時刻の索引をたどる形だと全件を読んで遅かった）。
      */
     async #findManyLatestBeforeSightingTime(
         keyColumn: 'operation.operationNumber' | 'formation.formationNumber',
@@ -245,15 +246,21 @@ export class OperationSightingQuery {
             `SELECT latest.id
                FROM unnest($1::text[]) AS k(key)
                CROSS JOIN LATERAL (
-                   SELECT s.id
-                     FROM "${sightings}" s
-                     JOIN "${joinTable}" j ON j.id = s.${joinColumn}
+                   SELECT c.id
+                     FROM "${joinTable}" j
+                     CROSS JOIN LATERAL (
+                         SELECT s.id, s.sighting_time, s.updated_at
+                           FROM "${sightings}" s
+                          WHERE s.${joinColumn} = j.id
+                            AND s.sighting_time <= $2
+                            AND NOT EXISTS (
+                                SELECT 1 FROM "${invalidations}" inv WHERE inv.operation_sighting_id = s.id
+                            )
+                          ORDER BY s.sighting_time DESC, s.updated_at DESC
+                          LIMIT 1
+                     ) c
                     WHERE j.${numberColumn} = k.key
-                      AND s.sighting_time <= $2
-                      AND NOT EXISTS (
-                          SELECT 1 FROM "${invalidations}" inv WHERE inv.operation_sighting_id = s.id
-                      )
-                    ORDER BY s.sighting_time DESC, s.updated_at DESC
+                    ORDER BY c.sighting_time DESC, c.updated_at DESC
                     LIMIT 1
                ) latest`,
             [keys, sightingTime.toISOString()],

@@ -157,6 +157,45 @@ describe('OperationSightingQuery - findManyLatestByOperationNumbersAndBeforeSigh
         expect(result.size).toBe(0);
         expect(mockCreateQueryBuilder).not.toHaveBeenCalled();
     });
+
+    it('番号から運用の行を先に引き、行ごとに目撃の最新を引く 2 段の SQL を渡す', async () => {
+        mockRawQuery.mockResolvedValue([]);
+
+        await query.findManyLatestByOperationNumbersAndBeforeSightingTime({
+            operationNumbers: ['11'],
+            sightingTime: dayjs('2026-10-05T13:00:00+09:00'),
+        });
+
+        const sql: string = mockRawQuery.mock.calls[0][0];
+        expect(sql).toContain('s.operation_id = j.id');
+        expect(sql).toContain('j.operation_number = k.key');
+        expect(sql).not.toMatch(/JOIN "[^"]+" j ON j\.id = s\.operation_id/);
+    });
+});
+
+describe('OperationSightingQuery - findManyLatestByFormationNumbersAndBeforeSightingTime', () => {
+    let query: OperationSightingQuery;
+
+    beforeEach(async () => {
+        vi.clearAllMocks();
+        currentQueryBuilder = buildChainableQueryBuilder();
+        mockCreateQueryBuilder.mockReturnValue(currentQueryBuilder);
+        query = await buildQuery();
+    });
+
+    it('番号から編成の行を先に引き、行ごとに目撃の最新を引く 2 段の SQL を渡す', async () => {
+        mockRawQuery.mockResolvedValue([]);
+
+        await query.findManyLatestByFormationNumbersAndBeforeSightingTime({
+            formationNumbers: ['8701'],
+            sightingTime: dayjs('2026-10-05T13:00:00+09:00'),
+        });
+
+        const sql: string = mockRawQuery.mock.calls[0][0];
+        expect(sql).toContain('s.formation_id = j.id');
+        expect(sql).toContain('j.formation_number = k.key');
+        expect(sql).not.toMatch(/JOIN "[^"]+" j ON j\.id = s\.formation_id/);
+    });
 });
 
 describe('OperationSightingQuery - findManyBySightingTimeRange', () => {
