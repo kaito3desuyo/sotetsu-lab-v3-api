@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import type { Selection } from '../../../../core/utils/selection/parse-selection.js';
 import { selectColumns } from '../../../../core/utils/selection/select-columns.js';
 import { serializeSelection } from '../../../../core/utils/selection/serialize-selection.js';
@@ -28,31 +28,17 @@ export class FormationQuery {
     }): Promise<FormationDetailsDto[]> {
         const { date } = params;
 
-        const models = await this.formationRepository
+        const qb = this.formationRepository
             .createQueryBuilder('formation')
             .select('formation')
             .leftJoinAndSelect(
                 'formation.vehicleFormations',
                 'vehicleFormations',
             )
-            .leftJoinAndSelect('vehicleFormations.vehicle', 'vehicle')
-            .where(
-                '(formation.start_date <= :date OR formation.start_date IS NULL)',
-                { date },
-            )
-            .andWhere(
-                '(formation.end_date >= :date OR formation.end_date IS NULL)',
-                { date },
-            )
-            .orderBy(
-                "to_number(formation.vehicle_type, '9999999999999999')",
-                'ASC',
-            )
-            .addOrderBy(
-                "to_number(formation.formation_number, '9999999999999999')",
-                'ASC',
-            )
-            .getMany();
+            .leftJoinAndSelect('vehicleFormations.vehicle', 'vehicle');
+        this.#whereActiveOn(qb, date);
+        this.#orderByVehicleTypeAndNumber(qb);
+        const models = await qb.getMany();
 
         return FormationsDtoBuilder.buildFromModel(models);
     }
@@ -63,34 +49,13 @@ export class FormationQuery {
     }): Promise<FormationDetailsDto[]> {
         const { startDate, endDate } = params;
 
-        const format = 'YYYY-MM-DD';
-        const startDateInstance = dayjs(startDate, format);
-        const endDateInstance = dayjs(endDate, format);
-
-        const result = await this.formationRepository
+        const qb = this.formationRepository
             .createQueryBuilder('formation')
             .select('formation')
-            .leftJoinAndSelect('formation.agency', 'agency')
-            .where(
-                '(formation.start_date <= :endDate OR formation.start_date IS NULL)',
-                { endDate: endDateInstance.format(format) },
-            )
-            .andWhere(
-                '(formation.end_date >= :startDate OR formation.end_date IS NULL)',
-                { startDate: startDateInstance.format(format) },
-            )
-            // findManyBySpecificDate と揃える。orderBy 不在だと返却順が非決定的で
-            // クライアント側の会社内並び順（東急・相鉄の一部）が崩れるため、
-            // 系式→編成番号の数値順で安定化する。
-            .orderBy(
-                "to_number(formation.vehicle_type, '9999999999999999')",
-                'ASC',
-            )
-            .addOrderBy(
-                "to_number(formation.formation_number, '9999999999999999')",
-                'ASC',
-            )
-            .getMany();
+            .leftJoinAndSelect('formation.agency', 'agency');
+        this.#whereActiveBetween(qb, startDate, endDate);
+        this.#orderByVehicleTypeAndNumber(qb);
+        const result = await qb.getMany();
 
         return FormationsDtoBuilder.buildFromModel(result);
     }
@@ -109,23 +74,9 @@ export class FormationQuery {
 
         const qb = this.formationRepository
             .createQueryBuilder('formation')
-            .select(selectColumns('formation', tree, selection))
-            .where(
-                '(formation.start_date <= :date OR formation.start_date IS NULL)',
-                { date },
-            )
-            .andWhere(
-                '(formation.end_date >= :date OR formation.end_date IS NULL)',
-                { date },
-            )
-            .orderBy(
-                "to_number(formation.vehicle_type, '9999999999999999')",
-                'ASC',
-            )
-            .addOrderBy(
-                "to_number(formation.formation_number, '9999999999999999')",
-                'ASC',
-            );
+            .select(selectColumns('formation', tree, selection));
+        this.#whereActiveOn(qb, date);
+        this.#orderByVehicleTypeAndNumber(qb);
         if (selection.paths.has('vehicleFormations')) {
             qb.leftJoin(
                 'formation.vehicleFormations',
@@ -165,29 +116,11 @@ export class FormationQuery {
         const { startDate, endDate } = params;
         const tree = FORMATIONS_BY_PERIOD_SELECTION_TREE;
 
-        const format = 'YYYY-MM-DD';
-        const startDateInstance = dayjs(startDate, format);
-        const endDateInstance = dayjs(endDate, format);
-
         const qb = this.formationRepository
             .createQueryBuilder('formation')
-            .select(selectColumns('formation', tree, selection))
-            .where(
-                '(formation.start_date <= :endDate OR formation.start_date IS NULL)',
-                { endDate: endDateInstance.format(format) },
-            )
-            .andWhere(
-                '(formation.end_date >= :startDate OR formation.end_date IS NULL)',
-                { startDate: startDateInstance.format(format) },
-            )
-            .orderBy(
-                "to_number(formation.vehicle_type, '9999999999999999')",
-                'ASC',
-            )
-            .addOrderBy(
-                "to_number(formation.formation_number, '9999999999999999')",
-                'ASC',
-            );
+            .select(selectColumns('formation', tree, selection));
+        this.#whereActiveBetween(qb, startDate, endDate);
+        this.#orderByVehicleTypeAndNumber(qb);
         if (selection.paths.has('agency')) {
             qb.leftJoin('formation.agency', 'agency').addSelect(
                 selectColumns('agency', tree.relations.agency, selection),
@@ -207,26 +140,15 @@ export class FormationQuery {
     }): Promise<FormationDetailsDto | null> {
         const { agencyId, formationNumber, date } = params;
 
-        const model = await this.formationRepository
+        const qb = this.formationRepository
             .createQueryBuilder('formation')
             .select('formation')
             .where('formation.agency_id = :agencyId', { agencyId })
             .andWhere('formation.formation_number = :formationNumber', {
                 formationNumber,
-            })
-            .andWhere(
-                '(formation.start_date <= :date OR formation.start_date IS NULL)',
-                {
-                    date,
-                },
-            )
-            .andWhere(
-                '(formation.end_date >= :date OR formation.end_date IS NULL)',
-                {
-                    date,
-                },
-            )
-            .getOne();
+            });
+        this.#whereActiveOn(qb, date);
+        const model = await qb.getOne();
 
         if (!model) {
             return null;
@@ -242,7 +164,7 @@ export class FormationQuery {
     }): Promise<FormationDetailsDto | null> {
         const { agencyId, vehicleNumber, date } = params;
 
-        const model = await this.formationRepository
+        const qb = this.formationRepository
             .createQueryBuilder('formation')
             .select('formation')
             .leftJoin('formation.vehicleFormations', 'vehicleFormation')
@@ -250,25 +172,76 @@ export class FormationQuery {
             .where('formation.agency_id = :agencyId', { agencyId })
             .andWhere('vehicle.vehicle_number = :vehicleNumber', {
                 vehicleNumber,
-            })
-            .andWhere(
-                '(formation.start_date <= :date OR formation.start_date IS NULL)',
-                {
-                    date,
-                },
-            )
-            .andWhere(
-                '(formation.end_date >= :date OR formation.end_date IS NULL)',
-                {
-                    date,
-                },
-            )
-            .getOne();
+            });
+        this.#whereActiveOn(qb, date);
+        const model = await qb.getOne();
 
         if (!model) {
             return null;
         }
 
         return FormationDtoBuilder.buildFromModel(model);
+    }
+
+    /**
+     * 指定日に在籍している編成だけに絞る（開始日・終了日が未設定なら無期限として扱う）。
+     * 常に `andWhere` で足す。先頭で呼んでも `where` と同じ SQL になる（formation.query.sql.spec.ts）。
+     */
+    #whereActiveOn(
+        qb: SelectQueryBuilder<FormationModel>,
+        date: string,
+    ): SelectQueryBuilder<FormationModel> {
+        return qb
+            .andWhere(
+                '(formation.start_date <= :date OR formation.start_date IS NULL)',
+                { date },
+            )
+            .andWhere(
+                '(formation.end_date >= :date OR formation.end_date IS NULL)',
+                { date },
+            );
+    }
+
+    /**
+     * 期間（両端を含む）のどこかで在籍している編成だけに絞る。日付は `YYYY-MM-DD` に整形して渡す。
+     * 常に `andWhere` で足す（`#whereActiveOn` と同じ）。
+     */
+    #whereActiveBetween(
+        qb: SelectQueryBuilder<FormationModel>,
+        startDate: string,
+        endDate: string,
+    ): SelectQueryBuilder<FormationModel> {
+        const format = 'YYYY-MM-DD';
+        const startDateInstance = dayjs(startDate, format);
+        const endDateInstance = dayjs(endDate, format);
+
+        return qb
+            .andWhere(
+                '(formation.start_date <= :endDate OR formation.start_date IS NULL)',
+                { endDate: endDateInstance.format(format) },
+            )
+            .andWhere(
+                '(formation.end_date >= :startDate OR formation.end_date IS NULL)',
+                { startDate: startDateInstance.format(format) },
+            );
+    }
+
+    /**
+     * 系式（vehicle_type）→編成番号の数値順に並べる。
+     * orderBy 不在だと返却順が非決定的で、クライアント側の会社内並び順（東急・相鉄の一部）が崩れるため、
+     * 一覧系の取得はすべてこの並びで安定化する。`orderBy` で始めるので、先に並びを指定していない前提。
+     */
+    #orderByVehicleTypeAndNumber(
+        qb: SelectQueryBuilder<FormationModel>,
+    ): SelectQueryBuilder<FormationModel> {
+        return qb
+            .orderBy(
+                "to_number(formation.vehicle_type, '9999999999999999')",
+                'ASC',
+            )
+            .addOrderBy(
+                "to_number(formation.formation_number, '9999999999999999')",
+                'ASC',
+            );
     }
 }
