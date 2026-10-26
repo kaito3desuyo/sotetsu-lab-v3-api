@@ -8,6 +8,7 @@ import { getBaseDate } from '../../../core/utils/datetime.js';
 import {
     parseFieldsOnly,
     parseSelection,
+    type Selection,
 } from '../../../core/utils/selection/parse-selection.js';
 import { serializeSelection } from '../../../core/utils/selection/serialize-selection.js';
 import { CalendarQuery } from '../../calendar/infrastructure/queries/calendar.query.js';
@@ -201,13 +202,7 @@ export class OperationSightingV3Service {
                 await this.#timeCrossSectionByOperationNumber(operationNumber, searchTimeInstance, source),
             ] as const);
         }
-        const result = Object.fromEntries(entries);
-        if (!selection) {
-            return result;
-        }
-        return Object.fromEntries(
-            Object.entries(result).map(([key, value]) => [key, serializeSelection(value, tree, selection)]),
-        );
+        return this.#serializeTimeCrossSections(Object.fromEntries(entries), selection);
     }
 
     /**
@@ -249,10 +244,18 @@ export class OperationSightingV3Service {
                 await this.#timeCrossSectionByFormationNumber(formationNumber, searchTimeInstance, source),
             ] as const);
         }
-        const result = Object.fromEntries(entries);
+        return this.#serializeTimeCrossSections(Object.fromEntries(entries), selection);
+    }
+
+    /** 時刻断面のまとめを `fields` で選んだ項目だけにする。選びが無ければそのまま返す。 */
+    #serializeTimeCrossSections(
+        result: Record<string, OperationSightingTimeCrossSectionDto>,
+        selection: Selection | undefined,
+    ): Record<string, OperationSightingTimeCrossSectionDto | Record<string, unknown>> {
         if (!selection) {
             return result;
         }
+        const tree = OPERATION_SIGHTING_TIME_CROSS_SECTION_SELECTION_TREE;
         return Object.fromEntries(
             Object.entries(result).map(([key, value]) => [key, serializeSelection(value, tree, selection)]),
         );
