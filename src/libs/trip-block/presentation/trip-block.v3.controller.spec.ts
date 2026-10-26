@@ -21,6 +21,7 @@ describe('TripBlockV3Controller（書き込みの役割）', () => {
     let auth: AuthContext;
     const featureFlags = { isEnabled: vi.fn() };
     const service = {
+        findOneById: vi.fn(),
         createManyTripBlocks: vi.fn(),
         replaceOneTripBlock: vi.fn(),
         addTripToTripBlock: vi.fn(),
@@ -75,6 +76,25 @@ describe('TripBlockV3Controller（書き込みの役割）', () => {
         auth = { userId: 'anon-1', role: null };
         const res = await request(app.getHttpServer()).post('/bulk').send([]);
         expect(res.status).toBe(403);
+    });
+
+    it('GET /:id は path の id が UUID でなければ 422', async () => {
+        auth = { userId: 'anon-1', role: null };
+        const res = await request(app.getHttpServer()).get('/not-a-uuid');
+        expect(res.status).toBe(validationPipeOptions.errorHttpStatusCode);
+        expect(service.findOneById).not.toHaveBeenCalled();
+    });
+
+    it('GET /:id は UUID の id を渡す', async () => {
+        auth = { userId: 'anon-1', role: null };
+        service.findOneById.mockResolvedValue({});
+        const res = await request(app.getHttpServer()).get(`/${ID}`);
+        expect(res.status).toBe(200);
+        expect(service.findOneById).toHaveBeenCalledWith({
+            id: ID,
+            include: undefined,
+            fields: undefined,
+        });
     });
 
     it('editor の POST /bulk は役割で弾かれない', async () => {

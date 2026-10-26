@@ -25,6 +25,7 @@ import { DeleteTripFromTripBlockParam } from '../usecase/params/delete-trip-from
 import { ReplaceTripBlockParam } from '../usecase/params/replace-trip-block.param.js';
 import { TripBlockFindManyByFilterQuery } from '../usecase/params/trip-block-find-many-by-filter.query.js';
 import { TripBlockV3Service } from '../usecase/trip-block.v3.service.js';
+import { TripBlockIdParam } from '../usecase/params/trip-block-id.param.js';
 
 @Controller()
 @UseGuards(AuthGuard, RBACGuard)
@@ -51,12 +52,12 @@ export class TripBlockV3Controller {
     @Get('/:id')
     @CacheControl(CACHE_CONTROL.TIMETABLE)
     async findOneById(
-        @Param('id') id: string,
+        @Param() param: TripBlockIdParam,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
     ): Promise<TripBlockDetailsDto | Record<string, unknown> | null> {
         const result = await this.tripBlockV3Service.findOneById({
-            id,
+            id: param.id,
             include,
             fields,
         });

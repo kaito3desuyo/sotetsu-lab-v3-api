@@ -6,7 +6,7 @@ import { ServiceModel } from '../models/service.model.js';
 
 export const ServiceAgenciesDtoBuilder = {
     buildFromModel: (model: {
-        service: ServiceModel | null;
+        service: ServiceModel;
         agencies: AgencyModel[];
     }) => {
         const { service, agencies } = model;

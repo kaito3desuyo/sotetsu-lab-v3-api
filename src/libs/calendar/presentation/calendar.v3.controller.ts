@@ -5,6 +5,7 @@ import { CacheControl } from '../../../core/modules/cache-control/cache-control.
 import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
 import { CalendarV3Service } from '../usecase/calendar.v3.service.js';
 import { CalendarDetailsDto } from '../usecase/dtos/calendar-details.dto.js';
+import { CalendarIdParam } from '../usecase/params/calendar-id.param.js';
 
 @Controller()
 @UseGuards(AuthGuard, RBACGuard)
@@ -49,12 +50,12 @@ export class CalendarV3Controller {
     @Get('/:id')
     @CacheControl(CACHE_CONTROL.MASTER)
     async findOne(
-        @Param('id') id: string,
+        @Param() param: CalendarIdParam,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
     ): Promise<CalendarDetailsDto | Record<string, unknown> | null> {
         const result = await this.calendarV3Service.findOne({
-            id,
+            id: param.id,
             include,
             fields,
         });

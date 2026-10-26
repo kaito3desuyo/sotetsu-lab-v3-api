@@ -1,3 +1,4 @@
+import { CalendarModel } from '../../../calendar/infrastructure/models/calendar.model.js';
 import { ServiceModel } from '../../../service/infrastructure/models/service.model.js';
 import { TripClassModel } from '../../../trip-class/infrastructure/models/trip-class.model.js';
 import {
@@ -88,4 +89,12 @@ export class TripModel {
     @ManyToOne(() => TripBlockModel, (tripBlock) => tripBlock.trips)
     @JoinColumn({ name: 'trip_block_id' })
     readonly tripBlock?: Relation<TripBlockModel>;
+
+    @ManyToOne(() => CalendarModel)
+    @JoinColumn({ name: 'calendar_id' })
+    readonly calendar?: Relation<CalendarModel> | null;
+
+    @ManyToOne(() => CalendarModel)
+    @JoinColumn({ name: 'extra_calendar_id' })
+    readonly extraCalendar?: Relation<CalendarModel> | null;
 }

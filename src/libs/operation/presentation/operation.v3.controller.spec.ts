@@ -119,6 +119,31 @@ describe('OperationV3Controller (itinerary-links / next-operation-candidates)', 
         });
     });
 
+    it.each([
+        ['/not-a-uuid/trips'],
+        ['/not-a-uuid/current-position'],
+        ['/calendar/not-a-uuid'],
+        ['/calendar/not-a-uuid/trips'],
+    ])('%s は path の id が UUID でなければ 422', async (path) => {
+        const res = await request(app.getHttpServer()).get(path);
+
+        expect(res.status).toBe(validationPipeOptions.errorHttpStatusCode);
+        expect(service.findOneWithTrips).not.toHaveBeenCalled();
+    });
+
+    it('/:id/trips は UUID の id をそのまま渡す', async () => {
+        const res = await request(app.getHttpServer()).get(
+            `/${CALENDAR_ID}/trips`,
+        );
+
+        expect(res.status).toBe(200);
+        expect(service.findOneWithTrips).toHaveBeenCalledWith({
+            operationId: CALENDAR_ID,
+            include: undefined,
+            fields: undefined,
+        });
+    });
+
     it('旧 URL は残らない', async () => {
         const res = await request(app.getHttpServer()).get(
             `/calendar/${CALENDAR_ID}/itinerary-links`,

@@ -19,6 +19,7 @@ import { Role } from '../../../core/modules/rbac/role.enum.js';
 import { CalendarDateV3Service } from '../usecase/calendar-date.v3.service.js';
 import { CalendarDateDetailsDto } from '../usecase/dtos/calendar-date-details.dto.js';
 import { CreateCalendarDateDto } from '../usecase/dtos/create-calendar-date.dto.js';
+import { CalendarDateIdParam } from '../usecase/params/calendar-date-id.param.js';
 
 @Controller()
 @UseGuards(AuthGuard, RBACGuard)
@@ -61,7 +62,7 @@ export class CalendarDateV3Controller {
     @Delete('/:id')
     @RBAC(Role.EDITOR, Role.MANAGER)
     @HttpCode(HttpStatus.NO_CONTENT)
-    async delete(@Param('id') id: string): Promise<void> {
-        await this.calendarDateV3Service.deleteOneById({ id });
+    async delete(@Param() param: CalendarDateIdParam): Promise<void> {
+        await this.calendarDateV3Service.deleteOneById({ id: param.id });
     }
 }

@@ -8,6 +8,7 @@ import { StationModel } from '../../../station/infrastructure/models/station.mod
 import type { Selection } from '../../../../core/utils/selection/parse-selection.js';
 import { serializeSelection } from '../../../../core/utils/selection/serialize-selection.js';
 import { EntityManager, Repository } from 'typeorm';
+import { ServiceAgenciesDto } from '../../usecase/dtos/service-agencies.dto.js';
 import { ServiceDetailsDto } from '../../usecase/dtos/service-details.dto.js';
 import { ServiceRoutesDto } from '../../usecase/dtos/service-routes.dto.js';
 import { ServiceStationsDto } from '../../usecase/dtos/service-stations.dto.js';
@@ -29,7 +30,9 @@ export class ServiceQuery {
         private readonly entityManager: EntityManager,
     ) {}
 
-    async findOneWithAgencies(params: { serviceId: string }): Promise<any> {
+    async findOneWithAgencies(params: {
+        serviceId: string;
+    }): Promise<ServiceAgenciesDto | null> {
         const { serviceId } = params;
 
         const model = await this.entityManager.transaction(
@@ -40,6 +43,10 @@ export class ServiceQuery {
                     .select('service')
                     .where('service.id = :serviceId', { serviceId })
                     .getOne();
+
+                if (!service) {
+                    return null;
+                }
 
                 const agencies = await transactionalEntityManager
                     .getRepository(AgencyModel)
@@ -64,6 +71,10 @@ export class ServiceQuery {
                 };
             },
         );
+
+        if (!model) {
+            return null;
+        }
 
         return ServiceAgenciesDtoBuilder.buildFromModel(model);
     }

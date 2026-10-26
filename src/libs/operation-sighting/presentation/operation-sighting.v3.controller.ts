@@ -24,6 +24,7 @@ import { OperationSightingTimeCrossSectionDto } from '../usecase/dtos/operation-
 import { PostOperationSightingDto } from '../usecase/dtos/post-operation-sighting.dto.js';
 import { RestoreOperationSightingDto } from '../usecase/dtos/restore-operation-sighting.dto.js';
 import { OperationSightingV3Service } from '../usecase/operation-sighting.v3.service.js';
+import { OperationSightingIdParam } from '../usecase/params/operation-sighting-id.param.js';
 
 @Controller()
 @UseGuards(AuthGuard, RBACGuard)
@@ -175,11 +176,11 @@ export class OperationSightingV3Controller {
     @RBAC(Role.EDITOR, Role.MANAGER)
     async invalidate(
         @Req() req: Request,
-        @Param('id') id: string,
+        @Param() param: OperationSightingIdParam,
         @Body() body: InvalidateOperationSightingDto,
     ): Promise<OperationSightingDetailsDto> {
         const result = await this.operationSightingV3Service.invalidate({
-            operationSightingId: id,
+            operationSightingId: param.id,
             userId: req.auth!.userId!,
             reason: body.reason,
         });
@@ -191,11 +192,11 @@ export class OperationSightingV3Controller {
     @RBAC(Role.EDITOR, Role.MANAGER)
     async restore(
         @Req() req: Request,
-        @Param('id') id: string,
+        @Param() param: OperationSightingIdParam,
         @Body() body: RestoreOperationSightingDto,
     ): Promise<OperationSightingDetailsDto> {
         const result = await this.operationSightingV3Service.restore({
-            operationSightingId: id,
+            operationSightingId: param.id,
             userId: req.auth!.userId!,
             reason: body.reason,
         });
