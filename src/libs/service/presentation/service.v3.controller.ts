@@ -8,6 +8,7 @@ import { ServiceDetailsDto } from '../usecase/dtos/service-details.dto.js';
 import { ServiceRoutesDto } from '../usecase/dtos/service-routes.dto.js';
 import { ServiceStationsDto } from '../usecase/dtos/service-stations.dto.js';
 import { ServiceV3Service } from '../usecase/service.v3.service.js';
+import { ServiceIdParam } from '../usecase/params/service-id.param.js';
 
 @Controller()
 @UseGuards(AuthGuard, RBACGuard)
@@ -35,12 +36,12 @@ export class ServiceV3Controller {
     @Get('/:id/stations')
     @CacheControl(CACHE_CONTROL.MASTER)
     async findOneStations(
-        @Param('id') serviceId: string,
+        @Param() param: ServiceIdParam,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
     ): Promise<ServiceStationsDto | Record<string, unknown>> {
         const result = await this.serviceV3Service.findOneStations({
-            serviceId,
+            serviceId: param.id,
             include,
             fields,
         });
@@ -52,12 +53,12 @@ export class ServiceV3Controller {
     @Get('/:id/agencies')
     @CacheControl(CACHE_CONTROL.MASTER)
     async findOneServiceWithAgencies(
-        @Param('id') serviceId: string,
+        @Param() param: ServiceIdParam,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
     ): Promise<ServiceAgenciesDto | Record<string, unknown>> {
         const result = await this.serviceV3Service.findOneWithAgencies({
-            serviceId,
+            serviceId: param.id,
             include,
             fields,
         });
@@ -69,12 +70,12 @@ export class ServiceV3Controller {
     @Get('/:id/routes')
     @CacheControl(CACHE_CONTROL.MASTER)
     async findOneServiceWithRoutes(
-        @Param('id') serviceId: string,
+        @Param() param: ServiceIdParam,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
     ): Promise<ServiceRoutesDto | Record<string, unknown>> {
         const result = await this.serviceV3Service.findOneWithRoutes({
-            serviceId,
+            serviceId: param.id,
             include,
             fields,
         });

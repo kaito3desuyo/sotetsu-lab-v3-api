@@ -123,6 +123,21 @@ describe('OperationSightingV3Controller（書き込みの役割と利用者）',
         });
     });
 
+    it.each(['invalidate', 'restore'])(
+        '%s は path の id が UUID でなければ 422',
+        async (action) => {
+            auth = { userId: 'editor-1', role: Role.EDITOR };
+            const res = await request(app.getHttpServer())
+                .patch(`/not-a-uuid/${action}`)
+                .send({ reason: 'test' });
+            expect(res.status).toBe(
+                validationPipeOptions.errorHttpStatusCode,
+            );
+            expect(service.invalidate).not.toHaveBeenCalled();
+            expect(service.restore).not.toHaveBeenCalled();
+        },
+    );
+
     it('復元も JWT の sub を使う', async () => {
         auth = { userId: 'editor-1', role: Role.MANAGER };
         const res = await request(app.getHttpServer())

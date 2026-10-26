@@ -6,6 +6,7 @@ import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
 import { RouteDetailsDto } from '../usecase/dtos/route-details.dto.js';
 import { RouteStationsDto } from '../usecase/dtos/route-stations.dto.js';
 import { RouteV3Service } from '../usecase/route.v3.service.js';
+import { RouteIdParam } from '../usecase/params/route-id.param.js';
 
 @Controller()
 @UseGuards(AuthGuard, RBACGuard)
@@ -33,12 +34,12 @@ export class RouteV3Controller {
     @Get('/:id/stations')
     @CacheControl(CACHE_CONTROL.MASTER)
     async findOneWithStations(
-        @Param('id') routeId: string,
+        @Param() param: RouteIdParam,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
     ): Promise<RouteStationsDto | Record<string, unknown>> {
         const result = await this.routeV3Service.findOneWithStations({
-            routeId,
+            routeId: param.id,
             include,
             fields,
         });

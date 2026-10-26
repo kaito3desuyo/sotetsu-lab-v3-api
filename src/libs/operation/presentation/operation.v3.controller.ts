@@ -11,6 +11,8 @@ import { OperationDetailsDto } from '../usecase/dtos/operation-details.dto.js';
 import { OperationGroupDto } from '../usecase/dtos/operation-group.dto.js';
 import { OperationWithTripsDto } from '../usecase/dtos/operation-with-trips.dto.js';
 import { NextOperationCandidatesQuery } from '../usecase/params/next-operation-candidates.query.js';
+import { OperationCalendarIdParam } from '../usecase/params/operation-calendar-id.param.js';
+import { OperationIdParam } from '../usecase/params/operation-id.param.js';
 import { OperationCalendarQuery } from '../usecase/params/operation-calendar.query.js';
 import { OperationV3Service } from '../usecase/operation.v3.service.js';
 
@@ -29,12 +31,12 @@ export class OperationV3Controller {
     @Get('/calendar/:calendarId')
     @CacheControl(CACHE_CONTROL.TIMETABLE)
     async findManyByCalendarId(
-        @Param('calendarId') calendarId: string,
+        @Param() param: OperationCalendarIdParam,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
     ): Promise<OperationDetailsDto[] | Record<string, unknown>[]> {
         const result = await this.operationV3Service.findManyByCalendarId({
-            calendarId,
+            calendarId: param.calendarId,
             include,
             fields,
         });
@@ -49,12 +51,12 @@ export class OperationV3Controller {
     @Get('/calendar/:calendarId/trips')
     @CacheControl(CACHE_CONTROL.TIMETABLE)
     async findManyWithTrips(
-        @Param('calendarId') calendarId: string,
+        @Param() param: OperationCalendarIdParam,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
     ): Promise<OperationWithTripsDto[] | Record<string, unknown>[]> {
         const result = await this.operationV3Service.findManyWithTrips({
-            calendarId,
+            calendarId: param.calendarId,
             include,
             fields,
         });
@@ -147,12 +149,12 @@ export class OperationV3Controller {
     @Get('/:id/trips')
     @CacheControl(CACHE_CONTROL.TIMETABLE)
     async findOneWithTrips(
-        @Param('id') operationId: string,
+        @Param() param: OperationIdParam,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
     ): Promise<OperationWithTripsDto | Record<string, unknown> | null> {
         const result = await this.operationV3Service.findOneWithTrips({
-            operationId,
+            operationId: param.id,
             include,
             fields,
         });
@@ -164,14 +166,14 @@ export class OperationV3Controller {
     @Get('/:id/current-position')
     @CacheControl(CACHE_CONTROL.REALTIME)
     async findOneWithCurrentPosition(
-        @Param('id') operationId: string,
+        @Param() param: OperationIdParam,
         @Query('searchTime') searchTime?: string,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
     ): Promise<OperationCurrentPositionDto | Record<string, unknown> | null> {
         const result = await this.operationV3Service.findOneWithCurrentPosition(
             {
-                operationId,
+                operationId: param.id,
                 searchTime,
                 include,
                 fields,
