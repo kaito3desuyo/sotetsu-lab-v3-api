@@ -62,20 +62,13 @@ export class TripBlockV3Service {
         private readonly cdnInvalidation: CdnInvalidation,
     ) {}
 
-    /**
-     * そのダイヤの画面の CDN キャッシュを捨てる。CdnInvalidation は reject しない約束だが、
-     * 万一 reject しても、保存済みの書き込みを失敗にしない。
-     */
-    async #invalidateCalendars(
+    /** そのダイヤの画面の CDN キャッシュを捨てる（CdnInvalidation は reject しない） */
+    #invalidateCalendars(
         calendarIds: readonly (string | null | undefined)[],
     ): Promise<void> {
-        try {
-            await this.cdnInvalidation.invalidate({
-                tags: calendarCacheTags(calendarIds),
-            });
-        } catch {
-            // 捨て損ねても、書き込みは成功のまま返す
-        }
+        return this.cdnInvalidation.invalidate({
+            tags: calendarCacheTags(calendarIds),
+        });
     }
 
     /**
@@ -216,10 +209,12 @@ export class TripBlockV3Service {
         );
         const domains = TripBlocksDomainBuilder.buildFromCreateDto(dtos);
         const result = await this.tripBlockCommand.bulkCreate(domains);
-        await this.#invalidateCalendars(
-            dtos.flatMap((o) => o.trips).map((t) => t.calendarId),
-        );
-        await this.socketSignal.send({ type: 'timetable' });
+        await Promise.all([
+            this.#invalidateCalendars(
+                dtos.flatMap((o) => o.trips).map((t) => t.calendarId),
+            ),
+            this.socketSignal.send({ type: 'timetable' }),
+        ]);
         return result;
     }
 
@@ -254,11 +249,13 @@ export class TripBlockV3Service {
         });
         const result =
             await this.tripBlockCommand.replaceOneTripBlockByDomain(domain);
-        await this.#invalidateCalendars([
-            ...(current?.trips ?? []).map((t) => t.calendarId),
-            ...dto.trips.map((t) => t.calendarId),
+        await Promise.all([
+            this.#invalidateCalendars([
+                ...(current?.trips ?? []).map((t) => t.calendarId),
+                ...dto.trips.map((t) => t.calendarId),
+            ]),
+            this.socketSignal.send({ type: 'timetable' }),
         ]);
-        await this.socketSignal.send({ type: 'timetable' });
         return result;
     }
 
@@ -300,13 +297,15 @@ export class TripBlockV3Service {
             );
         }
 
-        await this.#invalidateCalendars(
-            [
-                ...(tripBlockDto.from.trips ?? []),
-                ...(tripBlockDto.to.trips ?? []),
-            ].map((t) => t.calendarId),
-        );
-        await this.socketSignal.send({ type: 'timetable' });
+        await Promise.all([
+            this.#invalidateCalendars(
+                [
+                    ...(tripBlockDto.from.trips ?? []),
+                    ...(tripBlockDto.to.trips ?? []),
+                ].map((t) => t.calendarId),
+            ),
+            this.socketSignal.send({ type: 'timetable' }),
+        ]);
         return result;
     }
 
@@ -362,10 +361,12 @@ export class TripBlockV3Service {
             await this.tripBlockCommand.deleteOneTripBlockByDomain(tripBlock);
         }
 
-        await this.#invalidateCalendars(
-            (tripBlockDto.trips ?? []).map((t) => t.calendarId),
-        );
-        await this.socketSignal.send({ type: 'timetable' });
+        await Promise.all([
+            this.#invalidateCalendars(
+                (tripBlockDto.trips ?? []).map((t) => t.calendarId),
+            ),
+            this.socketSignal.send({ type: 'timetable' }),
+        ]);
         return result;
     }
 }

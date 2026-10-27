@@ -783,8 +783,10 @@ export class OperationSightingV3Service {
             );
             return saved;
         });
-        await this.#invalidatePastSightingDates(sightingTimeInstance.toDate());
-        await this.socketSignal.send({ type: 'sighting' });
+        await Promise.all([
+            this.#invalidatePastSightingDates(sightingTimeInstance.toDate()),
+            this.socketSignal.send({ type: 'sighting' }),
+        ]);
         return saved;
     }
 
@@ -872,8 +874,10 @@ export class OperationSightingV3Service {
             );
             return saved;
         });
-        await this.#invalidatePastSightingDates(dto.sightingTime);
-        await this.socketSignal.send({ type: 'sighting' });
+        await Promise.all([
+            this.#invalidatePastSightingDates(dto.sightingTime),
+            this.socketSignal.send({ type: 'sighting' }),
+        ]);
         return saved;
     }
 
@@ -937,8 +941,10 @@ export class OperationSightingV3Service {
             );
             return saved;
         });
-        await this.#invalidatePastSightingDates(dto.sightingTime);
-        await this.socketSignal.send({ type: 'sighting' });
+        await Promise.all([
+            this.#invalidatePastSightingDates(dto.sightingTime),
+            this.socketSignal.send({ type: 'sighting' }),
+        ]);
         return saved;
     }
 

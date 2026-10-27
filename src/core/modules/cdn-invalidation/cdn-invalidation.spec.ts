@@ -83,6 +83,20 @@ describe('CdnInvalidation', () => {
         expect(warn).toHaveBeenCalledTimes(1);
     });
 
+    it('タグの読み取り（Set を作る前）で投げられても例外を投げず、警告を 1 回残し、呼び出しはしない', async () => {
+        const brokenTags = {
+            [Symbol.iterator]() {
+                throw new Error('broken iterable');
+            },
+        } as unknown as readonly string[];
+
+        await expect(
+            new CdnInvalidation(client).invalidate({ tags: brokenTags }),
+        ).resolves.toBeUndefined();
+        expect(warn).toHaveBeenCalledTimes(1);
+        expect(send).not.toHaveBeenCalled();
+    });
+
     it('既定のクライアントは us-east-1 で、再試行せず、接続 300ms・応答 1 秒で打ち切る', () => {
         expect(CDN_INVALIDATION_CLIENT_CONFIG).toEqual({
             region: 'us-east-1',

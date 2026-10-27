@@ -38,16 +38,17 @@ export class CdnInvalidation {
     }
 
     async invalidate(params: { tags: readonly string[] }): Promise<void> {
-        const distributionId = process.env.CDN_DISTRIBUTION_ID;
-        if (!distributionId) {
-            return;
-        }
-        const tags = [...new Set(params.tags)];
-        if (tags.length === 0) {
-            return;
-        }
-
+        // Set・env の読み取りも含め、何が起きても reject しない（書き込みを失敗にしないため）
         try {
+            const distributionId = process.env.CDN_DISTRIBUTION_ID;
+            if (!distributionId) {
+                return;
+            }
+            const tags = [...new Set(params.tags)];
+            if (tags.length === 0) {
+                return;
+            }
+
             await this.#client.send(
                 new CreateInvalidationCommand({
                     DistributionId: distributionId,

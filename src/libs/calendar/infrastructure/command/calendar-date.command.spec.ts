@@ -132,14 +132,20 @@ describe('CalendarDateCommand.deleteOneById が組み立てる SQL', () => {
 
         // execute は DB に繋ぐので差し替え、組み立てた SQL だけを受け取る
         let sql = '';
-        vi.spyOn(DeleteQueryBuilder.prototype, 'execute').mockImplementation(
-            async function (this: DeleteQueryBuilder<CalendarDateModel>) {
+        const executeSpy = vi
+            .spyOn(DeleteQueryBuilder.prototype, 'execute')
+            .mockImplementation(async function (
+                this: DeleteQueryBuilder<CalendarDateModel>,
+            ) {
                 [sql] = this.getQueryAndParameters();
                 return { raw: [{ calendar_id: 'calendar-1' }] } as never;
-            },
-        );
+            });
 
-        await command.deleteOneById({ id: 'target-id' });
+        try {
+            await command.deleteOneById({ id: 'target-id' });
+        } finally {
+            executeSpy.mockRestore();
+        }
 
         expect(sql).toBe(
             'DELETE FROM "calendar_dates" WHERE "id" = $1 RETURNING "calendar_id"',

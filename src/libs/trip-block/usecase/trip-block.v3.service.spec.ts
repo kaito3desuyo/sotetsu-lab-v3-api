@@ -838,24 +838,4 @@ describe('TripBlockV3Service - 書き込みで画面の CDN キャッシュを�
         ).rejects.toThrow();
         expect(mockInvalidate).not.toHaveBeenCalled();
     });
-
-    it('invalidate が reject しても書き込みの結果が返り、socket にも知らせる', async () => {
-        mockInvalidate.mockRejectedValue(new Error('cdn'));
-        mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue(
-            null,
-        );
-        vi.spyOn(TripBlockDomainBuilder, 'buildFromReplaceDto').mockReturnValue(
-            {} as never,
-        );
-        mockTripBlockCommand.replaceOneTripBlockByDomain.mockResolvedValue({
-            id: 'blk',
-        });
-        await expect(
-            service.replaceOneTripBlock({
-                id: 'blk',
-                dto: { trips: [{ calendarId: 'cal-new' }] } as never,
-            }),
-        ).resolves.toEqual({ id: 'blk' });
-        expect(mockSignalSend).toHaveBeenCalledWith({ type: 'timetable' });
-    });
 });
