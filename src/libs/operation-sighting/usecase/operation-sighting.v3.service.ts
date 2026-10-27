@@ -26,6 +26,8 @@ import { OperationSightingLatestCache } from '../domain/operation-sighting-lates
 import { OperationSightingLatestCacheCommand } from '../infrastructure/command/operation-sighting-latest-cache.command.js';
 import { OperationSightingCommand } from '../infrastructure/command/operation-sighting.command.js';
 import { OperationSightingAuthorCommand } from '../infrastructure/command/operation-sighting-author.command.js';
+import { pastSightingDateCacheTags } from '../../../core/modules/cdn-invalidation/cache-tags.js';
+import { CdnInvalidation } from '../../../core/modules/cdn-invalidation/cdn-invalidation.js';
 import { SocketSignal } from '../../../core/modules/socket-signal/socket-signal.js';
 import { OperationSightingLatestCacheQuery } from '../infrastructure/queries/operation-sighting-latest-cache.query.js';
 import { OperationSightingQuery } from '../infrastructure/queries/operation-sighting.query.js';
@@ -70,6 +72,7 @@ export class OperationSightingV3Service {
         private readonly itinerarySegmentQuery: ItinerarySegmentQuery,
         private readonly operationSightingAuthorCommand: OperationSightingAuthorCommand,
         private readonly socketSignal: SocketSignal,
+        private readonly cdnInvalidation: CdnInvalidation,
     ) {}
 
     /** `include`・`fields` があれば、作った一覧を選んだ関連・列だけに削る（docs/adr/0010-v3-include-and-fields.md） */
@@ -780,6 +783,7 @@ export class OperationSightingV3Service {
             );
             return saved;
         });
+        await this.#invalidatePastSightingDates(sightingTimeInstance.toDate());
         await this.socketSignal.send({ type: 'sighting' });
         return saved;
     }
@@ -868,6 +872,7 @@ export class OperationSightingV3Service {
             );
             return saved;
         });
+        await this.#invalidatePastSightingDates(dto.sightingTime);
         await this.socketSignal.send({ type: 'sighting' });
         return saved;
     }
@@ -932,8 +937,24 @@ export class OperationSightingV3Service {
             );
             return saved;
         });
+        await this.#invalidatePastSightingDates(dto.sightingTime);
         await this.socketSignal.send({ type: 'sighting' });
         return saved;
+    }
+
+    /**
+     * 過ぎた運行日の目撃を書いたら、その日の過去の運用情報の CDN キャッシュを捨てる。
+     * 今日の運行日の目撃は CDN に載せない画面なので、タグが空なら呼ばない。
+     */
+    async #invalidatePastSightingDates(sightingTime: Date): Promise<void> {
+        const tags = pastSightingDateCacheTags({
+            sightingTimes: [sightingTime],
+            now: dayjs(),
+        });
+        if (tags.length === 0) {
+            return;
+        }
+        await this.cdnInvalidation.invalidate({ tags });
     }
 
     async #applyCacheAction(

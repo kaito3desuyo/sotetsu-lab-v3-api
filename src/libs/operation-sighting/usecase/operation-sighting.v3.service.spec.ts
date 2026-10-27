@@ -9,6 +9,7 @@ import { DataSource } from 'typeorm';
 import { OperationSightingLatestCacheCommand } from '../infrastructure/command/operation-sighting-latest-cache.command.js';
 import { OperationSightingCommand } from '../infrastructure/command/operation-sighting.command.js';
 import { OperationSightingAuthorCommand } from '../infrastructure/command/operation-sighting-author.command.js';
+import { CdnInvalidation } from '../../../core/modules/cdn-invalidation/cdn-invalidation.js';
 import { SocketSignal } from '../../../core/modules/socket-signal/socket-signal.js';
 import { OperationSightingLatestCacheQuery } from '../infrastructure/queries/operation-sighting-latest-cache.query.js';
 import { OperationSightingQuery } from '../infrastructure/queries/operation-sighting.query.js';
@@ -33,6 +34,8 @@ const mockAuthorCreate: AnyMock = vi.fn();
 const mockOperationSightingAuthorCommand = { create: mockAuthorCreate };
 const mockSignalSend: AnyMock = vi.fn().mockResolvedValue(undefined);
 const mockSocketSignal = { send: mockSignalSend };
+const mockInvalidate: AnyMock = vi.fn().mockResolvedValue(undefined);
+const mockCdnInvalidation = { invalidate: mockInvalidate };
 const mockOperationSightingLatestCacheCommand = {
     save: vi.fn() as AnyMock,
     remove: vi.fn() as AnyMock,
@@ -84,6 +87,7 @@ async function buildService(): Promise<OperationSightingV3Service> {
                 useValue: mockOperationSightingAuthorCommand,
             },
             { provide: SocketSignal, useValue: mockSocketSignal },
+            { provide: CdnInvalidation, useValue: mockCdnInvalidation },
             {
                 provide: OperationSightingLatestCacheCommand,
                 useValue: mockOperationSightingLatestCacheCommand,
@@ -891,6 +895,185 @@ describe('OperationSightingV3Service - post', () => {
             service.post({ ...baseParams, userId: 'user-1' }),
         ).rejects.toThrow('db down');
         expect(mockSignalSend).not.toHaveBeenCalled();
+    });
+});
+
+describe('OperationSightingV3Service - 過去の日の目撃の CDN 失効', () => {
+    let service: OperationSightingV3Service;
+
+    const postParams = {
+        agencyId: 'agency-uuid',
+        formationOrVehicleNumber: '10708',
+        operationNumber: '100',
+        userId: 'user-1',
+    };
+
+    function buildDto(params: { sightingTime: Date; invalidated: boolean }) {
+        return {
+            operationSightingId: 'sighting-uuid',
+            formationId: 'f-id',
+            operationId: 'o-id',
+            sightingTime: params.sightingTime,
+            operation: { operationNumber: '61' },
+            formation: { formationNumber: '8001' },
+            invalidation: params.invalidated
+                ? {
+                      operationSightingId: 'sighting-uuid',
+                      operationSightingInvalidationId: 'inv-id',
+                  }
+                : null,
+            managementLogs: [],
+        };
+    }
+
+    beforeEach(async () => {
+        vi.clearAllMocks();
+        mockInvalidate.mockResolvedValue(undefined);
+        // 今は 2026-10-27 の運行日（4 時区切り）。Date だけ止める
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date('2026-10-27T04:30:00+09:00'));
+        mockDataSource.transaction.mockImplementation(async (fn: any) =>
+            fn(mockManager),
+        );
+        service = await buildService();
+
+        mockCalendarQuery.findOneBySpecificDate.mockResolvedValue({
+            id: 'cal-1',
+        });
+        mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
+            { id: 'op-100', operationNumber: '100' },
+        );
+        mockFormationQuery.findOneByAgencyIdAndFormationNumberAndDate.mockResolvedValue(
+            { id: 'f-1', formationNumber: '10708' },
+        );
+        mockOperationSightingLatestCacheQuery.findOneByFormationNumber.mockResolvedValue(
+            null,
+        );
+        mockSave.mockResolvedValue({ operationSightingId: 'sighting-uuid' });
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    it('post: 前の運行日の目撃なら、その日のタグで失効し、合図の前に呼ぶ', async () => {
+        await service.post({
+            ...postParams,
+            sightingTime: '2026-10-26T12:00:00+09:00',
+        });
+
+        expect(mockInvalidate).toHaveBeenCalledTimes(1);
+        expect(mockInvalidate).toHaveBeenCalledWith({
+            tags: ['sighting-date:2026-10-26'],
+        });
+        expect(mockInvalidate.mock.invocationCallOrder[0]).toBeLessThan(
+            mockSignalSend.mock.invocationCallOrder[0],
+        );
+    });
+
+    it('post: 今日の運行日の目撃なら、失効を呼ばない', async () => {
+        // 05:00 の目撃を未来にしないため、今を 06:00 にずらす
+        vi.setSystemTime(new Date('2026-10-27T06:00:00+09:00'));
+
+        await service.post({
+            ...postParams,
+            sightingTime: '2026-10-27T05:00:00+09:00',
+        });
+
+        expect(mockInvalidate).not.toHaveBeenCalled();
+        expect(mockSignalSend).toHaveBeenCalledWith({ type: 'sighting' });
+    });
+
+    it('post: 保存に失敗したら失効を呼ばない', async () => {
+        mockSave.mockRejectedValue(new Error('db down'));
+
+        await expect(
+            service.post({
+                ...postParams,
+                sightingTime: '2026-10-26T12:00:00+09:00',
+            }),
+        ).rejects.toThrow('db down');
+        expect(mockInvalidate).not.toHaveBeenCalled();
+    });
+
+    it('invalidate: 読んだ目撃が前の運行日なら、その日のタグで失効し、合図の前に呼ぶ', async () => {
+        mockOperationSightingQuery.findOneById.mockResolvedValue(
+            buildDto({
+                sightingTime: new Date('2026-10-26T12:00:00+09:00'),
+                invalidated: false,
+            }),
+        );
+
+        await service.invalidate({
+            operationSightingId: 'sighting-uuid',
+            userId: 'u1',
+            reason: 'test',
+        });
+
+        expect(mockInvalidate).toHaveBeenCalledTimes(1);
+        expect(mockInvalidate).toHaveBeenCalledWith({
+            tags: ['sighting-date:2026-10-26'],
+        });
+        expect(mockInvalidate.mock.invocationCallOrder[0]).toBeLessThan(
+            mockSignalSend.mock.invocationCallOrder[0],
+        );
+    });
+
+    it('invalidate: 読んだ目撃が今日の運行日なら、失効を呼ばない', async () => {
+        mockOperationSightingQuery.findOneById.mockResolvedValue(
+            buildDto({
+                sightingTime: new Date('2026-10-27T04:10:00+09:00'),
+                invalidated: false,
+            }),
+        );
+
+        await service.invalidate({
+            operationSightingId: 'sighting-uuid',
+            userId: 'u1',
+            reason: 'test',
+        });
+
+        expect(mockInvalidate).not.toHaveBeenCalled();
+    });
+
+    it('restore: 読んだ目撃が前の運行日なら、その日のタグで失効し、合図の前に呼ぶ', async () => {
+        mockOperationSightingQuery.findOneById.mockResolvedValue(
+            buildDto({
+                sightingTime: new Date('2026-10-26T12:00:00+09:00'),
+                invalidated: true,
+            }),
+        );
+
+        await service.restore({
+            operationSightingId: 'sighting-uuid',
+            userId: 'u1',
+            reason: 'test',
+        });
+
+        expect(mockInvalidate).toHaveBeenCalledTimes(1);
+        expect(mockInvalidate).toHaveBeenCalledWith({
+            tags: ['sighting-date:2026-10-26'],
+        });
+        expect(mockInvalidate.mock.invocationCallOrder[0]).toBeLessThan(
+            mockSignalSend.mock.invocationCallOrder[0],
+        );
+    });
+
+    it('restore: 読んだ目撃が今日の運行日なら、失効を呼ばない', async () => {
+        mockOperationSightingQuery.findOneById.mockResolvedValue(
+            buildDto({
+                sightingTime: new Date('2026-10-27T04:10:00+09:00'),
+                invalidated: true,
+            }),
+        );
+
+        await service.restore({
+            operationSightingId: 'sighting-uuid',
+            userId: 'u1',
+            reason: 'test',
+        });
+
+        expect(mockInvalidate).not.toHaveBeenCalled();
     });
 });
 
