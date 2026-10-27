@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
@@ -45,16 +46,39 @@ export class CalendarDateCommand {
         }
     }
 
-    async deleteOneById(params: { id: string }): Promise<void> {
+    /** 消した行の calendarId と date を返す（失効するダイヤと、過ぎた日かを知るため） */
+    async deleteOneById(params: {
+        id: string;
+    }): Promise<{ calendarId: string; date: string }> {
         const { id } = params;
 
-        const result = await this.calendarDateRepository.delete({ id });
+        const result = await this.calendarDateRepository
+            .createQueryBuilder()
+            .delete()
+            .where('id = :id', { id })
+            // returning はプロパティ名で引く（列名だと黙って捨てられる）。返る行のキーは列名
+            .returning(['calendarId', 'date'])
+            .execute();
+        const rows = result.raw as {
+            calendar_id: string;
+            // 列は date 型。pg は Date（その地方の 0 時）で返すので、YYYY-MM-DD にそろえる
+            date: Date | string;
+        }[];
 
-        if (!result.affected) {
+        if (rows.length === 0) {
             throw new UseCaseError('指定された運行日例外が見つかりません', {
                 id,
             });
         }
+
+        const { calendar_id: calendarId, date } = rows[0];
+        return {
+            calendarId,
+            date:
+                typeof date === 'string'
+                    ? date.slice(0, 10)
+                    : dayjs(date).format('YYYY-MM-DD'),
+        };
     }
 }
 

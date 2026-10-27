@@ -1,6 +1,7 @@
 import type { Mock } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { CdnInvalidation } from '../../../core/modules/cdn-invalidation/cdn-invalidation.js';
 import { CalendarDateCommand } from '../infrastructure/command/calendar-date.command.js';
 import { CalendarDateQuery } from '../infrastructure/queries/calendar-date.query.js';
 import { CalendarDateV3Service } from './calendar-date.v3.service.js';
@@ -10,11 +11,13 @@ describe('CalendarDateV3Service', () => {
     let findMany: Mock;
     let create: Mock;
     let deleteOneById: Mock;
+    let mockInvalidate: Mock;
 
     beforeEach(async () => {
         findMany = vi.fn();
         create = vi.fn();
         deleteOneById = vi.fn();
+        mockInvalidate = vi.fn().mockResolvedValue(undefined);
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -24,10 +27,22 @@ describe('CalendarDateV3Service', () => {
                     provide: CalendarDateCommand,
                     useValue: { create, deleteOneById },
                 },
+                {
+                    provide: CdnInvalidation,
+                    useValue: { invalidate: mockInvalidate },
+                },
             ],
         }).compile();
 
         service = module.get<CalendarDateV3Service>(CalendarDateV3Service);
+
+        // 今は 2026-10-27 04:30（運行日は 10-27）
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date('2026-10-27T04:30:00+09:00'));
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
     });
 
     it('findMany は CalendarDateQuery.findMany に委譲する', async () => {
@@ -39,29 +54,121 @@ describe('CalendarDateV3Service', () => {
         expect(result).toEqual([{ id: 'a' }]);
     });
 
-    it('create は CalendarDateCommand.create に委譲する', async () => {
-        create.mockResolvedValue({ id: 'new-id' });
+    it('create は CalendarDateCommand.create に委譲し、作った行のダイヤのタグで失効を呼ぶ', async () => {
+        create.mockResolvedValue({
+            id: 'new-id',
+            calendarId: 'Calendar-1',
+            date: '2027-07-20',
+        });
 
         const result = await service.create({
-            calendarId: 'calendar-1',
+            calendarId: 'Calendar-1',
             date: '2027-07-20',
             exceptionType: 1,
         });
 
         expect(create).toHaveBeenCalledWith({
-            calendarId: 'calendar-1',
+            calendarId: 'Calendar-1',
             date: '2027-07-20',
             exceptionType: 1,
         });
-        expect(result).toEqual({ id: 'new-id' });
+        expect(result).toEqual({
+            id: 'new-id',
+            calendarId: 'Calendar-1',
+            date: '2027-07-20',
+        });
+        expect(mockInvalidate).toHaveBeenCalledTimes(1);
+        expect(mockInvalidate).toHaveBeenCalledWith({
+            tags: ['calendar:calendar-1'],
+        });
     });
 
-    it('deleteOneById は CalendarDateCommand.deleteOneById に委譲する', async () => {
-        deleteOneById.mockResolvedValue(undefined);
+    it('create で今日の運行日の行なら、calendar のタグだけで失効を呼ぶ', async () => {
+        create.mockResolvedValue({
+            id: 'new-id',
+            calendarId: 'calendar-1',
+            date: '2026-10-27',
+        });
+
+        await service.create({
+            calendarId: 'calendar-1',
+            date: '2026-10-27',
+            exceptionType: 1,
+        });
+
+        expect(mockInvalidate).toHaveBeenCalledWith({
+            tags: ['calendar:calendar-1'],
+        });
+    });
+
+    it('create で過ぎた日の行なら、calendar と sighting-date の 2 タグで 1 回だけ失効を呼ぶ', async () => {
+        create.mockResolvedValue({
+            id: 'new-id',
+            calendarId: 'Calendar-1',
+            date: '2026-10-26',
+        });
+
+        await service.create({
+            calendarId: 'Calendar-1',
+            date: '2026-10-26',
+            exceptionType: 1,
+        });
+
+        expect(mockInvalidate).toHaveBeenCalledTimes(1);
+        expect(mockInvalidate).toHaveBeenCalledWith({
+            tags: ['calendar:calendar-1', 'sighting-date:2026-10-26'],
+        });
+    });
+
+    it('create で command が投げたら、失効を呼ばない', async () => {
+        create.mockRejectedValue(new Error('duplicate'));
+
+        await expect(
+            service.create({
+                calendarId: 'calendar-1',
+                date: '2027-07-20',
+                exceptionType: 1,
+            }),
+        ).rejects.toThrow('duplicate');
+        expect(mockInvalidate).not.toHaveBeenCalled();
+    });
+
+    it('deleteOneById は command が返した calendarId のタグで失効を呼ぶ（今日以降の行）', async () => {
+        deleteOneById.mockResolvedValue({
+            calendarId: 'Calendar-1',
+            date: '2027-07-20',
+        });
 
         await service.deleteOneById({ id: 'target-id' });
 
         expect(deleteOneById).toHaveBeenCalledWith({ id: 'target-id' });
+        expect(mockInvalidate).toHaveBeenCalledTimes(1);
+        expect(mockInvalidate).toHaveBeenCalledWith({
+            tags: ['calendar:calendar-1'],
+        });
+    });
+
+    it('deleteOneById で過ぎた日の行なら、calendar と sighting-date の 2 タグで 1 回だけ失効を呼ぶ', async () => {
+        deleteOneById.mockResolvedValue({
+            calendarId: 'Calendar-1',
+            date: '2026-10-26',
+        });
+
+        await service.deleteOneById({ id: 'target-id' });
+
+        expect(mockInvalidate).toHaveBeenCalledTimes(1);
+        expect(mockInvalidate).toHaveBeenCalledWith({
+            tags: ['calendar:calendar-1', 'sighting-date:2026-10-26'],
+        });
+    });
+
+    it('deleteOneById で command が投げたら、失効を呼ばない', async () => {
+        deleteOneById.mockRejectedValue(new Error('not found'));
+
+        await expect(
+            service.deleteOneById({ id: 'target-id' }),
+        ).rejects.toThrow('not found');
+        expect(mockInvalidate).not.toHaveBeenCalled();
     });
 
     it('findMany は fields[calendarDate] の項目と id だけを返す', async () => {

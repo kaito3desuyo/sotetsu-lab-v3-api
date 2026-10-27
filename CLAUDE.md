@@ -110,6 +110,7 @@ npm run deploy               # Serverless Framework でデプロイ
 - タイムゾーン - 全体で Asia/Tokyo に統一
 - CORS - `CORS_HEADER_ORIGIN` で設定（デフォルト `*`）
 - socket への合図 - `SOCKET_BROADCAST_FUNCTION_NAME` が空なら送らない。手元で socket の serverless-offline（`npm run dev:host`）に送るときは `.env.local` に `SOCKET_BROADCAST_FUNCTION_NAME=sotetsu-lab-v3-dev-socket-broadcast-lambda` と `SOCKET_BROADCAST_LAMBDA_ENDPOINT=http://host.docker.internal:3022` を書き、コンテナを作り直す（手順は socket の README）
+- CDN の失効 - `CDN_DISTRIBUTION_ID`（`serverless.ts` が client のスタックの `WebDistributionId` から入れる）が空なら呼ばない。書き込みの usecase は、`socketSignal.send` の隣で `cdnInvalidation.invalidate({ tags })` を呼び、client が画面に付けたタグ（`calendar:<id>`・過ぎた日の `sighting-date:<日付>`）を捨てる。失敗しても書き込みは成功のまま返す。新しい書き込みの入口を足したら、捨てるタグも決める（ADR-0012）
 - TypeScript は strict。値を外から詰めるプロパティ（エンティティ・DTO）は `!`。`as any`・`@ts-ignore` は使わない
 
 ### ESM

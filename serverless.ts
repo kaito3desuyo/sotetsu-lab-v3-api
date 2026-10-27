@@ -65,6 +65,13 @@ const serverlessConfiguration: AWS = {
                             `arn:aws:lambda:\${aws:region}:\${aws:accountId}:function:${system}-\${sls:stage}-socket-broadcast-lambda`,
                         ],
                     },
+                    {
+                        Effect: 'Allow',
+                        Action: ['cloudfront:CreateInvalidation'],
+                        Resource: [
+                            `arn:aws:cloudfront::\${aws:accountId}:distribution/\${cf:${system}-\${sls:stage}-client-cfstack.WebDistributionId}`,
+                        ],
+                    },
                 ],
             },
         },
@@ -79,6 +86,7 @@ const serverlessConfiguration: AWS = {
                 'postgresql://${self:custom.databaseSecrets.username}:${self:custom.databaseSecrets.password}@${self:custom.databaseSecrets.host}:${self:custom.databaseSecrets.port}/${self:custom.databaseSecrets.dbname}',
             SUPABASE_URL: '${ssm:sotetsu-lab-v3-supabase-url}',
             SOCKET_BROADCAST_FUNCTION_NAME: `${system}-\${sls:stage}-socket-broadcast-lambda`,
+            CDN_DISTRIBUTION_ID: `\${cf:${system}-\${sls:stage}-client-cfstack.WebDistributionId}`,
         },
     },
     // import the function via paths

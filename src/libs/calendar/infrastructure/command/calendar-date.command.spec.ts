@@ -1,7 +1,9 @@
 import type { MockedFunction } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { QueryFailedError } from 'typeorm';
+import { DataSource, DeleteQueryBuilder, QueryFailedError } from 'typeorm';
+import { ENTITIES } from '../../../../core/configs/entities.js';
+import { TypeOrmNamingStrategy } from '../../../../core/configs/typeorm-naming-strategy.js';
 import { UseCaseError } from '../../../../core/classes/custom-error.js';
 import { CalendarDateModel } from '../models/calendar-date.model.js';
 import { CalendarDateCommand } from './calendar-date.command.js';
@@ -17,18 +19,23 @@ function buildUniqueViolationError(): QueryFailedError {
 describe('CalendarDateCommand', () => {
     let create: AnyMock;
     let save: AnyMock;
-    let deleteFn: AnyMock;
+    let execute: AnyMock;
+    let where: AnyMock;
+    let returning: AnyMock;
     let command: CalendarDateCommand;
 
     beforeEach(async () => {
         create = vi.fn().mockImplementation((entity) => entity);
         save = vi.fn();
-        deleteFn = vi.fn();
+        execute = vi.fn();
+        returning = vi.fn().mockReturnValue({ execute });
+        where = vi.fn().mockReturnValue({ returning });
+        const deleteFn = vi.fn().mockReturnValue({ where });
 
         const mockRepository = {
             create,
             save,
-            delete: deleteFn,
+            createQueryBuilder: vi.fn().mockReturnValue({ delete: deleteFn }),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -88,18 +95,78 @@ describe('CalendarDateCommand', () => {
     });
 
     it('deleteOneById は対象が存在しない場合 UseCaseError を投げる', async () => {
-        deleteFn.mockResolvedValue({ affected: 0 });
+        execute.mockResolvedValue({ raw: [], affected: 0 });
 
         await expect(
             command.deleteOneById({ id: 'not-found-id' }),
         ).rejects.toBeInstanceOf(UseCaseError);
     });
 
-    it('deleteOneById は対象が存在する場合エラーを投げない', async () => {
-        deleteFn.mockResolvedValue({ affected: 1 });
+    it('deleteOneById は消した行の calendarId と date（YYYY-MM-DD）を返す', async () => {
+        execute.mockResolvedValue({
+            raw: [{ calendar_id: 'calendar-1', date: '2026-10-26' }],
+            affected: 1,
+        });
 
         await expect(
             command.deleteOneById({ id: 'existing-id' }),
-        ).resolves.toBeUndefined();
+        ).resolves.toEqual({ calendarId: 'calendar-1', date: '2026-10-26' });
+        expect(where).toHaveBeenCalledWith('id = :id', { id: 'existing-id' });
+        expect(returning).toHaveBeenCalledWith(['calendarId', 'date']);
+    });
+
+    it('deleteOneById は raw の date が Date で返っても、YYYY-MM-DD にそろえる', async () => {
+        execute.mockResolvedValue({
+            raw: [
+                {
+                    calendar_id: 'calendar-1',
+                    date: new Date(2026, 9, 26),
+                },
+            ],
+            affected: 1,
+        });
+
+        await expect(
+            command.deleteOneById({ id: 'existing-id' }),
+        ).resolves.toEqual({ calendarId: 'calendar-1', date: '2026-10-26' });
+    });
+});
+
+describe('CalendarDateCommand.deleteOneById が組み立てる SQL', () => {
+    it('RETURNING "calendar_id", "date" を含む（returning はプロパティ名で引くため、列名で渡すと黙って捨てられる）', async () => {
+        // 接続はしない。メタデータを組み立てるだけで SQL を取り出す
+        const dataSource = new DataSource({
+            type: 'postgres',
+            entities: ENTITIES,
+            namingStrategy: new TypeOrmNamingStrategy(),
+        });
+        await (
+            dataSource as unknown as { buildMetadatas(): Promise<void> }
+        ).buildMetadatas();
+        const repository = dataSource.getRepository(CalendarDateModel);
+        const command = new CalendarDateCommand(repository);
+
+        // execute は DB に繋ぐので差し替え、組み立てた SQL だけを受け取る
+        let sql = '';
+        const executeSpy = vi
+            .spyOn(DeleteQueryBuilder.prototype, 'execute')
+            .mockImplementation(async function (
+                this: DeleteQueryBuilder<CalendarDateModel>,
+            ) {
+                [sql] = this.getQueryAndParameters();
+                return {
+                    raw: [{ calendar_id: 'calendar-1', date: '2026-10-26' }],
+                } as never;
+            });
+
+        try {
+            await command.deleteOneById({ id: 'target-id' });
+        } finally {
+            executeSpy.mockRestore();
+        }
+
+        expect(sql).toBe(
+            'DELETE FROM "calendar_dates" WHERE "id" = $1 RETURNING "calendar_id", "date"',
+        );
     });
 });
