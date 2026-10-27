@@ -1,7 +1,9 @@
 import type { MockedFunction } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { QueryFailedError } from 'typeorm';
+import { DataSource, DeleteQueryBuilder, QueryFailedError } from 'typeorm';
+import { ENTITIES } from '../../../../core/configs/entities.js';
+import { TypeOrmNamingStrategy } from '../../../../core/configs/typeorm-naming-strategy.js';
 import { UseCaseError } from '../../../../core/classes/custom-error.js';
 import { CalendarDateModel } from '../models/calendar-date.model.js';
 import { CalendarDateCommand } from './calendar-date.command.js';
@@ -110,6 +112,37 @@ describe('CalendarDateCommand', () => {
             command.deleteOneById({ id: 'existing-id' }),
         ).resolves.toEqual({ calendarId: 'calendar-1' });
         expect(where).toHaveBeenCalledWith('id = :id', { id: 'existing-id' });
-        expect(returning).toHaveBeenCalledWith(['calendar_id']);
+        expect(returning).toHaveBeenCalledWith(['calendarId']);
+    });
+});
+
+describe('CalendarDateCommand.deleteOneById が組み立てる SQL', () => {
+    it('RETURNING "calendar_id" を含む（returning はプロパティ名で引くため、列名で渡すと黙って捨てられる）', async () => {
+        // 接続はしない。メタデータを組み立てるだけで SQL を取り出す
+        const dataSource = new DataSource({
+            type: 'postgres',
+            entities: ENTITIES,
+            namingStrategy: new TypeOrmNamingStrategy(),
+        });
+        await (
+            dataSource as unknown as { buildMetadatas(): Promise<void> }
+        ).buildMetadatas();
+        const repository = dataSource.getRepository(CalendarDateModel);
+        const command = new CalendarDateCommand(repository);
+
+        // execute は DB に繋ぐので差し替え、組み立てた SQL だけを受け取る
+        let sql = '';
+        vi.spyOn(DeleteQueryBuilder.prototype, 'execute').mockImplementation(
+            async function (this: DeleteQueryBuilder<CalendarDateModel>) {
+                [sql] = this.getQueryAndParameters();
+                return { raw: [{ calendar_id: 'calendar-1' }] } as never;
+            },
+        );
+
+        await command.deleteOneById({ id: 'target-id' });
+
+        expect(sql).toBe(
+            'DELETE FROM "calendar_dates" WHERE "id" = $1 RETURNING "calendar_id"',
+        );
     });
 });

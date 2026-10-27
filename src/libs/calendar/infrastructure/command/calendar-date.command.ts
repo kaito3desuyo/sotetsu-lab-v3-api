@@ -55,7 +55,8 @@ export class CalendarDateCommand {
             .createQueryBuilder()
             .delete()
             .where('id = :id', { id })
-            .returning(['calendar_id'])
+            // returning はプロパティ名で引く（列名だと黙って捨てられる）。返る行のキーは列名
+            .returning(['calendarId'])
             .execute();
         const rows = result.raw as { calendar_id: string }[];
 
