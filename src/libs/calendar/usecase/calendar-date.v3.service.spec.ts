@@ -35,6 +35,14 @@ describe('CalendarDateV3Service', () => {
         }).compile();
 
         service = module.get<CalendarDateV3Service>(CalendarDateV3Service);
+
+        // 今は 2026-10-27 04:30（運行日は 10-27）
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date('2026-10-27T04:30:00+09:00'));
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
     });
 
     it('findMany は CalendarDateQuery.findMany に委譲する', async () => {
@@ -47,7 +55,11 @@ describe('CalendarDateV3Service', () => {
     });
 
     it('create は CalendarDateCommand.create に委譲し、作った行のダイヤのタグで失効を呼ぶ', async () => {
-        create.mockResolvedValue({ id: 'new-id', calendarId: 'Calendar-1' });
+        create.mockResolvedValue({
+            id: 'new-id',
+            calendarId: 'Calendar-1',
+            date: '2027-07-20',
+        });
 
         const result = await service.create({
             calendarId: 'Calendar-1',
@@ -60,10 +72,51 @@ describe('CalendarDateV3Service', () => {
             date: '2027-07-20',
             exceptionType: 1,
         });
-        expect(result).toEqual({ id: 'new-id', calendarId: 'Calendar-1' });
+        expect(result).toEqual({
+            id: 'new-id',
+            calendarId: 'Calendar-1',
+            date: '2027-07-20',
+        });
         expect(mockInvalidate).toHaveBeenCalledTimes(1);
         expect(mockInvalidate).toHaveBeenCalledWith({
             tags: ['calendar:calendar-1'],
+        });
+    });
+
+    it('create で今日の運行日の行なら、calendar のタグだけで失効を呼ぶ', async () => {
+        create.mockResolvedValue({
+            id: 'new-id',
+            calendarId: 'calendar-1',
+            date: '2026-10-27',
+        });
+
+        await service.create({
+            calendarId: 'calendar-1',
+            date: '2026-10-27',
+            exceptionType: 1,
+        });
+
+        expect(mockInvalidate).toHaveBeenCalledWith({
+            tags: ['calendar:calendar-1'],
+        });
+    });
+
+    it('create で過ぎた日の行なら、calendar と sighting-date の 2 タグで 1 回だけ失効を呼ぶ', async () => {
+        create.mockResolvedValue({
+            id: 'new-id',
+            calendarId: 'Calendar-1',
+            date: '2026-10-26',
+        });
+
+        await service.create({
+            calendarId: 'Calendar-1',
+            date: '2026-10-26',
+            exceptionType: 1,
+        });
+
+        expect(mockInvalidate).toHaveBeenCalledTimes(1);
+        expect(mockInvalidate).toHaveBeenCalledWith({
+            tags: ['calendar:calendar-1', 'sighting-date:2026-10-26'],
         });
     });
 
@@ -80,8 +133,11 @@ describe('CalendarDateV3Service', () => {
         expect(mockInvalidate).not.toHaveBeenCalled();
     });
 
-    it('deleteOneById は command が返した calendarId のタグで失効を呼ぶ', async () => {
-        deleteOneById.mockResolvedValue({ calendarId: 'Calendar-1' });
+    it('deleteOneById は command が返した calendarId のタグで失効を呼ぶ（今日以降の行）', async () => {
+        deleteOneById.mockResolvedValue({
+            calendarId: 'Calendar-1',
+            date: '2027-07-20',
+        });
 
         await service.deleteOneById({ id: 'target-id' });
 
@@ -89,6 +145,20 @@ describe('CalendarDateV3Service', () => {
         expect(mockInvalidate).toHaveBeenCalledTimes(1);
         expect(mockInvalidate).toHaveBeenCalledWith({
             tags: ['calendar:calendar-1'],
+        });
+    });
+
+    it('deleteOneById で過ぎた日の行なら、calendar と sighting-date の 2 タグで 1 回だけ失効を呼ぶ', async () => {
+        deleteOneById.mockResolvedValue({
+            calendarId: 'Calendar-1',
+            date: '2026-10-26',
+        });
+
+        await service.deleteOneById({ id: 'target-id' });
+
+        expect(mockInvalidate).toHaveBeenCalledTimes(1);
+        expect(mockInvalidate).toHaveBeenCalledWith({
+            tags: ['calendar:calendar-1', 'sighting-date:2026-10-26'],
         });
     });
 

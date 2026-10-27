@@ -102,22 +102,38 @@ describe('CalendarDateCommand', () => {
         ).rejects.toBeInstanceOf(UseCaseError);
     });
 
-    it('deleteOneById は消した行の calendarId を返す', async () => {
+    it('deleteOneById は消した行の calendarId と date（YYYY-MM-DD）を返す', async () => {
         execute.mockResolvedValue({
-            raw: [{ calendar_id: 'calendar-1' }],
+            raw: [{ calendar_id: 'calendar-1', date: '2026-10-26' }],
             affected: 1,
         });
 
         await expect(
             command.deleteOneById({ id: 'existing-id' }),
-        ).resolves.toEqual({ calendarId: 'calendar-1' });
+        ).resolves.toEqual({ calendarId: 'calendar-1', date: '2026-10-26' });
         expect(where).toHaveBeenCalledWith('id = :id', { id: 'existing-id' });
-        expect(returning).toHaveBeenCalledWith(['calendarId']);
+        expect(returning).toHaveBeenCalledWith(['calendarId', 'date']);
+    });
+
+    it('deleteOneById は raw の date が Date で返っても、YYYY-MM-DD にそろえる', async () => {
+        execute.mockResolvedValue({
+            raw: [
+                {
+                    calendar_id: 'calendar-1',
+                    date: new Date(2026, 9, 26),
+                },
+            ],
+            affected: 1,
+        });
+
+        await expect(
+            command.deleteOneById({ id: 'existing-id' }),
+        ).resolves.toEqual({ calendarId: 'calendar-1', date: '2026-10-26' });
     });
 });
 
 describe('CalendarDateCommand.deleteOneById が組み立てる SQL', () => {
-    it('RETURNING "calendar_id" を含む（returning はプロパティ名で引くため、列名で渡すと黙って捨てられる）', async () => {
+    it('RETURNING "calendar_id", "date" を含む（returning はプロパティ名で引くため、列名で渡すと黙って捨てられる）', async () => {
         // 接続はしない。メタデータを組み立てるだけで SQL を取り出す
         const dataSource = new DataSource({
             type: 'postgres',
@@ -138,7 +154,9 @@ describe('CalendarDateCommand.deleteOneById が組み立てる SQL', () => {
                 this: DeleteQueryBuilder<CalendarDateModel>,
             ) {
                 [sql] = this.getQueryAndParameters();
-                return { raw: [{ calendar_id: 'calendar-1' }] } as never;
+                return {
+                    raw: [{ calendar_id: 'calendar-1', date: '2026-10-26' }],
+                } as never;
             });
 
         try {
@@ -148,7 +166,7 @@ describe('CalendarDateCommand.deleteOneById が組み立てる SQL', () => {
         }
 
         expect(sql).toBe(
-            'DELETE FROM "calendar_dates" WHERE "id" = $1 RETURNING "calendar_id"',
+            'DELETE FROM "calendar_dates" WHERE "id" = $1 RETURNING "calendar_id", "date"',
         );
     });
 });

@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 import {
     calendarCacheTag,
     calendarCacheTags,
+    pastDateCacheTags,
     pastSightingDateCacheTags,
     sightingDateCacheTag,
 } from './cache-tags.js';
@@ -63,6 +64,44 @@ describe('cache-tags', () => {
                     now,
                 }),
             ).toEqual(['sighting-date:2026-10-26']);
+        });
+    });
+
+    describe('pastDateCacheTags', () => {
+        it('4 時前は前日が今日なので、前日の日付はタグにしない', () => {
+            expect(
+                pastDateCacheTags({
+                    dates: ['2026-10-26'],
+                    now: dayjs('2026-10-27T03:30:00+09:00'),
+                }),
+            ).toEqual([]);
+        });
+
+        it('4 時以降は前日の日付をタグにする', () => {
+            expect(
+                pastDateCacheTags({
+                    dates: ['2026-10-26'],
+                    now: dayjs('2026-10-27T04:30:00+09:00'),
+                }),
+            ).toEqual(['sighting-date:2026-10-26']);
+        });
+
+        it('今日・未来の日付はタグにしない', () => {
+            expect(
+                pastDateCacheTags({
+                    dates: ['2026-10-27', '2026-10-28'],
+                    now: dayjs('2026-10-27T04:30:00+09:00'),
+                }),
+            ).toEqual([]);
+        });
+
+        it('同じ日が複数あっても、タグは 1 つ', () => {
+            expect(
+                pastDateCacheTags({
+                    dates: ['2026-10-26', '2026-10-26', '2026-10-25'],
+                    now: dayjs('2026-10-27T04:30:00+09:00'),
+                }),
+            ).toEqual(['sighting-date:2026-10-26', 'sighting-date:2026-10-25']);
         });
     });
 });

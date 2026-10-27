@@ -45,3 +45,22 @@ export function pastSightingDateCacheTags(params: {
     }
     return [...tags];
 }
+
+/**
+ * 運行日が今日より前の日付だけを sighting-date のタグにする（重複は 1 つ）。
+ * 過ぎた日の運用情報（client の過去の運用情報）は、その日のダイヤを calendar_dates も見て引くので、
+ * calendar_dates を書いた日が過ぎた日なら、その日の画面も捨てる。日の比べ方は getBaseDate（4 時区切り）。
+ */
+export function pastDateCacheTags(params: {
+    dates: readonly string[];
+    now: dayjs.Dayjs;
+}): string[] {
+    const today = getBaseDate(params.now);
+    const tags = new Set<string>();
+    for (const date of params.dates) {
+        if (dayjs(date).isBefore(today)) {
+            tags.add(sightingDateCacheTag(date));
+        }
+    }
+    return [...tags];
+}
