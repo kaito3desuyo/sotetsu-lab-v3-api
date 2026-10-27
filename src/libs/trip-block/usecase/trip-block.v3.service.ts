@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { CdnInvalidation } from '../../../core/modules/cdn-invalidation/cdn-invalidation.js';
+import { calendarCacheTags } from '../../../core/modules/cdn-invalidation/cache-tags.js';
 import { SocketSignal } from '../../../core/modules/socket-signal/socket-signal.js';
 import { secondsOfServiceDay } from '../../../core/utils/datetime.js';
 import { UseCaseError } from '../../../core/classes/custom-error.js';
@@ -57,7 +59,24 @@ export class TripBlockV3Service {
         private readonly tripBlockQuery: TripBlockQuery,
         private readonly itinerarySegmentQuery: ItinerarySegmentQuery,
         private readonly socketSignal: SocketSignal,
+        private readonly cdnInvalidation: CdnInvalidation,
     ) {}
+
+    /**
+     * そのダイヤの画面の CDN キャッシュを捨てる。CdnInvalidation は reject しない約束だが、
+     * 万一 reject しても、保存済みの書き込みを失敗にしない。
+     */
+    async #invalidateCalendars(
+        calendarIds: readonly (string | null | undefined)[],
+    ): Promise<void> {
+        try {
+            await this.cdnInvalidation.invalidate({
+                tags: calendarCacheTags(calendarIds),
+            });
+        } catch {
+            // 捨て損ねても、書き込みは成功のまま返す
+        }
+    }
 
     /**
      * 書き込む区間の「次の運用」を、そのダイヤの区間と突き合わせて検める。
@@ -197,6 +216,9 @@ export class TripBlockV3Service {
         );
         const domains = TripBlocksDomainBuilder.buildFromCreateDto(dtos);
         const result = await this.tripBlockCommand.bulkCreate(domains);
+        await this.#invalidateCalendars(
+            dtos.flatMap((o) => o.trips).map((t) => t.calendarId),
+        );
         await this.socketSignal.send({ type: 'timetable' });
         return result;
     }
@@ -207,18 +229,20 @@ export class TripBlockV3Service {
     }): Promise<TripBlockDetailsDto> {
         const { id, dto } = params;
 
-        const current = hasNextLink(dto.trips)
-            ? await this.tripBlockQuery.findOneTripBlockByTripBlockId(id)
-            : null;
+        // 書き換え前のダイヤの画面も捨てるので、次の運用の有無にかかわらず常に読む
+        const current =
+            await this.tripBlockQuery.findOneTripBlockByTripBlockId(id);
         const sentIds = new Set(
             dto.trips.flatMap((t) =>
                 (t.tripOperationLists ?? []).map((o) => o.id),
             ),
         );
-        const removedIds = (current?.trips ?? [])
-            .flatMap((t) => t.tripOperationLists ?? [])
-            .map((o) => o.id)
-            .filter((x) => !sentIds.has(x));
+        const removedIds = hasNextLink(dto.trips)
+            ? (current?.trips ?? [])
+                  .flatMap((t) => t.tripOperationLists ?? [])
+                  .map((o) => o.id)
+                  .filter((x) => !sentIds.has(x))
+            : [];
         await this.#validateNextSegments(
             dto.trips,
             dto.trips.map(() => id),
@@ -230,6 +254,10 @@ export class TripBlockV3Service {
         });
         const result =
             await this.tripBlockCommand.replaceOneTripBlockByDomain(domain);
+        await this.#invalidateCalendars([
+            ...(current?.trips ?? []).map((t) => t.calendarId),
+            ...dto.trips.map((t) => t.calendarId),
+        ]);
         await this.socketSignal.send({ type: 'timetable' });
         return result;
     }
@@ -272,6 +300,12 @@ export class TripBlockV3Service {
             );
         }
 
+        await this.#invalidateCalendars(
+            [
+                ...(tripBlockDto.from.trips ?? []),
+                ...(tripBlockDto.to.trips ?? []),
+            ].map((t) => t.calendarId),
+        );
         await this.socketSignal.send({ type: 'timetable' });
         return result;
     }
@@ -328,6 +362,9 @@ export class TripBlockV3Service {
             await this.tripBlockCommand.deleteOneTripBlockByDomain(tripBlock);
         }
 
+        await this.#invalidateCalendars(
+            (tripBlockDto.trips ?? []).map((t) => t.calendarId),
+        );
         await this.socketSignal.send({ type: 'timetable' });
         return result;
     }

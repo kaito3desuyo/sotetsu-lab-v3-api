@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CdnInvalidationModule } from '../../core/modules/cdn-invalidation/cdn-invalidation.module.js';
 import { SocketSignalModule } from '../../core/modules/socket-signal/socket-signal.module.js';
 import { OperationLibsModule } from '../operation/operation.libs.module.js';
 import { TripBlockLibsModule } from './trip-block.libs.module.js';
@@ -6,7 +7,12 @@ import { TripBlockV3Controller } from './presentation/trip-block.v3.controller.j
 import { TripBlockV3Service } from './usecase/trip-block.v3.service.js';
 
 @Module({
-    imports: [TripBlockLibsModule, OperationLibsModule, SocketSignalModule],
+    imports: [
+        TripBlockLibsModule,
+        OperationLibsModule,
+        SocketSignalModule,
+        CdnInvalidationModule,
+    ],
     controllers: [TripBlockV3Controller],
     providers: [TripBlockV3Service],
 })

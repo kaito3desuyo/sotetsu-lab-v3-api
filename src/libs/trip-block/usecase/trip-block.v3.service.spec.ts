@@ -1,6 +1,7 @@
 import type { MockedFunction } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { CdnInvalidation } from '../../../core/modules/cdn-invalidation/cdn-invalidation.js';
 import { SocketSignal } from '../../../core/modules/socket-signal/socket-signal.js';
 import { ItinerarySegmentQuery } from '../../operation/infrastructure/queries/itinerary-segment.query.js';
 import { TripBlockCommand } from '../infrastructure/commands/trip-block.command.js';
@@ -22,6 +23,7 @@ const mockTripBlockCommand = {
     deleteOneTripBlockByDomain: vi.fn() as AnyMock,
 };
 const mockSignalSend = vi.fn() as AnyMock;
+const mockInvalidate = vi.fn() as AnyMock;
 
 const mockTripBlockQuery = {
     findOneTripBlockByTripBlockId: vi.fn() as AnyMock,
@@ -50,6 +52,10 @@ describe('TripBlockV3Service - findManyByFilter', () => {
                     useValue: mockItinerarySegmentQuery,
                 },
                 { provide: SocketSignal, useValue: { send: mockSignalSend } },
+                {
+                    provide: CdnInvalidation,
+                    useValue: { invalidate: mockInvalidate },
+                },
             ],
         }).compile();
         service = module.get(TripBlockV3Service);
@@ -182,6 +188,10 @@ describe('TripBlockV3Service - findOneById の include・fields', () => {
                     useValue: mockItinerarySegmentQuery,
                 },
                 { provide: SocketSignal, useValue: { send: mockSignalSend } },
+                {
+                    provide: CdnInvalidation,
+                    useValue: { invalidate: mockInvalidate },
+                },
             ],
         }).compile();
         service = module.get(TripBlockV3Service);
@@ -252,6 +262,10 @@ describe('TripBlockV3Service - 次の運用の検め', () => {
                     useValue: mockItinerarySegmentQuery,
                 },
                 { provide: SocketSignal, useValue: { send: mockSignalSend } },
+                {
+                    provide: CdnInvalidation,
+                    useValue: { invalidate: mockInvalidate },
+                },
             ],
         }).compile();
         service = module.get(TripBlockV3Service);
@@ -382,7 +396,7 @@ describe('TripBlockV3Service - 次の運用の検め', () => {
         ).rejects.toThrow('ダイヤのない列車には次の運用を設定できません');
     });
 
-    it('次の運用がすべて null か省略なら、現在の取得も区間の読み込みもしない', async () => {
+    it('次の運用がすべて null か省略なら、区間の読み込みはしない（現在の取得は失効のために行う）', async () => {
         await service
             .replaceOneTripBlock({
                 id: 'blk',
@@ -401,7 +415,7 @@ describe('TripBlockV3Service - 次の運用の検め', () => {
             .catch(() => undefined);
         expect(
             mockTripBlockQuery.findOneTripBlockByTripBlockId,
-        ).not.toHaveBeenCalled();
+        ).toHaveBeenCalledTimes(1);
         expect(
             mockItinerarySegmentQuery.findManyByCalendarId,
         ).not.toHaveBeenCalled();
@@ -426,7 +440,7 @@ describe('TripBlockV3Service - 次の運用の検め', () => {
             .catch(() => undefined);
         expect(
             mockTripBlockQuery.findOneTripBlockByTripBlockId,
-        ).toHaveBeenCalled();
+        ).toHaveBeenCalledTimes(1);
         expect(
             mockItinerarySegmentQuery.findManyByCalendarId,
         ).toHaveBeenCalled();
@@ -500,6 +514,10 @@ describe('TripBlockV3Service - 保存を socket に知らせる', () => {
                     useValue: mockItinerarySegmentQuery,
                 },
                 { provide: SocketSignal, useValue: { send: mockSignalSend } },
+                {
+                    provide: CdnInvalidation,
+                    useValue: { invalidate: mockInvalidate },
+                },
             ],
         }).compile();
         service = module.get(TripBlockV3Service);
@@ -543,8 +561,12 @@ describe('TripBlockV3Service - 保存を socket に知らせる', () => {
             isTripEmpty: vi.fn().mockReturnValue(true),
         };
         const to = { addTrip: vi.fn() };
-        mockTripBlockQuery.findOneTripBlockByTripId.mockResolvedValue({});
-        mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue({});
+        mockTripBlockQuery.findOneTripBlockByTripId.mockResolvedValue({
+            trips: [],
+        });
+        mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue({
+            trips: [],
+        });
         mockTripBlockQuery.findOneById.mockResolvedValue({ id: 'to' });
         vi.spyOn(TripBlockDomainBuilder, 'buildFromDetailsDto')
             .mockReturnValueOnce(from as never)
@@ -562,7 +584,9 @@ describe('TripBlockV3Service - 保存を socket に知らせる', () => {
 
     it('addTripToTripBlock が見つからなければ知らせない', async () => {
         mockTripBlockQuery.findOneTripBlockByTripId.mockResolvedValue(null);
-        mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue({});
+        mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue({
+            trips: [],
+        });
         await expect(
             service.addTripToTripBlock({
                 id: 'to',
@@ -578,7 +602,9 @@ describe('TripBlockV3Service - 保存を socket に知らせる', () => {
             removeTrip: vi.fn(),
             isTripEmpty: vi.fn().mockReturnValue(false),
         };
-        mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue({});
+        mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue({
+            trips: [],
+        });
         mockTripBlockQuery.findOneById.mockResolvedValue({ id: 'blk' });
         vi.spyOn(TripBlockDomainBuilder, 'buildFromDetailsDto').mockReturnValue(
             block as never,
@@ -602,5 +628,234 @@ describe('TripBlockV3Service - 保存を socket に知らせる', () => {
             }),
         ).rejects.toThrow();
         expect(mockSignalSend).not.toHaveBeenCalled();
+    });
+});
+
+describe('TripBlockV3Service - 書き込みで画面の CDN キャッシュを捨てる', () => {
+    let service: TripBlockV3Service;
+
+    afterEach(() => vi.restoreAllMocks());
+
+    beforeEach(async () => {
+        vi.clearAllMocks();
+        mockInvalidate.mockResolvedValue(undefined);
+        const module: TestingModule = await Test.createTestingModule({
+            providers: [
+                TripBlockV3Service,
+                { provide: TripBlockQuery, useValue: mockTripBlockQuery },
+                { provide: TripBlockCommand, useValue: mockTripBlockCommand },
+                {
+                    provide: ItinerarySegmentQuery,
+                    useValue: mockItinerarySegmentQuery,
+                },
+                { provide: SocketSignal, useValue: { send: mockSignalSend } },
+                {
+                    provide: CdnInvalidation,
+                    useValue: { invalidate: mockInvalidate },
+                },
+            ],
+        }).compile();
+        service = module.get(TripBlockV3Service);
+    });
+
+    const tagsOf = () => {
+        expect(mockInvalidate).toHaveBeenCalledTimes(1);
+        return [...mockInvalidate.mock.calls[0][0].tags].sort();
+    };
+
+    const setupAdd = (
+        fromCalendars: (string | null)[],
+        toCalendars: (string | null)[],
+    ) => {
+        const from = {
+            getTripByTripId: vi.fn().mockReturnValue({}),
+            removeTrip: vi.fn(),
+            isTripEmpty: vi.fn().mockReturnValue(false),
+        };
+        const to = { addTrip: vi.fn() };
+        mockTripBlockQuery.findOneTripBlockByTripId.mockResolvedValue({
+            trips: fromCalendars.map((calendarId) => ({ calendarId })),
+        });
+        mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue({
+            trips: toCalendars.map((calendarId) => ({ calendarId })),
+        });
+        mockTripBlockQuery.findOneById.mockResolvedValue({ id: 'to' });
+        vi.spyOn(TripBlockDomainBuilder, 'buildFromDetailsDto')
+            .mockReturnValueOnce(from as never)
+            .mockReturnValueOnce(to as never);
+        mockTripBlockCommand.replaceOneTripBlockByDomain.mockResolvedValue({});
+    };
+
+    it('createManyTripBlocks は dto の全列車の calendarId（null と重複を除く）で 1 回捨てる', async () => {
+        vi.spyOn(TripBlocksDomainBuilder, 'buildFromCreateDto').mockReturnValue(
+            [] as never,
+        );
+        mockTripBlockCommand.bulkCreate.mockResolvedValue([]);
+        await service.createManyTripBlocks([
+            { trips: [{ calendarId: 'Cal-A' }, { calendarId: null }] },
+            { trips: [{ calendarId: 'cal-a' }, { calendarId: 'cal-b' }] },
+        ] as never);
+        expect(tagsOf()).toEqual(['calendar:cal-a', 'calendar:cal-b']);
+        expect(mockInvalidate.mock.invocationCallOrder[0]).toBeLessThan(
+            mockSignalSend.mock.invocationCallOrder[0],
+        );
+    });
+
+    it('createManyTripBlocks の保存が失敗したら捨てない', async () => {
+        vi.spyOn(TripBlocksDomainBuilder, 'buildFromCreateDto').mockReturnValue(
+            [] as never,
+        );
+        mockTripBlockCommand.bulkCreate.mockRejectedValue(new Error('db'));
+        await expect(
+            service.createManyTripBlocks([
+                { trips: [{ calendarId: 'cal-a' }] },
+            ] as never),
+        ).rejects.toThrow('db');
+        expect(mockInvalidate).not.toHaveBeenCalled();
+    });
+
+    it('replaceOneTripBlock は書き換え前と dto の calendarId を合わせて捨てる', async () => {
+        mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue({
+            trips: [{ calendarId: 'cal-old', tripOperationLists: [] }],
+        });
+        vi.spyOn(TripBlockDomainBuilder, 'buildFromReplaceDto').mockReturnValue(
+            {} as never,
+        );
+        mockTripBlockCommand.replaceOneTripBlockByDomain.mockResolvedValue({});
+        await service.replaceOneTripBlock({
+            id: 'blk',
+            dto: { trips: [{ calendarId: 'cal-new' }] } as never,
+        });
+        expect(tagsOf()).toEqual(['calendar:cal-new', 'calendar:cal-old']);
+        expect(
+            mockTripBlockQuery.findOneTripBlockByTripBlockId,
+        ).toHaveBeenCalledTimes(1);
+    });
+
+    it('replaceOneTripBlock は書き換え前の block が無くても dto の calendarId で捨てる', async () => {
+        mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue(
+            null,
+        );
+        vi.spyOn(TripBlockDomainBuilder, 'buildFromReplaceDto').mockReturnValue(
+            {} as never,
+        );
+        mockTripBlockCommand.replaceOneTripBlockByDomain.mockResolvedValue({});
+        await service.replaceOneTripBlock({
+            id: 'blk',
+            dto: { trips: [{ calendarId: 'cal-new' }] } as never,
+        });
+        expect(tagsOf()).toEqual(['calendar:cal-new']);
+    });
+
+    it('replaceOneTripBlock の保存が失敗したら捨てない', async () => {
+        mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue({
+            trips: [{ calendarId: 'cal-old' }],
+        });
+        vi.spyOn(TripBlockDomainBuilder, 'buildFromReplaceDto').mockReturnValue(
+            {} as never,
+        );
+        mockTripBlockCommand.replaceOneTripBlockByDomain.mockRejectedValue(
+            new Error('db'),
+        );
+        await expect(
+            service.replaceOneTripBlock({
+                id: 'blk',
+                dto: { trips: [{ calendarId: 'cal-new' }] } as never,
+            }),
+        ).rejects.toThrow('db');
+        expect(mockInvalidate).not.toHaveBeenCalled();
+    });
+
+    it('addTripToTripBlock は from と to の calendarId で捨てる', async () => {
+        setupAdd(['cal-from'], ['cal-to', null]);
+        await service.addTripToTripBlock({
+            id: 'to',
+            dto: { tripId: 't1' } as never,
+        });
+        expect(tagsOf()).toEqual(['calendar:cal-from', 'calendar:cal-to']);
+    });
+
+    it('addTripToTripBlock の列車の calendarId がすべて null なら tags: [] で呼ぶ', async () => {
+        setupAdd([null], [null]);
+        await service.addTripToTripBlock({
+            id: 'to',
+            dto: { tripId: 't1' } as never,
+        });
+        expect(mockInvalidate).toHaveBeenCalledWith({ tags: [] });
+    });
+
+    it('addTripToTripBlock が見つからなければ捨てない', async () => {
+        mockTripBlockQuery.findOneTripBlockByTripId.mockResolvedValue(null);
+        mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue({
+            trips: [],
+        });
+        await expect(
+            service.addTripToTripBlock({
+                id: 'to',
+                dto: { tripId: 't1' } as never,
+            }),
+        ).rejects.toThrow();
+        expect(mockInvalidate).not.toHaveBeenCalled();
+    });
+
+    const setupDelete = () => {
+        const block = {
+            getTripByTripId: vi.fn().mockReturnValue({}),
+            removeTrip: vi.fn(),
+            isTripEmpty: vi.fn().mockReturnValue(false),
+        };
+        mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue({
+            trips: [{ calendarId: 'cal-a' }, { calendarId: 'cal-b' }],
+        });
+        mockTripBlockQuery.findOneById.mockResolvedValue({ id: 'blk' });
+        vi.spyOn(TripBlockDomainBuilder, 'buildFromDetailsDto').mockReturnValue(
+            block as never,
+        );
+        mockTripBlockCommand.replaceOneTripBlockByDomain.mockResolvedValue({});
+    };
+
+    it.each([false, true])(
+        'deleteTripFromTripBlock（holdAsAnotherTripBlock: %s）は対象 block の calendarId で捨てる',
+        async (holdAsAnotherTripBlock) => {
+            setupDelete();
+            await service.deleteTripFromTripBlock({
+                id: 'blk',
+                dto: { tripId: 't1', holdAsAnotherTripBlock } as never,
+            });
+            expect(tagsOf()).toEqual(['calendar:cal-a', 'calendar:cal-b']);
+        },
+    );
+
+    it('deleteTripFromTripBlock が見つからなければ捨てない', async () => {
+        mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue(
+            null,
+        );
+        await expect(
+            service.deleteTripFromTripBlock({
+                id: 'blk',
+                dto: { tripId: 't1' } as never,
+            }),
+        ).rejects.toThrow();
+        expect(mockInvalidate).not.toHaveBeenCalled();
+    });
+
+    it('invalidate が reject しても書き込みの結果が返り、socket にも知らせる', async () => {
+        mockInvalidate.mockRejectedValue(new Error('cdn'));
+        mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue(
+            null,
+        );
+        vi.spyOn(TripBlockDomainBuilder, 'buildFromReplaceDto').mockReturnValue(
+            {} as never,
+        );
+        mockTripBlockCommand.replaceOneTripBlockByDomain.mockResolvedValue({
+            id: 'blk',
+        });
+        await expect(
+            service.replaceOneTripBlock({
+                id: 'blk',
+                dto: { trips: [{ calendarId: 'cal-new' }] } as never,
+            }),
+        ).resolves.toEqual({ id: 'blk' });
+        expect(mockSignalSend).toHaveBeenCalledWith({ type: 'timetable' });
     });
 });
