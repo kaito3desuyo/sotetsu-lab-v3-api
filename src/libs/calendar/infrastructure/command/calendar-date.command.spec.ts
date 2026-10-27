@@ -17,18 +17,23 @@ function buildUniqueViolationError(): QueryFailedError {
 describe('CalendarDateCommand', () => {
     let create: AnyMock;
     let save: AnyMock;
-    let deleteFn: AnyMock;
+    let execute: AnyMock;
+    let where: AnyMock;
+    let returning: AnyMock;
     let command: CalendarDateCommand;
 
     beforeEach(async () => {
         create = vi.fn().mockImplementation((entity) => entity);
         save = vi.fn();
-        deleteFn = vi.fn();
+        execute = vi.fn();
+        returning = vi.fn().mockReturnValue({ execute });
+        where = vi.fn().mockReturnValue({ returning });
+        const deleteFn = vi.fn().mockReturnValue({ where });
 
         const mockRepository = {
             create,
             save,
-            delete: deleteFn,
+            createQueryBuilder: vi.fn().mockReturnValue({ delete: deleteFn }),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -88,18 +93,23 @@ describe('CalendarDateCommand', () => {
     });
 
     it('deleteOneById は対象が存在しない場合 UseCaseError を投げる', async () => {
-        deleteFn.mockResolvedValue({ affected: 0 });
+        execute.mockResolvedValue({ raw: [], affected: 0 });
 
         await expect(
             command.deleteOneById({ id: 'not-found-id' }),
         ).rejects.toBeInstanceOf(UseCaseError);
     });
 
-    it('deleteOneById は対象が存在する場合エラーを投げない', async () => {
-        deleteFn.mockResolvedValue({ affected: 1 });
+    it('deleteOneById は消した行の calendarId を返す', async () => {
+        execute.mockResolvedValue({
+            raw: [{ calendar_id: 'calendar-1' }],
+            affected: 1,
+        });
 
         await expect(
             command.deleteOneById({ id: 'existing-id' }),
-        ).resolves.toBeUndefined();
+        ).resolves.toEqual({ calendarId: 'calendar-1' });
+        expect(where).toHaveBeenCalledWith('id = :id', { id: 'existing-id' });
+        expect(returning).toHaveBeenCalledWith(['calendar_id']);
     });
 });

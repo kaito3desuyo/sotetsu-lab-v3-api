@@ -45,16 +45,27 @@ export class CalendarDateCommand {
         }
     }
 
-    async deleteOneById(params: { id: string }): Promise<void> {
+    /** 消した行の calendarId を返す（失効するダイヤを知るため） */
+    async deleteOneById(params: {
+        id: string;
+    }): Promise<{ calendarId: string }> {
         const { id } = params;
 
-        const result = await this.calendarDateRepository.delete({ id });
+        const result = await this.calendarDateRepository
+            .createQueryBuilder()
+            .delete()
+            .where('id = :id', { id })
+            .returning(['calendar_id'])
+            .execute();
+        const rows = result.raw as { calendar_id: string }[];
 
-        if (!result.affected) {
+        if (rows.length === 0) {
             throw new UseCaseError('指定された運行日例外が見つかりません', {
                 id,
             });
         }
+
+        return { calendarId: rows[0].calendar_id };
     }
 }
 
