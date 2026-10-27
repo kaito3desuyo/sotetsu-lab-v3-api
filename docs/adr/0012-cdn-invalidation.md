@@ -22,7 +22,7 @@
   - 失効のパスには、タグの頭に `#` を付けたものを渡す（`#calendar:<id>`）。
   - 捨てるタグを決めるのは、ドメインでなく書き込みの usecase。`socketSignal.send` の隣で `cdnInvalidation.invalidate({ tags })` を呼ぶ。
     - trip-blocks の書き込み 4 本（bulk・PUT・add-trip・delete-trip）: 書いた列車の `calendar:<id>`（重複は除く）。PUT は書き換え前と後の両方。書き換える前に calendarId を読んでおく。
-    - calendar-dates の追加・削除: その calendar の `calendar:<id>`。
+    - calendar-dates の追加・削除: その calendar の `calendar:<id>`。行の日付（4 時区切り）が今日より前なら `sighting-date:<日付>` も捨てる（過去の運用情報の画面は、その日のダイヤを calendar_dates も見て引くが、画面のタグは `sighting-date:<日付>` だけで、`calendar:<id>` では当たらないため）。
     - 目撃の投稿・無効化・復元: 目撃の日（4 時区切り）が今日より前のときだけ `sighting-date:<日付>`。今日以降の画面は 1 分しか置かないので、捨てない。
 - 失効に失敗しても、書き込みは成功として返す。
   - `socket-signal` と同じく、再試行はせず（`maxAttempts: 1`）、接続 300ms・応答 1 秒で打ち切り（`throwOnRequestTimeout: true`）、警告のログ（「CDN の失効に失敗しました」）だけ残す。

@@ -29,12 +29,13 @@
 | `POST /v3/trip-blocks/bulk` | 列車情報 | 書いた列車の `calendar:<id>`（重複は除く） |
 | `PUT /v3/trip-blocks/:id` | 列車情報 | 書き換え前と後の両方の `calendar:<id>` |
 | `PATCH /v3/trip-blocks/:id/add-trip`・`/delete-trip` | 列車情報 | 関係する列車の `calendar:<id>` |
-| `POST /v3/calendar-dates`・`DELETE /v3/calendar-dates/:id` | 臨時ダイヤの日付 | その calendar の `calendar:<id>` |
+| `POST /v3/calendar-dates`・`DELETE /v3/calendar-dates/:id` | 臨時ダイヤの日付 | その calendar の `calendar:<id>`。行の日付（4 時区切り）が今日より前なら `sighting-date:<日付>` も |
 | `POST /v3/operation-sightings` | 目撃 | 目撃の日（4 時区切り）が今日より前なら `sighting-date:<日付>` |
 | `PATCH /v3/operation-sightings/:id/invalidate`・`/restore` | 目撃 | 同上 |
 
 - 今日以降の目撃は、ページを 1 分しか置かないので捨てなくてよい（spec 6.2）。月 3,700 件の目撃で無料枠を使わずに済む。
 - calendar-dates が変わるのは、まれな臨時ダイヤのときだけだ。捨てる数は小さいので、含める（判断：Claude）。
+- 過ぎた日の行なら `sighting-date:<日付>` も捨てる。過去の運用情報の画面は、その日のダイヤを calendar_dates も見て引くが、画面のタグは `sighting-date:<日付>` だけなので、`calendar:<id>` を捨てても当たらないため。
 
 ### 2.3 量と料金
 
