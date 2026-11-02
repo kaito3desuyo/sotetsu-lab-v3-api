@@ -19,7 +19,11 @@ import { FormationQuery } from '../../formation/infrastructure/queries/formation
 import { OperationQuery } from '../../operation/infrastructure/queries/operation.query.js';
 import { ItinerarySegmentQuery } from '../../operation/infrastructure/queries/itinerary-segment.query.js';
 import { ItinerarySegment } from '../../operation/domain/itinerary-link-rule.domain.js';
-import { OperationSightingV3Service } from './operation-sighting.v3.service.js';
+import { UseCaseError } from '../../../core/classes/custom-error.js';
+import {
+    INVALIDATE_MANY_TIME_BUDGET_MS,
+    OperationSightingV3Service,
+} from './operation-sighting.v3.service.js';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -1740,5 +1744,235 @@ describe('OperationSightingV3Service - findManyBySpecificPeriod includeCarriedOv
         await service.findManyBySpecificPeriod({ start: '2026-10-12', end: '2026-10-13', includeCarriedOver: true });
         expect(mockItinerarySegmentQuery.findManyByCalendarId).toHaveBeenCalledTimes(1);
         expect(mockOperationQuery.findManyByCalendarId).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('OperationSightingV3Service - 無効化（1 件・まとめて）', () => {
+    let service: OperationSightingV3Service;
+
+    function dtoOf(params: {
+        id: string;
+        sightingTime?: Date;
+        invalidated?: boolean;
+    }) {
+        return {
+            operationSightingId: params.id,
+            formationId: 'f-id',
+            operationId: 'o-id',
+            sightingTime:
+                params.sightingTime ?? new Date('2026-10-26T12:00:00+09:00'),
+            operation: { operationNumber: '61' },
+            formation: { formationNumber: '8001' },
+            invalidation: params.invalidated
+                ? {
+                      operationSightingId: params.id,
+                      operationSightingInvalidationId: 'inv-id',
+                  }
+                : null,
+            managementLogs: [],
+        };
+    }
+
+    /** id => dto（null は存在しない・Error は読む時点で落ちる） */
+    function stubSightings(map: Record<string, any>) {
+        mockOperationSightingQuery.findOneById.mockImplementation(
+            async ({ id }: { id: string }) => {
+                const v = map[id];
+                if (v instanceof Error) {
+                    throw v;
+                }
+                return v ?? null;
+            },
+        );
+    }
+
+    beforeEach(async () => {
+        vi.clearAllMocks();
+        mockInvalidate.mockResolvedValue(undefined);
+        mockSignalSend.mockResolvedValue(undefined);
+        // 今は 2026-10-27 の運行日（4 時区切り）。Date だけ止める
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date('2026-10-27T04:30:00+09:00'));
+        mockDataSource.transaction.mockImplementation(async (fn: any) =>
+            fn(mockManager),
+        );
+        service = await buildService();
+        mockOperationSightingLatestCacheQuery.findOneByFormationNumber.mockResolvedValue(
+            null,
+        );
+        mockSave.mockImplementation(async (domain: any) => ({
+            operationSightingId: domain.id.value,
+        }));
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    const params = { userId: 'u1', reason: '荒らし' };
+
+    it('invalidate: すでに無効な目撃は UseCaseError(already_invalidated)・保存も合図もしない', async () => {
+        stubSightings({ a: dtoOf({ id: 'a', invalidated: true }) });
+
+        const error = await service
+            .invalidate({ operationSightingId: 'a', ...params })
+            .catch((e) => e);
+
+        expect(error).toBeInstanceOf(UseCaseError);
+        expect(error.context).toEqual({
+            operationSightingId: 'a',
+            reason: 'already_invalidated',
+        });
+        expect(mockSave).not.toHaveBeenCalled();
+        expect(mockSignalSend).not.toHaveBeenCalled();
+        expect(mockInvalidate).not.toHaveBeenCalled();
+    });
+
+    it('invalidateMany: 無効・存在しない id は skipped、残りは invalidated', async () => {
+        stubSightings({
+            a: dtoOf({ id: 'a' }),
+            c: dtoOf({ id: 'c', invalidated: true }),
+            d: dtoOf({ id: 'd' }),
+        });
+
+        const result = await service.invalidateMany({
+            ids: ['a', 'b', 'c', 'd'],
+            ...params,
+        });
+
+        expect(result).toEqual({
+            invalidated: ['a', 'd'],
+            skipped: [
+                { id: 'b', reason: 'not_found' },
+                { id: 'c', reason: 'already_invalidated' },
+            ],
+            failed: null,
+            pending: [],
+        });
+        expect(mockSave).toHaveBeenCalledTimes(2);
+    });
+
+    it('invalidateMany: 重複した id は 1 回だけ処理する', async () => {
+        stubSightings({ a: dtoOf({ id: 'a' }), b: dtoOf({ id: 'b' }) });
+
+        const result = await service.invalidateMany({
+            ids: ['a', 'b', 'a'],
+            ...params,
+        });
+
+        expect(result.invalidated).toEqual(['a', 'b']);
+        expect(mockOperationSightingQuery.findOneById).toHaveBeenCalledTimes(2);
+    });
+
+    it('invalidateMany: 予期しない例外で止まり、failed に入れ、未処理は pending に残す', async () => {
+        stubSightings({
+            a: dtoOf({ id: 'a' }),
+            b: dtoOf({ id: 'b' }),
+            c: new Error('db down'),
+            d: dtoOf({ id: 'd' }),
+            e: dtoOf({ id: 'e' }),
+        });
+
+        const result = await service.invalidateMany({
+            ids: ['a', 'b', 'c', 'd', 'e'],
+            ...params,
+        });
+
+        expect(result).toEqual({
+            invalidated: ['a', 'b'],
+            skipped: [],
+            failed: { id: 'c', message: 'db down' },
+            pending: ['d', 'e'],
+        });
+        // 無効にできた分の合図は送る
+        expect(mockSignalSend).toHaveBeenCalledTimes(1);
+    });
+
+    it('invalidateMany: not_found・already_invalidated 以外の UseCaseError も failed で止まる', async () => {
+        stubSightings({
+            a: dtoOf({ id: 'a' }),
+            b: new UseCaseError('だめ', { reason: 'other' }),
+            c: dtoOf({ id: 'c' }),
+        });
+
+        const result = await service.invalidateMany({
+            ids: ['a', 'b', 'c'],
+            ...params,
+        });
+
+        expect(result.invalidated).toEqual(['a']);
+        expect(result.failed).toEqual({ id: 'b', message: 'だめ' });
+        expect(result.pending).toEqual(['c']);
+    });
+
+    it('invalidateMany: 時間の予算を超えたら新しい件を始めず、残りを pending に入れる', async () => {
+        stubSightings({
+            a: dtoOf({ id: 'a' }),
+            b: dtoOf({ id: 'b' }),
+            c: dtoOf({ id: 'c' }),
+        });
+        // 開始 0・a の前 0・b の前で予算ちょうど
+        const now = vi
+            .fn<() => number>()
+            .mockReturnValueOnce(0)
+            .mockReturnValueOnce(0)
+            .mockReturnValue(INVALIDATE_MANY_TIME_BUDGET_MS);
+
+        const result = await service.invalidateMany({
+            ids: ['a', 'b', 'c'],
+            ...params,
+            now,
+        });
+
+        expect(result).toEqual({
+            invalidated: ['a'],
+            skipped: [],
+            failed: null,
+            pending: ['b', 'c'],
+        });
+        expect(mockSignalSend).toHaveBeenCalledTimes(1);
+    });
+
+    it('invalidateMany: 合図は最後に 1 回だけ（socket 1 回・CDN は重ならない日付で 1 回）', async () => {
+        stubSightings({
+            a: dtoOf({
+                id: 'a',
+                sightingTime: new Date('2026-10-26T12:00:00+09:00'),
+            }),
+            b: dtoOf({
+                id: 'b',
+                sightingTime: new Date('2026-10-26T15:00:00+09:00'),
+            }),
+            c: dtoOf({
+                id: 'c',
+                sightingTime: new Date('2026-10-25T12:00:00+09:00'),
+            }),
+            d: dtoOf({
+                id: 'd',
+                sightingTime: new Date('2026-10-27T04:10:00+09:00'),
+            }),
+        });
+
+        await service.invalidateMany({ ids: ['a', 'b', 'c', 'd'], ...params });
+
+        expect(mockSignalSend).toHaveBeenCalledTimes(1);
+        expect(mockSignalSend).toHaveBeenCalledWith({ type: 'sighting' });
+        expect(mockInvalidate).toHaveBeenCalledTimes(1);
+        expect(mockInvalidate).toHaveBeenCalledWith({
+            tags: ['sighting-date:2026-10-26', 'sighting-date:2026-10-25'],
+        });
+    });
+
+    it('invalidateMany: 1 件も無効にしなければ合図を送らない', async () => {
+        stubSightings({ c: dtoOf({ id: 'c', invalidated: true }) });
+
+        const result = await service.invalidateMany({
+            ids: ['b', 'c'],
+            ...params,
+        });
+
+        expect(result.invalidated).toEqual([]);
+        expect(mockSignalSend).not.toHaveBeenCalled();
+        expect(mockInvalidate).not.toHaveBeenCalled();
     });
 });

@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
+import { OperationSightingV3Service } from '../../operation-sighting/usecase/operation-sighting.v3.service.js';
 import { ModerationQuery } from '../infrastructure/queries/moderation.query.js';
 import { ModerationV3Service } from './moderation.v3.service.js';
 
@@ -11,6 +12,8 @@ describe('ModerationV3Service', () => {
         findAuthorUserId: vi.fn(),
         findRecentSightings: vi.fn(),
     };
+
+    const operationSighting = { invalidateMany: vi.fn() };
 
     const sightingRow = {
         operationSightingId: 's-1',
@@ -29,6 +32,10 @@ describe('ModerationV3Service', () => {
             providers: [
                 ModerationV3Service,
                 { provide: ModerationQuery, useValue: query },
+                {
+                    provide: OperationSightingV3Service,
+                    useValue: operationSighting,
+                },
             ],
         }).compile();
         service = module.get(ModerationV3Service);
@@ -140,6 +147,29 @@ describe('ModerationV3Service', () => {
             role: 'reporter',
             newAccount: true,
             burst: false,
+        });
+    });
+
+    it('invalidateSightings は目撃情報の invalidateMany に任せ、結果をそのまま返す', async () => {
+        const result = {
+            invalidated: ['a'],
+            skipped: [{ id: 'b', reason: 'not_found' as const }],
+            failed: null,
+            pending: ['c'],
+        };
+        operationSighting.invalidateMany.mockResolvedValue(result);
+
+        await expect(
+            service.invalidateSightings({
+                ids: ['a', 'b', 'c'],
+                userId: 'e-1',
+                reason: '荒らし',
+            }),
+        ).resolves.toEqual(result);
+        expect(operationSighting.invalidateMany).toHaveBeenCalledWith({
+            ids: ['a', 'b', 'c'],
+            userId: 'e-1',
+            reason: '荒らし',
         });
     });
 });

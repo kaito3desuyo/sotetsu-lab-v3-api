@@ -4,7 +4,9 @@ import {
     ModerationQuery,
     ModerationSightingRow,
 } from '../infrastructure/queries/moderation.query.js';
+import { OperationSightingV3Service } from '../../operation-sighting/usecase/operation-sighting.v3.service.js';
 import { SIGHTING_LIST_DEFAULT_LIMIT } from '../moderation.constants.js';
+import { ModerationInvalidateSightingsResultDto } from './dtos/moderation-invalidate-sightings-result.dto.js';
 import { ModerationRecentSightingDto } from './dtos/moderation-recent-sighting.dto.js';
 import { ModerationSightingAuthorDto } from './dtos/moderation-sighting-author.dto.js';
 import { ModerationSightingDto } from './dtos/moderation-sighting.dto.js';
@@ -12,7 +14,10 @@ import { ModerationUserSummaryDto } from './dtos/moderation-user-summary.dto.js'
 
 @Injectable()
 export class ModerationV3Service {
-    constructor(private readonly moderationQuery: ModerationQuery) {}
+    constructor(
+        private readonly moderationQuery: ModerationQuery,
+        private readonly operationSightingV3Service: OperationSightingV3Service,
+    ) {}
 
     async findUserSummary(params: {
         userId: string;
@@ -72,6 +77,14 @@ export class ModerationV3Service {
             ...toSightingDto(row),
             author: row.author,
         }));
+    }
+    /** 目撃をまとめて無効にする。ループ・合図・時間の予算は目撃情報の invalidateMany が持つ */
+    async invalidateSightings(params: {
+        ids: string[];
+        userId: string;
+        reason: string;
+    }): Promise<ModerationInvalidateSightingsResultDto> {
+        return this.operationSightingV3Service.invalidateMany(params);
     }
 }
 

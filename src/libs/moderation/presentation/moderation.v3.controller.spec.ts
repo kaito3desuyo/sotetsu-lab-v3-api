@@ -33,6 +33,7 @@ describe('ModerationV3Controller（見回りの読み取りの口）', () => {
         findSightingsByUser: vi.fn(),
         findSightingAuthor: vi.fn(),
         findRecentSightings: vi.fn(),
+        invalidateSightings: vi.fn(),
     };
 
     beforeAll(async () => {
@@ -195,5 +196,95 @@ describe('ModerationV3Controller（見回りの読み取りの口）', () => {
             const res = await request(app.getHttpServer()).get(path);
             expect(res.status).toBe(validationPipeOptions.errorHttpStatusCode);
         }
+    });
+
+    describe('POST /sightings/invalidate', () => {
+        const PATH = '/sightings/invalidate';
+        const ID_A = '9a1c2b3d-4e5f-4a6b-8c7d-0e1f2a3b4c5d';
+        const ID_B = '1b2c3d4e-5f60-4a7b-8c9d-0e1f2a3b4c5e';
+        const RESULT = {
+            invalidated: [ID_A],
+            skipped: [{ id: ID_B, reason: 'not_found' }],
+            failed: null,
+            pending: [],
+        };
+
+        beforeEach(() => {
+            service.invalidateSightings.mockResolvedValue(RESULT);
+        });
+
+        it('REPORTER・VIEWER・匿名は 403', async () => {
+            for (const role of [Role.REPORTER, Role.VIEWER, null]) {
+                auth = { userId: 'u-1', role, sessionId: null };
+                const res = await request(app.getHttpServer())
+                    .post(PATH)
+                    .send({ ids: [ID_A], reason: 'r' });
+                expect(res.status).toBe(403);
+            }
+            expect(service.invalidateSightings).not.toHaveBeenCalled();
+        });
+
+        it.each([Role.EDITOR, Role.MANAGER])(
+            '%s は 200 で結果を返し、認証した userId で呼ぶ',
+            async (role) => {
+                auth = { userId: 'e-1', role, sessionId: null };
+                const res = await request(app.getHttpServer())
+                    .post(PATH)
+                    .send({ ids: [ID_A, ID_B], reason: '荒らし' });
+                expect(res.status).toBe(200);
+                expect(res.body).toEqual(RESULT);
+                expect(res.headers['cache-control']).toBe('no-store');
+                expect(service.invalidateSightings).toHaveBeenCalledWith({
+                    ids: [ID_A, ID_B],
+                    userId: 'e-1',
+                    reason: '荒らし',
+                });
+            },
+        );
+
+        it('200 件は通り、201 件は 422', async () => {
+            auth = { userId: 'e-1', role: Role.EDITOR, sessionId: null };
+            const make = (n: number) =>
+                Array.from(
+                    { length: n },
+                    (_, i) =>
+                        `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`,
+                );
+            const ok = await request(app.getHttpServer())
+                .post(PATH)
+                .send({ ids: make(200), reason: 'r' });
+            expect(ok.status).toBe(200);
+            service.invalidateSightings.mockClear();
+            const ng = await request(app.getHttpServer())
+                .post(PATH)
+                .send({ ids: make(201), reason: 'r' });
+            expect(ng.status).toBe(validationPipeOptions.errorHttpStatusCode);
+            expect(service.invalidateSightings).not.toHaveBeenCalled();
+        });
+
+        it.each([
+            ['ids が空', { ids: [], reason: 'r' }],
+            ['ids が無い', { reason: 'r' }],
+            ['ids が配列でない', { ids: ID_A, reason: 'r' }],
+            ['ids に UUID でないものがある', { ids: [ID_A, 'x'], reason: 'r' }],
+            ['reason が無い', { ids: [ID_A] }],
+            ['reason が空', { ids: [ID_A], reason: '' }],
+            ['reason が 201 字', { ids: [ID_A], reason: 'あ'.repeat(201) }],
+        ])('%s は 422', async (_label, body) => {
+            auth = { userId: 'e-1', role: Role.EDITOR, sessionId: null };
+            const res = await request(app.getHttpServer())
+                .post(PATH)
+                .send(body);
+            expect(res.status).toBe(validationPipeOptions.errorHttpStatusCode);
+            expect(service.invalidateSightings).not.toHaveBeenCalled();
+        });
+
+        it('reason が 200 字なら通る', async () => {
+            auth = { userId: 'e-1', role: Role.EDITOR, sessionId: null };
+            const res = await request(app.getHttpServer())
+                .post(PATH)
+                .send({ ids: [ID_A], reason: 'あ'.repeat(200) });
+            expect(res.status).toBe(200);
+        });
     });
 });

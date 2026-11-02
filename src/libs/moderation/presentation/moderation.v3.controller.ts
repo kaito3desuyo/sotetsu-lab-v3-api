@@ -1,10 +1,23 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Get,
+    HttpCode,
+    Param,
+    Post,
+    Query,
+    Req,
+    UseGuards,
+} from '@nestjs/common';
+import { Request } from 'express';
 import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
 import { CACHE_CONTROL } from '../../../core/modules/cache-control/cache-control.constants.js';
 import { CacheControl } from '../../../core/modules/cache-control/cache-control.decorator.js';
 import { RBAC } from '../../../core/modules/rbac/rbac.decorator.js';
 import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
 import { Role } from '../../../core/modules/rbac/role.enum.js';
+import { InvalidateModerationSightingsDto } from '../usecase/dtos/invalidate-moderation-sightings.dto.js';
+import { ModerationInvalidateSightingsResultDto } from '../usecase/dtos/moderation-invalidate-sightings-result.dto.js';
 import { ModerationRecentSightingDto } from '../usecase/dtos/moderation-recent-sighting.dto.js';
 import { ModerationSightingAuthorDto } from '../usecase/dtos/moderation-sighting-author.dto.js';
 import { ModerationSightingDto } from '../usecase/dtos/moderation-sighting.dto.js';
@@ -65,6 +78,21 @@ export class ModerationV3Controller {
         return this.moderationV3Service.findRecentSightings({
             limit: query.limit,
             before: query.before,
+        });
+    }
+
+    @Post('/sightings/invalidate')
+    @HttpCode(200)
+    @RBAC(Role.EDITOR, Role.MANAGER)
+    @CacheControl(CACHE_CONTROL.REALTIME)
+    async invalidateSightings(
+        @Req() req: Request,
+        @Body() body: InvalidateModerationSightingsDto,
+    ): Promise<ModerationInvalidateSightingsResultDto> {
+        return this.moderationV3Service.invalidateSightings({
+            ids: body.ids,
+            userId: req.auth!.userId!,
+            reason: body.reason,
         });
     }
 }
