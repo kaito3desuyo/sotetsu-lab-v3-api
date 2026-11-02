@@ -7,6 +7,7 @@ import { CacheControlModule } from './core/modules/cache-control/cache-control.m
 import { DatabaseModule } from './core/modules/database/database.module.js';
 import { FeatureFlagModule } from './core/modules/feature-flag/feature-flag.module.js';
 import { LoggerModule } from './core/modules/logger/logger.module.js';
+import { CurrentRoleModule } from './core/modules/rbac/current-role.module.js';
 import { RBACModule } from './core/modules/rbac/rbac.module.js';
 import { ApiRoutingModule } from './routes/api-routing.module.js';
 
@@ -15,6 +16,7 @@ import { ApiRoutingModule } from './routes/api-routing.module.js';
         AccessTraceModule,
         AuthModule,
         RBACModule,
+        CurrentRoleModule,
         CacheControlModule,
         DatabaseModule,
         FeatureFlagModule,
