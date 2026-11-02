@@ -1,6 +1,7 @@
 import { Module, OnApplicationBootstrap } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { AppController } from './app.controller.js';
+import { AccessTraceModule } from './core/modules/access-trace/access-trace.module.js';
 import { AuthModule } from './core/modules/auth/auth.module.js';
 import { CacheControlModule } from './core/modules/cache-control/cache-control.module.js';
 import { DatabaseModule } from './core/modules/database/database.module.js';
@@ -11,6 +12,7 @@ import { ApiRoutingModule } from './routes/api-routing.module.js';
 
 @Module({
     imports: [
+        AccessTraceModule,
         AuthModule,
         RBACModule,
         CacheControlModule,
