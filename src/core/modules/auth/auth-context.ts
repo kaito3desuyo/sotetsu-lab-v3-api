@@ -4,4 +4,6 @@ import { Role } from '../rbac/role.enum.js';
 export type AuthContext = {
     userId: string | null;
     role: Role | null;
+    /** トークンの `session_id`（手がかりの記録に使う。無ければ null） */
+    sessionId: string | null;
 };

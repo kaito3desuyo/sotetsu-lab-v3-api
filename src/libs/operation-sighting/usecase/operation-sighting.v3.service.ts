@@ -26,6 +26,7 @@ import { OperationSightingLatestCache } from '../domain/operation-sighting-lates
 import { OperationSightingLatestCacheCommand } from '../infrastructure/command/operation-sighting-latest-cache.command.js';
 import { OperationSightingCommand } from '../infrastructure/command/operation-sighting.command.js';
 import { OperationSightingAuthorCommand } from '../infrastructure/command/operation-sighting-author.command.js';
+import { AccessTraces } from '../../../core/modules/access-trace/access-traces.js';
 import { pastSightingDateCacheTags } from '../../../core/modules/cdn-invalidation/cache-tags.js';
 import { CdnInvalidation } from '../../../core/modules/cdn-invalidation/cdn-invalidation.js';
 import { SocketSignal } from '../../../core/modules/socket-signal/socket-signal.js';
@@ -72,6 +73,7 @@ export class OperationSightingV3Service {
         private readonly itinerarySegmentQuery: ItinerarySegmentQuery,
         private readonly operationSightingAuthorCommand: OperationSightingAuthorCommand,
         private readonly socketSignal: SocketSignal,
+        private readonly accessTraces: AccessTraces,
         private readonly cdnInvalidation: CdnInvalidation,
     ) {}
 
@@ -709,7 +711,10 @@ export class OperationSightingV3Service {
     }
 
     async post(
-        params: PostOperationSightingDto & { userId: string | null },
+        params: PostOperationSightingDto & {
+            userId: string | null;
+            viewer: { ip: string | null; userAgent: string | null };
+        },
     ): Promise<OperationSightingDetailsDto> {
         const { agencyId, formationOrVehicleNumber } = params;
         const { sightingTimeInstance, sightingTimeInJst, date } =
@@ -761,6 +766,11 @@ export class OperationSightingV3Service {
                   }
                 : { type: 'none' };
 
+        // 投稿者の手がかり（IP・端末）を書くのは、登録者で IP が分かるときだけ
+        const traceTarget =
+            params.userId && params.viewer.ip
+                ? { userId: params.userId, ip: params.viewer.ip }
+                : null;
         const saved = await this.dataSource.transaction(async (manager) => {
             const saved = await this.operationSightingCommand.save(
                 domain,
@@ -776,6 +786,16 @@ export class OperationSightingV3Service {
                     manager,
                 );
             }
+            if (traceTarget) {
+                await this.accessTraces.recordPost(
+                    {
+                        ...traceTarget,
+                        operationSightingId: saved.operationSightingId,
+                        userAgent: params.viewer.userAgent,
+                    },
+                    manager,
+                );
+            }
             await this.#applyCacheAction(
                 cacheAction,
                 saved.operationSightingId,
@@ -786,6 +806,10 @@ export class OperationSightingV3Service {
         await Promise.all([
             this.#invalidatePastSightingDates(sightingTimeInstance.toDate()),
             this.socketSignal.send({ type: 'sighting' }),
+            // 古い手がかりの掃除は commit の後（失敗は purgeExpiredIfDue が握る）
+            traceTarget
+                ? this.accessTraces.purgeExpiredIfDue()
+                : Promise.resolve(),
         ]);
         return saved;
     }

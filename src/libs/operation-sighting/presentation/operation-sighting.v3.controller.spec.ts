@@ -73,7 +73,7 @@ describe('OperationSightingV3Controller（書き込みの役割と利用者）',
     });
 
     it('フラグ on で匿名（役割なし）の投稿は 403', async () => {
-        auth = { userId: 'anon-1', role: null };
+        auth = { userId: 'anon-1', role: null, sessionId: null };
         const res = await request(app.getHttpServer()).post('/').send(body);
         expect(res.status).toBe(403);
         expect(featureFlags.isEnabled).toHaveBeenCalledWith(
@@ -84,7 +84,7 @@ describe('OperationSightingV3Controller（書き込みの役割と利用者）',
 
     it('フラグ off で匿名の投稿は 201 で、userId: null を渡す', async () => {
         featureFlags.isEnabled.mockResolvedValue(false);
-        auth = { userId: 'anon-1', role: null };
+        auth = { userId: 'anon-1', role: null, sessionId: null };
         const res = await request(app.getHttpServer()).post('/').send(body);
         expect(res.status).toBe(201);
         expect(service.post).toHaveBeenCalledWith(
@@ -96,7 +96,7 @@ describe('OperationSightingV3Controller（書き込みの役割と利用者）',
         'フラグ %s で reporter の投稿は通り、JWT の sub を投稿者として渡す',
         async (enabled) => {
             featureFlags.isEnabled.mockResolvedValue(enabled);
-            auth = { userId: 'user-1', role: Role.REPORTER };
+            auth = { userId: 'user-1', role: Role.REPORTER, sessionId: null };
             const res = await request(app.getHttpServer()).post('/').send(body);
             expect(res.status).toBe(201);
             expect(service.post).toHaveBeenCalledWith(
@@ -105,8 +105,23 @@ describe('OperationSightingV3Controller（書き込みの役割と利用者）',
         },
     );
 
+    it('投稿には CloudFront-Viewer-Address の IP と User-Agent を viewer として渡す', async () => {
+        auth = { userId: 'user-1', role: Role.REPORTER, sessionId: null };
+        const res = await request(app.getHttpServer())
+            .post('/')
+            .set('CloudFront-Viewer-Address', '203.0.113.7:51234')
+            .set('User-Agent', 'Mozilla/5.0 test')
+            .send(body);
+        expect(res.status).toBe(201);
+        expect(service.post).toHaveBeenCalledWith(
+            expect.objectContaining({
+                viewer: { ip: '203.0.113.7', userAgent: 'Mozilla/5.0 test' },
+            }),
+        );
+    });
+
     it('無効化・復元の口はフラグを見ない', async () => {
-        auth = { userId: 'editor-1', role: Role.EDITOR };
+        auth = { userId: 'editor-1', role: Role.EDITOR, sessionId: null };
         await request(app.getHttpServer())
             .patch(`/${SIGHTING_ID}/invalidate`)
             .send({ reason: 'test' });
@@ -117,7 +132,7 @@ describe('OperationSightingV3Controller（書き込みの役割と利用者）',
     });
 
     it('無効化は body の userId を捨て、JWT の sub を使う', async () => {
-        auth = { userId: 'editor-1', role: Role.EDITOR };
+        auth = { userId: 'editor-1', role: Role.EDITOR, sessionId: null };
         const res = await request(app.getHttpServer())
             .patch(`/${SIGHTING_ID}/invalidate`)
             .send({ userId: 'someone-else', reason: 'test' });
@@ -132,7 +147,7 @@ describe('OperationSightingV3Controller（書き込みの役割と利用者）',
     it.each(['invalidate', 'restore'])(
         '%s は path の id が UUID でなければ 422',
         async (action) => {
-            auth = { userId: 'editor-1', role: Role.EDITOR };
+            auth = { userId: 'editor-1', role: Role.EDITOR, sessionId: null };
             const res = await request(app.getHttpServer())
                 .patch(`/not-a-uuid/${action}`)
                 .send({ reason: 'test' });
@@ -143,7 +158,7 @@ describe('OperationSightingV3Controller（書き込みの役割と利用者）',
     );
 
     it('復元も JWT の sub を使う', async () => {
-        auth = { userId: 'editor-1', role: Role.MANAGER };
+        auth = { userId: 'editor-1', role: Role.MANAGER, sessionId: null };
         const res = await request(app.getHttpServer())
             .patch(`/${SIGHTING_ID}/restore`)
             .send({ reason: 'test' });

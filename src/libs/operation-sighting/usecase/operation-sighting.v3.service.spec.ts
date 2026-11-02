@@ -9,6 +9,7 @@ import { DataSource } from 'typeorm';
 import { OperationSightingLatestCacheCommand } from '../infrastructure/command/operation-sighting-latest-cache.command.js';
 import { OperationSightingCommand } from '../infrastructure/command/operation-sighting.command.js';
 import { OperationSightingAuthorCommand } from '../infrastructure/command/operation-sighting-author.command.js';
+import { AccessTraces } from '../../../core/modules/access-trace/access-traces.js';
 import { CdnInvalidation } from '../../../core/modules/cdn-invalidation/cdn-invalidation.js';
 import { SocketSignal } from '../../../core/modules/socket-signal/socket-signal.js';
 import { OperationSightingLatestCacheQuery } from '../infrastructure/queries/operation-sighting-latest-cache.query.js';
@@ -32,6 +33,12 @@ const mockSave: AnyMock = vi.fn();
 const mockOperationSightingCommand = { save: mockSave };
 const mockAuthorCreate: AnyMock = vi.fn();
 const mockOperationSightingAuthorCommand = { create: mockAuthorCreate };
+const mockRecordPost: AnyMock = vi.fn().mockResolvedValue(undefined);
+const mockPurgeExpiredIfDue: AnyMock = vi.fn().mockResolvedValue(undefined);
+const mockAccessTraces = {
+    recordPost: mockRecordPost,
+    purgeExpiredIfDue: mockPurgeExpiredIfDue,
+};
 const mockSignalSend: AnyMock = vi.fn().mockResolvedValue(undefined);
 const mockSocketSignal = { send: mockSignalSend };
 const mockInvalidate: AnyMock = vi.fn().mockResolvedValue(undefined);
@@ -87,6 +94,7 @@ async function buildService(): Promise<OperationSightingV3Service> {
                 useValue: mockOperationSightingAuthorCommand,
             },
             { provide: SocketSignal, useValue: mockSocketSignal },
+            { provide: AccessTraces, useValue: mockAccessTraces },
             { provide: CdnInvalidation, useValue: mockCdnInvalidation },
             {
                 provide: OperationSightingLatestCacheCommand,
@@ -769,6 +777,7 @@ describe('OperationSightingV3Service - post', () => {
         formationOrVehicleNumber: '10708',
         operationNumber: '100',
         sightingTime: '2026-05-01T10:00:00+09:00',
+        viewer: { ip: null, userAgent: null },
     };
 
     beforeEach(async () => {
@@ -885,6 +894,100 @@ describe('OperationSightingV3Service - post', () => {
         expect(mockSignalSend).toHaveBeenCalledWith({ type: 'sighting' });
     });
 
+    it('post: userId と ip があればトランザクションの中で recordPost を呼ぶ', async () => {
+        mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
+            { id: 'op-100', operationNumber: '100' },
+        );
+        mockSave.mockResolvedValue({ operationSightingId: 'new-id' });
+        const calls: string[] = [];
+        mockAuthorCreate.mockImplementation(async () => {
+            calls.push('author');
+        });
+        mockRecordPost.mockImplementation(async () => {
+            calls.push('trace');
+        });
+        mockDataSource.transaction.mockImplementation(async (fn: any) => {
+            const result = await fn(mockManager);
+            calls.push('commit');
+            return result;
+        });
+
+        await service.post({
+            ...baseParams,
+            userId: 'user-1',
+            viewer: { ip: '203.0.113.7', userAgent: 'UA' },
+        });
+
+        expect(mockRecordPost).toHaveBeenCalledWith(
+            {
+                userId: 'user-1',
+                operationSightingId: 'new-id',
+                ip: '203.0.113.7',
+                userAgent: 'UA',
+            },
+            mockManager,
+        );
+        expect(calls).toEqual(['author', 'trace', 'commit']);
+    });
+
+    it('post: 投稿の記録を書いたら commit の後に purgeExpiredIfDue を呼ぶ', async () => {
+        mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
+            { id: 'op-100', operationNumber: '100' },
+        );
+        mockSave.mockResolvedValue({ operationSightingId: 'new-id' });
+        const calls: string[] = [];
+        mockPurgeExpiredIfDue.mockImplementation(async () => {
+            calls.push('purge');
+        });
+        mockDataSource.transaction.mockImplementation(async (fn: any) => {
+            const result = await fn(mockManager);
+            calls.push('commit');
+            return result;
+        });
+
+        await service.post({
+            ...baseParams,
+            userId: 'user-1',
+            viewer: { ip: '203.0.113.7', userAgent: null },
+        });
+
+        expect(calls).toEqual(['commit', 'purge']);
+    });
+
+    it('post: ip が null なら recordPost も purge も呼ばないが投稿は保存する', async () => {
+        mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
+            { id: 'op-100', operationNumber: '100' },
+        );
+        mockSave.mockResolvedValue({ operationSightingId: 'new-id' });
+
+        const result = await service.post({
+            ...baseParams,
+            userId: 'user-1',
+            viewer: { ip: null, userAgent: 'UA' },
+        });
+
+        expect(result.operationSightingId).toBe('new-id');
+        expect(mockAuthorCreate).toHaveBeenCalled();
+        expect(mockRecordPost).not.toHaveBeenCalled();
+        expect(mockPurgeExpiredIfDue).not.toHaveBeenCalled();
+    });
+
+    it('post: userId が null（匿名）なら ip があっても recordPost も purge も呼ばない', async () => {
+        mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
+            { id: 'op-100', operationNumber: '100' },
+        );
+        mockSave.mockResolvedValue({ operationSightingId: 'new-id' });
+
+        await service.post({
+            ...baseParams,
+            userId: null,
+            viewer: { ip: '203.0.113.7', userAgent: 'UA' },
+        });
+
+        expect(mockRecordPost).not.toHaveBeenCalled();
+        expect(mockPurgeExpiredIfDue).not.toHaveBeenCalled();
+    });
+
     it('post: 保存に失敗したら合図を送らない', async () => {
         mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
             { id: 'op-100', operationNumber: '100' },
@@ -906,6 +1009,7 @@ describe('OperationSightingV3Service - 過去の日の目撃の CDN 失効', () 
         formationOrVehicleNumber: '10708',
         operationNumber: '100',
         userId: 'user-1',
+        viewer: { ip: null, userAgent: null },
     };
 
     function buildDto(params: { sightingTime: Date; invalidated: boolean }) {

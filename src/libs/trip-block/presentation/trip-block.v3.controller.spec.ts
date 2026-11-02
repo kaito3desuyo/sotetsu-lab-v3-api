@@ -71,7 +71,7 @@ describe('TripBlockV3Controller（書き込みの役割）', () => {
         ['PATCH', `/${ID}/add-trip`],
         ['PATCH', `/${ID}/delete-trip`],
     ])('reporter の %s %s は 403', async (method, path) => {
-        auth = { userId: 'user-1', role: Role.REPORTER };
+        auth = { userId: 'user-1', role: Role.REPORTER, sessionId: null };
         const res = await request(app.getHttpServer())
             [method.toLowerCase() as 'post' | 'put' | 'patch'](path)
             .send({});
@@ -79,20 +79,20 @@ describe('TripBlockV3Controller（書き込みの役割）', () => {
     });
 
     it('匿名の POST /bulk は 403', async () => {
-        auth = { userId: 'anon-1', role: null };
+        auth = { userId: 'anon-1', role: null, sessionId: null };
         const res = await request(app.getHttpServer()).post('/bulk').send([]);
         expect(res.status).toBe(403);
     });
 
     it('GET /:id は path の id が UUID でなければ 422', async () => {
-        auth = { userId: 'anon-1', role: null };
+        auth = { userId: 'anon-1', role: null, sessionId: null };
         const res = await request(app.getHttpServer()).get('/not-a-uuid');
         expect(res.status).toBe(validationPipeOptions.errorHttpStatusCode);
         expect(service.findOneById).not.toHaveBeenCalled();
     });
 
     it('GET /:id は UUID の id を渡す', async () => {
-        auth = { userId: 'anon-1', role: null };
+        auth = { userId: 'anon-1', role: null, sessionId: null };
         service.findOneById.mockResolvedValue({});
         const res = await request(app.getHttpServer()).get(`/${ID}`);
         expect(res.status).toBe(200);
@@ -104,7 +104,7 @@ describe('TripBlockV3Controller（書き込みの役割）', () => {
     });
 
     it('editor の POST /bulk は役割で弾かれない', async () => {
-        auth = { userId: 'editor-1', role: Role.EDITOR };
+        auth = { userId: 'editor-1', role: Role.EDITOR, sessionId: null };
         const res = await request(app.getHttpServer()).post('/bulk').send([]);
         expect(res.status).not.toBe(403);
     });
