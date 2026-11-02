@@ -164,41 +164,42 @@ export class ModerationQuery {
 
     /**
      * BAN・解除の対象を行ロックして引く（同じ人への同時の BAN で記録が二重にならないように）。
-     * 呼び出し側のトランザクションの manager で流す。profiles が無ければ null
+     * 呼び出し側のトランザクションの manager で、2 つのステートメントに分けて流す。
+     * 1 本で読むと、ロック待ちが解けたとき profiles の行は最新になるが user_role_changes の副問い合わせは
+     * 元のスナップショットのままで、同時に commit された BAN の記録が見えない（READ COMMITTED）。
+     * profiles（FOR UPDATE）を先に読み、ロックを得た後の新しいステートメントで BAN の記録を引く。
+     * profiles が無ければ null
      */
     async findModerationTarget(
         params: { userId: string },
         manager: EntityManager,
     ): Promise<ModerationTargetRow | null> {
-        const qb = manager.createQueryBuilder(ProfileModel, 'p');
-        const lastBanFromRole = qb
-            .subQuery()
-            .select('rc.fromRole')
-            .from(UserRoleChangeModel, 'rc')
-            .where('rc.userId = "p"."user_id"')
-            .andWhere('rc.toRole = :viewerRole')
-            .orderBy('rc.createdAt', 'DESC')
-            .addOrderBy('rc.id', 'DESC')
-            .limit(1)
-            .getQuery();
-
-        const raw = await qb
+        const profile = await manager
+            .createQueryBuilder(ProfileModel, 'p')
             .select('p.userId', 'userId')
             .addSelect('p.role', 'role')
-            .addSelect(lastBanFromRole, 'lastBanFromRole')
-            .setParameter('viewerRole', Role.VIEWER)
             .where('p.userId = :userId', { userId: params.userId })
             .setLock('pessimistic_write')
             .getRawOne();
 
-        if (!raw) {
+        if (!profile) {
             return null;
         }
 
+        const lastBan = await manager
+            .createQueryBuilder(UserRoleChangeModel, 'rc')
+            .select('rc.fromRole', 'fromRole')
+            .where('rc.userId = :userId', { userId: params.userId })
+            .andWhere('rc.toRole = :viewerRole', { viewerRole: Role.VIEWER })
+            .orderBy('rc.createdAt', 'DESC')
+            .addOrderBy('rc.id', 'DESC')
+            .limit(1)
+            .getRawOne();
+
         return {
-            userId: raw.userId,
-            role: raw.role,
-            lastBanFromRole: raw.lastBanFromRole ?? null,
+            userId: profile.userId,
+            role: profile.role,
+            lastBanFromRole: lastBan?.fromRole ?? null,
         };
     }
 

@@ -297,28 +297,46 @@ describe('ModerationQuery（生成される SQL）', () => {
         expect(result?.banned).toBe(true);
     });
 
-    it('見回りの対象は profiles を FOR UPDATE で引き、直近の BAN の from_role を添える', async () => {
-        rawRows = [
-            { userId: 'user-1', role: 'viewer', lastBanFromRole: 'editor' },
+    it('見回りの対象は、profiles を FOR UPDATE で読んだ後に、同じ manager で別ステートメントとして直近の BAN の from_role を引く', async () => {
+        rawQueue = [
+            [{ userId: 'user-1', role: 'viewer' }],
+            [{ fromRole: 'editor' }],
         ];
+        const manager = dataSource.manager;
+        const createQueryBuilder = vi.spyOn(manager, 'createQueryBuilder');
         const result = await query.findModerationTarget(
             { userId: 'user-1' },
-            dataSource.manager,
+            manager,
         );
 
-        const { sql, parameters } = captured[0];
-        expect(sql).toContain('FROM "profiles" "p"');
-        expect(sql).toContain('FOR UPDATE');
-        expect(sql).toMatch(
-            /\(SELECT "rc"\."from_role" AS "rc_from_role" FROM "user_role_changes" "rc" WHERE "rc"\."user_id" = "p"\."user_id" AND "rc"\."to_role" = \$\d+ ORDER BY "rc"\."created_at" DESC, "rc"\."id" DESC LIMIT 1\) AS "lastBanFromRole"/,
+        expect(createQueryBuilder).toHaveBeenCalledTimes(2);
+        expect(captured).toHaveLength(2);
+
+        const [lock, ban] = captured;
+        expect(lock.sql).toContain('FROM "profiles" "p"');
+        expect(lock.sql).toContain('FOR UPDATE');
+        expect(lock.sql).not.toContain('user_role_changes');
+        expect(lock.parameters).toEqual(['user-1']);
+
+        expect(ban.sql).toMatch(
+            /FROM "user_role_changes" "rc" WHERE "rc"\."user_id" = \$\d+ AND "rc"\."to_role" = \$\d+ ORDER BY "rc"\."created_at" DESC, "rc"\."id" DESC LIMIT 1$/,
         );
-        expect(parameters).toContain('user-1');
-        expect(parameters).toContain('viewer');
+        expect(ban.sql).not.toContain('FOR UPDATE');
+        expect(ban.parameters).toEqual(['user-1', 'viewer']);
         expect(result).toEqual({
             userId: 'user-1',
             role: 'viewer',
             lastBanFromRole: 'editor',
         });
+    });
+
+    it('BAN の記録が無ければ lastBanFromRole は null', async () => {
+        rawQueue = [[{ userId: 'user-1', role: 'viewer' }], []];
+        const result = await query.findModerationTarget(
+            { userId: 'user-1' },
+            dataSource.manager,
+        );
+        expect(result?.lastBanFromRole).toBeNull();
     });
 
     it('profiles が無ければ見回りの対象は null', async () => {
@@ -328,6 +346,7 @@ describe('ModerationQuery（生成される SQL）', () => {
                 dataSource.manager,
             ),
         ).toBeNull();
+        expect(captured).toHaveLength(1);
     });
 
     describe('手がかり（traces）', () => {
