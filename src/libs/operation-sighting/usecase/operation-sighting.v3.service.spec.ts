@@ -1,5 +1,5 @@
 import type { MockedFunction } from 'vitest';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat.js';
@@ -22,6 +22,7 @@ import { ItinerarySegment } from '../../operation/domain/itinerary-link-rule.dom
 import { UseCaseError } from '../../../core/classes/custom-error.js';
 import {
     INVALIDATE_MANY_TIME_BUDGET_MS,
+    INVALIDATE_MANY_UNEXPECTED_MESSAGE,
     OperationSightingV3Service,
 } from './operation-sighting.v3.service.js';
 
@@ -1881,11 +1882,48 @@ describe('OperationSightingV3Service - 無効化（1 件・まとめて）', () 
         expect(result).toEqual({
             invalidated: ['a', 'b'],
             skipped: [],
-            failed: { id: 'c', message: 'db down' },
+            failed: { id: 'c', message: INVALIDATE_MANY_UNEXPECTED_MESSAGE },
             pending: ['d', 'e'],
         });
         // 無効にできた分の合図は送る
         expect(mockSignalSend).toHaveBeenCalledTimes(1);
+    });
+
+    it('invalidateMany: 予期しない例外は stack と目撃の id を error ログに残し、内部の文言は応答に出さない', async () => {
+        const logError = vi
+            .spyOn(Logger.prototype, 'error')
+            .mockImplementation(() => undefined);
+        const boom = new Error('relation "x" does not exist');
+        stubSightings({ a: dtoOf({ id: 'a' }), b: boom });
+
+        const result = await service.invalidateMany({
+            ids: ['a', 'b'],
+            ...params,
+        });
+
+        expect(result.failed).toEqual({
+            id: 'b',
+            message: INVALIDATE_MANY_UNEXPECTED_MESSAGE,
+        });
+        expect(JSON.stringify(result)).not.toContain('relation');
+        expect(logError).toHaveBeenCalledTimes(1);
+        const [message, stack] = logError.mock.calls[0];
+        expect(message).toContain('operationSightingId: b');
+        expect(message).toContain('relation "x" does not exist');
+        expect(stack).toBe(boom.stack);
+        logError.mockRestore();
+    });
+
+    it('invalidateMany: skipped（not_found・already_invalidated）はログに残さない', async () => {
+        const logError = vi
+            .spyOn(Logger.prototype, 'error')
+            .mockImplementation(() => undefined);
+        stubSightings({ c: dtoOf({ id: 'c', invalidated: true }) });
+
+        await service.invalidateMany({ ids: ['b', 'c'], ...params });
+
+        expect(logError).not.toHaveBeenCalled();
+        logError.mockRestore();
     });
 
     it('invalidateMany: not_found・already_invalidated 以外の UseCaseError も failed で止まる', async () => {

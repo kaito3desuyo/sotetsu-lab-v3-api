@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import { UniqueEntityId } from '../../../core/classes/unique-entity-id.js';
@@ -47,9 +47,14 @@ import { SightingCarryOver } from './read-models/sighting-carry-over.read-model.
 
 /**
  * まとめての無効化が新しい件を始めてよい経過時間（ミリ秒）。
- * Lambda のタイムアウトが 3 秒なので、余裕を残して打ち切り、残りは pending で返す。
+ * Lambda のタイムアウトが 3 秒で、予算はループの開始から数えるので、
+ * 最後の 1 件と合図の分を 3 秒の内に残して打ち切り、残りは pending で返す。
  */
-export const INVALIDATE_MANY_TIME_BUDGET_MS = 2000;
+export const INVALIDATE_MANY_TIME_BUDGET_MS = 1500;
+
+/** まとめての無効化が予期しない例外で止まったときに応答へ出す固定の文言 */
+export const INVALIDATE_MANY_UNEXPECTED_MESSAGE =
+    '予期しないエラーで止まりました';
 
 /** まとめての無効化の結果。 */
 export interface InvalidateManyResult {
@@ -76,6 +81,8 @@ interface TimeCrossSectionSource {
 
 @Injectable()
 export class OperationSightingV3Service {
+    readonly #logger = new Logger(OperationSightingV3Service.name);
+
     constructor(
         @InjectDataSource() private readonly dataSource: DataSource,
         private readonly operationSightingCommand: OperationSightingCommand,
@@ -881,10 +888,20 @@ export class OperationSightingV3Service {
                     result.skipped.push({ id, reason: skipReason });
                     continue;
                 }
+                // 単体の無効化なら UnexpectedErrorFilter が記録するので、ここでも残す
+                this.#logger.error(
+                    `目撃情報のまとめての無効化が予期しないエラーで止まった（operationSightingId: ${id}）: ${
+                        error instanceof Error ? error.message : String(error)
+                    }`,
+                    error instanceof Error ? error.stack : undefined,
+                );
+                // 内部の文言（DB のエラー文など）は応答に出さない
                 result.failed = {
                     id,
                     message:
-                        error instanceof Error ? error.message : String(error),
+                        error instanceof UseCaseError
+                            ? error.message
+                            : INVALIDATE_MANY_UNEXPECTED_MESSAGE,
                 };
                 result.pending = ids.slice(index + 1);
                 break;
