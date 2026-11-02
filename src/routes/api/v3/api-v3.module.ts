@@ -5,6 +5,7 @@ import { AgencyV3Module } from '../../../libs/agency/agency.v3.module.js';
 import { CalendarDateV3Module } from '../../../libs/calendar/calendar-date.v3.module.js';
 import { CalendarV3Module } from '../../../libs/calendar/calendar.v3.module.js';
 import { FormationV3Module } from '../../../libs/formation/formation.v3.module.js';
+import { ModerationV3Module } from '../../../libs/moderation/moderation.v3.module.js';
 import { OperationSightingV3Module } from '../../../libs/operation-sighting/operation-sighting.v3.module.js';
 import { OperationV3Module } from '../../../libs/operation/operation.v3.module.js';
 import { RouteV3Module } from '../../../libs/route/route.v3.module.js';
@@ -37,6 +38,10 @@ const routes: Routes = [
             {
                 path: '/formations',
                 module: FormationV3Module,
+            },
+            {
+                path: '/moderation',
+                module: ModerationV3Module,
             },
             {
                 path: '/operations',
@@ -82,6 +87,7 @@ const routes: Routes = [
         CalendarDateV3Module,
         FeatureFlagV3Module,
         FormationV3Module,
+        ModerationV3Module,
         OperationV3Module,
         OperationSightingV3Module,
         RouteV3Module,
