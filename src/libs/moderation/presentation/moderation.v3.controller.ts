@@ -16,12 +16,15 @@ import { CacheControl } from '../../../core/modules/cache-control/cache-control.
 import { RBAC } from '../../../core/modules/rbac/rbac.decorator.js';
 import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
 import { Role } from '../../../core/modules/rbac/role.enum.js';
+import { BanModerationUserDto } from '../usecase/dtos/ban-moderation-user.dto.js';
 import { InvalidateModerationSightingsDto } from '../usecase/dtos/invalidate-moderation-sightings.dto.js';
 import { ModerationInvalidateSightingsResultDto } from '../usecase/dtos/moderation-invalidate-sightings-result.dto.js';
 import { ModerationRecentSightingDto } from '../usecase/dtos/moderation-recent-sighting.dto.js';
 import { ModerationSightingAuthorDto } from '../usecase/dtos/moderation-sighting-author.dto.js';
 import { ModerationSightingDto } from '../usecase/dtos/moderation-sighting.dto.js';
+import { ModerationTraceDto } from '../usecase/dtos/moderation-trace.dto.js';
 import { ModerationUserSummaryDto } from '../usecase/dtos/moderation-user-summary.dto.js';
+import { UnbanModerationUserDto } from '../usecase/dtos/unban-moderation-user.dto.js';
 import { ModerationV3Service } from '../usecase/moderation.v3.service.js';
 import { ModerationSightingIdParam } from '../usecase/params/moderation-sighting-id.param.js';
 import { ModerationSightingListParam } from '../usecase/params/moderation-sighting-list.param.js';
@@ -94,5 +97,46 @@ export class ModerationV3Controller {
             userId: req.auth!.userId!,
             reason: body.reason,
         });
+    }
+
+    @Post('/users/:userId/ban')
+    @HttpCode(200)
+    @RBAC(Role.MANAGER)
+    @CacheControl(CACHE_CONTROL.REALTIME)
+    async banUser(
+        @Req() req: Request,
+        @Param() param: ModerationUserIdParam,
+        @Body() body: BanModerationUserDto,
+    ): Promise<ModerationUserSummaryDto> {
+        return this.moderationV3Service.banUser({
+            userId: param.userId,
+            changedBy: req.auth!.userId!,
+            reason: body.reason,
+        });
+    }
+
+    @Post('/users/:userId/unban')
+    @HttpCode(200)
+    @RBAC(Role.MANAGER)
+    @CacheControl(CACHE_CONTROL.REALTIME)
+    async unbanUser(
+        @Req() req: Request,
+        @Param() param: ModerationUserIdParam,
+        @Body() body: UnbanModerationUserDto,
+    ): Promise<ModerationUserSummaryDto> {
+        return this.moderationV3Service.unbanUser({
+            userId: param.userId,
+            changedBy: req.auth!.userId!,
+            reason: body.reason,
+        });
+    }
+
+    @Get('/users/:userId/traces')
+    @RBAC(Role.MANAGER)
+    @CacheControl(CACHE_CONTROL.REALTIME)
+    async findTraces(
+        @Param() param: ModerationUserIdParam,
+    ): Promise<ModerationTraceDto[]> {
+        return this.moderationV3Service.findTraces({ userId: param.userId });
     }
 }

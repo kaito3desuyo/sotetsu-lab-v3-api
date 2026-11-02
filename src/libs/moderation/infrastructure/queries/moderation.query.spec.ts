@@ -6,10 +6,12 @@ import { TypeOrmNamingStrategy } from '../../../../core/configs/typeorm-naming-s
 import { OperationSightingAuthorModel } from '../../../operation-sighting/infrastructure/models/operation-sighting-author.model.js';
 import { OperationSightingModel } from '../../../operation-sighting/infrastructure/models/operation-sighting.model.js';
 import { ProfileModel } from '../../../user/infrastructure/models/profile.model.js';
+import { UserAccessTraceModel } from '../../../../core/modules/access-trace/user-access-trace.model.js';
 import {
     BURST_COUNT,
     BURST_WINDOW_MINUTES,
     NEW_ACCOUNT_HOURS,
+    TRACE_OTHER_ACCOUNTS_LIMIT,
 } from '../../moderation.constants.js';
 import { ModerationQuery } from './moderation.query.js';
 
@@ -22,6 +24,8 @@ describe('ModerationQuery（生成される SQL）', () => {
     let query: ModerationQuery;
     let captured: { sql: string; parameters: unknown[] }[];
     let rawRows: Record<string, unknown>[];
+    /** 1 回目・2 回目…の実行ごとに返す行。空になったら rawRows を返す */
+    let rawQueue: Record<string, unknown>[][];
 
     beforeAll(async () => {
         dataSource = new DataSource({
@@ -47,6 +51,10 @@ describe('ModerationQuery（生成される SQL）', () => {
                     provide: getRepositoryToken(ProfileModel),
                     useValue: dataSource.getRepository(ProfileModel),
                 },
+                {
+                    provide: getRepositoryToken(UserAccessTraceModel),
+                    useValue: dataSource.getRepository(UserAccessTraceModel),
+                },
             ],
         }).compile();
         query = module.get(ModerationQuery);
@@ -55,18 +63,19 @@ describe('ModerationQuery（生成される SQL）', () => {
     beforeEach(() => {
         captured = [];
         rawRows = [];
+        rawQueue = [];
         const capture = function (this: SelectQueryBuilder<any>) {
             const [sql, parameters] = this.getQueryAndParameters();
             captured.push({ sql, parameters });
-            return Promise.resolve(rawRows);
+            return Promise.resolve(rawQueue.shift() ?? rawRows);
         };
         vi.spyOn(SelectQueryBuilder.prototype, 'getRawMany').mockImplementation(
             capture as any,
         );
         vi.spyOn(SelectQueryBuilder.prototype, 'getRawOne').mockImplementation(
             async function (this: SelectQueryBuilder<any>) {
-                await capture.call(this);
-                return rawRows[0];
+                const rows = await capture.call(this);
+                return rows[0];
             } as any,
         );
     });
@@ -255,6 +264,7 @@ describe('ModerationQuery（生成される SQL）', () => {
                 invalidatedCount: '3',
                 firstSightingAt: new Date('2026-10-30T01:00:00.000Z'),
                 lastSightingAt: new Date('2026-11-02T01:00:00.000Z'),
+                banned: false,
             },
         ];
         const result = await query.findUserSummary({ userId: 'user-1' });
@@ -266,11 +276,226 @@ describe('ModerationQuery（生成される SQL）', () => {
         expect(sql).toContain('MIN("s"."created_at")');
         expect(sql).toContain('MAX("s"."created_at")');
         expect(sql).toContain('GROUP BY "p"."user_id"');
-        expect(parameters).toEqual(['user-1']);
+        expect(parameters).toContain('user-1');
         expect(result).toMatchObject({
             userId: 'user-1',
             sightingCount: 12,
             invalidatedCount: 3,
+            banned: false,
+        });
+    });
+
+    it('要約の banned は「今 viewer」かつ「viewer にした記録がある」ときだけ true', async () => {
+        rawRows = [{ userId: 'user-1', role: 'viewer', banned: true }];
+        const result = await query.findUserSummary({ userId: 'user-1' });
+
+        const { sql, parameters } = captured[0];
+        expect(sql).toMatch(
+            /"p"\."role" = \$\d+ AND EXISTS \(SELECT 1 FROM "user_role_changes" "rc" WHERE .*"rc"\."user_id" = "p"\."user_id".* AND "rc"\."to_role" = \$\d+\) AS "banned"/,
+        );
+        expect(parameters.filter((p) => p === 'viewer')).toHaveLength(1);
+        expect(result?.banned).toBe(true);
+    });
+
+    it('見回りの対象は profiles を FOR UPDATE で引き、直近の BAN の from_role を添える', async () => {
+        rawRows = [
+            { userId: 'user-1', role: 'viewer', lastBanFromRole: 'editor' },
+        ];
+        const result = await query.findModerationTarget(
+            { userId: 'user-1' },
+            dataSource.manager,
+        );
+
+        const { sql, parameters } = captured[0];
+        expect(sql).toContain('FROM "profiles" "p"');
+        expect(sql).toContain('FOR UPDATE');
+        expect(sql).toMatch(
+            /\(SELECT "rc"\."from_role" AS "rc_from_role" FROM "user_role_changes" "rc" WHERE "rc"\."user_id" = "p"\."user_id" AND "rc"\."to_role" = \$\d+ ORDER BY "rc"\."created_at" DESC, "rc"\."id" DESC LIMIT 1\) AS "lastBanFromRole"/,
+        );
+        expect(parameters).toContain('user-1');
+        expect(parameters).toContain('viewer');
+        expect(result).toEqual({
+            userId: 'user-1',
+            role: 'viewer',
+            lastBanFromRole: 'editor',
+        });
+    });
+
+    it('profiles が無ければ見回りの対象は null', async () => {
+        expect(
+            await query.findModerationTarget(
+                { userId: 'nobody' },
+                dataSource.manager,
+            ),
+        ).toBeNull();
+    });
+
+    describe('手がかり（traces）', () => {
+        const NOW = new Date('2026-11-03T00:00:00.000Z');
+        const NINETY_DAYS_AGO = new Date('2026-08-05T00:00:00.000Z');
+
+        it('IPv6 は /64 の網に、IPv4 は完全一致で束ねて、回数・UA・最後の日時を集める', async () => {
+            await query.findTraces({ userId: 'user-1', now: NOW });
+
+            const { sql } = captured[0];
+            const bucket =
+                'CASE WHEN family("t"."ip") = 6 THEN network(set_masklen("t"."ip", 64))::text ELSE host("t"."ip") END';
+            expect(sql).toContain(`${bucket} AS "ip"`);
+            expect(sql).toContain(`GROUP BY ${bucket}`);
+            expect(sql).toContain('COUNT(*) AS "count"');
+            expect(sql).toContain('MAX("t"."created_at") AS "lastSeenAt"');
+            expect(sql).toContain('array_agg(DISTINCT "t"."user_agent")');
+            expect(sql).toMatch(/ORDER BY "lastSeenAt" DESC/);
+        });
+
+        it('90 日より古い行は数えない（自分の行も、同じ手がかりの他人の行も）', async () => {
+            rawQueue = [
+                [
+                    {
+                        ip: '203.0.113.5',
+                        userAgents: null,
+                        count: '1',
+                        lastSeenAt: NOW,
+                    },
+                ],
+                [],
+            ];
+            await query.findTraces({ userId: 'user-1', now: NOW });
+
+            expect(captured).toHaveLength(2);
+            for (const { sql, parameters } of captured) {
+                expect(sql).toContain('"t"."created_at" >= $');
+                expect(parameters).toContainEqual(NINETY_DAYS_AGO);
+            }
+        });
+
+        it('同じ手がかりの他のアカウントは自分を除き、1 手がかり 20 件まで', async () => {
+            rawQueue = [
+                [
+                    {
+                        ip: '2001:db8:1:2::/64',
+                        userAgents: ['UA-1'],
+                        count: '2',
+                        lastSeenAt: NOW,
+                    },
+                ],
+                [],
+            ];
+            await query.findTraces({ userId: 'user-1', now: NOW });
+
+            const { sql, parameters } = captured[1];
+            expect(sql).toContain('"x"."user_id" <> $');
+            expect(sql).toMatch(/"x"\."rn" <= \$\d+/);
+            expect(sql).toContain('"t"."ip" <<= ANY(');
+            expect(sql).toMatch(
+                /ROW_NUMBER\(\) OVER \(PARTITION BY .* ORDER BY \("t"\."user_id" = \$\d+\) ASC, MAX\("t"\."created_at"\) DESC/,
+            );
+            expect(sql).toMatch(/COUNT\(\*\) OVER \(PARTITION BY /);
+            expect(parameters).toContain('user-1');
+            expect(parameters).toContain(TRACE_OTHER_ACCOUNTS_LIMIT);
+            expect(parameters).toContainEqual(['2001:db8:1:2::/64']);
+        });
+
+        it('他のアカウントの banned も「今 viewer かつ記録あり」の同じ規則で SQL が決める', async () => {
+            rawQueue = [
+                [
+                    {
+                        ip: '203.0.113.5',
+                        userAgents: [],
+                        count: '1',
+                        lastSeenAt: NOW,
+                    },
+                ],
+                [],
+            ];
+            await query.findTraces({ userId: 'user-1', now: NOW });
+
+            expect(captured[1].sql).toMatch(
+                /"p"\."role" = \$\d+ AND EXISTS \(SELECT 1 FROM "user_role_changes" "rc" WHERE .*"rc"\."user_id" = "p"\."user_id".* AND "rc"\."to_role" = \$\d+\) AS "banned"/,
+            );
+        });
+
+        it('手がかりが無ければ 2 本目は流さない', async () => {
+            const result = await query.findTraces({
+                userId: 'user-1',
+                now: NOW,
+            });
+            expect(result).toEqual([]);
+            expect(captured).toHaveLength(1);
+        });
+
+        it('手がかりごとに他のアカウントを組み立て、他に居なければ accountCount は 1', async () => {
+            rawQueue = [
+                [
+                    {
+                        ip: '2001:db8:1:2::/64',
+                        userAgents: ['UA-1', 'UA-2'],
+                        count: '4',
+                        lastSeenAt: NOW,
+                    },
+                    {
+                        ip: '203.0.113.5',
+                        userAgents: null,
+                        count: '1',
+                        lastSeenAt: new Date('2026-11-01T00:00:00.000Z'),
+                    },
+                ],
+                [
+                    {
+                        ip: '2001:db8:1:2::/64',
+                        userId: 'u-2',
+                        username: 'bob',
+                        role: 'viewer',
+                        banned: true,
+                        accountCount: '3',
+                    },
+                    {
+                        ip: '2001:db8:1:2::/64',
+                        userId: 'u-3',
+                        username: 'carol',
+                        role: 'reporter',
+                        banned: false,
+                        accountCount: '3',
+                    },
+                ],
+            ];
+
+            const result = await query.findTraces({
+                userId: 'user-1',
+                now: NOW,
+            });
+
+            expect(result).toEqual([
+                {
+                    ip: '2001:db8:1:2::/64',
+                    userAgents: ['UA-1', 'UA-2'],
+                    count: 4,
+                    lastSeenAt: NOW,
+                    accountCount: 3,
+                    otherAccounts: [
+                        {
+                            userId: 'u-2',
+                            username: 'bob',
+                            role: 'viewer',
+                            banned: true,
+                        },
+                        {
+                            userId: 'u-3',
+                            username: 'carol',
+                            role: 'reporter',
+                            banned: false,
+                        },
+                    ],
+                },
+                {
+                    ip: '203.0.113.5',
+                    userAgents: [],
+                    count: 1,
+                    lastSeenAt: new Date('2026-11-01T00:00:00.000Z'),
+                    accountCount: 1,
+                    otherAccounts: [],
+                },
+            ]);
         });
     });
 

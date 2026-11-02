@@ -34,6 +34,9 @@ describe('ModerationV3Controller（見回りの読み取りの口）', () => {
         findSightingAuthor: vi.fn(),
         findRecentSightings: vi.fn(),
         invalidateSightings: vi.fn(),
+        banUser: vi.fn(),
+        unbanUser: vi.fn(),
+        findTraces: vi.fn(),
     };
 
     beforeAll(async () => {
@@ -285,6 +288,152 @@ describe('ModerationV3Controller（見回りの読み取りの口）', () => {
                 .post(PATH)
                 .send({ ids: [ID_A], reason: 'あ'.repeat(200) });
             expect(res.status).toBe(200);
+        });
+    });
+    describe('BAN・解除・手がかり（MANAGER だけ）', () => {
+        const SUMMARY = { userId: USER_ID, banned: true };
+        const CALLS = [
+            {
+                label: 'POST /users/:userId/ban',
+                method: 'post' as const,
+                path: `/users/${USER_ID}/ban`,
+                body: { reason: '荒らし' },
+            },
+            {
+                label: 'POST /users/:userId/unban',
+                method: 'post' as const,
+                path: `/users/${USER_ID}/unban`,
+                body: { reason: '誤爆' },
+            },
+            {
+                label: 'GET /users/:userId/traces',
+                method: 'get' as const,
+                path: `/users/${USER_ID}/traces`,
+                body: undefined,
+            },
+        ];
+        const call = (c: (typeof CALLS)[number]) => {
+            const req = request(app.getHttpServer())[c.method](c.path);
+            return c.body ? req.send(c.body) : req;
+        };
+        const writes = () => [
+            service.banUser,
+            service.unbanUser,
+            service.findTraces,
+        ];
+
+        beforeEach(() => {
+            service.banUser.mockResolvedValue(SUMMARY);
+            service.unbanUser.mockResolvedValue(SUMMARY);
+            service.findTraces.mockResolvedValue([]);
+        });
+
+        it.each(CALLS)('$label は EDITOR で 403', async (c) => {
+            auth = { userId: 'e-1', role: Role.EDITOR, sessionId: null };
+            expect((await call(c)).status).toBe(403);
+            writes().forEach((fn) => expect(fn).not.toHaveBeenCalled());
+        });
+
+        it.each(CALLS)(
+            '$label は REPORTER・VIEWER・匿名でも 403',
+            async (c) => {
+                for (const role of [Role.REPORTER, Role.VIEWER, null]) {
+                    auth = { userId: 'u-1', role, sessionId: null };
+                    expect((await call(c)).status).toBe(403);
+                }
+                writes().forEach((fn) => expect(fn).not.toHaveBeenCalled());
+            },
+        );
+
+        it.each(CALLS)('$label は MANAGER で 200・保存させない', async (c) => {
+            auth = { userId: 'm-1', role: Role.MANAGER, sessionId: null };
+            const res = await call(c);
+            expect(res.status).toBe(200);
+            expect(res.headers['cache-control']).toBe('no-store');
+        });
+
+        it('ban は認証した userId を changedBy にして理由を渡す', async () => {
+            auth = { userId: 'm-1', role: Role.MANAGER, sessionId: null };
+            const res = await request(app.getHttpServer())
+                .post(`/users/${USER_ID}/ban`)
+                .send({ reason: '荒らし' });
+            expect(res.body).toEqual(SUMMARY);
+            expect(service.banUser).toHaveBeenCalledWith({
+                userId: USER_ID,
+                changedBy: 'm-1',
+                reason: '荒らし',
+            });
+        });
+
+        it('unban の理由は省略できる', async () => {
+            auth = { userId: 'm-1', role: Role.MANAGER, sessionId: null };
+            await request(app.getHttpServer())
+                .post(`/users/${USER_ID}/unban`)
+                .send({});
+            expect(service.unbanUser).toHaveBeenCalledWith({
+                userId: USER_ID,
+                changedBy: 'm-1',
+                reason: undefined,
+            });
+        });
+
+        it('traces は userId を渡す', async () => {
+            auth = { userId: 'm-1', role: Role.MANAGER, sessionId: null };
+            await request(app.getHttpServer()).get(`/users/${USER_ID}/traces`);
+            expect(service.findTraces).toHaveBeenCalledWith({
+                userId: USER_ID,
+            });
+        });
+
+        it.each([
+            ['reason が無い', {}],
+            ['reason が空', { reason: '' }],
+            ['reason が 201 字', { reason: 'あ'.repeat(201) }],
+            ['reason が文字列でない', { reason: 1 }],
+        ])('ban は %s なら 422', async (_label, body) => {
+            auth = { userId: 'm-1', role: Role.MANAGER, sessionId: null };
+            const res = await request(app.getHttpServer())
+                .post(`/users/${USER_ID}/ban`)
+                .send(body);
+            expect(res.status).toBe(validationPipeOptions.errorHttpStatusCode);
+            expect(service.banUser).not.toHaveBeenCalled();
+        });
+
+        it('ban の reason は 200 字ちょうどなら通る', async () => {
+            auth = { userId: 'm-1', role: Role.MANAGER, sessionId: null };
+            const res = await request(app.getHttpServer())
+                .post(`/users/${USER_ID}/ban`)
+                .send({ reason: 'あ'.repeat(200) });
+            expect(res.status).toBe(200);
+        });
+
+        it.each([
+            ['reason が空', { reason: '' }],
+            ['reason が 201 字', { reason: 'あ'.repeat(201) }],
+        ])('unban は %s なら 422', async (_label, body) => {
+            auth = { userId: 'm-1', role: Role.MANAGER, sessionId: null };
+            const res = await request(app.getHttpServer())
+                .post(`/users/${USER_ID}/unban`)
+                .send(body);
+            expect(res.status).toBe(validationPipeOptions.errorHttpStatusCode);
+            expect(service.unbanUser).not.toHaveBeenCalled();
+        });
+
+        it('path の userId が UUID でなければ 422', async () => {
+            auth = { userId: 'm-1', role: Role.MANAGER, sessionId: null };
+            for (const [method, path] of [
+                ['post', '/users/not-a-uuid/ban'],
+                ['post', '/users/not-a-uuid/unban'],
+                ['get', '/users/not-a-uuid/traces'],
+            ] as const) {
+                const req = request(app.getHttpServer())[method](path);
+                const res = await (method === 'post'
+                    ? req.send({ reason: 'r' })
+                    : req);
+                expect(res.status).toBe(
+                    validationPipeOptions.errorHttpStatusCode,
+                );
+            }
         });
     });
 });
