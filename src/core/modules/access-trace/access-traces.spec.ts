@@ -62,7 +62,7 @@ describe('AccessTraces', () => {
         expect(qb.insert).toHaveBeenCalledTimes(2);
     });
 
-    it('recordPost は渡された manager で post の行を書く', async () => {
+    it('recordPost は渡された manager で post の行を書き、purge しない', async () => {
         const managerQb = { ...qb };
         const manager = { createQueryBuilder: vi.fn(() => managerQb) };
         await traces.recordPost(
@@ -75,6 +75,9 @@ describe('AccessTraces', () => {
             manager as never,
         );
         expect(manager.createQueryBuilder).toHaveBeenCalledTimes(1);
+        // 投稿のトランザクションの中から別接続で DELETE を待たない
+        expect(repository.createQueryBuilder).not.toHaveBeenCalled();
+        expect(managerQb.delete).not.toHaveBeenCalled();
         expect(managerQb.values).toHaveBeenCalledWith(
             expect.objectContaining({
                 userId: 'u1',

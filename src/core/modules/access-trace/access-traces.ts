@@ -48,7 +48,7 @@ export class AccessTraces {
         await this.purgeExpiredIfDue();
     }
 
-    /** 投稿と同じトランザクションで書く */
+    /** 投稿と同じトランザクションで書く。掃除は呼び出し側が commit の後に purgeExpiredIfDue を呼ぶ */
     async recordPost(
         params: {
             userId: string;
@@ -70,7 +70,6 @@ export class AccessTraces {
                 userAgent: params.userAgent,
             })
             .execute();
-        await this.purgeExpiredIfDue();
     }
 
     /** 前回から 1 時間たっていれば 90 日より古い行を消す。失敗は warn で握る */
