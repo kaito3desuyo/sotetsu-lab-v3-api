@@ -6,6 +6,7 @@ import { OperationSightingInvalidationModel } from '../../../operation-sighting/
 import { OperationSightingManagementLogModel } from '../../../operation-sighting/infrastructure/models/operation-sighting-management-log.model.js';
 import { OperationSightingModel } from '../../../operation-sighting/infrastructure/models/operation-sighting.model.js';
 import { ProfileModel } from '../../../user/infrastructure/models/profile.model.js';
+import { Role } from '../../../../core/modules/rbac/role.enum.js';
 import {
     BURST_COUNT,
     BURST_WINDOW_MINUTES,
@@ -46,6 +47,11 @@ export type ModerationRecentSightingRow = ModerationSightingRow & {
         burst: boolean;
     } | null;
 };
+
+/**
+ * 印（newAccount・burst）を付ける投稿者の役割。信頼済みの editor・manager は連投しても普通の作業なので常に false
+ */
+const MARKED_ROLES: readonly string[] = [Role.REPORTER, Role.VIEWER];
 
 /** 無効化の取り消し（復元）は行を消すので、行があれば今も無効 */
 const INVALIDATION_ACTION = 'invalidation';
@@ -149,6 +155,7 @@ export class ModerationQuery {
 
     /**
      * 新着の目撃を投稿者つきで created_at の新しい順に（ゲストも含む）。
+     * 印は投稿者の役割が reporter・viewer のときだけ計算する（editor・manager は常に false）。
      * newAccount: その目撃が、投稿者の登録から NEW_ACCOUNT_HOURS 時間以内。
      * burst: その目撃までの BURST_WINDOW_MINUTES 分（その目撃を含む）に、同じ人の投稿が BURST_COUNT 件以上。
      */
@@ -168,10 +175,11 @@ export class ModerationQuery {
             .addSelect('ap.displayName', 'authorDisplayName')
             .addSelect('ap.role', 'authorRole')
             .addSelect(
-                `"s"."created_at" < "ap"."created_at" + interval '1 hour' * :newAccountHours`,
+                `CASE WHEN "ap"."role" IN (:...markedRoles) THEN "s"."created_at" < "ap"."created_at" + interval '1 hour' * :newAccountHours ELSE false END`,
                 'newAccount',
             )
-            .setParameter('newAccountHours', NEW_ACCOUNT_HOURS);
+            .setParameter('newAccountHours', NEW_ACCOUNT_HOURS)
+            .setParameter('markedRoles', MARKED_ROLES);
 
         const burstCount = qb
             .subQuery()
@@ -188,25 +196,32 @@ export class ModerationQuery {
                 `s2.createdAt > "s"."created_at" - interval '1 minute' * :burstWindowMinutes`,
             )
             .getQuery();
-        qb.addSelect(`${burstCount} >= :burstCount`, 'burst')
+        qb.addSelect(
+            `CASE WHEN "ap"."role" IN (:...markedRoles) THEN ${burstCount} >= :burstCount ELSE false END`,
+            'burst',
+        )
             .setParameter('burstWindowMinutes', BURST_WINDOW_MINUTES)
             .setParameter('burstCount', BURST_COUNT);
 
         const rows = await qb.getRawMany();
 
-        return rows.map((raw) => ({
-            ...toSightingRow(raw),
-            author: raw.authorUserId
-                ? {
-                      userId: raw.authorUserId,
-                      username: raw.authorUsername ?? '',
-                      displayName: raw.authorDisplayName ?? '',
-                      role: raw.authorRole ?? '',
-                      newAccount: raw.newAccount === true,
-                      burst: raw.burst === true,
-                  }
-                : null,
-        }));
+        return rows.map((raw) => {
+            const marked = MARKED_ROLES.includes(raw.authorRole);
+
+            return {
+                ...toSightingRow(raw),
+                author: raw.authorUserId
+                    ? {
+                          userId: raw.authorUserId,
+                          username: raw.authorUsername ?? '',
+                          displayName: raw.authorDisplayName ?? '',
+                          role: raw.authorRole ?? '',
+                          newAccount: marked && raw.newAccount === true,
+                          burst: marked && raw.burst === true,
+                      }
+                    : null,
+            };
+        });
     }
 
     /**

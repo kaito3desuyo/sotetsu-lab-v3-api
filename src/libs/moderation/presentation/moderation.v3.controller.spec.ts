@@ -165,6 +165,26 @@ describe('ModerationV3Controller（見回りの読み取りの口）', () => {
         expect(res.status).toBe(validationPipeOptions.errorHttpStatusCode);
     });
 
+    it.each(['2026-W01', '2026-123', '2026-02-30', '2026-02-30T00:00:00.000Z'])(
+        'before=%s は Date にできない・暦上ありえないので 422',
+        async (before) => {
+            auth = { userId: 'e-1', role: Role.EDITOR, sessionId: null };
+            for (const path of [
+                '/recent-sightings',
+                `/users/${USER_ID}/sightings`,
+            ]) {
+                const res = await request(app.getHttpServer()).get(
+                    `${path}?before=${before}`,
+                );
+                expect(res.status).toBe(
+                    validationPipeOptions.errorHttpStatusCode,
+                );
+            }
+            expect(service.findRecentSightings).not.toHaveBeenCalled();
+            expect(service.findSightingsByUser).not.toHaveBeenCalled();
+        },
+    );
+
     it('path の userId・id が UUID でなければ 422', async () => {
         auth = { userId: 'e-1', role: Role.EDITOR, sessionId: null };
         for (const path of [

@@ -154,6 +154,75 @@ describe('ModerationQuery（生成される SQL）', () => {
         expect(parameters).toContain(NEW_ACCOUNT_HOURS);
     });
 
+    it('印は reporter・viewer の投稿者だけ計算する（SQL の CASE）', async () => {
+        await query.findRecentSightings({ limit: 100, before: null });
+
+        const { sql, parameters } = captured[0];
+        expect(sql).toMatch(
+            /CASE WHEN "ap"\."role" IN \(\$\d+, \$\d+\) THEN "s"\."created_at" < .* ELSE false END AS "newAccount"/,
+        );
+        expect(sql).toMatch(
+            /CASE WHEN "ap"\."role" IN \(\$\d+, \$\d+\) THEN \(SELECT COUNT\(\*\).* ELSE false END AS "burst"/,
+        );
+        expect(parameters).toContain('reporter');
+        expect(parameters).toContain('viewer');
+        expect(parameters).not.toContain('editor');
+        expect(parameters).not.toContain('manager');
+    });
+
+    it.each(['editor', 'manager'])(
+        '%s の投稿者は burst も newAccount も false（行が true を返しても落とす）',
+        async (role) => {
+            rawRows = [
+                {
+                    operationSightingId: 's-1',
+                    sightingTime: new Date('2026-11-02T01:00:00.000Z'),
+                    createdAt: new Date('2026-11-02T01:05:00.000Z'),
+                    operationNumber: '41',
+                    formationNumber: '8701',
+                    invalidated: false,
+                    authorUserId: 'u-1',
+                    authorUsername: 'alice',
+                    authorDisplayName: 'Alice',
+                    authorRole: role,
+                    newAccount: true,
+                    burst: true,
+                },
+            ];
+            const [row] = await query.findRecentSightings({
+                limit: 100,
+                before: null,
+            });
+            expect(row.author).toMatchObject({
+                role,
+                newAccount: false,
+                burst: false,
+            });
+        },
+    );
+
+    it('reporter の投稿者は SQL の印をそのまま返す', async () => {
+        rawRows = [
+            {
+                operationSightingId: 's-1',
+                sightingTime: new Date('2026-11-02T01:00:00.000Z'),
+                createdAt: new Date('2026-11-02T01:05:00.000Z'),
+                operationNumber: '41',
+                formationNumber: '8701',
+                invalidated: false,
+                authorUserId: 'u-1',
+                authorRole: 'reporter',
+                newAccount: true,
+                burst: true,
+            },
+        ];
+        const [row] = await query.findRecentSightings({
+            limit: 100,
+            before: null,
+        });
+        expect(row.author).toMatchObject({ newAccount: true, burst: true });
+    });
+
     it('目撃の投稿者は operation_sighting_authors から引く', async () => {
         rawRows = [{ userId: 'user-1' }];
         const result = await query.findAuthorUserId({
