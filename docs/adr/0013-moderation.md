@@ -45,7 +45,7 @@
 - まとめての無効化は `POST /v3/moderation/sightings/invalidate`（`ids`・`reason`）。1 件ずつの無効化を順に呼ぶ。
   - 繰り返しは `OperationSightingV3Service.invalidateMany` に置き、moderation の service は委ねるだけ。最新目撃のキャッシュの付け替えを、今の 1 件ずつの処理が正しく扱うので、それを使い回す。spec の「1 トランザクション」は取らない。
   - CDN の失効（日付を重複なく）と socket の合図は、1 件ごとでなく、最後に 1 回だけ出す。
-  - api の Lambda の timeout は 3 秒。ループ開始から 1,500ms を超えたら、残りに手を付けず `pending`（id の配列）を応答に入れて返す。client は `pending` を送り直す。
+  - api の Lambda の timeout は 3 秒。ループ開始から 1,000ms を超えたら、残りに手を付けず `pending`（id の配列）を応答に入れて返す。client は `pending` を送り直す。
   - すでに無効・存在しない id は `skipped`（id と `already_invalidated`・`not_found`）に入れて、残りは続ける。予期しない失敗は、その 1 件を `failed`（id とメッセージ）に入れてそこで止め、残りを `pending` に返す。成功は `invalidated`。
   - 1 回に受ける id は 200 件まで。201 件以上は 422（このリポの ValidationPipe は 422）。
   - すでに無効な目撃は、`invalidate` の中で `UseCaseError`（reason: `already_invalidated`）を投げる。今まではドメインが素の `Error` を投げていて、単体の無効化の口も 500 だった。それが UseCaseError の応答に変わる。
@@ -65,7 +65,7 @@
 - 登録者のトークンの `session_id` で記録すれば、backend に書き込みの口（秘密の共有や service role）を足さずに済む。利用者が自分で叩ける「手がかりの書き込み口」を作らないので、偽の手がかりも書けない。
 - 90 日の削除を api の中でやるのは、pg_cron が無く、定期 Lambda や CLI の毎日実行を足すほどの量でないから。投稿・ログインがあれば走り、無ければ溜まらない。読む口も 90 日で切るので、消し損ねても見えない。
 - `recordPost` から削除を外したのは、投稿のトランザクションの中で別接続の DELETE を待つのが投稿の経路に悪いから。誤りでも、1 時間に 1 回の掃除が投稿で走らないだけで、`session` 側で走る。
-- 一括を 1 件ずつの繰り返しにして、1,500ms の予算と `pending` を返すのは、Lambda の timeout が 3 秒で、200 件で 1 件ずつ合図すると CloudFront の失効と socket が 200 回ずつになるから。予算をループ開始から取り 2,000ms でなく 1,500ms にしたのは、最後の 1 件と最後の合図を 3 秒の内に残すため。途中で止まると部分的に無効になるが、応答の `invalidated`・`failed`・`pending` で画面が分かる。
+- 一括を 1 件ずつの繰り返しにして、1,000ms の予算と `pending` を返すのは、Lambda の timeout が 3 秒で、200 件で 1 件ずつ合図すると CloudFront の失効と socket が 200 回ずつになるから。予算をループ開始から取り 2,000ms でなく 1,000ms にしたのは、最後の 1 件と最後の合図を 3 秒の内に残すため。途中で止まると部分的に無効になるが、応答の `invalidated`・`failed`・`pending` で画面が分かる。
 - `profiles` を `FOR UPDATE` で読んでから直近の BAN を引くのは、同じ人を同時に BAN・解除したとき、先に書いた方の結果を後の方が読むようにするため。
 
 ## 却下した案
@@ -104,3 +104,5 @@
   2. migration 2 本を、api のデプロイの前に `migration:run`（ユーザー）。
   3. デプロイ後、自分のアカウントでログインして 1 件投稿し、`user_access_traces` に `session` と `post` が 1 行ずつ入り、`ip` が自分の回線の IP（AWS の IP でない）であること。AWS の IP なら `CloudFront-Viewer-Address` が届いていない。その場合は記録を止めてユーザーに相談する（UA だけで出すことはしない）。
   4. 手がかりの SQL と新着の印を、手元の API から実表で 1 回叩く。
+  5. 偽のヘッダー（`CloudFront-Viewer-Address: 1.2.3.4:1` と `X-Forwarded-For: 1.2.3.4`）を付けて 1 件投稿し、記録された `ip` が自分の回線であること。
+  6. migration を流した後、`user_access_traces`・`user_role_changes` の `relrowsecurity` が true で、anon・authenticated に SELECT の権限が無いこと（RLS は本番の `ensure_rls` のイベントトリガー頼みで migration に書いていないため）。

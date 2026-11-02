@@ -48,9 +48,9 @@ import { SightingCarryOver } from './read-models/sighting-carry-over.read-model.
 /**
  * まとめての無効化が新しい件を始めてよい経過時間（ミリ秒）。
  * Lambda のタイムアウトが 3 秒で、予算はループの開始から数えるので、
- * 最後の 1 件と合図の分を 3 秒の内に残して打ち切り、残りは pending で返す。
+ * ループの前の認証・RBAC の分と、最後の 1 件と合図の分を 3 秒の内に残して打ち切り、残りは pending で返す。
  */
-export const INVALIDATE_MANY_TIME_BUDGET_MS = 1500;
+export const INVALIDATE_MANY_TIME_BUDGET_MS = 1000;
 
 /** まとめての無効化が予期しない例外で止まったときに応答へ出す固定の文言 */
 export const INVALIDATE_MANY_UNEXPECTED_MESSAGE =
