@@ -93,12 +93,11 @@
 
 - IP アドレスと端末の情報を、投稿・登録・ログインのときに 90 日持つことを、client のプライバシーポリシー（M26・client PR #273）に書く。**api のデプロイより先に、ポリシーが出ていること。**
 
-## 出す順（案）
+## 出す順
 
 1. client: プライバシーポリシー（#273 の取り込み直しと追記）
-2. api: migration → api（記録・口・役割の確かめ）
-3. backend: 登録・ログインの手がかり
-4. client: 画面
+2. api: migration → api（記録・口・役割の確かめ）。登録・ログインの手がかりは、api が `CloudFront-Viewer-Address` と `session_id` で記録する（backend は触らない・ADR-0013）
+3. client: 画面
 
 ## builder に任せること
 
