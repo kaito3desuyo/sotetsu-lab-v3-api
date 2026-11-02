@@ -4,8 +4,7 @@
 - **Agent**: claude-sonnet-5-5
 - **ステータス**: 採用済み（本番へのデプロイ前）
 - **ブランチ**: feature/moderation
-- **spec**: docs/superpowers/specs/2026-11-03-moderation-design.md
-- **計画**: docs/superpowers/plans/2026-11-03-moderation.md
+- **spec**: docs/superpowers/specs/2026-11-03-moderation-design.md（計画: docs/superpowers/plans/2026-11-03-moderation.md）
 
 ---
 
@@ -41,7 +40,8 @@
   - 自分・MANAGER・すでに viewer の人は BAN できない（`UseCaseError`・400 系）。
   - 解除は直近の BAN の `from_role` に戻し、記録が無ければ `reporter`。
   - BAN・解除は、`profiles` を `FOR UPDATE` で読んでから、直近の BAN を別の文で読む。同じ人への BAN・解除の同時実行で `from_role` が食い違わないようにする。
-  - `changed_by` の FK は ON DELETE NO ACTION のまま。BAN の記録は監査のために残す。MANAGER を消すことはまず無く、消すときに先にその記録を消す手間が増えるだけ。
+  - `user_id` の FK は ON DELETE CASCADE。利用者は消さず BAN で処分するので、記録は残る。アカウント自体が消えたら記録も一緒に消える（対象が居ないので、監査の意味もない）。
+  - `changed_by` の FK は ON DELETE NO ACTION。処分した MANAGER の記録は残る。MANAGER を消すことはまず無く、消すときに先にその記録を消す手間が増えるだけ。
 - まとめての無効化は `POST /v3/moderation/sightings/invalidate`（`ids`・`reason`）。1 件ずつの無効化を順に呼ぶ。
   - 繰り返しは `OperationSightingV3Service.invalidateMany` に置き、moderation の service は委ねるだけ。最新目撃のキャッシュの付け替えを、今の 1 件ずつの処理が正しく扱うので、それを使い回す。spec の「1 トランザクション」は取らない。
   - CDN の失効（日付を重複なく）と socket の合図は、1 件ごとでなく、最後に 1 回だけ出す。
@@ -60,7 +60,7 @@
 
 - `CloudFront-Viewer-Address` を信じてよい理由。
   - api の前の CloudFront（`serverless.ts` の `AppCloudFrontDistribution`）は origin request policy に Managed-AllViewerExceptHostHeader（`b689b0a8-…`）を使う。これは「all device type and viewer location headers」を origin に渡し、`CloudFront-Viewer-Address` はその 1 つ（AWS の「Add CloudFront request headers」「Use managed origin request policies」。2026-11-03 確認）。
-  - Lambda の Function URL は `authorizer: 'aws_iam'`＋OAC なので、CloudFront を通らない呼び出しはできない。`CloudFront-*` のヘッダーは CloudFront が付け直すので、利用者は偽れない。`X-Forwarded-For` の先頭は偽れるので使わない。
+  - Lambda の Function URL は `authorizer: 'aws_iam'`＋OAC なので、`lambda:InvokeFunctionUrl` の IAM 権限を持つ AWS の主体を除き、CloudFront を通らない呼び出しはできない。`CloudFront-*` のヘッダーは CloudFront が付け直すので、利用者は偽れない。`X-Forwarded-For` の先頭は偽れるので使わない。
   - Supabase の `auth.sessions` の IP は backend の Lambda の IP（AWS の IP）や `node` になっていて、手がかりに使えない（2026-11-03 確認）。だから backend に書かせず、api が自分の前で見えた IP を取る。
 - 登録者のトークンの `session_id` で記録すれば、backend に書き込みの口（秘密の共有や service role）を足さずに済む。利用者が自分で叩ける「手がかりの書き込み口」を作らないので、偽の手がかりも書けない。
 - 90 日の削除を api の中でやるのは、pg_cron が無く、定期 Lambda や CLI の毎日実行を足すほどの量でないから。投稿・ログインがあれば走り、無ければ溜まらない。読む口も 90 日で切るので、消し損ねても見えない。
@@ -93,6 +93,7 @@
 - `RBACGuard` が `@RBAC` の口のたびに `profiles` を 1 回引くようになった。`@RBAC` が付いているのは書き込みの口と見回りの口だけで、一般の読み取りの口には付いていない。
 - `ModerationUserSummaryDto.banned` は、`user_role_changes` に BAN の記録があって今 viewer の人を指す。
 - 手がかりの読みの SQL・新着の `CASE` の印は、本番の表が出来てから手元の API で確かめる。
+- マージ前の確認: 手元の API を起動して、Nest の DI が通ること、`RBACGuard` の役割の読み直しが実 DB で動くことを確かめる（ユニットテストでは未確認）。
 - 確かめ方:
   - `CloudFront-Viewer-Address` が無いリクエストは手がかりを書かずに通る・IPv6 のポートを落とす（`viewer-address.spec.ts`）。
   - BAN の直後（JWT は `reporter`）の投稿は 403・フラグ off でも 403（`rbac.guard.spec.ts`）。

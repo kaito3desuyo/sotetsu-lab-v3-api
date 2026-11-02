@@ -111,7 +111,7 @@ npm run deploy               # Serverless Framework でデプロイ
 - CORS - `CORS_HEADER_ORIGIN` で設定（デフォルト `*`）
 - socket への合図 - `SOCKET_BROADCAST_FUNCTION_NAME` が空なら送らない。手元で socket の serverless-offline（`npm run dev:host`）に送るときは `.env.local` に `SOCKET_BROADCAST_FUNCTION_NAME=sotetsu-lab-v3-dev-socket-broadcast-lambda` と `SOCKET_BROADCAST_LAMBDA_ENDPOINT=http://host.docker.internal:3022` を書き、コンテナを作り直す（手順は socket の README）
 - CDN の失効 - `CDN_DISTRIBUTION_ID`（`serverless.ts` が client のスタックの `WebDistributionId` から入れる）が空なら呼ばない。書き込みの usecase は、`socketSignal.send` の隣で `cdnInvalidation.invalidate({ tags })` を呼び、client が画面に付けたタグ（`calendar:<id>`・過ぎた日の `sighting-date:<日付>`）を捨てる。失敗しても書き込みは成功のまま返す。新しい書き込みの入口を足したら、捨てるタグも決める（ADR-0012）
-- 手がかりの記録 - 投稿と登録者のセッション（`session_id`）で `user_access_traces` に IP（`CloudFront-Viewer-Address` だけを信じる・`X-Forwarded-For` は偽れる）と端末を書く。ヘッダーが無ければ書かず通す。90 日は api の中で 1 時間に 1 回まで消す（pg_cron 無し）。読めるのは MANAGER だけ（ADR-0013）
+- 手がかりの記録 - 投稿と登録者のセッション（`session_id`）で `user_access_traces` に IP（`CloudFront-Viewer-Address` だけを信じる・`X-Forwarded-For` は偽れる）と端末を書く。ヘッダーが無ければ書かず通す。90 日は api の中で Lambda の実体ごとに 1 時間に 1 回まで消す（pg_cron 無し）。読めるのは MANAGER だけ（ADR-0013）
 - RBACGuard は `@RBAC` の口で役割を `profiles.role` から毎回読み直す（BAN を即座に効かせる）。`viewer`（BAN 済み）はフラグが off でも 403。新しい書き込みの口には `@RBAC` を付ける
 - TypeScript は strict。値を外から詰めるプロパティ（エンティティ・DTO）は `!`。`as any`・`@ts-ignore` は使わない
 
