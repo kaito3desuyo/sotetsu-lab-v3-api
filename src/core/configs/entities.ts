@@ -23,7 +23,7 @@ import { TripClassModel } from '../../libs/trip-class/infrastructure/models/trip
 import { TripModel } from '../../libs/trip/infrastructure/models/trip.model.js';
 import { TripOperationListModel } from '../../libs/trip/infrastructure/models/trip-operation-list.model.js';
 import { UserAccessTraceModel } from '../../libs/user/infrastructure/models/user-access-trace.model.js';
-import { UserRoleChangeModel } from '../../libs/moderation/infrastructure/models/user-role-change.model.js';
+import { UserRoleChangeModel } from '../../libs/user/infrastructure/models/user-role-change.model.js';
 import { VehicleFormationModel } from '../../libs/formation/infrastructure/models/vehicle-formation.model.js';
 import { VehicleModel } from '../../libs/vehicle/infrastructure/models/vehicle.model.js';
 

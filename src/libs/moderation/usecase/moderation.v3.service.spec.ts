@@ -3,7 +3,7 @@ import { NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { UseCaseError } from '../../../core/classes/custom-error.js';
 import { OperationSightingV3Service } from '../../operation-sighting/usecase/operation-sighting.v3.service.js';
-import { UserRoleChangeCommand } from '../infrastructure/command/user-role-change.command.js';
+import { UserRoleChangeService } from '../../user/usecase/user-role-change.service.js';
 import { ModerationQuery } from '../infrastructure/queries/moderation.query.js';
 import { ModerationV3Service } from './moderation.v3.service.js';
 
@@ -51,7 +51,7 @@ describe('ModerationV3Service', () => {
                     provide: OperationSightingV3Service,
                     useValue: operationSighting,
                 },
-                { provide: UserRoleChangeCommand, useValue: roleChangeCommand },
+                { provide: UserRoleChangeService, useValue: roleChangeCommand },
                 { provide: DataSource, useValue: dataSource },
             ],
         }).compile();

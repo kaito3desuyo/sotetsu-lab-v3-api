@@ -4,7 +4,6 @@ import { OperationSightingAuthorModel } from '../operation-sighting/infrastructu
 import { OperationSightingModel } from '../operation-sighting/infrastructure/models/operation-sighting.model.js';
 import { UserAccessTraceModel } from '../user/infrastructure/models/user-access-trace.model.js';
 import { ProfileModel } from '../user/infrastructure/models/profile.model.js';
-import { UserRoleChangeCommand } from './infrastructure/command/user-role-change.command.js';
 import { ModerationQuery } from './infrastructure/queries/moderation.query.js';
 
 @Module({
@@ -16,7 +15,7 @@ import { ModerationQuery } from './infrastructure/queries/moderation.query.js';
             UserAccessTraceModel,
         ]),
     ],
-    exports: [ModerationQuery, UserRoleChangeCommand],
-    providers: [ModerationQuery, UserRoleChangeCommand],
+    exports: [ModerationQuery],
+    providers: [ModerationQuery],
 })
 export class ModerationLibsModule {}

@@ -8,7 +8,7 @@ import {
     PrimaryGeneratedColumn,
     type Relation,
 } from 'typeorm';
-import { AuthUserModel } from '../../../user/infrastructure/models/auth-user.model.js';
+import { AuthUserModel } from './auth-user.model.js';
 
 /**
  * 役割の書き換えの記録（BAN・解除）。BAN の解除は、直近の BAN（to_role = viewer）の from_role に戻す。

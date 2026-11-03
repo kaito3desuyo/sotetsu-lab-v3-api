@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { UserRoleChangeCommand } from '../infrastructure/command/user-role-change.command.js';
+import { UserRoleChangeService } from '../../user/usecase/user-role-change.service.js';
 import {
     ModerationTarget,
     RoleChange,
@@ -26,7 +26,7 @@ export class ModerationV3Service {
     constructor(
         private readonly moderationQuery: ModerationQuery,
         private readonly operationSightingV3Service: OperationSightingV3Service,
-        private readonly userRoleChangeCommand: UserRoleChangeCommand,
+        private readonly userRoleChangeService: UserRoleChangeService,
         private readonly dataSource: DataSource,
     ) {}
 
@@ -147,7 +147,7 @@ export class ModerationV3Service {
             }
 
             const change = decide(ModerationTarget.create(row));
-            await this.userRoleChangeCommand.apply(change, manager);
+            await this.userRoleChangeService.apply(change, manager);
         });
     }
 

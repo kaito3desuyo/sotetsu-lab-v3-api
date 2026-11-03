@@ -15,7 +15,7 @@ import {
     NEW_ACCOUNT_HOURS,
     TRACE_OTHER_ACCOUNTS_LIMIT,
 } from '../../moderation.constants.js';
-import { UserRoleChangeModel } from '../models/user-role-change.model.js';
+import { UserRoleChangeModel } from '../../../user/infrastructure/models/user-role-change.model.js';
 
 export type ModerationUserSummaryRow = {
     userId: string;
