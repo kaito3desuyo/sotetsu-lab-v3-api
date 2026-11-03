@@ -37,8 +37,8 @@
   - 同じ手がかりは IP の一致。IPv4 は完全一致、IPv6 は /64 で同じとみなす。UA は並べて見せるだけで、一致の条件にしない。
   - その IP を使ったアカウントが 10 以上なら `shared: true`（携帯回線などで弱めて出す）。
 - BAN の記録は新しい表 `user_role_changes`（`id`・`user_id`・`changed_by`・`from_role`・`to_role`・`reason`・`created_at`）。
-  - 置き場は利用者のドメイン `src/libs/user/`（モデル・`UserRoleChangeCommand`・usecase の `UserRoleChangeService`）。`UserV3Service`（`banUser`・`unbanUser`）は `UserRoleChangeService.apply` を、BAN・解除のトランザクションの `manager` を渡して呼ぶ。
-  - `POST /v3/users/:userId/ban`（理由必須）と `…/unban`（どちらも `UserV3Controller`。BAN の規則は `libs/user/domain/ban-target.domain.ts` の `BanTarget`）。`profiles.role` の書き換えと記録は 1 つのトランザクション。
+  - 置き場は利用者のドメイン `src/libs/user/`（モデル・`UserCommand`）。`UserV3Service`（`banUser`・`unbanUser`）は、トランザクションの中で `User` を読み、`user.ban()` / `user.unban()` を呼び、`UserCommand.save` に `manager` を渡して保存する。
+  - `POST /v3/users/:userId/ban`（理由必須）と `…/unban`（どちらも `UserV3Controller`。BAN の規則は `libs/user/domain/user.domain.ts` の集約ルート `User`）。`profiles.role` の書き換えと記録は 1 つのトランザクション。
   - 自分・MANAGER・すでに viewer の人は BAN できない（`UseCaseError`・400 系）。
   - 解除は直近の BAN の `from_role` に戻し、記録が無ければ `reporter`。
   - BAN・解除は、`profiles` を `FOR UPDATE` で読んでから、直近の BAN を別の文で読む。同じ人への BAN・解除の同時実行で `from_role` が食い違わないようにする。
@@ -63,7 +63,7 @@
 ## 口の置き場
 
 - 投稿管理は画面の名前でドメインではないので、口は user と operation-sighting に置く（2026-11-03）。`libs/moderation` は無く、URL も各ドメインの形にした（未デプロイなので互換は要らない）。
-  - `libs/user/`: `UserV3Controller`・`UserV3Module`（`/v3/users`）・`UserV3Service`・`UserQuery`・`UserAccessTraceQuery`・`BanTarget`・`UserRoleChange`（型は 1 つ）。
+  - `libs/user/`: `UserV3Controller`・`UserV3Module`（`/v3/users`）・`UserV3Service`・`UserQuery`・`UserAccessTraceQuery`・`User`（集約ルート）・`UserRoleChange`（型は 1 つ）。
   - `libs/operation-sighting/`: 既存の `OperationSightingV3Controller` と `OperationSightingV3Service` に口と処理を足し、query は `OperationSightingAuthorQuery`。
   - 依存の向きは user → operation-sighting（`/users/:userId/operation-sightings`）。operation-sighting から user へは `ProfileModel` を query で読むだけ。
 - RBAC は口ごとに以前と同じ（要約・一覧・新着・投稿者・まとめての無効化は EDITOR・MANAGER、BAN・解除・手がかりは MANAGER）。
@@ -78,6 +78,7 @@
 - 90 日の削除を api の中でやるのは、pg_cron が無く、定期 Lambda や CLI の毎日実行を足すほどの量でないから。投稿・ログインがあれば走り、無ければ溜まらない。読む口も 90 日で切るので、消し損ねても見えない。
 - `recordPost` から削除を外したのは、投稿のトランザクションの中で別接続の DELETE を待つのが投稿の経路に悪いから。誤りでも、1 時間に 1 回の掃除が投稿で走らないだけで、`session` 側で走る。
 - 一括を 1 件ずつの繰り返しにして、1,000ms の予算と `pending` を返すのは、Lambda の timeout が 3 秒で、200 件で 1 件ずつ合図すると CloudFront の失効と socket が 200 回ずつになるから。予算をループ開始から取り 2,000ms でなく 1,000ms にしたのは、最後の 1 件と最後の合図を 3 秒の内に残すため。途中で止まると部分的に無効になるが、応答の `invalidated`・`failed`・`pending` で画面が分かる。
+- BAN は集約ルート `User` の振る舞い・手がかりは集約の外・印と共用の判定は read model（2026-11-03）。`User` は役割の値オブジェクトと役割変更の WatchedList を持ち、役割は外から書けない。印は SQL が事実（役割・登録日時・窓の投稿数）だけを返し `SightingAuthorMarks`、共用は `UserAccessTraceReadModel` が判定する。90 日の決まりは `UserAccessTraceRetention`。
 - `profiles` を `FOR UPDATE` で読んでから直近の BAN を引くのは、同じ人を同時に BAN・解除したとき、先に書いた方の結果を後の方が読むようにするため。
 
 ## 却下した案
@@ -104,7 +105,7 @@
 - 格上げ（片付けていた EDITOR を MANAGER にする）は、SQL で `profiles.role` を書き換える。この作業の外。
 - `RBACGuard` が `@RBAC` の口のたびに `profiles` を 1 回引くようになった。`@RBAC` が付いているのは書き込みの口と、利用者・目撃情報の管理の口だけで、一般の読み取りの口には付いていない。
 - `UserSummaryDto.banned` は、`user_role_changes` に BAN の記録があって今 viewer の人を指す。
-- 手がかりの読みの SQL・新着の `CASE` の印は、本番の表が出来てから手元の API で確かめる。
+- 手がかりの読みの SQL・新着の印の元になる事実（登録日時・窓の中の投稿数）の SQL は、本番の表が出来てから手元の API で確かめる。
 - マージ前の確認: 手元の API を起動して、Nest の DI が通ること、`RBACGuard` の役割の読み直しが実 DB で動くことを確かめる（ユニットテストでは未確認）。
 - 確かめ方:
   - `CloudFront-Viewer-Address` が無いリクエストは手がかりを書かずに通る・IPv6 のポートを落とす（`src/core/utils/viewer-address.spec.ts`）。
