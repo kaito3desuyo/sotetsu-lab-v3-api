@@ -19,6 +19,16 @@ vi.mock('../../../core/modules/auth/auth.guard.js', () => ({
 const USER_ID = '3f0b6a5e-8a52-4c1c-9d0a-2b5d1b8e7a11';
 
 /** 読み取りの口（EDITOR・MANAGER）。/v3/users に載る */
+const COUNTS = {
+    corroborated: 2,
+    conflicting: 1,
+    uncorroborated: 3,
+    invalidated: 0,
+};
+
+/** 本人の口（REPORTER 以上）。/v3/users/me に載る */
+const ME_ROUTES = ['/me', '/me/operation-sightings'];
+
 const ROUTES = [`/${USER_ID}`, `/${USER_ID}/operation-sightings`];
 
 describe('UserV3Controller（利用者の読み取りの口・BAN・手がかり）', () => {
@@ -32,6 +42,8 @@ describe('UserV3Controller（利用者の読み取りの口・BAN・手がかり
     };
     const operationSightingService = {
         findManyByUserId: vi.fn(),
+        findManyMine: vi.fn(),
+        countCorroborationsByUserId: vi.fn(),
     };
 
     beforeAll(async () => {
@@ -72,6 +84,10 @@ describe('UserV3Controller（利用者の読み取りの口・BAN・手がかり
         vi.clearAllMocks();
         service.findUserSummary.mockResolvedValue({ userId: USER_ID });
         operationSightingService.findManyByUserId.mockResolvedValue([]);
+        operationSightingService.findManyMine.mockResolvedValue([]);
+        operationSightingService.countCorroborationsByUserId.mockResolvedValue(
+            COUNTS,
+        );
     });
 
     it.each(ROUTES)('%s は REPORTER で 403', async (path) => {
@@ -186,6 +202,124 @@ describe('UserV3Controller（利用者の読み取りの口・BAN・手がかり
             const res = await request(app.getHttpServer()).get(path);
             expect(res.status).toBe(validationPipeOptions.errorHttpStatusCode);
         }
+    });
+
+    describe('本人の口（/me・REPORTER 以上）', () => {
+        const FULL_SUMMARY = {
+            userId: 'u-1',
+            username: 'alice',
+            displayName: 'Alice',
+            role: 'reporter',
+            createdAt: '2026-10-01T00:00:00.000Z',
+            sightingCount: 6,
+            invalidatedCount: 1,
+            firstSightingAt: '2026-10-02T00:00:00.000Z',
+            lastSightingAt: '2026-11-02T00:00:00.000Z',
+            banned: false,
+        };
+
+        beforeEach(() => {
+            service.findUserSummary.mockResolvedValue(FULL_SUMMARY);
+        });
+
+        it.each(ME_ROUTES)('%s は REPORTER・EDITOR・MANAGER で 200', async (path) => {
+            for (const role of [Role.REPORTER, Role.EDITOR, Role.MANAGER]) {
+                auth = { userId: 'u-1', role, sessionId: null };
+                const res = await request(app.getHttpServer()).get(path);
+                expect(res.status).toBe(200);
+            }
+        });
+
+        it.each(ME_ROUTES)('%s は VIEWER・匿名なら 403', async (path) => {
+            auth = { userId: 'u-1', role: Role.VIEWER, sessionId: null };
+            expect((await request(app.getHttpServer()).get(path)).status).toBe(
+                403,
+            );
+            auth = { userId: 'anon', role: null, sessionId: null };
+            expect((await request(app.getHttpServer()).get(path)).status).toBe(
+                403,
+            );
+            expect(service.findUserSummary).not.toHaveBeenCalled();
+            expect(operationSightingService.findManyMine).not.toHaveBeenCalled();
+        });
+
+        it.each(ME_ROUTES)('%s の応答は保存させない', async (path) => {
+            auth = { userId: 'u-1', role: Role.REPORTER, sessionId: null };
+            const res = await request(app.getHttpServer()).get(path);
+            expect(res.headers['cache-control']).toBe('no-store');
+        });
+
+        it('/me は /:userId より前に宣言されている（me が userId に食われない）', async () => {
+            auth = { userId: 'u-1', role: Role.REPORTER, sessionId: null };
+            // 食われると path の userId が UUID でないので 422 になる
+            const me = await request(app.getHttpServer()).get('/me');
+            const list = await request(app.getHttpServer()).get(
+                '/me/operation-sightings',
+            );
+            expect(me.status).toBe(200);
+            expect(list.status).toBe(200);
+            expect(service.findUserSummary).toHaveBeenCalledWith({
+                userId: 'u-1',
+            });
+            expect(operationSightingService.findManyMine).toHaveBeenCalled();
+            expect(
+                operationSightingService.findManyByUserId,
+            ).not.toHaveBeenCalled();
+        });
+
+        it('/me は req.auth.userId の要約を返し、username・role・banned を含まない', async () => {
+            auth = { userId: 'u-1', role: Role.REPORTER, sessionId: null };
+            const res = await request(app.getHttpServer()).get('/me');
+            expect(res.status).toBe(200);
+            expect(service.findUserSummary).toHaveBeenCalledWith({
+                userId: 'u-1',
+            });
+            expect(
+                operationSightingService.countCorroborationsByUserId,
+            ).toHaveBeenCalledWith({ userId: 'u-1' });
+            expect(res.body).toEqual({
+                sightingCount: 6,
+                invalidatedCount: 1,
+                firstSightingAt: '2026-10-02T00:00:00.000Z',
+                lastSightingAt: '2026-11-02T00:00:00.000Z',
+                corroboration: COUNTS,
+            });
+            expect(res.body).not.toHaveProperty('username');
+            expect(res.body).not.toHaveProperty('role');
+            expect(res.body).not.toHaveProperty('banned');
+        });
+
+        it('/me/operation-sightings は req.auth.userId で findManyMine を呼ぶ', async () => {
+            auth = { userId: 'u-1', role: Role.REPORTER, sessionId: null };
+            const mine = [{ operationSightingId: 's-1', corroboration: 'corroborated' }];
+            operationSightingService.findManyMine.mockResolvedValue(mine);
+            const res = await request(app.getHttpServer()).get(
+                '/me/operation-sightings?limit=5&before=2026-11-01T00:00:00.000Z',
+            );
+            expect(res.status).toBe(200);
+            expect(res.body).toEqual(mine);
+            expect(operationSightingService.findManyMine).toHaveBeenCalledWith({
+                userId: 'u-1',
+                limit: 5,
+                before: '2026-11-01T00:00:00.000Z',
+            });
+        });
+
+        it('/me/operation-sightings の limit の既定は 100、不正な limit は 422', async () => {
+            auth = { userId: 'u-1', role: Role.REPORTER, sessionId: null };
+            await request(app.getHttpServer()).get('/me/operation-sightings');
+            expect(operationSightingService.findManyMine).toHaveBeenCalledWith({
+                userId: 'u-1',
+                limit: 100,
+                before: undefined,
+            });
+            operationSightingService.findManyMine.mockClear();
+            const res = await request(app.getHttpServer()).get(
+                '/me/operation-sightings?limit=0',
+            );
+            expect(res.status).toBe(validationPipeOptions.errorHttpStatusCode);
+            expect(operationSightingService.findManyMine).not.toHaveBeenCalled();
+        });
     });
 
     describe('BAN・解除・手がかり（MANAGER だけ）', () => {
