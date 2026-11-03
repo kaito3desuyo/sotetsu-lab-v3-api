@@ -19,11 +19,12 @@
 - 役割は今の 4 つのまま。`READER: 'reader'` を `VIEWER: 'viewer'` に改める。
   - BAN ＝ `profiles.role` を `viewer` に格下げすること。BAN・解除・手がかりの閲覧は MANAGER だけ。
   - まとめての無効化と、投稿者の要約・目撃の一覧・新着は `@RBAC(EDITOR, MANAGER)`（RBAC は階層でなく列挙）。
-- `RBACGuard` は `@RBAC` の付いた口で、役割を JWT でなく `profiles.role` から毎回読み直す（`src/core/modules/rbac/current-roles.ts`・キャッシュしない）。
+- `RBACGuard` は `@RBAC` の付いた口で、役割を JWT でなく `profiles.role` から毎回読み直す（`src/libs/user/usecase/user-role.service.ts`・キャッシュしない）。
   - 読み直した役割が `viewer` なら、フラグ `registered_only_posting` が off でも 403。BAN の直後（JWT はまだ `reporter`）でも止まる。
   - 匿名（役割なし）は `profiles` を持たないので読まない。行が無ければ JWT の値のまま。
 - 手がかりは新しい表 `user_access_traces` に記録する。
   - 列は `id`・`user_id`（`auth.users(id)` への FK・CASCADE）・`kind`（`post`・`session`）・`ip`（inet・NOT NULL）・`user_agent`・`session_id`・`operation_sighting_id`（FK・SET NULL）・`created_at`。索引は `(user_id, created_at)`・`(ip)`・`(created_at)`、`(session_id, ip)` の一意。
+  - 置き場は利用者のドメイン `src/libs/user/`（モデル・`UserAccessTraceCommand`・`UserAccessTraceService`・役割の読み直しの `UserRoleService`）。`UserLibsModule` は Global で、AuthGuard・RBACGuard が各 controller の module の中で作られても届く。HTTP のヘッダーを読む `readViewerContext` だけは core の `src/core/utils/viewer-address.ts` に置く。
   - `kind = 'post'` は目撃を保存するトランザクションの中で 1 行書く。
   - `kind = 'session'` は、登録者のトークンの `session_id` が、その Lambda の実体で初めて AuthGuard に来たときに書く（`INSERT … ON CONFLICT DO NOTHING`・`${sessionId}|${ip}` を Set に覚えて 2 回目から DB に行かない）。登録とログインのどちらも Supabase がセッションを作るので、この 1 種で両方を拾える。spec の `register`・`login` の 2 種は作らない。
   - IP は `CloudFront-Viewer-Address`（`ip:port`）の最後の `:` より前。IPv6 の `[…]` は外す。ヘッダーが無い（手元・テスト）か不正なら手がかりは書かず、投稿もログインもふつうに通る。
@@ -95,7 +96,7 @@
 - 手がかりの読みの SQL・新着の `CASE` の印は、本番の表が出来てから手元の API で確かめる。
 - マージ前の確認: 手元の API を起動して、Nest の DI が通ること、`RBACGuard` の役割の読み直しが実 DB で動くことを確かめる（ユニットテストでは未確認）。
 - 確かめ方:
-  - `CloudFront-Viewer-Address` が無いリクエストは手がかりを書かずに通る・IPv6 のポートを落とす（`viewer-address.spec.ts`）。
+  - `CloudFront-Viewer-Address` が無いリクエストは手がかりを書かずに通る・IPv6 のポートを落とす（`src/core/utils/viewer-address.spec.ts`）。
   - BAN の直後（JWT は `reporter`）の投稿は 403・フラグ off でも 403（`rbac.guard.spec.ts`）。
   - まとめての無効化で、すでに無効・存在しない id が `skipped` に入り残りは無効になる・201 件は 422。
   - 自分・MANAGER・すでに viewer の人の BAN は 400 系の `UseCaseError`。
