@@ -8,6 +8,7 @@ import { OperationSightingInvalidationModel } from './infrastructure/models/oper
 import { OperationSightingLatestCacheModel } from './infrastructure/models/operation-sighting-latest-cache.model.js';
 import { OperationSightingManagementLogModel } from './infrastructure/models/operation-sighting-management-log.model.js';
 import { OperationSightingModel } from './infrastructure/models/operation-sighting.model.js';
+import { OperationSightingAuthorQuery } from './infrastructure/queries/operation-sighting-author.query.js';
 import { OperationSightingLatestCacheQuery } from './infrastructure/queries/operation-sighting-latest-cache.query.js';
 import { OperationSightingQuery } from './infrastructure/queries/operation-sighting.query.js';
 
@@ -23,6 +24,7 @@ import { OperationSightingQuery } from './infrastructure/queries/operation-sight
     ],
     exports: [
         OperationSightingAuthorCommand,
+        OperationSightingAuthorQuery,
         OperationSightingCommand,
         OperationSightingLatestCacheCommand,
         OperationSightingLatestCacheQuery,
@@ -30,6 +32,7 @@ import { OperationSightingQuery } from './infrastructure/queries/operation-sight
     ],
     providers: [
         OperationSightingAuthorCommand,
+        OperationSightingAuthorQuery,
         OperationSightingCommand,
         OperationSightingLatestCacheCommand,
         OperationSightingLatestCacheQuery,

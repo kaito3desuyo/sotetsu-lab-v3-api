@@ -13,6 +13,7 @@ import { StationV3Module } from '../../../libs/station/station.v3.module.js';
 import { TripBlockV3Module } from '../../../libs/trip-block/trip-block.v3.module.js';
 import { TripClassV3Module } from '../../../libs/trip-class/trip-class.v3.module.js';
 import { TripV3Module } from '../../../libs/trip/trip.v3.module.js';
+import { UserV3Module } from '../../../libs/user/user.v3.module.js';
 
 const routes: Routes = [
     {
@@ -70,6 +71,10 @@ const routes: Routes = [
                 path: '/trips',
                 module: TripV3Module,
             },
+            {
+                path: '/users',
+                module: UserV3Module,
+            },
         ],
     },
 ];
@@ -90,6 +95,7 @@ const routes: Routes = [
         TripBlockV3Module,
         TripClassV3Module,
         TripV3Module,
+        UserV3Module,
     ],
 })
 export class ApiV3Module {}

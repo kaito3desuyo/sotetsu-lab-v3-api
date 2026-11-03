@@ -19,5 +19,6 @@ import { CalendarLibsModule } from '../calendar/calendar.libs.module.js';
     ],
     controllers: [OperationSightingV3Controller],
     providers: [OperationSightingV3Service],
+    exports: [OperationSightingV3Service],
 })
 export class OperationSightingV3Module {}

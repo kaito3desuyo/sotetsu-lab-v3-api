@@ -1,5 +1,5 @@
 import type { MockedFunction } from 'vitest';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat.js';
@@ -9,16 +9,23 @@ import { DataSource } from 'typeorm';
 import { OperationSightingLatestCacheCommand } from '../infrastructure/command/operation-sighting-latest-cache.command.js';
 import { OperationSightingCommand } from '../infrastructure/command/operation-sighting.command.js';
 import { OperationSightingAuthorCommand } from '../infrastructure/command/operation-sighting-author.command.js';
+import { UserAccessTraceService } from '../../user/usecase/user-access-trace.service.js';
 import { CdnInvalidation } from '../../../core/modules/cdn-invalidation/cdn-invalidation.js';
 import { SocketSignal } from '../../../core/modules/socket-signal/socket-signal.js';
 import { OperationSightingLatestCacheQuery } from '../infrastructure/queries/operation-sighting-latest-cache.query.js';
+import { OperationSightingAuthorQuery } from '../infrastructure/queries/operation-sighting-author.query.js';
 import { OperationSightingQuery } from '../infrastructure/queries/operation-sighting.query.js';
 import { CalendarQuery } from '../../calendar/infrastructure/queries/calendar.query.js';
 import { FormationQuery } from '../../formation/infrastructure/queries/formation.query.js';
 import { OperationQuery } from '../../operation/infrastructure/queries/operation.query.js';
 import { ItinerarySegmentQuery } from '../../operation/infrastructure/queries/itinerary-segment.query.js';
 import { ItinerarySegment } from '../../operation/domain/itinerary-link-rule.domain.js';
-import { OperationSightingV3Service } from './operation-sighting.v3.service.js';
+import { UseCaseError } from '../../../core/classes/custom-error.js';
+import {
+    INVALIDATE_MANY_TIME_BUDGET_MS,
+    INVALIDATE_MANY_UNEXPECTED_MESSAGE,
+    OperationSightingV3Service,
+} from './operation-sighting.v3.service.js';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -32,6 +39,12 @@ const mockSave: AnyMock = vi.fn();
 const mockOperationSightingCommand = { save: mockSave };
 const mockAuthorCreate: AnyMock = vi.fn();
 const mockOperationSightingAuthorCommand = { create: mockAuthorCreate };
+const mockRecordPost: AnyMock = vi.fn().mockResolvedValue(undefined);
+const mockPurgeExpiredIfDue: AnyMock = vi.fn().mockResolvedValue(undefined);
+const mockAccessTraces = {
+    recordPost: mockRecordPost,
+    purgeExpiredIfDue: mockPurgeExpiredIfDue,
+};
 const mockSignalSend: AnyMock = vi.fn().mockResolvedValue(undefined);
 const mockSocketSignal = { send: mockSignalSend };
 const mockInvalidate: AnyMock = vi.fn().mockResolvedValue(undefined);
@@ -53,6 +66,11 @@ const mockOperationSightingQuery = {
     findManyLatestByFormationNumbersAndBeforeSightingTime: vi.fn() as AnyMock,
     findManyBySightingTimeRange: vi.fn() as AnyMock,
     findManyBySpecificPeriod: vi.fn() as AnyMock,
+};
+const mockAuthorQuery = {
+    findManyByUserId: vi.fn() as AnyMock,
+    findAuthorUserId: vi.fn() as AnyMock,
+    findManyRecent: vi.fn() as AnyMock,
 };
 const mockItinerarySegmentQuery = { findManyByCalendarId: vi.fn() as AnyMock };
 const mockDataSource = {
@@ -87,6 +105,7 @@ async function buildService(): Promise<OperationSightingV3Service> {
                 useValue: mockOperationSightingAuthorCommand,
             },
             { provide: SocketSignal, useValue: mockSocketSignal },
+            { provide: UserAccessTraceService, useValue: mockAccessTraces },
             { provide: CdnInvalidation, useValue: mockCdnInvalidation },
             {
                 provide: OperationSightingLatestCacheCommand,
@@ -99,6 +118,10 @@ async function buildService(): Promise<OperationSightingV3Service> {
             {
                 provide: OperationSightingQuery,
                 useValue: mockOperationSightingQuery,
+            },
+            {
+                provide: OperationSightingAuthorQuery,
+                useValue: mockAuthorQuery,
             },
             { provide: CalendarQuery, useValue: mockCalendarQuery },
             { provide: FormationQuery, useValue: mockFormationQuery },
@@ -769,6 +792,7 @@ describe('OperationSightingV3Service - post', () => {
         formationOrVehicleNumber: '10708',
         operationNumber: '100',
         sightingTime: '2026-05-01T10:00:00+09:00',
+        viewer: { ip: null, userAgent: null },
     };
 
     beforeEach(async () => {
@@ -885,6 +909,100 @@ describe('OperationSightingV3Service - post', () => {
         expect(mockSignalSend).toHaveBeenCalledWith({ type: 'sighting' });
     });
 
+    it('post: userId と ip があればトランザクションの中で recordPost を呼ぶ', async () => {
+        mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
+            { id: 'op-100', operationNumber: '100' },
+        );
+        mockSave.mockResolvedValue({ operationSightingId: 'new-id' });
+        const calls: string[] = [];
+        mockAuthorCreate.mockImplementation(async () => {
+            calls.push('author');
+        });
+        mockRecordPost.mockImplementation(async () => {
+            calls.push('trace');
+        });
+        mockDataSource.transaction.mockImplementation(async (fn: any) => {
+            const result = await fn(mockManager);
+            calls.push('commit');
+            return result;
+        });
+
+        await service.post({
+            ...baseParams,
+            userId: 'user-1',
+            viewer: { ip: '203.0.113.7', userAgent: 'UA' },
+        });
+
+        expect(mockRecordPost).toHaveBeenCalledWith(
+            {
+                userId: 'user-1',
+                operationSightingId: 'new-id',
+                ip: '203.0.113.7',
+                userAgent: 'UA',
+            },
+            mockManager,
+        );
+        expect(calls).toEqual(['author', 'trace', 'commit']);
+    });
+
+    it('post: 投稿の記録を書いたら commit の後に purgeExpiredIfDue を呼ぶ', async () => {
+        mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
+            { id: 'op-100', operationNumber: '100' },
+        );
+        mockSave.mockResolvedValue({ operationSightingId: 'new-id' });
+        const calls: string[] = [];
+        mockPurgeExpiredIfDue.mockImplementation(async () => {
+            calls.push('purge');
+        });
+        mockDataSource.transaction.mockImplementation(async (fn: any) => {
+            const result = await fn(mockManager);
+            calls.push('commit');
+            return result;
+        });
+
+        await service.post({
+            ...baseParams,
+            userId: 'user-1',
+            viewer: { ip: '203.0.113.7', userAgent: null },
+        });
+
+        expect(calls).toEqual(['commit', 'purge']);
+    });
+
+    it('post: ip が null なら recordPost も purge も呼ばないが投稿は保存する', async () => {
+        mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
+            { id: 'op-100', operationNumber: '100' },
+        );
+        mockSave.mockResolvedValue({ operationSightingId: 'new-id' });
+
+        const result = await service.post({
+            ...baseParams,
+            userId: 'user-1',
+            viewer: { ip: null, userAgent: 'UA' },
+        });
+
+        expect(result.operationSightingId).toBe('new-id');
+        expect(mockAuthorCreate).toHaveBeenCalled();
+        expect(mockRecordPost).not.toHaveBeenCalled();
+        expect(mockPurgeExpiredIfDue).not.toHaveBeenCalled();
+    });
+
+    it('post: userId が null（匿名）なら ip があっても recordPost も purge も呼ばない', async () => {
+        mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
+            { id: 'op-100', operationNumber: '100' },
+        );
+        mockSave.mockResolvedValue({ operationSightingId: 'new-id' });
+
+        await service.post({
+            ...baseParams,
+            userId: null,
+            viewer: { ip: '203.0.113.7', userAgent: 'UA' },
+        });
+
+        expect(mockRecordPost).not.toHaveBeenCalled();
+        expect(mockPurgeExpiredIfDue).not.toHaveBeenCalled();
+    });
+
     it('post: 保存に失敗したら合図を送らない', async () => {
         mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
             { id: 'op-100', operationNumber: '100' },
@@ -906,6 +1024,7 @@ describe('OperationSightingV3Service - 過去の日の目撃の CDN 失効', () 
         formationOrVehicleNumber: '10708',
         operationNumber: '100',
         userId: 'user-1',
+        viewer: { ip: null, userAgent: null },
     };
 
     function buildDto(params: { sightingTime: Date; invalidated: boolean }) {
@@ -1636,5 +1755,397 @@ describe('OperationSightingV3Service - findManyBySpecificPeriod includeCarriedOv
         await service.findManyBySpecificPeriod({ start: '2026-10-12', end: '2026-10-13', includeCarriedOver: true });
         expect(mockItinerarySegmentQuery.findManyByCalendarId).toHaveBeenCalledTimes(1);
         expect(mockOperationQuery.findManyByCalendarId).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('OperationSightingV3Service - 無効化（1 件・まとめて）', () => {
+    let service: OperationSightingV3Service;
+
+    function dtoOf(params: {
+        id: string;
+        sightingTime?: Date;
+        invalidated?: boolean;
+    }) {
+        return {
+            operationSightingId: params.id,
+            formationId: 'f-id',
+            operationId: 'o-id',
+            sightingTime:
+                params.sightingTime ?? new Date('2026-10-26T12:00:00+09:00'),
+            operation: { operationNumber: '61' },
+            formation: { formationNumber: '8001' },
+            invalidation: params.invalidated
+                ? {
+                      operationSightingId: params.id,
+                      operationSightingInvalidationId: 'inv-id',
+                  }
+                : null,
+            managementLogs: [],
+        };
+    }
+
+    /** id => dto（null は存在しない・Error は読む時点で落ちる） */
+    function stubSightings(map: Record<string, any>) {
+        mockOperationSightingQuery.findOneById.mockImplementation(
+            async ({ id }: { id: string }) => {
+                const v = map[id];
+                if (v instanceof Error) {
+                    throw v;
+                }
+                return v ?? null;
+            },
+        );
+    }
+
+    beforeEach(async () => {
+        vi.clearAllMocks();
+        mockInvalidate.mockResolvedValue(undefined);
+        mockSignalSend.mockResolvedValue(undefined);
+        // 今は 2026-10-27 の運行日（4 時区切り）。Date だけ止める
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date('2026-10-27T04:30:00+09:00'));
+        mockDataSource.transaction.mockImplementation(async (fn: any) =>
+            fn(mockManager),
+        );
+        service = await buildService();
+        mockOperationSightingLatestCacheQuery.findOneByFormationNumber.mockResolvedValue(
+            null,
+        );
+        mockSave.mockImplementation(async (domain: any) => ({
+            operationSightingId: domain.id.value,
+        }));
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    const params = { userId: 'u1', reason: '荒らし' };
+
+    it('invalidate: すでに無効な目撃は UseCaseError(already_invalidated)・保存も合図もしない', async () => {
+        stubSightings({ a: dtoOf({ id: 'a', invalidated: true }) });
+
+        const error = await service
+            .invalidate({ operationSightingId: 'a', ...params })
+            .catch((e) => e);
+
+        expect(error).toBeInstanceOf(UseCaseError);
+        expect(error.context).toEqual({
+            operationSightingId: 'a',
+            reason: 'already_invalidated',
+        });
+        expect(mockSave).not.toHaveBeenCalled();
+        expect(mockSignalSend).not.toHaveBeenCalled();
+        expect(mockInvalidate).not.toHaveBeenCalled();
+    });
+
+    it('invalidateMany: 無効・存在しない id は skipped、残りは invalidated', async () => {
+        stubSightings({
+            a: dtoOf({ id: 'a' }),
+            c: dtoOf({ id: 'c', invalidated: true }),
+            d: dtoOf({ id: 'd' }),
+        });
+
+        const result = await service.invalidateMany({
+            ids: ['a', 'b', 'c', 'd'],
+            ...params,
+        });
+
+        expect(result).toEqual({
+            invalidated: ['a', 'd'],
+            skipped: [
+                { id: 'b', reason: 'not_found' },
+                { id: 'c', reason: 'already_invalidated' },
+            ],
+            failed: null,
+            pending: [],
+        });
+        expect(mockSave).toHaveBeenCalledTimes(2);
+    });
+
+    it('invalidateMany: 重複した id は 1 回だけ処理する', async () => {
+        stubSightings({ a: dtoOf({ id: 'a' }), b: dtoOf({ id: 'b' }) });
+
+        const result = await service.invalidateMany({
+            ids: ['a', 'b', 'a'],
+            ...params,
+        });
+
+        expect(result.invalidated).toEqual(['a', 'b']);
+        expect(mockOperationSightingQuery.findOneById).toHaveBeenCalledTimes(2);
+    });
+
+    it('invalidateMany: 予期しない例外で止まり、failed に入れ、未処理は pending に残す', async () => {
+        stubSightings({
+            a: dtoOf({ id: 'a' }),
+            b: dtoOf({ id: 'b' }),
+            c: new Error('db down'),
+            d: dtoOf({ id: 'd' }),
+            e: dtoOf({ id: 'e' }),
+        });
+
+        const result = await service.invalidateMany({
+            ids: ['a', 'b', 'c', 'd', 'e'],
+            ...params,
+        });
+
+        expect(result).toEqual({
+            invalidated: ['a', 'b'],
+            skipped: [],
+            failed: { id: 'c', message: INVALIDATE_MANY_UNEXPECTED_MESSAGE },
+            pending: ['d', 'e'],
+        });
+        // 無効にできた分の合図は送る
+        expect(mockSignalSend).toHaveBeenCalledTimes(1);
+    });
+
+    it('invalidateMany: 予期しない例外は stack と目撃の id を error ログに残し、内部の文言は応答に出さない', async () => {
+        const logError = vi
+            .spyOn(Logger.prototype, 'error')
+            .mockImplementation(() => undefined);
+        const boom = new Error('relation "x" does not exist');
+        stubSightings({ a: dtoOf({ id: 'a' }), b: boom });
+
+        const result = await service.invalidateMany({
+            ids: ['a', 'b'],
+            ...params,
+        });
+
+        expect(result.failed).toEqual({
+            id: 'b',
+            message: INVALIDATE_MANY_UNEXPECTED_MESSAGE,
+        });
+        expect(JSON.stringify(result)).not.toContain('relation');
+        expect(logError).toHaveBeenCalledTimes(1);
+        const [message, stack] = logError.mock.calls[0];
+        expect(message).toContain('operationSightingId: b');
+        expect(message).toContain('relation "x" does not exist');
+        expect(stack).toBe(boom.stack);
+        logError.mockRestore();
+    });
+
+    it('invalidateMany: skipped（not_found・already_invalidated）はログに残さない', async () => {
+        const logError = vi
+            .spyOn(Logger.prototype, 'error')
+            .mockImplementation(() => undefined);
+        stubSightings({ c: dtoOf({ id: 'c', invalidated: true }) });
+
+        await service.invalidateMany({ ids: ['b', 'c'], ...params });
+
+        expect(logError).not.toHaveBeenCalled();
+        logError.mockRestore();
+    });
+
+    it('invalidateMany: not_found・already_invalidated 以外の UseCaseError も failed で止まる', async () => {
+        stubSightings({
+            a: dtoOf({ id: 'a' }),
+            b: new UseCaseError('だめ', { reason: 'other' }),
+            c: dtoOf({ id: 'c' }),
+        });
+
+        const result = await service.invalidateMany({
+            ids: ['a', 'b', 'c'],
+            ...params,
+        });
+
+        expect(result.invalidated).toEqual(['a']);
+        expect(result.failed).toEqual({ id: 'b', message: 'だめ' });
+        expect(result.pending).toEqual(['c']);
+    });
+
+    it('invalidateMany: 時間の予算を超えたら新しい件を始めず、残りを pending に入れる', async () => {
+        stubSightings({
+            a: dtoOf({ id: 'a' }),
+            b: dtoOf({ id: 'b' }),
+            c: dtoOf({ id: 'c' }),
+        });
+        // 開始 0・a の前 0・b の前で予算ちょうど
+        const now = vi
+            .fn<() => number>()
+            .mockReturnValueOnce(0)
+            .mockReturnValueOnce(0)
+            .mockReturnValue(INVALIDATE_MANY_TIME_BUDGET_MS);
+
+        const result = await service.invalidateMany({
+            ids: ['a', 'b', 'c'],
+            ...params,
+            now,
+        });
+
+        expect(result).toEqual({
+            invalidated: ['a'],
+            skipped: [],
+            failed: null,
+            pending: ['b', 'c'],
+        });
+        expect(mockSignalSend).toHaveBeenCalledTimes(1);
+    });
+
+    it('invalidateMany: 合図は最後に 1 回だけ（socket 1 回・CDN は重ならない日付で 1 回）', async () => {
+        stubSightings({
+            a: dtoOf({
+                id: 'a',
+                sightingTime: new Date('2026-10-26T12:00:00+09:00'),
+            }),
+            b: dtoOf({
+                id: 'b',
+                sightingTime: new Date('2026-10-26T15:00:00+09:00'),
+            }),
+            c: dtoOf({
+                id: 'c',
+                sightingTime: new Date('2026-10-25T12:00:00+09:00'),
+            }),
+            d: dtoOf({
+                id: 'd',
+                sightingTime: new Date('2026-10-27T04:10:00+09:00'),
+            }),
+        });
+
+        await service.invalidateMany({ ids: ['a', 'b', 'c', 'd'], ...params });
+
+        expect(mockSignalSend).toHaveBeenCalledTimes(1);
+        expect(mockSignalSend).toHaveBeenCalledWith({ type: 'sighting' });
+        expect(mockInvalidate).toHaveBeenCalledTimes(1);
+        expect(mockInvalidate).toHaveBeenCalledWith({
+            tags: ['sighting-date:2026-10-26', 'sighting-date:2026-10-25'],
+        });
+    });
+
+    it('invalidateMany: 1 件も無効にしなければ合図を送らない', async () => {
+        stubSightings({ c: dtoOf({ id: 'c', invalidated: true }) });
+
+        const result = await service.invalidateMany({
+            ids: ['b', 'c'],
+            ...params,
+        });
+
+        expect(result.invalidated).toEqual([]);
+        expect(mockSignalSend).not.toHaveBeenCalled();
+        expect(mockInvalidate).not.toHaveBeenCalled();
+    });
+});
+
+describe('OperationSightingV3Service - 投稿者ごとの一覧・投稿者・新着', () => {
+    let service: OperationSightingV3Service;
+
+    const sightingRow = {
+        operationSightingId: 's-1',
+        sightingTime: new Date('2026-11-02T01:00:00.000Z'),
+        createdAt: new Date('2026-11-02T01:05:00.000Z'),
+        operationNumber: '41',
+        formationNumber: '8701',
+        invalidated: false,
+        invalidatedByUserId: null,
+        invalidatedByUsername: null,
+    };
+
+    beforeEach(async () => {
+        vi.clearAllMocks();
+        service = await buildService();
+    });
+
+    it('投稿者の目撃は日時を ISO にし、無効化した人を入れ子で返す', async () => {
+        mockAuthorQuery.findManyByUserId.mockResolvedValue([
+            {
+                ...sightingRow,
+                invalidated: true,
+                invalidatedByUserId: 'e-1',
+                invalidatedByUsername: 'editor',
+            },
+            sightingRow,
+        ]);
+        const result = await service.findManyByUserId({
+            userId: 'u-1',
+            limit: 100,
+        });
+        expect(result[0]).toEqual({
+            operationSightingId: 's-1',
+            sightingTime: '2026-11-02T01:00:00.000Z',
+            createdAt: '2026-11-02T01:05:00.000Z',
+            operationNumber: '41',
+            formationNumber: '8701',
+            invalidated: true,
+            invalidatedBy: { userId: 'e-1', username: 'editor' },
+        });
+        expect(result[1].invalidatedBy).toBeNull();
+        expect(mockAuthorQuery.findManyByUserId).toHaveBeenCalledWith({
+            userId: 'u-1',
+            limit: 100,
+            before: null,
+        });
+    });
+
+    it('before は Date にして query に渡す', async () => {
+        mockAuthorQuery.findManyByUserId.mockResolvedValue([]);
+        await service.findManyByUserId({
+            userId: 'u-1',
+            limit: 10,
+            before: '2026-11-01T00:00:00.000Z',
+        });
+        expect(mockAuthorQuery.findManyByUserId).toHaveBeenCalledWith({
+            userId: 'u-1',
+            limit: 10,
+            before: new Date('2026-11-01T00:00:00.000Z'),
+        });
+    });
+
+    it('目撃の投稿者が無ければ userId: null', async () => {
+        mockAuthorQuery.findAuthorUserId.mockResolvedValue(null);
+        expect(
+            await service.findAuthor({ operationSightingId: 's-1' }),
+        ).toEqual({ userId: null });
+    });
+
+    it('新着はゲストの目撃の author が null、登録者は事実から判定した印つき', async () => {
+        mockAuthorQuery.findManyRecent.mockResolvedValue([
+            { ...sightingRow, author: null },
+            {
+                ...sightingRow,
+                operationSightingId: 's-2',
+                author: {
+                    userId: 'u-1',
+                    username: 'alice',
+                    displayName: 'Alice',
+                    role: 'reporter',
+                    // 目撃（2026-11-02T01:05）の 1 時間前に登録 → newAccount
+                    registeredAt: new Date('2026-11-02T00:05:00.000Z'),
+                    recentPostCount: 4,
+                },
+            },
+        ]);
+        const result = await service.findManyRecent({ limit: 100 });
+        expect(mockAuthorQuery.findManyRecent).toHaveBeenCalledWith({
+            limit: 100,
+            before: null,
+            // 窓の長さは read model が持ち、usecase が query に渡す
+            burstWindowMinutes: 60,
+        });
+        expect(result[0].author).toBeNull();
+        expect(result[1].author).toEqual({
+            userId: 'u-1',
+            username: 'alice',
+            displayName: 'Alice',
+            role: 'reporter',
+            newAccount: true,
+            burst: false,
+        });
+    });
+
+    it('新着の editor は連投しても印が付かない', async () => {
+        mockAuthorQuery.findManyRecent.mockResolvedValue([
+            {
+                ...sightingRow,
+                author: {
+                    userId: 'u-3',
+                    username: 'carol',
+                    displayName: 'Carol',
+                    role: 'editor',
+                    registeredAt: new Date('2026-11-02T01:00:00.000Z'),
+                    recentPostCount: 30,
+                },
+            },
+        ]);
+        const [row] = await service.findManyRecent({});
+        expect(row.author).toMatchObject({ newAccount: false, burst: false });
     });
 });

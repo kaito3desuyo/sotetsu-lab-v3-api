@@ -7,12 +7,14 @@ import { DatabaseModule } from './core/modules/database/database.module.js';
 import { FeatureFlagModule } from './core/modules/feature-flag/feature-flag.module.js';
 import { LoggerModule } from './core/modules/logger/logger.module.js';
 import { RBACModule } from './core/modules/rbac/rbac.module.js';
+import { UserLibsModule } from './libs/user/user.libs.module.js';
 import { ApiRoutingModule } from './routes/api-routing.module.js';
 
 @Module({
     imports: [
         AuthModule,
         RBACModule,
+        UserLibsModule,
         CacheControlModule,
         DatabaseModule,
         FeatureFlagModule,

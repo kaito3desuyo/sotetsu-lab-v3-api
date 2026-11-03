@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import { UniqueEntityId } from '../../../core/classes/unique-entity-id.js';
@@ -26,23 +26,53 @@ import { OperationSightingLatestCache } from '../domain/operation-sighting-lates
 import { OperationSightingLatestCacheCommand } from '../infrastructure/command/operation-sighting-latest-cache.command.js';
 import { OperationSightingCommand } from '../infrastructure/command/operation-sighting.command.js';
 import { OperationSightingAuthorCommand } from '../infrastructure/command/operation-sighting-author.command.js';
+import { UserAccessTraceService } from '../../user/usecase/user-access-trace.service.js';
 import { pastSightingDateCacheTags } from '../../../core/modules/cdn-invalidation/cache-tags.js';
 import { CdnInvalidation } from '../../../core/modules/cdn-invalidation/cdn-invalidation.js';
 import { SocketSignal } from '../../../core/modules/socket-signal/socket-signal.js';
+import {
+    OperationSightingAuthorQuery,
+    type OperationSightingSummaryRow,
+} from '../infrastructure/queries/operation-sighting-author.query.js';
 import { OperationSightingLatestCacheQuery } from '../infrastructure/queries/operation-sighting-latest-cache.query.js';
 import { OperationSightingQuery } from '../infrastructure/queries/operation-sighting.query.js';
 import { OperationSightingDomainBuilder } from './builders/operation-sighting.domain.builder.js';
+import { OperationSightingAuthorDto } from './dtos/operation-sighting-author.dto.js';
 import { OperationSightingDetailsDto } from './dtos/operation-sighting-details.dto.js';
 import { OperationSightingLatestCacheDto } from './dtos/operation-sighting-latest-cache.dto.js';
+import { OperationSightingRecentDto } from './dtos/operation-sighting-recent.dto.js';
+import { OperationSightingSummaryDto } from './dtos/operation-sighting-summary.dto.js';
 import { OperationSightingTimeCrossSectionDto } from './dtos/operation-sighting-time-cross-section.dto.js';
 import { PostOperationSightingDto } from './dtos/post-operation-sighting.dto.js';
 import {
     CacheAction,
     selectMostRecentCandidateForOperationNumber,
 } from './operation-sighting.v3.circulation.js';
+import { SIGHTING_LIST_DEFAULT_LIMIT } from '../operation-sighting.constants.js';
 import { OPERATION_SIGHTING_TIME_CROSS_SECTION_SELECTION_TREE } from './operation-sighting-time-cross-section-selection.js';
 import { OPERATION_SIGHTINGS_BY_PERIOD_SELECTION_TREE } from './operation-sightings-by-period-selection.js';
 import { SightingCarryOver } from './read-models/sighting-carry-over.read-model.js';
+import { SightingAuthorMarks } from './read-models/sighting-author-marks.read-model.js';
+
+/**
+ * まとめての無効化が新しい件を始めてよい経過時間（ミリ秒）。
+ * Lambda のタイムアウトが 3 秒で、予算はループの開始から数えるので、
+ * ループの前の認証・RBAC の分と、最後の 1 件と合図の分を 3 秒の内に残して打ち切り、残りは pending で返す。
+ */
+export const INVALIDATE_MANY_TIME_BUDGET_MS = 1000;
+
+/** まとめての無効化が予期しない例外で止まったときに応答へ出す固定の文言 */
+export const INVALIDATE_MANY_UNEXPECTED_MESSAGE =
+    '予期しないエラーで止まりました';
+
+/** まとめての無効化の結果。 */
+export interface InvalidateManyResult {
+    invalidated: string[];
+    skipped: { id: string; reason: 'not_found' | 'already_invalidated' }[];
+    failed: { id: string; message: string } | null;
+    /** 予算切れ・失敗で手を付けなかった id（元の順） */
+    pending: string[];
+}
 
 /** 時刻断面の判定が読む DB の口。1 件ずつの口とまとめて返す口とで読み方だけを替える。 */
 interface TimeCrossSectionSource {
@@ -60,20 +90,78 @@ interface TimeCrossSectionSource {
 
 @Injectable()
 export class OperationSightingV3Service {
+    readonly #logger = new Logger(OperationSightingV3Service.name);
+
     constructor(
         @InjectDataSource() private readonly dataSource: DataSource,
         private readonly operationSightingCommand: OperationSightingCommand,
         private readonly operationSightingLatestCacheCommand: OperationSightingLatestCacheCommand,
         private readonly operationSightingLatestCacheQuery: OperationSightingLatestCacheQuery,
         private readonly operationSightingQuery: OperationSightingQuery,
+        private readonly operationSightingAuthorQuery: OperationSightingAuthorQuery,
         private readonly calendarQuery: CalendarQuery,
         private readonly operationQuery: OperationQuery,
         private readonly formationQuery: FormationQuery,
         private readonly itinerarySegmentQuery: ItinerarySegmentQuery,
         private readonly operationSightingAuthorCommand: OperationSightingAuthorCommand,
         private readonly socketSignal: SocketSignal,
+        private readonly accessTraces: UserAccessTraceService,
         private readonly cdnInvalidation: CdnInvalidation,
     ) {}
+
+    /** 投稿者（利用者）ごとの目撃を created_at の新しい順に。無効化したものも含む */
+    async findManyByUserId(params: {
+        userId: string;
+        limit?: number;
+        before?: string;
+    }): Promise<OperationSightingSummaryDto[]> {
+        const rows = await this.operationSightingAuthorQuery.findManyByUserId({
+            userId: params.userId,
+            limit: params.limit ?? SIGHTING_LIST_DEFAULT_LIMIT,
+            before: params.before ? new Date(params.before) : null,
+        });
+
+        return rows.map(toSummaryDto);
+    }
+
+    async findAuthor(params: {
+        operationSightingId: string;
+    }): Promise<OperationSightingAuthorDto> {
+        const userId =
+            await this.operationSightingAuthorQuery.findAuthorUserId(params);
+
+        return { userId };
+    }
+
+    /** 新着の目撃を投稿者つきで created_at の新しい順に（ゲストの目撃も含む。newAccount・burst の印つき） */
+    async findManyRecent(params: {
+        limit?: number;
+        before?: string;
+    }): Promise<OperationSightingRecentDto[]> {
+        const rows = await this.operationSightingAuthorQuery.findManyRecent({
+            limit: params.limit ?? SIGHTING_LIST_DEFAULT_LIMIT,
+            before: params.before ? new Date(params.before) : null,
+            burstWindowMinutes: SightingAuthorMarks.BURST_WINDOW_MINUTES,
+        });
+
+        return rows.map((row) => ({
+            ...toSummaryDto(row),
+            author: row.author
+                ? {
+                      userId: row.author.userId,
+                      username: row.author.username,
+                      displayName: row.author.displayName,
+                      role: row.author.role,
+                      ...SightingAuthorMarks.of({
+                          role: row.author.role,
+                          registeredAt: row.author.registeredAt,
+                          sightingCreatedAt: row.createdAt,
+                          recentPostCount: row.author.recentPostCount,
+                      }),
+                  }
+                : null,
+        }));
+    }
 
     /** `include`・`fields` があれば、作った一覧を選んだ関連・列だけに削る（docs/adr/0010-v3-include-and-fields.md） */
     async findManyBySpecificPeriod(params: {
@@ -709,7 +797,10 @@ export class OperationSightingV3Service {
     }
 
     async post(
-        params: PostOperationSightingDto & { userId: string | null },
+        params: PostOperationSightingDto & {
+            userId: string | null;
+            viewer: { ip: string | null; userAgent: string | null };
+        },
     ): Promise<OperationSightingDetailsDto> {
         const { agencyId, formationOrVehicleNumber } = params;
         const { sightingTimeInstance, sightingTimeInJst, date } =
@@ -761,6 +852,11 @@ export class OperationSightingV3Service {
                   }
                 : { type: 'none' };
 
+        // 投稿者の手がかり（IP・端末）を書くのは、登録者で IP が分かるときだけ
+        const traceTarget =
+            params.userId && params.viewer.ip
+                ? { userId: params.userId, ip: params.viewer.ip }
+                : null;
         const saved = await this.dataSource.transaction(async (manager) => {
             const saved = await this.operationSightingCommand.save(
                 domain,
@@ -776,6 +872,16 @@ export class OperationSightingV3Service {
                     manager,
                 );
             }
+            if (traceTarget) {
+                await this.accessTraces.recordPost(
+                    {
+                        ...traceTarget,
+                        operationSightingId: saved.operationSightingId,
+                        userAgent: params.viewer.userAgent,
+                    },
+                    manager,
+                );
+            }
             await this.#applyCacheAction(
                 cacheAction,
                 saved.operationSightingId,
@@ -784,8 +890,12 @@ export class OperationSightingV3Service {
             return saved;
         });
         await Promise.all([
-            this.#invalidatePastSightingDates(sightingTimeInstance.toDate()),
+            this.#invalidatePastSightingDates([sightingTimeInstance.toDate()]),
             this.socketSignal.send({ type: 'sighting' }),
+            // 古い手がかりの掃除は commit の後（失敗は purgeExpiredIfDue が握る）
+            traceTarget
+                ? this.accessTraces.purgeExpiredIfDue()
+                : Promise.resolve(),
         ]);
         return saved;
     }
@@ -793,6 +903,87 @@ export class OperationSightingV3Service {
     async invalidate(
         params: { operationSightingId: string; userId: string; reason: string },
     ): Promise<OperationSightingDetailsDto> {
+        const { saved, sightingTime } = await this.#invalidateOne(params);
+        await this.#sendInvalidationSignals([sightingTime]);
+        return saved;
+    }
+
+    /**
+     * 目撃をまとめて無効にする。順に 1 件ずつ処理し、合図（socket・CDN）は最後に 1 回だけ送る
+     * （200 件で CloudFront の失効を 200 回呼ばないため）。
+     * 経過時間が予算を超えたら新しい件を始めず、予期しない例外が出たらそこで止めて、
+     * 手を付けなかった id は pending に返す。
+     */
+    async invalidateMany(params: {
+        ids: string[];
+        userId: string;
+        reason: string;
+        /** 経過時間を測る時計（ミリ秒）。テストで差し替える */
+        now?: () => number;
+    }): Promise<InvalidateManyResult> {
+        const { userId, reason, now = Date.now } = params;
+        const ids = [...new Set(params.ids)];
+        const startedAt = now();
+
+        const result: InvalidateManyResult = {
+            invalidated: [],
+            skipped: [],
+            failed: null,
+            pending: [],
+        };
+        const sightingTimes: Date[] = [];
+
+        for (const [index, id] of ids.entries()) {
+            if (now() - startedAt >= INVALIDATE_MANY_TIME_BUDGET_MS) {
+                result.pending = ids.slice(index);
+                break;
+            }
+            try {
+                const { sightingTime } = await this.#invalidateOne({
+                    operationSightingId: id,
+                    userId,
+                    reason,
+                });
+                result.invalidated.push(id);
+                sightingTimes.push(sightingTime);
+            } catch (error) {
+                const skipReason = skippableReason(error);
+                if (skipReason) {
+                    result.skipped.push({ id, reason: skipReason });
+                    continue;
+                }
+                // 単体の無効化なら UnexpectedErrorFilter が記録するので、ここでも残す
+                this.#logger.error(
+                    `目撃情報のまとめての無効化が予期しないエラーで止まった（operationSightingId: ${id}）: ${
+                        error instanceof Error ? error.message : String(error)
+                    }`,
+                    error instanceof Error ? error.stack : undefined,
+                );
+                // 内部の文言（DB のエラー文など）は応答に出さない
+                result.failed = {
+                    id,
+                    message:
+                        error instanceof UseCaseError
+                            ? error.message
+                            : INVALIDATE_MANY_UNEXPECTED_MESSAGE,
+                };
+                result.pending = ids.slice(index + 1);
+                break;
+            }
+        }
+
+        if (sightingTimes.length > 0) {
+            await this.#sendInvalidationSignals(sightingTimes);
+        }
+        return result;
+    }
+
+    /** 無効にして保存するところまで。合図は呼び出し側が送る */
+    async #invalidateOne(params: {
+        operationSightingId: string;
+        userId: string;
+        reason: string;
+    }): Promise<{ saved: OperationSightingDetailsDto; sightingTime: Date }> {
         const { operationSightingId, userId, reason } = params;
 
         const dto = await this.operationSightingQuery.findOneById({
@@ -803,6 +994,13 @@ export class OperationSightingV3Service {
             throw new UseCaseError('目撃情報が見つかりません', {
                 operationSightingId,
                 reason: 'not_found',
+            });
+        }
+
+        if (dto.invalidation) {
+            throw new UseCaseError('目撃情報はすでに無効です', {
+                operationSightingId,
+                reason: 'already_invalidated',
             });
         }
 
@@ -874,11 +1072,17 @@ export class OperationSightingV3Service {
             );
             return saved;
         });
+        return { saved, sightingTime: dto.sightingTime };
+    }
+
+    /** 無効化の後の合図。socket は 1 回、CDN は過ぎた運行日のタグをまとめて 1 回 */
+    async #sendInvalidationSignals(
+        sightingTimes: readonly Date[],
+    ): Promise<void> {
         await Promise.all([
-            this.#invalidatePastSightingDates(dto.sightingTime),
+            this.#invalidatePastSightingDates(sightingTimes),
             this.socketSignal.send({ type: 'sighting' }),
         ]);
-        return saved;
     }
 
     async restore(
@@ -942,7 +1146,7 @@ export class OperationSightingV3Service {
             return saved;
         });
         await Promise.all([
-            this.#invalidatePastSightingDates(dto.sightingTime),
+            this.#invalidatePastSightingDates([dto.sightingTime]),
             this.socketSignal.send({ type: 'sighting' }),
         ]);
         return saved;
@@ -952,9 +1156,11 @@ export class OperationSightingV3Service {
      * 過ぎた運行日の目撃を書いたら、その日の過去の運用情報の CDN キャッシュを捨てる。
      * 今日の運行日の目撃は CDN に載せない画面なので、タグが空なら呼ばない。
      */
-    async #invalidatePastSightingDates(sightingTime: Date): Promise<void> {
+    async #invalidatePastSightingDates(
+        sightingTimes: readonly Date[],
+    ): Promise<void> {
         const tags = pastSightingDateCacheTags({
-            sightingTimes: [sightingTime],
+            sightingTimes,
             now: dayjs(),
         });
         if (tags.length === 0) {
@@ -1128,4 +1334,36 @@ export class OperationSightingV3Service {
 
         return { calendar, operation };
     }
+}
+
+/** まとめての無効化で止めずに飛ばしてよい失敗（なければ null） */
+function skippableReason(
+    error: unknown,
+): 'not_found' | 'already_invalidated' | null {
+    if (!(error instanceof UseCaseError)) {
+        return null;
+    }
+    const reason = error.context.reason;
+    return reason === 'not_found' || reason === 'already_invalidated'
+        ? reason
+        : null;
+}
+
+function toSummaryDto(
+    row: OperationSightingSummaryRow,
+): OperationSightingSummaryDto {
+    return {
+        operationSightingId: row.operationSightingId,
+        sightingTime: row.sightingTime.toISOString(),
+        createdAt: row.createdAt.toISOString(),
+        operationNumber: row.operationNumber,
+        formationNumber: row.formationNumber,
+        invalidated: row.invalidated,
+        invalidatedBy: row.invalidatedByUserId
+            ? {
+                  userId: row.invalidatedByUserId,
+                  username: row.invalidatedByUsername ?? '',
+              }
+            : null,
+    };
 }

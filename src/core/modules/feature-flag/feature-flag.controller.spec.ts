@@ -30,6 +30,7 @@ describe('FeatureFlagController', () => {
                     ctx.switchToHttp().getRequest().auth = {
                         userId: 'anon-1',
                         role: null,
+                        sessionId: null,
                     };
                     return true;
                 },

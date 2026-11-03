@@ -23,6 +23,7 @@ import { OperationSightingManagementLogModel } from './operation-sighting-manage
 @Index(['formationId', 'sightingTime'])
 @Index(['operationId', 'sightingTime'])
 @Index(['sightingTime', 'updatedAt', 'id'])
+@Index(['createdAt', 'id'])
 export class OperationSightingModel {
     @PrimaryGeneratedColumn('uuid')
     id!: string;

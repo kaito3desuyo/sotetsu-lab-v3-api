@@ -73,6 +73,16 @@ const TABLE: [AnyController, string, string][] = [
     [OperationV3Controller, 'findOneWithCurrentPosition', REALTIME],
 ];
 
+/**
+ * 個人情報を含む口（投稿者つき）。表の 30 本とは別に、REALTIME を付けて応答を保存させない。
+ * 目撃の投稿者を見せる口は OperationSightingV3Controller、利用者の管理の口は UserV3Controller にある
+ */
+const PERSONAL: [AnyController, string][] = [
+    [OperationSightingV3Controller, 'findManyRecent'],
+    [OperationSightingV3Controller, 'findAuthor'],
+    [OperationSightingV3Controller, 'invalidateMany'],
+];
+
 const reflector = new Reflector();
 const read = (controller: AnyController, method: string) =>
     reflector.get<string | undefined>(
@@ -93,6 +103,14 @@ describe('v3 GET の Cache-Control', () => {
         },
     );
 
+    it.each(PERSONAL.map(([c, m]) => [`${c.name}.${m}`, c, m] as const))(
+        '個人情報を含む %s には REALTIME を付ける',
+        (_label, controller, method) => {
+            expect(controller.prototype[method]).toBeInstanceOf(Function);
+            expect(read(controller, method)).toBe(REALTIME);
+        },
+    );
+
     it('クライアントが使っていない 2 本には付けない', () => {
         expect(read(TripV3Controller, 'findManyByStationId')).toBeUndefined();
         expect(
@@ -104,7 +122,9 @@ describe('v3 GET の Cache-Control', () => {
     });
 
     it('表に無い handler（書き込みを含む）には付けない', () => {
-        const listed = new Set(TABLE.map(([c, m]) => `${c.name}.${m}`));
+        const listed = new Set(
+            [...TABLE, ...PERSONAL].map(([c, m]) => `${c.name}.${m}`),
+        );
         const controllers = [...new Set(TABLE.map(([c]) => c))];
         const stray = controllers.flatMap((c) =>
             Object.getOwnPropertyNames(c.prototype)
