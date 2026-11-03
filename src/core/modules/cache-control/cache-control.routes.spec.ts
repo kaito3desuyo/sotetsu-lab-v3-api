@@ -75,7 +75,7 @@ const TABLE: [AnyController, string, string][] = [
 
 /**
  * 個人情報を含む口（投稿者つき）。表の 30 本とは別に、REALTIME を付けて応答を保存させない。
- * 旧・投稿管理の口で、利用者の口は UserV3Controller、目撃の口は OperationSightingV3Controller にある
+ * 目撃の投稿者を見せる口は OperationSightingV3Controller、利用者の管理の口は UserV3Controller にある
  */
 const PERSONAL: [AnyController, string][] = [
     [OperationSightingV3Controller, 'findManyRecent'],

@@ -172,7 +172,7 @@ describe('OperationSightingV3Controller（書き込みの役割と利用者）',
     });
 });
 
-/** 投稿者つきの口（旧・投稿管理）。個人情報を含むので EDITOR・MANAGER だけ・応答は保存させない */
+/** 投稿者つきの読み取りの口。個人情報を含むので EDITOR・MANAGER だけ・応答は保存させない */
 const READ_ROUTES = [`/${AUTHOR_SIGHTING_ID}/author`, '/recent'];
 
 describe('OperationSightingV3Controller（投稿者つきの読み取りの口・まとめての無効化）', () => {

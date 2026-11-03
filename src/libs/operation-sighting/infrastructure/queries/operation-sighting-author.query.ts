@@ -1,13 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
-import { Role } from '../../../../core/modules/rbac/role.enum.js';
 import { ProfileModel } from '../../../user/infrastructure/models/profile.model.js';
-import {
-    BURST_COUNT,
-    BURST_WINDOW_MINUTES,
-    NEW_ACCOUNT_HOURS,
-} from '../../operation-sighting.constants.js';
 import { OperationSightingAuthorModel } from '../models/operation-sighting-author.model.js';
 import { OperationSightingInvalidationModel } from '../models/operation-sighting-invalidation.model.js';
 import { OperationSightingManagementLogModel } from '../models/operation-sighting-management-log.model.js';
@@ -25,21 +19,18 @@ export type OperationSightingSummaryRow = {
 };
 
 export type OperationSightingRecentRow = OperationSightingSummaryRow & {
-    /** ゲストの目撃は null */
+    /** ゲストの目撃は null。印（newAccount・burst）の判定は読み取り側（SightingAuthorMarks）が事実から行う */
     author: {
         userId: string;
         username: string;
         displayName: string;
         role: string;
-        newAccount: boolean;
-        burst: boolean;
+        /** 投稿者の登録日時（profiles.created_at） */
+        registeredAt: Date;
+        /** その目撃までの burstWindowMinutes 分（その目撃を含む）の、同じ人の投稿数 */
+        recentPostCount: number;
     } | null;
 };
-
-/**
- * 印（newAccount・burst）を付ける投稿者の役割。信頼済みの editor・manager は連投しても普通の作業なので常に false
- */
-const MARKED_ROLES: readonly string[] = [Role.REPORTER, Role.VIEWER];
 
 /** 無効化の取り消し（復元）は行を消すので、行があれば今も無効 */
 const INVALIDATION_ACTION = 'invalidation';
@@ -91,13 +82,13 @@ export class OperationSightingAuthorQuery {
 
     /**
      * 新着の目撃を投稿者つきで created_at の新しい順に（ゲストも含む）。
-     * 印は投稿者の役割が reporter・viewer のときだけ計算する（editor・manager は常に false）。
-     * newAccount: その目撃が、投稿者の登録から NEW_ACCOUNT_HOURS 時間以内。
-     * burst: その目撃までの BURST_WINDOW_MINUTES 分（その目撃を含む）に、同じ人の投稿が BURST_COUNT 件以上。
+     * 印の判定はしない。事実だけを返す: 投稿者の役割・登録日時・その目撃までの burstWindowMinutes 分
+     * （その目撃を含む）の同じ人の投稿数。窓の長さは数えるのに要るので呼び出し側から受け取る。
      */
     async findManyRecent(params: {
         limit: number;
         before: Date | null;
+        burstWindowMinutes: number;
     }): Promise<OperationSightingRecentRow[]> {
         const qb = this.buildSightingList(params)
             .leftJoin(
@@ -110,14 +101,9 @@ export class OperationSightingAuthorQuery {
             .addSelect('ap.username', 'authorUsername')
             .addSelect('ap.displayName', 'authorDisplayName')
             .addSelect('ap.role', 'authorRole')
-            .addSelect(
-                `CASE WHEN "ap"."role" IN (:...markedRoles) THEN "s"."created_at" < "ap"."created_at" + interval '1 hour' * :newAccountHours ELSE false END`,
-                'newAccount',
-            )
-            .setParameter('newAccountHours', NEW_ACCOUNT_HOURS)
-            .setParameter('markedRoles', MARKED_ROLES);
+            .addSelect('ap.createdAt', 'authorRegisteredAt');
 
-        const burstCount = qb
+        const recentPostCount = qb
             .subQuery()
             .select('COUNT(*)')
             .from(OperationSightingAuthorModel, 'a2')
@@ -132,32 +118,26 @@ export class OperationSightingAuthorQuery {
                 `s2.createdAt > "s"."created_at" - interval '1 minute' * :burstWindowMinutes`,
             )
             .getQuery();
-        qb.addSelect(
-            `CASE WHEN "ap"."role" IN (:...markedRoles) THEN ${burstCount} >= :burstCount ELSE false END`,
-            'burst',
-        )
-            .setParameter('burstWindowMinutes', BURST_WINDOW_MINUTES)
-            .setParameter('burstCount', BURST_COUNT);
+        qb.addSelect(recentPostCount, 'recentPostCount').setParameter(
+            'burstWindowMinutes',
+            params.burstWindowMinutes,
+        );
 
         const rows = await qb.getRawMany();
 
-        return rows.map((raw) => {
-            const marked = MARKED_ROLES.includes(raw.authorRole);
-
-            return {
-                ...toSightingRow(raw),
-                author: raw.authorUserId
-                    ? {
-                          userId: raw.authorUserId,
-                          username: raw.authorUsername ?? '',
-                          displayName: raw.authorDisplayName ?? '',
-                          role: raw.authorRole ?? '',
-                          newAccount: marked && raw.newAccount === true,
-                          burst: marked && raw.burst === true,
-                      }
-                    : null,
-            };
-        });
+        return rows.map((raw) => ({
+            ...toSightingRow(raw),
+            author: raw.authorUserId
+                ? {
+                      userId: raw.authorUserId,
+                      username: raw.authorUsername ?? '',
+                      displayName: raw.authorDisplayName ?? '',
+                      role: raw.authorRole ?? '',
+                      registeredAt: raw.authorRegisteredAt,
+                      recentPostCount: Number(raw.recentPostCount),
+                  }
+                : null,
+        }));
     }
 
     /**

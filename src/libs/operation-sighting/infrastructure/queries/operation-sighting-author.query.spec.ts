@@ -3,11 +3,6 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, SelectQueryBuilder } from 'typeorm';
 import { ENTITIES } from '../../../../core/configs/entities.js';
 import { TypeOrmNamingStrategy } from '../../../../core/configs/typeorm-naming-strategy.js';
-import {
-    BURST_COUNT,
-    BURST_WINDOW_MINUTES,
-    NEW_ACCOUNT_HOURS,
-} from '../../operation-sighting.constants.js';
 import { OperationSightingAuthorModel } from '../models/operation-sighting-author.model.js';
 import { OperationSightingModel } from '../models/operation-sighting.model.js';
 import { OperationSightingAuthorQuery } from './operation-sighting-author.query.js';
@@ -119,7 +114,11 @@ describe('OperationSightingAuthorQuery（生成される SQL）', () => {
     });
 
     it('新着は投稿者を LEFT JOIN で引く（ゲストの目撃も残る）', async () => {
-        await query.findManyRecent({ limit: 100, before: null });
+        await query.findManyRecent({
+            limit: 100,
+            before: null,
+            burstWindowMinutes: 60,
+        });
 
         const { sql } = captured[0];
         expect(sql).toMatch(
@@ -129,48 +128,54 @@ describe('OperationSightingAuthorQuery（生成される SQL）', () => {
         expect(sql).toMatch(/ORDER BY "s"\."created_at" DESC, "s"\."id" DESC/);
     });
 
-    it('新着の burst は、その目撃までの 60 分に同じ人の投稿が 5 件以上', async () => {
-        await query.findManyRecent({ limit: 100, before: null });
+    it('新着は窓（呼び出し側が渡す分）の中の同じ人の投稿数を事実として数える（件数の閾値は持たない）', async () => {
+        await query.findManyRecent({
+            limit: 100,
+            before: null,
+            burstWindowMinutes: 45,
+        });
 
         const { sql, parameters } = captured[0];
         expect(sql).toContain('FROM "operation_sighting_authors" "a2"');
         expect(sql).toContain('"a2"."user_id" = "a"."user_id"');
         expect(sql).toContain('"s2"."created_at" <= "s"."created_at"');
         expect(sql).toMatch(/interval '1 minute' \* \$\d+/);
-        expect(sql).toMatch(/>= \$\d+/);
-        expect(parameters).toContain(BURST_WINDOW_MINUTES);
-        expect(parameters).toContain(BURST_COUNT);
+        expect(sql).toMatch(/\(SELECT COUNT\(\*\).*\) AS "recentPostCount"/);
+        expect(parameters).toContain(45);
+        expect(sql).not.toMatch(/>= \$\d+/);
     });
 
-    it('新着の newAccount は、その目撃が登録から 24 時間以内', async () => {
-        await query.findManyRecent({ limit: 100, before: null });
+    it('新着は投稿者の登録日時を事実として返す（24 時間の判定は持たない）', async () => {
+        await query.findManyRecent({
+            limit: 100,
+            before: null,
+            burstWindowMinutes: 60,
+        });
+
+        const { sql } = captured[0];
+        expect(sql).toContain('"ap"."created_at" AS "authorRegisteredAt"');
+        expect(sql).not.toContain("interval '1 hour'");
+    });
+
+    it('SQL に印の判定（CASE）も役割の絞りも入れない', async () => {
+        await query.findManyRecent({
+            limit: 100,
+            before: null,
+            burstWindowMinutes: 60,
+        });
 
         const { sql, parameters } = captured[0];
-        expect(sql).toMatch(
-            /"s"\."created_at" < "ap"\."created_at" \+ interval '1 hour' \* \$\d+/,
-        );
-        expect(parameters).toContain(NEW_ACCOUNT_HOURS);
+        expect(sql).not.toContain('CASE WHEN');
+        expect(sql).not.toContain('"newAccount"');
+        expect(sql).not.toContain('"burst"');
+        expect(parameters).not.toContain('reporter');
+        expect(parameters).not.toContain('viewer');
     });
 
-    it('印は reporter・viewer の投稿者だけ計算する（SQL の CASE）', async () => {
-        await query.findManyRecent({ limit: 100, before: null });
-
-        const { sql, parameters } = captured[0];
-        expect(sql).toMatch(
-            /CASE WHEN "ap"\."role" IN \(\$\d+, \$\d+\) THEN "s"\."created_at" < .* ELSE false END AS "newAccount"/,
-        );
-        expect(sql).toMatch(
-            /CASE WHEN "ap"\."role" IN \(\$\d+, \$\d+\) THEN \(SELECT COUNT\(\*\).* ELSE false END AS "burst"/,
-        );
-        expect(parameters).toContain('reporter');
-        expect(parameters).toContain('viewer');
-        expect(parameters).not.toContain('editor');
-        expect(parameters).not.toContain('manager');
-    });
-
-    it.each(['editor', 'manager'])(
-        '%s の投稿者は burst も newAccount も false（行が true を返しても落とす）',
+    it.each(['reporter', 'editor', 'manager'])(
+        '%s の投稿者も、役割・登録日時・窓の投稿数をそのまま返す（絞らない）',
         async (role) => {
+            const registeredAt = new Date('2026-11-01T01:00:00.000Z');
             rawRows = [
                 {
                     operationSightingId: 's-1',
@@ -183,23 +188,27 @@ describe('OperationSightingAuthorQuery（生成される SQL）', () => {
                     authorUsername: 'alice',
                     authorDisplayName: 'Alice',
                     authorRole: role,
-                    newAccount: true,
-                    burst: true,
+                    authorRegisteredAt: registeredAt,
+                    recentPostCount: '7',
                 },
             ];
             const [row] = await query.findManyRecent({
                 limit: 100,
                 before: null,
+                burstWindowMinutes: 60,
             });
-            expect(row.author).toMatchObject({
+            expect(row.author).toEqual({
+                userId: 'u-1',
+                username: 'alice',
+                displayName: 'Alice',
                 role,
-                newAccount: false,
-                burst: false,
+                registeredAt,
+                recentPostCount: 7,
             });
         },
     );
 
-    it('reporter の投稿者は SQL の印をそのまま返す', async () => {
+    it('ゲストの目撃（投稿者の行が無い）は author が null', async () => {
         rawRows = [
             {
                 operationSightingId: 's-1',
@@ -208,17 +217,16 @@ describe('OperationSightingAuthorQuery（生成される SQL）', () => {
                 operationNumber: '41',
                 formationNumber: '8701',
                 invalidated: false,
-                authorUserId: 'u-1',
-                authorRole: 'reporter',
-                newAccount: true,
-                burst: true,
+                authorUserId: null,
+                recentPostCount: '0',
             },
         ];
         const [row] = await query.findManyRecent({
             limit: 100,
             before: null,
+            burstWindowMinutes: 60,
         });
-        expect(row.author).toMatchObject({ newAccount: true, burst: true });
+        expect(row.author).toBeNull();
     });
 
     it('目撃の投稿者は operation_sighting_authors から引く', async () => {

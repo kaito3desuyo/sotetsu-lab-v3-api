@@ -52,6 +52,7 @@ import { SIGHTING_LIST_DEFAULT_LIMIT } from '../operation-sighting.constants.js'
 import { OPERATION_SIGHTING_TIME_CROSS_SECTION_SELECTION_TREE } from './operation-sighting-time-cross-section-selection.js';
 import { OPERATION_SIGHTINGS_BY_PERIOD_SELECTION_TREE } from './operation-sightings-by-period-selection.js';
 import { SightingCarryOver } from './read-models/sighting-carry-over.read-model.js';
+import { SightingAuthorMarks } from './read-models/sighting-author-marks.read-model.js';
 
 /**
  * まとめての無効化が新しい件を始めてよい経過時間（ミリ秒）。
@@ -75,13 +76,26 @@ export interface InvalidateManyResult {
 
 /** 時刻断面の判定が読む DB の口。1 件ずつの口とまとめて返す口とで読み方だけを替える。 */
 interface TimeCrossSectionSource {
-    latestByOperationNumber(operationNumber: string): Promise<OperationSightingDetailsDto | null>;
-    latestByFormationNumber(formationNumber: string): Promise<OperationSightingDetailsDto | null>;
+    latestByOperationNumber(
+        operationNumber: string,
+    ): Promise<OperationSightingDetailsDto | null>;
+    latestByFormationNumber(
+        formationNumber: string,
+    ): Promise<OperationSightingDetailsDto | null>;
     calendar(): ReturnType<CalendarQuery['findOneBySpecificDate']>;
-    formationLatestCache(formationNumber: string): Promise<OperationSightingLatestCacheDto | null>;
-    groupMemberCaches(operationNumbers: string[], startTime: dayjs.Dayjs): Promise<OperationSightingLatestCacheDto[]>;
-    formationsOn(date: string): ReturnType<FormationQuery['findManyBySpecificPeriod']>;
-    operationsOf(calendarId: string): ReturnType<OperationQuery['findManyByCalendarId']>;
+    formationLatestCache(
+        formationNumber: string,
+    ): Promise<OperationSightingLatestCacheDto | null>;
+    groupMemberCaches(
+        operationNumbers: string[],
+        startTime: dayjs.Dayjs,
+    ): Promise<OperationSightingLatestCacheDto[]>;
+    formationsOn(
+        date: string,
+    ): ReturnType<FormationQuery['findManyBySpecificPeriod']>;
+    operationsOf(
+        calendarId: string,
+    ): ReturnType<OperationQuery['findManyByCalendarId']>;
     itineraries(calendarId: string): Promise<VehicleItineraryReadModel>;
     /** その鉄道日の 4 時から検索時刻までの有効な目撃 */
     todaySightings(): Promise<OperationSightingDetailsDto[]>;
@@ -140,11 +154,25 @@ export class OperationSightingV3Service {
         const rows = await this.operationSightingAuthorQuery.findManyRecent({
             limit: params.limit ?? SIGHTING_LIST_DEFAULT_LIMIT,
             before: params.before ? new Date(params.before) : null,
+            burstWindowMinutes: SightingAuthorMarks.BURST_WINDOW_MINUTES,
         });
 
         return rows.map((row) => ({
             ...toSummaryDto(row),
-            author: row.author,
+            author: row.author
+                ? {
+                      userId: row.author.userId,
+                      username: row.author.username,
+                      displayName: row.author.displayName,
+                      role: row.author.role,
+                      ...SightingAuthorMarks.of({
+                          role: row.author.role,
+                          registeredAt: row.author.registeredAt,
+                          sightingCreatedAt: row.createdAt,
+                          recentPostCount: row.author.recentPostCount,
+                      }),
+                  }
+                : null,
         }));
     }
 
@@ -173,44 +201,90 @@ export class OperationSightingV3Service {
         includeInvalidated?: boolean;
         includeCarriedOver?: boolean;
     }): Promise<OperationSightingDetailsDto[]> {
-        const { start, end, includeInvalidated = false, includeCarriedOver = false } = params;
-
-        const direct = await this.operationSightingQuery.findManyBySpecificPeriod({
+        const {
             start,
             end,
-            includeInvalidated,
-        });
+            includeInvalidated = false,
+            includeCarriedOver = false,
+        } = params;
+
+        const direct =
+            await this.operationSightingQuery.findManyBySpecificPeriod({
+                start,
+                end,
+                includeInvalidated,
+            });
         if (!includeCarriedOver) return direct;
 
         // 引き継ぎの材料は、直接の一覧と同じ範囲の目撃（operation・formation 付き）を別に引く。
         // 無効化も表示するときは、無効化された目撃も含めて流れを組む（ユーザー判断 2026-10-19）
         const format = 'YYYY-MM-DD';
-        const material = await this.operationSightingQuery.findManyBySightingTimeRange({
-            start: dayjs(start, format).hour(4).minute(0).second(0).millisecond(0),
-            end: dayjs(end, format).add(1, 'day').hour(4).minute(0).second(0).millisecond(0),
-            includeInvalidated,
-        });
+        const material =
+            await this.operationSightingQuery.findManyBySightingTimeRange({
+                start: dayjs(start, format)
+                    .hour(4)
+                    .minute(0)
+                    .second(0)
+                    .millisecond(0),
+                end: dayjs(end, format)
+                    .add(1, 'day')
+                    .hour(4)
+                    .minute(0)
+                    .second(0)
+                    .millisecond(0),
+                includeInvalidated,
+            });
         const byDay = new Map<string, OperationSightingDetailsDto[]>();
         for (const o of material) {
             const day = getBaseDate(dayjs(o.sightingTime)).format(format);
             byDay.set(day, [...(byDay.get(day) ?? []), o]);
         }
 
-        const itineraryCache = new Map<string, Promise<VehicleItineraryReadModel>>();
-        const operationCache = new Map<string, ReturnType<OperationQuery['findManyByCalendarId']>>();
+        const itineraryCache = new Map<
+            string,
+            Promise<VehicleItineraryReadModel>
+        >();
+        const operationCache = new Map<
+            string,
+            ReturnType<OperationQuery['findManyByCalendarId']>
+        >();
         const carried: OperationSightingDetailsDto[] = [];
         // 鉄道日 → その日の引き継ぎと運用（並べる位置を出すのに使う）
-        const dayContext = new Map<string, { carry: SightingCarryOver; operations: Awaited<ReturnType<OperationQuery['findManyByCalendarId']>> }>();
+        const dayContext = new Map<
+            string,
+            {
+                carry: SightingCarryOver;
+                operations: Awaited<
+                    ReturnType<OperationQuery['findManyByCalendarId']>
+                >;
+            }
+        >();
         for (const [day, sightings] of byDay) {
-            const calendar = await this.calendarQuery.findOneBySpecificDate({ date: day });
+            const calendar = await this.calendarQuery.findOneBySpecificDate({
+                date: day,
+            });
             if (!calendar) continue;
             if (!itineraryCache.has(calendar.id)) {
-                itineraryCache.set(calendar.id, this.itinerarySegmentQuery.findManyByCalendarId({ calendarId: calendar.id }).then((segments) => VehicleItineraryReadModel.create(segments)));
+                itineraryCache.set(
+                    calendar.id,
+                    this.itinerarySegmentQuery
+                        .findManyByCalendarId({ calendarId: calendar.id })
+                        .then((segments) =>
+                            VehicleItineraryReadModel.create(segments),
+                        ),
+                );
             }
             if (!operationCache.has(calendar.id)) {
-                operationCache.set(calendar.id, this.operationQuery.findManyByCalendarId({ calendarId: calendar.id }));
+                operationCache.set(
+                    calendar.id,
+                    this.operationQuery.findManyByCalendarId({
+                        calendarId: calendar.id,
+                    }),
+                );
             }
-            const carry = SightingCarryOver.create(await itineraryCache.get(calendar.id)!);
+            const carry = SightingCarryOver.create(
+                await itineraryCache.get(calendar.id)!,
+            );
             const operations = await operationCache.get(calendar.id)!;
             dayContext.set(day, { carry, operations });
             carried.push(...carry.buildCarried({ sightings, operations }));
@@ -222,17 +296,29 @@ export class OperationSightingV3Service {
             const base = getBaseDate(dayjs(o.sightingTime));
             const day = base.format(format);
             const context = dayContext.get(day);
-            const operationNumber = context?.operations.find((p) => p.operationId === o.operationId)?.operationNumber;
+            const operationNumber = context?.operations.find(
+                (p) => p.operationId === o.operationId,
+            )?.operationNumber;
             if (!context || !operationNumber) {
                 const time = dayjs(o.sightingTime).valueOf();
                 return [time, time];
             }
-            const [entered, start] = context.carry.orderOf(o, operationNumber, byDay.get(day) ?? []);
+            const [entered, start] = context.carry.orderOf(
+                o,
+                operationNumber,
+                byDay.get(day) ?? [],
+            );
             return [base.add(entered, 'second').valueOf(), start];
         };
         return [...direct, ...carried]
             .map((o) => ({ o, order: orderOf(o) }))
-            .sort((a, b) => a.order[0] - b.order[0] || a.order[1] - b.order[1] || dayjs(a.o.sightingTime).valueOf() - dayjs(b.o.sightingTime).valueOf())
+            .sort(
+                (a, b) =>
+                    a.order[0] - b.order[0] ||
+                    a.order[1] - b.order[1] ||
+                    dayjs(a.o.sightingTime).valueOf() -
+                        dayjs(b.o.sightingTime).valueOf(),
+            )
             .map(({ o }) => o);
     }
 
@@ -255,7 +341,10 @@ export class OperationSightingV3Service {
         include?: unknown;
         fields?: unknown;
     }): Promise<
-        Record<string, OperationSightingTimeCrossSectionDto | Record<string, unknown>>
+        Record<
+            string,
+            OperationSightingTimeCrossSectionDto | Record<string, unknown>
+        >
     >;
     async findManyTimeCrossSectionsByOperationNumbers(params: {
         operationNumbers: string[];
@@ -263,22 +352,38 @@ export class OperationSightingV3Service {
         include?: unknown;
         fields?: unknown;
     }): Promise<
-        Record<string, OperationSightingTimeCrossSectionDto | Record<string, unknown>>
+        Record<
+            string,
+            OperationSightingTimeCrossSectionDto | Record<string, unknown>
+        >
     > {
         const tree = OPERATION_SIGHTING_TIME_CROSS_SECTION_SELECTION_TREE;
         const selection = parseFieldsOnly(params, tree);
-        const searchTimeInstance = params.searchTime ? dayjs(params.searchTime) : dayjs();
-        const operationNumbers = params.operationNumbers.filter((o) => o !== '100');
-        const source = await this.#createBulkSource(searchTimeInstance, { operationNumbers });
+        const searchTimeInstance = params.searchTime
+            ? dayjs(params.searchTime)
+            : dayjs();
+        const operationNumbers = params.operationNumbers.filter(
+            (o) => o !== '100',
+        );
+        const source = await this.#createBulkSource(searchTimeInstance, {
+            operationNumbers,
+        });
 
         const entries = [];
         for (const operationNumber of operationNumbers) {
             entries.push([
                 operationNumber,
-                await this.#timeCrossSectionByOperationNumber(operationNumber, searchTimeInstance, source),
+                await this.#timeCrossSectionByOperationNumber(
+                    operationNumber,
+                    searchTimeInstance,
+                    source,
+                ),
             ] as const);
         }
-        return this.#serializeTimeCrossSections(Object.fromEntries(entries), selection);
+        return this.#serializeTimeCrossSections(
+            Object.fromEntries(entries),
+            selection,
+        );
     }
 
     /**
@@ -297,7 +402,10 @@ export class OperationSightingV3Service {
         include?: unknown;
         fields?: unknown;
     }): Promise<
-        Record<string, OperationSightingTimeCrossSectionDto | Record<string, unknown>>
+        Record<
+            string,
+            OperationSightingTimeCrossSectionDto | Record<string, unknown>
+        >
     >;
     async findManyTimeCrossSectionsByFormationNumbers(params: {
         formationNumbers: string[];
@@ -305,35 +413,55 @@ export class OperationSightingV3Service {
         include?: unknown;
         fields?: unknown;
     }): Promise<
-        Record<string, OperationSightingTimeCrossSectionDto | Record<string, unknown>>
+        Record<
+            string,
+            OperationSightingTimeCrossSectionDto | Record<string, unknown>
+        >
     > {
         const tree = OPERATION_SIGHTING_TIME_CROSS_SECTION_SELECTION_TREE;
         const selection = parseFieldsOnly(params, tree);
-        const searchTimeInstance = params.searchTime ? dayjs(params.searchTime) : dayjs();
+        const searchTimeInstance = params.searchTime
+            ? dayjs(params.searchTime)
+            : dayjs();
         const { formationNumbers } = params;
-        const source = await this.#createBulkSource(searchTimeInstance, { formationNumbers });
+        const source = await this.#createBulkSource(searchTimeInstance, {
+            formationNumbers,
+        });
 
         const entries = [];
         for (const formationNumber of formationNumbers) {
             entries.push([
                 formationNumber,
-                await this.#timeCrossSectionByFormationNumber(formationNumber, searchTimeInstance, source),
+                await this.#timeCrossSectionByFormationNumber(
+                    formationNumber,
+                    searchTimeInstance,
+                    source,
+                ),
             ] as const);
         }
-        return this.#serializeTimeCrossSections(Object.fromEntries(entries), selection);
+        return this.#serializeTimeCrossSections(
+            Object.fromEntries(entries),
+            selection,
+        );
     }
 
     /** 時刻断面のまとめを `fields` で選んだ項目だけにする。選びが無ければそのまま返す。 */
     #serializeTimeCrossSections(
         result: Record<string, OperationSightingTimeCrossSectionDto>,
         selection: Selection | undefined,
-    ): Record<string, OperationSightingTimeCrossSectionDto | Record<string, unknown>> {
+    ): Record<
+        string,
+        OperationSightingTimeCrossSectionDto | Record<string, unknown>
+    > {
         if (!selection) {
             return result;
         }
         const tree = OPERATION_SIGHTING_TIME_CROSS_SECTION_SELECTION_TREE;
         return Object.fromEntries(
-            Object.entries(result).map(([key, value]) => [key, serializeSelection(value, tree, selection)]),
+            Object.entries(result).map(([key, value]) => [
+                key,
+                serializeSelection(value, tree, selection),
+            ]),
         );
     }
 
@@ -355,7 +483,9 @@ export class OperationSightingV3Service {
         searchTime?: string;
         include?: unknown;
         fields?: unknown;
-    }): Promise<OperationSightingTimeCrossSectionDto | Record<string, unknown>> {
+    }): Promise<
+        OperationSightingTimeCrossSectionDto | Record<string, unknown>
+    > {
         const { operationNumber, searchTime } = params;
         const tree = OPERATION_SIGHTING_TIME_CROSS_SECTION_SELECTION_TREE;
         const selection = parseFieldsOnly(params, tree);
@@ -397,7 +527,9 @@ export class OperationSightingV3Service {
         searchTime?: string;
         include?: unknown;
         fields?: unknown;
-    }): Promise<OperationSightingTimeCrossSectionDto | Record<string, unknown>> {
+    }): Promise<
+        OperationSightingTimeCrossSectionDto | Record<string, unknown>
+    > {
         const { formationNumber, searchTime } = params;
         const tree = OPERATION_SIGHTING_TIME_CROSS_SECTION_SELECTION_TREE;
         const selection = parseFieldsOnly(params, tree);
@@ -428,7 +560,9 @@ export class OperationSightingV3Service {
                 source.itineraries(calendar.id),
                 source.todaySightings(),
             ]);
-            const carried = SightingCarryOver.create(itineraries).resolveForOperation({
+            const carried = SightingCarryOver.create(
+                itineraries,
+            ).resolveForOperation({
                 sightings,
                 operationNumber,
                 searchTime: searchTimeInstance,
@@ -436,22 +570,43 @@ export class OperationSightingV3Service {
             if (carried && carried !== 'unsighted') {
                 const { sighting, sightedAsOperation } = carried;
                 const operations = await source.operationsOf(calendar.id);
-                const operation = operations.find((o) => o.operationNumber === operationNumber);
+                const operation = operations.find(
+                    (o) => o.operationNumber === operationNumber,
+                );
                 // 推測のときは、この運番自身の最後の目撃を返す（元の 17K の目撃で 18K? を太字・赤字にしない。
                 // 順送りと同じく、太字・時刻の色はこの運番の目撃で決まる。ユーザー判断 2026-10-19）
                 return {
-                    latestSighting: sightedAsOperation ? latestSighting : sighting,
-                    expectedSighting: sighting.formation && operation ? { operation, formation: sighting.formation } : null,
+                    latestSighting: sightedAsOperation
+                        ? latestSighting
+                        : sighting,
+                    expectedSighting:
+                        sighting.formation && operation
+                            ? { operation, formation: sighting.formation }
+                            : null,
                     sightedAsOperation,
                 };
             }
             // 行程に今日の実目撃があり、この枠は誰にも割り当てられない（spec 3.3）。順送りに戻さない
             if (carried === null) {
-                return { latestSighting, expectedSighting: null, sightedAsOperation: null };
+                return {
+                    latestSighting,
+                    expectedSighting: null,
+                    sightedAsOperation: null,
+                };
             }
             // 行程に今日の実目撃が無い。この運番の今日の目撃が別の行程のものなら出さない
-            if (carried === 'unsighted' && latestSighting && searchBaseDate.isSame(getBaseDate(dayjs(latestSighting.sightingTime)))) {
-                return { latestSighting, expectedSighting: null, sightedAsOperation: null };
+            if (
+                carried === 'unsighted' &&
+                latestSighting &&
+                searchBaseDate.isSame(
+                    getBaseDate(dayjs(latestSighting.sightingTime)),
+                )
+            ) {
+                return {
+                    latestSighting,
+                    expectedSighting: null,
+                    sightedAsOperation: null,
+                };
             }
         }
 
@@ -472,10 +627,16 @@ export class OperationSightingV3Service {
             const formationLatestCache = await source.formationLatestCache(
                 formation.formationNumber,
             );
-            if (!formationLatestCache || formationLatestCache.operationNumber !== operationNumber) {
+            if (
+                !formationLatestCache ||
+                formationLatestCache.operationNumber !== operationNumber
+            ) {
                 return { latestSighting, expectedSighting: null };
             }
-            return { latestSighting, expectedSighting: { operation, formation } };
+            return {
+                latestSighting,
+                expectedSighting: { operation, formation },
+            };
         }
 
         if (!calendar) {
@@ -540,22 +701,37 @@ export class OperationSightingV3Service {
                 source.itineraries(calendar.id),
                 source.todaySightings(),
             ]);
-            const carried = SightingCarryOver.create(itineraries).resolveForFormation({
+            const carried = SightingCarryOver.create(
+                itineraries,
+            ).resolveForFormation({
                 sightings,
                 formationNumber,
                 searchTime: searchTimeInstance,
             });
             if (carried) {
                 const operations = await source.operationsOf(calendar.id);
-                const operation = operations.find((o) => o.operationNumber === carried.operationNumber) ?? null;
+                const operation =
+                    operations.find(
+                        (o) => o.operationNumber === carried.operationNumber,
+                    ) ?? null;
                 return {
                     latestSighting: carried.sighting,
-                    expectedSighting: operation && carried.sighting.formation ? { operation, formation: carried.sighting.formation } : null,
+                    expectedSighting:
+                        operation && carried.sighting.formation
+                            ? {
+                                  operation,
+                                  formation: carried.sighting.formation,
+                              }
+                            : null,
                     sightedAsOperation: carried.sightedAsOperation,
                 };
             }
             if (carried === null) {
-                return { latestSighting, expectedSighting: null, sightedAsOperation: null };
+                return {
+                    latestSighting,
+                    expectedSighting: null,
+                    sightedAsOperation: null,
+                };
             }
         }
 
@@ -576,10 +752,16 @@ export class OperationSightingV3Service {
             const operationLatestCache = await source.latestByOperationNumber(
                 operation.operationNumber,
             );
-            if (operationLatestCache?.formation?.formationNumber !== formation.formationNumber) {
+            if (
+                operationLatestCache?.formation?.formationNumber !==
+                formation.formationNumber
+            ) {
                 return { latestSighting, expectedSighting: null };
             }
-            return { latestSighting, expectedSighting: { operation, formation } };
+            return {
+                latestSighting,
+                expectedSighting: { operation, formation },
+            };
         }
 
         const latestOperation = latestSighting.operation;
@@ -657,7 +839,8 @@ export class OperationSightingV3Service {
         const operations = await source.operationsOf(calendar.id);
         const operation =
             operations.find(
-                (o) => o.operationNumber === circulation.expectedOperationNumber,
+                (o) =>
+                    o.operationNumber === circulation.expectedOperationNumber,
             ) ?? null;
         return {
             latestSighting,
@@ -669,7 +852,9 @@ export class OperationSightingV3Service {
     }
 
     /** 1 件ずつの口の読み方。呼ばれるたびにそのまま問い合わせる。 */
-    #createDirectSource(searchTimeInstance: dayjs.Dayjs): TimeCrossSectionSource {
+    #createDirectSource(
+        searchTimeInstance: dayjs.Dayjs,
+    ): TimeCrossSectionSource {
         return {
             latestByOperationNumber: (operationNumber) =>
                 this.operationSightingQuery.findOneLatestByOperationNumberAndBeforeSightingTime(
@@ -684,15 +869,30 @@ export class OperationSightingV3Service {
                     date: getBaseDate(searchTimeInstance).format('YYYY-MM-DD'),
                 }),
             formationLatestCache: (formationNumber) =>
-                this.operationSightingLatestCacheQuery.findOneByFormationNumber({ formationNumber }),
+                this.operationSightingLatestCacheQuery.findOneByFormationNumber(
+                    { formationNumber },
+                ),
             groupMemberCaches: (operationNumbers, startTime) =>
                 this.operationSightingLatestCacheQuery.findManyLatestGroupByFormationByOperationNumbersAndSightingTimeRange(
-                    { operationNumbers, startTime, endTime: searchTimeInstance },
+                    {
+                        operationNumbers,
+                        startTime,
+                        endTime: searchTimeInstance,
+                    },
                 ),
             formationsOn: (date) =>
-                this.formationQuery.findManyBySpecificPeriod({ startDate: date, endDate: date }),
-            operationsOf: (calendarId) => this.operationQuery.findManyByCalendarId({ calendarId }),
-            itineraries: (calendarId) => this.itinerarySegmentQuery.findManyByCalendarId({ calendarId }).then((segments) => VehicleItineraryReadModel.create(segments)),
+                this.formationQuery.findManyBySpecificPeriod({
+                    startDate: date,
+                    endDate: date,
+                }),
+            operationsOf: (calendarId) =>
+                this.operationQuery.findManyByCalendarId({ calendarId }),
+            itineraries: (calendarId) =>
+                this.itinerarySegmentQuery
+                    .findManyByCalendarId({ calendarId })
+                    .then((segments) =>
+                        VehicleItineraryReadModel.create(segments),
+                    ),
             todaySightings: () =>
                 this.operationSightingQuery.findManyBySightingTimeRange({
                     start: getBaseDate(searchTimeInstance).hour(4),
@@ -711,10 +911,23 @@ export class OperationSightingV3Service {
         keys: { operationNumbers: string[] } | { formationNumbers: string[] },
     ): Promise<TimeCrossSectionSource> {
         const direct = this.#createDirectSource(searchTimeInstance);
-        const opLatest = new Map<string, Promise<OperationSightingDetailsDto | null>>();
-        const fmLatest = new Map<string, Promise<OperationSightingDetailsDto | null>>();
-        const fmCache = new Map<string, Promise<OperationSightingLatestCacheDto | null>>();
-        const fill = <V>(target: Map<string, Promise<V | null>>, requested: string[], found: Map<string, V>) => {
+        const opLatest = new Map<
+            string,
+            Promise<OperationSightingDetailsDto | null>
+        >();
+        const fmLatest = new Map<
+            string,
+            Promise<OperationSightingDetailsDto | null>
+        >();
+        const fmCache = new Map<
+            string,
+            Promise<OperationSightingLatestCacheDto | null>
+        >();
+        const fill = <V>(
+            target: Map<string, Promise<V | null>>,
+            requested: string[],
+            found: Map<string, V>,
+        ) => {
             for (const key of requested) {
                 target.set(key, Promise.resolve(found.get(key) ?? null));
             }
@@ -724,22 +937,36 @@ export class OperationSightingV3Service {
         ];
 
         if ('operationNumbers' in keys) {
-            const found = await this.operationSightingQuery.findManyLatestByOperationNumbersAndBeforeSightingTime(
-                { operationNumbers: keys.operationNumbers, sightingTime: searchTimeInstance },
-            );
+            const found =
+                await this.operationSightingQuery.findManyLatestByOperationNumbersAndBeforeSightingTime(
+                    {
+                        operationNumbers: keys.operationNumbers,
+                        sightingTime: searchTimeInstance,
+                    },
+                );
             fill(opLatest, keys.operationNumbers, found);
-            const formationNumbers = unique([...found.values()].map((o) => o.formation?.formationNumber));
+            const formationNumbers = unique(
+                [...found.values()].map((o) => o.formation?.formationNumber),
+            );
             fill(
                 fmCache,
                 formationNumbers,
-                await this.operationSightingLatestCacheQuery.findManyByFormationNumbers({ formationNumbers }),
+                await this.operationSightingLatestCacheQuery.findManyByFormationNumbers(
+                    { formationNumbers },
+                ),
             );
         } else {
-            const found = await this.operationSightingQuery.findManyLatestByFormationNumbersAndBeforeSightingTime(
-                { formationNumbers: keys.formationNumbers, sightingTime: searchTimeInstance },
-            );
+            const found =
+                await this.operationSightingQuery.findManyLatestByFormationNumbersAndBeforeSightingTime(
+                    {
+                        formationNumbers: keys.formationNumbers,
+                        sightingTime: searchTimeInstance,
+                    },
+                );
             fill(fmLatest, keys.formationNumbers, found);
-            const operationNumbers = unique([...found.values()].map((o) => o.operation?.operationNumber));
+            const operationNumbers = unique(
+                [...found.values()].map((o) => o.operation?.operationNumber),
+            );
             fill(
                 opLatest,
                 operationNumbers,
@@ -749,7 +976,11 @@ export class OperationSightingV3Service {
             );
         }
 
-        const memo = <V>(cache: Map<string, Promise<V>>, key: string, load: () => Promise<V>) => {
+        const memo = <V>(
+            cache: Map<string, Promise<V>>,
+            key: string,
+            load: () => Promise<V>,
+        ) => {
             let hit = cache.get(key);
             if (!hit) {
                 hit = load();
@@ -757,27 +988,58 @@ export class OperationSightingV3Service {
             }
             return hit;
         };
-        const calendars = new Map<string, ReturnType<TimeCrossSectionSource['calendar']>>();
-        const groups = new Map<string, Promise<OperationSightingLatestCacheDto[]>>();
-        const formations = new Map<string, ReturnType<TimeCrossSectionSource['formationsOn']>>();
-        const operations = new Map<string, ReturnType<TimeCrossSectionSource['operationsOf']>>();
-        const itineraryCache = new Map<string, Promise<VehicleItineraryReadModel>>();
-        const todayCache = new Map<string, Promise<OperationSightingDetailsDto[]>>();
+        const calendars = new Map<
+            string,
+            ReturnType<TimeCrossSectionSource['calendar']>
+        >();
+        const groups = new Map<
+            string,
+            Promise<OperationSightingLatestCacheDto[]>
+        >();
+        const formations = new Map<
+            string,
+            ReturnType<TimeCrossSectionSource['formationsOn']>
+        >();
+        const operations = new Map<
+            string,
+            ReturnType<TimeCrossSectionSource['operationsOf']>
+        >();
+        const itineraryCache = new Map<
+            string,
+            Promise<VehicleItineraryReadModel>
+        >();
+        const todayCache = new Map<
+            string,
+            Promise<OperationSightingDetailsDto[]>
+        >();
 
         return {
-            latestByOperationNumber: (n) => memo(opLatest, n, () => direct.latestByOperationNumber(n)),
-            latestByFormationNumber: (n) => memo(fmLatest, n, () => direct.latestByFormationNumber(n)),
+            latestByOperationNumber: (n) =>
+                memo(opLatest, n, () => direct.latestByOperationNumber(n)),
+            latestByFormationNumber: (n) =>
+                memo(fmLatest, n, () => direct.latestByFormationNumber(n)),
             calendar: () => memo(calendars, '', () => direct.calendar()),
-            formationLatestCache: (n) => memo(fmCache, n, () => direct.formationLatestCache(n)),
+            formationLatestCache: (n) =>
+                memo(fmCache, n, () => direct.formationLatestCache(n)),
             groupMemberCaches: (operationNumbers, startTime) =>
                 // 群の並び順は起点の番号で変わるが、結果は番号の集合で決まるので並べてキーにする
-                memo(groups, `${[...operationNumbers].sort().join(',')}|${startTime.valueOf()}`, () =>
-                    direct.groupMemberCaches(operationNumbers, startTime),
+                memo(
+                    groups,
+                    `${[...operationNumbers].sort().join(',')}|${startTime.valueOf()}`,
+                    () => direct.groupMemberCaches(operationNumbers, startTime),
                 ),
-            formationsOn: (date) => memo(formations, date, () => direct.formationsOn(date)),
-            operationsOf: (calendarId) => memo(operations, calendarId, () => direct.operationsOf(calendarId)),
-            itineraries: (calendarId) => memo(itineraryCache, calendarId, () => direct.itineraries(calendarId)),
-            todaySightings: () => memo(todayCache, '', () => direct.todaySightings()),
+            formationsOn: (date) =>
+                memo(formations, date, () => direct.formationsOn(date)),
+            operationsOf: (calendarId) =>
+                memo(operations, calendarId, () =>
+                    direct.operationsOf(calendarId),
+                ),
+            itineraries: (calendarId) =>
+                memo(itineraryCache, calendarId, () =>
+                    direct.itineraries(calendarId),
+                ),
+            todaySightings: () =>
+                memo(todayCache, '', () => direct.todaySightings()),
         };
     }
 
@@ -885,9 +1147,11 @@ export class OperationSightingV3Service {
         return saved;
     }
 
-    async invalidate(
-        params: { operationSightingId: string; userId: string; reason: string },
-    ): Promise<OperationSightingDetailsDto> {
+    async invalidate(params: {
+        operationSightingId: string;
+        userId: string;
+        reason: string;
+    }): Promise<OperationSightingDetailsDto> {
         const { saved, sightingTime } = await this.#invalidateOne(params);
         await this.#sendInvalidationSignals([sightingTime]);
         return saved;
@@ -1070,9 +1334,11 @@ export class OperationSightingV3Service {
         ]);
     }
 
-    async restore(
-        params: { operationSightingId: string; userId: string; reason: string },
-    ): Promise<OperationSightingDetailsDto> {
+    async restore(params: {
+        operationSightingId: string;
+        userId: string;
+        reason: string;
+    }): Promise<OperationSightingDetailsDto> {
         const { operationSightingId, userId, reason } = params;
 
         const dto = await this.operationSightingQuery.findOneById({
