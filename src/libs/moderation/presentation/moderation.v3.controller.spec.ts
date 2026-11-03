@@ -6,7 +6,7 @@ import { AuthContext } from '../../../core/modules/auth/auth-context.js';
 import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
 import { CacheControlModule } from '../../../core/modules/cache-control/cache-control.module.js';
 import { FeatureFlags } from '../../../core/modules/feature-flag/feature-flags.js';
-import { CurrentRoles } from '../../../core/modules/rbac/current-roles.js';
+import { UserRoleService } from '../../user/usecase/user-role.service.js';
 import { Role } from '../../../core/modules/rbac/role.enum.js';
 import { ModerationV3Service } from '../usecase/moderation.v3.service.js';
 import { ModerationV3Controller } from './moderation.v3.controller.js';
@@ -47,7 +47,7 @@ describe('ModerationV3Controller（投稿管理の読み取りの口）', () => 
                 { provide: ModerationV3Service, useValue: service },
                 { provide: FeatureFlags, useValue: { isEnabled: vi.fn() } },
                 {
-                    provide: CurrentRoles,
+                    provide: UserRoleService,
                     useValue: { findRole: vi.fn().mockResolvedValue(null) },
                 },
             ],

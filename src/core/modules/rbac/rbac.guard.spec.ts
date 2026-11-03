@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { FeatureFlags } from '../feature-flag/feature-flags.js';
-import type { CurrentRoles } from './current-roles.js';
+import type { UserRoleService } from '../../../libs/user/usecase/user-role.service.js';
 import { RBAC_KEY } from './rbac.decorator.js';
 import { RBAC_WHEN_FLAG_KEY } from './rbac-when-flag.decorator.js';
 import { RBACGuard } from './rbac.guard.js';
@@ -33,7 +33,7 @@ const guardRequiring = (roles: Role[] | undefined, flagKey?: string) => {
     return new RBACGuard(
         reflector,
         { isEnabled } as unknown as FeatureFlags,
-        { findRole } as unknown as CurrentRoles,
+        { findRole } as unknown as UserRoleService,
     );
 };
 

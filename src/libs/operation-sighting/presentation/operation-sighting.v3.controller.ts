@@ -10,7 +10,7 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { readViewerContext } from '../../../core/modules/access-trace/viewer-address.js';
+import { readViewerContext } from '../../../core/utils/viewer-address.js';
 import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
 import { CACHE_CONTROL } from '../../../core/modules/cache-control/cache-control.constants.js';
 import { CacheControl } from '../../../core/modules/cache-control/cache-control.decorator.js';

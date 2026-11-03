@@ -6,8 +6,8 @@ import { OperationSightingInvalidationModel } from '../../../operation-sighting/
 import { OperationSightingManagementLogModel } from '../../../operation-sighting/infrastructure/models/operation-sighting-management-log.model.js';
 import { OperationSightingModel } from '../../../operation-sighting/infrastructure/models/operation-sighting.model.js';
 import { ProfileModel } from '../../../user/infrastructure/models/profile.model.js';
-import { ACCESS_TRACE_RETENTION_DAYS } from '../../../../core/modules/access-trace/access-traces.js';
-import { UserAccessTraceModel } from '../../../../core/modules/access-trace/user-access-trace.model.js';
+import { ACCESS_TRACE_RETENTION_DAYS } from '../../../user/usecase/user-access-trace.service.js';
+import { UserAccessTraceModel } from '../../../user/infrastructure/models/user-access-trace.model.js';
 import { Role } from '../../../../core/modules/rbac/role.enum.js';
 import {
     BURST_COUNT,

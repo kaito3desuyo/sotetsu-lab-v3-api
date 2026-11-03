@@ -6,8 +6,8 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
+import { UserRoleService } from '../../../libs/user/usecase/user-role.service.js';
 import { FeatureFlags } from '../feature-flag/feature-flags.js';
-import { CurrentRoles } from './current-roles.js';
 import { RBAC_KEY } from './rbac.decorator.js';
 import { RBAC_WHEN_FLAG_KEY } from './rbac-when-flag.decorator.js';
 import { Role } from './role.enum.js';
@@ -22,7 +22,7 @@ export class RBACGuard {
     constructor(
         private reflector: Reflector,
         private featureFlags: FeatureFlags,
-        private currentRoles: CurrentRoles,
+        private currentRoles: UserRoleService,
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {

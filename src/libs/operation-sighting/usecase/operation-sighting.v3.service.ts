@@ -26,7 +26,7 @@ import { OperationSightingLatestCache } from '../domain/operation-sighting-lates
 import { OperationSightingLatestCacheCommand } from '../infrastructure/command/operation-sighting-latest-cache.command.js';
 import { OperationSightingCommand } from '../infrastructure/command/operation-sighting.command.js';
 import { OperationSightingAuthorCommand } from '../infrastructure/command/operation-sighting-author.command.js';
-import { AccessTraces } from '../../../core/modules/access-trace/access-traces.js';
+import { UserAccessTraceService } from '../../user/usecase/user-access-trace.service.js';
 import { pastSightingDateCacheTags } from '../../../core/modules/cdn-invalidation/cache-tags.js';
 import { CdnInvalidation } from '../../../core/modules/cdn-invalidation/cdn-invalidation.js';
 import { SocketSignal } from '../../../core/modules/socket-signal/socket-signal.js';
@@ -95,7 +95,7 @@ export class OperationSightingV3Service {
         private readonly itinerarySegmentQuery: ItinerarySegmentQuery,
         private readonly operationSightingAuthorCommand: OperationSightingAuthorCommand,
         private readonly socketSignal: SocketSignal,
-        private readonly accessTraces: AccessTraces,
+        private readonly accessTraces: UserAccessTraceService,
         private readonly cdnInvalidation: CdnInvalidation,
     ) {}
 

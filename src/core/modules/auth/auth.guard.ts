@@ -7,8 +7,8 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
-import { AccessTraces } from '../access-trace/access-traces.js';
-import { readViewerContext } from '../access-trace/viewer-address.js';
+import { UserAccessTraceService } from '../../../libs/user/usecase/user-access-trace.service.js';
+import { readViewerContext } from '../../utils/viewer-address.js';
 import { isRole } from '../rbac/role.enum.js';
 import { AuthContext } from './auth-context.js';
 import { readUnverifiedIssuer } from './jwt-issuer.js';
@@ -28,7 +28,7 @@ const supabaseJwks = createRemoteJWKSet(
 export class AuthGuard implements CanActivate {
     readonly #logger = new Logger(AuthGuard.name);
 
-    constructor(private readonly accessTraces: AccessTraces) {}
+    constructor(private readonly accessTraces: UserAccessTraceService) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const req = context.switchToHttp().getRequest<Request>();

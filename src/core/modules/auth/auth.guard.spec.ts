@@ -3,7 +3,7 @@ import {
     Logger,
     UnauthorizedException,
 } from '@nestjs/common';
-import type { AccessTraces } from '../access-trace/access-traces.js';
+import type { UserAccessTraceService } from '../../../libs/user/usecase/user-access-trace.service.js';
 import { AuthGuard } from './auth.guard.js';
 
 // auth.guard は読み込んだ時点で SUPABASE_URL を使うので、import より前に（vi.hoisted で）入れる
@@ -33,7 +33,7 @@ const contextFor = (headers: Partial<Record<string, string>>) => {
 
 const recordSession = vi.fn();
 const buildGuard = () =>
-    new AuthGuard({ recordSession } as unknown as AccessTraces);
+    new AuthGuard({ recordSession } as unknown as UserAccessTraceService);
 
 describe('AuthGuard', () => {
     beforeEach(() => {

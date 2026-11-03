@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
-import { UserAccessTraceModel } from './user-access-trace.model.js';
+import { EntityManager } from 'typeorm';
+import { UserAccessTraceCommand } from '../infrastructure/command/user-access-trace.command.js';
 
 /** 手がかりを残す日数 */
 export const ACCESS_TRACE_RETENTION_DAYS = 90;
@@ -11,16 +10,13 @@ export const ACCESS_TRACE_PURGE_INTERVAL_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
-export class AccessTraces {
-    readonly #logger = new Logger(AccessTraces.name);
+export class UserAccessTraceService {
+    readonly #logger = new Logger(UserAccessTraceService.name);
     /** Lambda の 1 実体の中で、すでに書いた `${sessionId}|${ip}` */
     readonly #recordedSessions = new Set<string>();
     #lastPurgedAt: Date | undefined;
 
-    constructor(
-        @InjectRepository(UserAccessTraceModel)
-        private readonly repository: Repository<UserAccessTraceModel>,
-    ) {}
+    constructor(private readonly command: UserAccessTraceCommand) {}
 
     /** セッションごと・IP ごとに 1 行。同じ実体の中では 2 回目から DB に行かない */
     async recordSession(params: {
@@ -31,19 +27,7 @@ export class AccessTraces {
     }): Promise<void> {
         const key = `${params.sessionId}|${params.ip}`;
         if (this.#recordedSessions.has(key)) return;
-        await this.repository
-            .createQueryBuilder()
-            .insert()
-            .into(UserAccessTraceModel)
-            .values({
-                userId: params.userId,
-                kind: 'session',
-                sessionId: params.sessionId,
-                ip: params.ip,
-                userAgent: params.userAgent,
-            })
-            .orIgnore()
-            .execute();
+        await this.command.insertSession(params);
         this.#recordedSessions.add(key);
         await this.purgeExpiredIfDue();
     }
@@ -58,18 +42,7 @@ export class AccessTraces {
         },
         manager: EntityManager,
     ): Promise<void> {
-        await manager
-            .createQueryBuilder()
-            .insert()
-            .into(UserAccessTraceModel)
-            .values({
-                userId: params.userId,
-                kind: 'post',
-                operationSightingId: params.operationSightingId,
-                ip: params.ip,
-                userAgent: params.userAgent,
-            })
-            .execute();
+        await this.command.insertPost(params, manager);
     }
 
     /** 前回から 1 時間たっていれば 90 日より古い行を消す。失敗は warn で握る */
@@ -83,16 +56,9 @@ export class AccessTraces {
         }
         this.#lastPurgedAt = now;
         try {
-            await this.repository
-                .createQueryBuilder()
-                .delete()
-                .from(UserAccessTraceModel)
-                .where('created_at < :cutoff', {
-                    cutoff: new Date(
-                        now.getTime() - ACCESS_TRACE_RETENTION_DAYS * DAY_MS,
-                    ),
-                })
-                .execute();
+            await this.command.deleteOlderThan(
+                new Date(now.getTime() - ACCESS_TRACE_RETENTION_DAYS * DAY_MS),
+            );
         } catch (error) {
             this.#logger.warn(
                 `手がかりの掃除に失敗した: ${error instanceof Error ? error.message : String(error)}`,

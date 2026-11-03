@@ -9,7 +9,7 @@ import { DataSource } from 'typeorm';
 import { OperationSightingLatestCacheCommand } from '../infrastructure/command/operation-sighting-latest-cache.command.js';
 import { OperationSightingCommand } from '../infrastructure/command/operation-sighting.command.js';
 import { OperationSightingAuthorCommand } from '../infrastructure/command/operation-sighting-author.command.js';
-import { AccessTraces } from '../../../core/modules/access-trace/access-traces.js';
+import { UserAccessTraceService } from '../../user/usecase/user-access-trace.service.js';
 import { CdnInvalidation } from '../../../core/modules/cdn-invalidation/cdn-invalidation.js';
 import { SocketSignal } from '../../../core/modules/socket-signal/socket-signal.js';
 import { OperationSightingLatestCacheQuery } from '../infrastructure/queries/operation-sighting-latest-cache.query.js';
@@ -99,7 +99,7 @@ async function buildService(): Promise<OperationSightingV3Service> {
                 useValue: mockOperationSightingAuthorCommand,
             },
             { provide: SocketSignal, useValue: mockSocketSignal },
-            { provide: AccessTraces, useValue: mockAccessTraces },
+            { provide: UserAccessTraceService, useValue: mockAccessTraces },
             { provide: CdnInvalidation, useValue: mockCdnInvalidation },
             {
                 provide: OperationSightingLatestCacheCommand,

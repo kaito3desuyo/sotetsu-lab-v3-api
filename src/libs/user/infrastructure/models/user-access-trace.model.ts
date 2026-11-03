@@ -8,8 +8,8 @@ import {
     PrimaryGeneratedColumn,
     type Relation,
 } from 'typeorm';
-import { AuthUserModel } from '../../../libs/user/infrastructure/models/auth-user.model.js';
-import { OperationSightingModel } from '../../../libs/operation-sighting/infrastructure/models/operation-sighting.model.js';
+import { AuthUserModel } from './auth-user.model.js';
+import { OperationSightingModel } from '../../../operation-sighting/infrastructure/models/operation-sighting.model.js';
 
 export type UserAccessTraceKind = 'post' | 'session';
 

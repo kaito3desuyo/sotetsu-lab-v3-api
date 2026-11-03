@@ -6,7 +6,7 @@ import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
 import { CacheControlModule } from '../../../core/modules/cache-control/cache-control.module.js';
 import { validationPipeOptions } from '../../../core/configs/validator-options.js';
 import { FeatureFlags } from '../../../core/modules/feature-flag/feature-flags.js';
-import { CurrentRoles } from '../../../core/modules/rbac/current-roles.js';
+import { UserRoleService } from '../../user/usecase/user-role.service.js';
 import { Role } from '../../../core/modules/rbac/role.enum.js';
 import { TripBlockV3Service } from '../usecase/trip-block.v3.service.js';
 import { TripBlockV3Controller } from './trip-block.v3.controller.js';
@@ -38,7 +38,7 @@ describe('TripBlockV3Controller（書き込みの役割）', () => {
                 { provide: FeatureFlags, useValue: featureFlags },
                 // profiles に行が無い扱い（null）なら JWT の役割のまま
                 {
-                    provide: CurrentRoles,
+                    provide: UserRoleService,
                     useValue: { findRole: vi.fn().mockResolvedValue(null) },
                 },
             ],
