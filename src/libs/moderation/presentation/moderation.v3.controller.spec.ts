@@ -25,7 +25,7 @@ const ROUTES = [
     '/recent-sightings',
 ];
 
-describe('ModerationV3Controller（見回りの読み取りの口）', () => {
+describe('ModerationV3Controller（投稿管理の読み取りの口）', () => {
     let app: INestApplication;
     let auth: AuthContext;
     const service = {

@@ -22,7 +22,7 @@ type ModerationTargetProps = {
 };
 
 /**
- * 見回りの対象（投稿者）。BAN ＝ viewer への格下げ・解除 ＝ 直近の BAN の from_role へ戻す、の規則をここ 1 か所に置く。
+ * 投稿管理の対象（投稿者）。BAN ＝ viewer への格下げ・解除 ＝ 直近の BAN の from_role へ戻す、の規則をここ 1 か所に置く。
  * 自分と MANAGER は BAN できない。すでに viewer の人は BAN できない。
  */
 export class ModerationTarget {

@@ -297,7 +297,7 @@ describe('ModerationQuery（生成される SQL）', () => {
         expect(result?.banned).toBe(true);
     });
 
-    it('見回りの対象は、profiles を FOR UPDATE で読んだ後に、同じ manager で別ステートメントとして直近の BAN の from_role を引く', async () => {
+    it('投稿管理の対象は、profiles を FOR UPDATE で読んだ後に、同じ manager で別ステートメントとして直近の BAN の from_role を引く', async () => {
         rawQueue = [
             [{ userId: 'user-1', role: 'viewer' }],
             [{ fromRole: 'editor' }],
@@ -339,7 +339,7 @@ describe('ModerationQuery（生成される SQL）', () => {
         expect(result?.lastBanFromRole).toBeNull();
     });
 
-    it('profiles が無ければ見回りの対象は null', async () => {
+    it('profiles が無ければ投稿管理の対象は null', async () => {
         expect(
             await query.findModerationTarget(
                 { userId: 'nobody' },

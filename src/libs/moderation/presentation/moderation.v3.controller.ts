@@ -30,7 +30,7 @@ import { ModerationSightingIdParam } from '../usecase/params/moderation-sighting
 import { ModerationSightingListParam } from '../usecase/params/moderation-sighting-list.param.js';
 import { ModerationUserIdParam } from '../usecase/params/moderation-user-id.param.js';
 
-/** 投稿の見回り。個人情報を含むので、読み取りとまとめての無効化は EDITOR・MANAGER、BAN・解除・手がかりは MANAGER だけ・応答は保存させない */
+/** 投稿管理。個人情報を含むので、読み取りとまとめての無効化は EDITOR・MANAGER、BAN・解除・手がかりは MANAGER だけ・応答は保存させない */
 @Controller()
 @UseGuards(AuthGuard, RBACGuard)
 export class ModerationV3Controller {

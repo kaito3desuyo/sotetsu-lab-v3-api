@@ -1,10 +1,10 @@
-# M18 投稿の見回り（api） Implementation Plan
+# M18 投稿管理（api） Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** EDITOR が一人の投稿をまとめて無効にし、MANAGER が BAN（viewer への格下げ）と手がかり（IP・端末）での同一人物の見分けができる口を api に足す。
 
-**Architecture:** 手がかりは core の `access-trace` モジュール（Global）が `user_access_traces` に書く。投稿のときは目撃の保存トランザクションの中で、ログイン（Supabase のセッション）は AuthGuard がセッションと IP の組ごとに 1 回だけ書く。役割は RBACGuard がその場で `profiles.role` を読み直す。見回りの口は新しいドメイン `src/libs/moderation/` に置く。
+**Architecture:** 手がかりは core の `access-trace` モジュール（Global）が `user_access_traces` に書く。投稿のときは目撃の保存トランザクションの中で、ログイン（Supabase のセッション）は AuthGuard がセッションと IP の組ごとに 1 回だけ書く。役割は RBACGuard がその場で `profiles.role` を読み直す。投稿管理の口は新しいドメイン `src/libs/moderation/` に置く。
 
 **Tech Stack:** NestJS 12・TypeORM 1.x（`createQueryBuilder` のみ）・PostgreSQL（Supabase）・Vitest＋SWC・jose。
 
@@ -128,7 +128,7 @@ expect(parseViewerAddress(['203.0.113.24:1', 'x'])).toBe('203.0.113.24');
 - [ ] **Step 4: PASS（全体も）を確かめる**
 - [ ] **Step 5: コミット** — `feat: :sparkles: 目撃の投稿と登録者のセッションで手がかりを記録する`
 
-### Task 4: 見回りのドメインと読み取りの口
+### Task 4: 投稿管理のドメインと読み取りの口
 
 **Files:**
 - Create: `src/libs/moderation/` 一式（`moderation.libs.module.ts`・`moderation.v3.module.ts`・`presentation/moderation.v3.controller.ts`・`usecase/moderation.v3.service.ts`・`usecase/dtos/*`・`infrastructure/queries/moderation.query.ts`）
@@ -148,7 +148,7 @@ expect(parseViewerAddress(['203.0.113.24:1', 'x'])).toBe('203.0.113.24');
   - service spec: 「profiles の無い userId は 404 の UseCaseError」「ゲストの目撃は author が null」。
 - [ ] **Step 2: FAIL → Step 3: 実装 → Step 4: PASS（全体も）**
 - [ ] **Step 5: 手元で叩く**（`docker restart sotetsu-lab-v3-api-development-api-1` の後、本番 DB を読む手元の api に EDITOR のトークンで `GET /v3/moderation/recent-sightings?limit=5`）→ 200 で投稿者つきの 5 件。トークンは変数だけで扱い、ファイルに書かない（api の `.context/prod_check.sh` に倣う）。
-- [ ] **Step 6: コミット** — `feat: :sparkles: 見回りの読み取りの口（投稿者の要約・目撃・新着）を足す`
+- [ ] **Step 6: コミット** — `feat: :sparkles: 投稿管理の読み取りの口（投稿者の要約・目撃・新着）を足す`
 
 ### Task 5: まとめての無効化
 
@@ -195,7 +195,7 @@ expect(parseViewerAddress(['203.0.113.24:1', 'x'])).toBe('203.0.113.24');
 - Modify: spec の「出す順」を、backend を外した形に直す（`docs/superpowers/specs/2026-11-03-moderation-design.md`）
 
 - [ ] **Step 1: 書く**。ADR に入れること: この計画の「計画で決めたこと」4 点、`CloudFront-Viewer-Address` を信じてよい理由（Function URL は aws_iam＋OAC）、デプロイ後に本番で確かめること（下）、本番で流す migration 2 本（`migration:run` はユーザー）。
-- [ ] **Step 2: コミット** — `docs: :memo: 投稿の見回り（M18）の ADR を書く`
+- [ ] **Step 2: コミット** — `docs: :memo: 投稿管理（M18）の ADR を書く`
 
 ## デプロイ後に本番で確かめること（計画の外・ユーザーと一緒に）
 
