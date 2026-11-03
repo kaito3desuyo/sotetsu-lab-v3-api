@@ -37,6 +37,7 @@
   - 同じ手がかりは IP の一致。IPv4 は完全一致、IPv6 は /64 で同じとみなす。UA は並べて見せるだけで、一致の条件にしない。
   - その IP を使ったアカウントが 10 以上なら `shared: true`（携帯回線などで弱めて出す）。
 - BAN の記録は新しい表 `user_role_changes`（`id`・`user_id`・`changed_by`・`from_role`・`to_role`・`reason`・`created_at`）。
+  - 置き場は利用者のドメイン `src/libs/user/`（モデル・`UserRoleChangeCommand`・usecase の `UserRoleChangeService`）。moderation の service は `UserRoleChangeService.apply` を、BAN・解除のトランザクションの `manager` を渡して呼ぶ。
   - `POST /v3/moderation/users/:userId/ban`（理由必須）と `…/unban`。`profiles.role` の書き換えと記録は 1 つのトランザクション。
   - 自分・MANAGER・すでに viewer の人は BAN できない（`UseCaseError`・400 系）。
   - 解除は直近の BAN の `from_role` に戻し、記録が無ければ `reporter`。
