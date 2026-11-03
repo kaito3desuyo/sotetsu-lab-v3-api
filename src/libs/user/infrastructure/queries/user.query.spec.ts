@@ -106,14 +106,17 @@ describe('UserQuery（生成される SQL）', () => {
         expect(result?.banned).toBe(true);
     });
 
-    it('BAN・解除の対象は、profiles を FOR UPDATE で読んだ後に、同じ manager で別ステートメントとして直近の BAN の from_role を引く', async () => {
+    it('BAN・解除の対象（User の材料）は、profiles を FOR UPDATE で読んだ後に、同じ manager で別ステートメントとして直近の BAN の from_role を引く', async () => {
         rawQueue = [
             [{ userId: 'user-1', role: 'viewer' }],
             [{ fromRole: 'editor' }],
         ];
         const manager = dataSource.manager;
         const createQueryBuilder = vi.spyOn(manager, 'createQueryBuilder');
-        const result = await query.findBanTarget({ userId: 'user-1' }, manager);
+        const result = await query.findUserWithLastBan(
+            { userId: 'user-1' },
+            manager,
+        );
 
         expect(createQueryBuilder).toHaveBeenCalledTimes(2);
         expect(captured).toHaveLength(2);
@@ -138,16 +141,19 @@ describe('UserQuery（生成される SQL）', () => {
 
     it('BAN の記録が無ければ lastBanFromRole は null', async () => {
         rawQueue = [[{ userId: 'user-1', role: 'viewer' }], []];
-        const result = await query.findBanTarget(
+        const result = await query.findUserWithLastBan(
             { userId: 'user-1' },
             dataSource.manager,
         );
         expect(result?.lastBanFromRole).toBeNull();
     });
 
-    it('profiles が無ければBAN・解除の対象は null', async () => {
+    it('profiles が無ければBAN・解除の対象（User の材料）は null', async () => {
         expect(
-            await query.findBanTarget({ userId: 'nobody' }, dataSource.manager),
+            await query.findUserWithLastBan(
+                { userId: 'nobody' },
+                dataSource.manager,
+            ),
         ).toBeNull();
         expect(captured).toHaveLength(1);
     });

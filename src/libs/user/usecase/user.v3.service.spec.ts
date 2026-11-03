@@ -2,19 +2,31 @@ import { Test } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { UseCaseError } from '../../../core/classes/custom-error.js';
+import { User } from '../domain/user.domain.js';
+import { UserCommand } from '../infrastructure/command/user.command.js';
 import { UserAccessTraceQuery } from '../infrastructure/queries/user-access-trace.query.js';
 import { UserQuery } from '../infrastructure/queries/user.query.js';
-import { UserRoleChangeService } from './user-role-change.service.js';
 import { UserV3Service } from './user.v3.service.js';
 
 describe('UserV3Service', () => {
     let service: UserV3Service;
     const query = {
         findUserSummary: vi.fn(),
-        findBanTarget: vi.fn(),
+        findUserWithLastBan: vi.fn(),
     };
     const traceQuery = { findTraces: vi.fn() };
-    const roleChangeCommand = { apply: vi.fn() };
+    const userCommand = { save: vi.fn() };
+    /** save に渡された User が足した役割の変更を、保存される形にして取り出す */
+    const savedChanges = () =>
+        (userCommand.save.mock.calls[0][0] as User).props.roleChanges
+            .getNewItems()
+            .map((c) => ({
+                userId: c.props.userId,
+                changedBy: c.props.changedBy,
+                fromRole: c.props.fromRole.value,
+                toRole: c.props.toRole.value,
+                reason: c.props.reason?.value ?? null,
+            }));
     const manager = { name: 'manager' };
     const dataSource = {
         transaction: vi.fn(async (callback: (m: unknown) => unknown) =>
@@ -32,7 +44,7 @@ describe('UserV3Service', () => {
                 UserV3Service,
                 { provide: UserQuery, useValue: query },
                 { provide: UserAccessTraceQuery, useValue: traceQuery },
-                { provide: UserRoleChangeService, useValue: roleChangeCommand },
+                { provide: UserCommand, useValue: userCommand },
                 { provide: DataSource, useValue: dataSource },
             ],
         }).compile();
@@ -86,7 +98,7 @@ describe('UserV3Service', () => {
         };
 
         it('BAN は 1 トランザクションで対象を読み・書き、直した後の要約を返す', async () => {
-            query.findBanTarget.mockResolvedValue({
+            query.findUserWithLastBan.mockResolvedValue({
                 userId: 'u-1',
                 role: 'reporter',
                 lastBanFromRole: null,
@@ -100,11 +112,15 @@ describe('UserV3Service', () => {
             });
 
             expect(dataSource.transaction).toHaveBeenCalledTimes(1);
-            expect(query.findBanTarget).toHaveBeenCalledWith(
+            expect(query.findUserWithLastBan).toHaveBeenCalledWith(
                 { userId: 'u-1' },
                 manager,
             );
-            expect(roleChangeCommand.apply).toHaveBeenCalledWith(
+            expect(userCommand.save).toHaveBeenCalledWith(
+                expect.any(User),
+                manager,
+            );
+            expect(savedChanges()).toEqual([
                 {
                     userId: 'u-1',
                     changedBy: 'm-1',
@@ -112,21 +128,18 @@ describe('UserV3Service', () => {
                     toRole: 'viewer',
                     reason: '荒らし',
                 },
-                manager,
-            );
+            ]);
             expect(result.banned).toBe(true);
             expect(query.findUserSummary).toHaveBeenCalledWith({
                 userId: 'u-1',
             });
             expect(
                 query.findUserSummary.mock.invocationCallOrder[0],
-            ).toBeGreaterThan(
-                roleChangeCommand.apply.mock.invocationCallOrder[0],
-            );
+            ).toBeGreaterThan(userCommand.save.mock.invocationCallOrder[0]);
         });
 
         it('profiles の無い対象の BAN は 404 で、何も書かない', async () => {
-            query.findBanTarget.mockResolvedValue(null);
+            query.findUserWithLastBan.mockResolvedValue(null);
             await expect(
                 service.banUser({
                     userId: 'nobody',
@@ -134,7 +147,7 @@ describe('UserV3Service', () => {
                     reason: 'r',
                 }),
             ).rejects.toBeInstanceOf(NotFoundException);
-            expect(roleChangeCommand.apply).not.toHaveBeenCalled();
+            expect(userCommand.save).not.toHaveBeenCalled();
         });
 
         it.each([
@@ -148,7 +161,7 @@ describe('UserV3Service', () => {
         ])(
             '%s の BAN は UseCaseError で、何も書かない',
             async (_l, target, reason) => {
-                query.findBanTarget.mockResolvedValue({
+                query.findUserWithLastBan.mockResolvedValue({
                     ...target,
                     lastBanFromRole: null,
                 });
@@ -161,12 +174,12 @@ describe('UserV3Service', () => {
                 await expect(promise).rejects.toMatchObject({
                     context: { reason },
                 });
-                expect(roleChangeCommand.apply).not.toHaveBeenCalled();
+                expect(userCommand.save).not.toHaveBeenCalled();
             },
         );
 
         it('解除は直近の BAN の from_role に戻す', async () => {
-            query.findBanTarget.mockResolvedValue({
+            query.findUserWithLastBan.mockResolvedValue({
                 userId: 'u-1',
                 role: 'viewer',
                 lastBanFromRole: 'editor',
@@ -183,7 +196,11 @@ describe('UserV3Service', () => {
                 reason: '誤爆',
             });
 
-            expect(roleChangeCommand.apply).toHaveBeenCalledWith(
+            expect(userCommand.save).toHaveBeenCalledWith(
+                expect.any(User),
+                manager,
+            );
+            expect(savedChanges()).toEqual([
                 {
                     userId: 'u-1',
                     changedBy: 'm-1',
@@ -191,27 +208,25 @@ describe('UserV3Service', () => {
                     toRole: 'editor',
                     reason: '誤爆',
                 },
-                manager,
-            );
+            ]);
             expect(result.banned).toBe(false);
         });
 
         it('理由なしの解除は reason: null で記録する', async () => {
-            query.findBanTarget.mockResolvedValue({
+            query.findUserWithLastBan.mockResolvedValue({
                 userId: 'u-1',
                 role: 'viewer',
                 lastBanFromRole: null,
             });
             query.findUserSummary.mockResolvedValue(summaryRow);
             await service.unbanUser({ userId: 'u-1', changedBy: 'm-1' });
-            expect(roleChangeCommand.apply).toHaveBeenCalledWith(
+            expect(savedChanges()).toEqual([
                 expect.objectContaining({ toRole: 'reporter', reason: null }),
-                manager,
-            );
+            ]);
         });
 
         it('viewer でない人の解除は UseCaseError', async () => {
-            query.findBanTarget.mockResolvedValue({
+            query.findUserWithLastBan.mockResolvedValue({
                 userId: 'u-1',
                 role: 'reporter',
                 lastBanFromRole: null,
@@ -219,7 +234,7 @@ describe('UserV3Service', () => {
             await expect(
                 service.unbanUser({ userId: 'u-1', changedBy: 'm-1' }),
             ).rejects.toMatchObject({ context: { reason: 'not_banned' } });
-            expect(roleChangeCommand.apply).not.toHaveBeenCalled();
+            expect(userCommand.save).not.toHaveBeenCalled();
         });
     });
 
@@ -252,9 +267,15 @@ describe('UserV3Service', () => {
 
             const result = await service.findTraces({ userId: 'u-1' });
 
+            // 残す期間の境目は domain が決め、usecase が query に渡す（query は 90 を知らない）
             expect(traceQuery.findTraces).toHaveBeenCalledWith({
                 userId: 'u-1',
+                since: expect.any(Date),
             });
+            const { since } = traceQuery.findTraces.mock.calls[0][0];
+            const days = (Date.now() - since.getTime()) / 86_400_000;
+            expect(days).toBeGreaterThan(89.99);
+            expect(days).toBeLessThan(90.01);
             expect(result[0]).toEqual({
                 ip: '203.0.113.5',
                 userAgents: ['UA-1'],

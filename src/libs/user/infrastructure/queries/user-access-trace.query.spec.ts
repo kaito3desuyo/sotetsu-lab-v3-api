@@ -64,10 +64,11 @@ describe('UserAccessTraceQuery（生成される SQL）', () => {
 
     describe('手がかり（traces）', () => {
         const NOW = new Date('2026-11-03T00:00:00.000Z');
-        const NINETY_DAYS_AGO = new Date('2026-08-05T00:00:00.000Z');
+        /** 呼び出し側（usecase）が domain の UserAccessTraceRetention から取る境目 */
+        const SINCE = new Date('2026-08-05T00:00:00.000Z');
 
         it('IPv6 は /64 の網に、IPv4 は完全一致で束ねて、回数・UA・最後の日時を集める', async () => {
-            await query.findTraces({ userId: 'user-1', now: NOW });
+            await query.findTraces({ userId: 'user-1', since: SINCE });
 
             const { sql } = captured[0];
             const bucket =
@@ -80,7 +81,7 @@ describe('UserAccessTraceQuery（生成される SQL）', () => {
             expect(sql).toMatch(/ORDER BY "lastSeenAt" DESC/);
         });
 
-        it('90 日より古い行は数えない（自分の行も、同じ手がかりの他人の行も）', async () => {
+        it('since（呼び出し側が渡す境目）より古い行は数えない（自分の行も、同じ手がかりの他人の行も）', async () => {
             rawQueue = [
                 [
                     {
@@ -92,12 +93,12 @@ describe('UserAccessTraceQuery（生成される SQL）', () => {
                 ],
                 [],
             ];
-            await query.findTraces({ userId: 'user-1', now: NOW });
+            await query.findTraces({ userId: 'user-1', since: SINCE });
 
             expect(captured).toHaveLength(2);
             for (const { sql, parameters } of captured) {
                 expect(sql).toContain('"t"."created_at" >= $');
-                expect(parameters).toContainEqual(NINETY_DAYS_AGO);
+                expect(parameters).toContainEqual(SINCE);
             }
         });
 
@@ -113,7 +114,7 @@ describe('UserAccessTraceQuery（生成される SQL）', () => {
                 ],
                 [],
             ];
-            await query.findTraces({ userId: 'user-1', now: NOW });
+            await query.findTraces({ userId: 'user-1', since: SINCE });
 
             const { sql, parameters } = captured[1];
             expect(sql).toContain('"x"."user_id" <> $');
@@ -140,7 +141,7 @@ describe('UserAccessTraceQuery（生成される SQL）', () => {
                 ],
                 [],
             ];
-            await query.findTraces({ userId: 'user-1', now: NOW });
+            await query.findTraces({ userId: 'user-1', since: SINCE });
 
             expect(captured[1].sql).toMatch(
                 /"p"\."role" = \$\d+ AND EXISTS \(SELECT 1 FROM "user_role_changes" "rc" WHERE .*"rc"\."user_id" = "p"\."user_id".* AND "rc"\."to_role" = \$\d+\) AS "banned"/,
@@ -150,7 +151,7 @@ describe('UserAccessTraceQuery（生成される SQL）', () => {
         it('手がかりが無ければ 2 本目は流さない', async () => {
             const result = await query.findTraces({
                 userId: 'user-1',
-                now: NOW,
+                since: SINCE,
             });
             expect(result).toEqual([]);
             expect(captured).toHaveLength(1);
@@ -194,7 +195,7 @@ describe('UserAccessTraceQuery（生成される SQL）', () => {
 
             const result = await query.findTraces({
                 userId: 'user-1',
-                now: NOW,
+                since: SINCE,
             });
 
             expect(result).toEqual([

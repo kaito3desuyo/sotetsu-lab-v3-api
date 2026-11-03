@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Role } from '../../../../core/modules/rbac/role.enum.js';
-import { ACCESS_TRACE_RETENTION_DAYS } from '../../usecase/user-access-trace.service.js';
 import { TRACE_OTHER_ACCOUNTS_LIMIT } from '../../user.constants.js';
 import { ProfileModel } from '../models/profile.model.js';
 import { UserAccessTraceModel } from '../models/user-access-trace.model.js';
@@ -26,8 +25,6 @@ export type UserAccessTraceRow = {
     otherAccounts: UserAccessTraceAccountRow[];
 };
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 /**
  * 「同じ手がかり」の IP。IPv6 は /64 の網（'2001:db8:1:2::/64'）・IPv4 はそのアドレス。
  * inet のまま ::text にすると IPv4 に /32 が付くので、IPv4 は host() で文字にする
@@ -43,18 +40,16 @@ export class UserAccessTraceQuery {
     ) {}
 
     /**
-     * 対象のアカウントが 90 日以内に使った手がかり（IP）ごとに、回数・端末・最後に見た日時と、
+     * 対象のアカウントが since 以降に使った手がかり（IP）ごとに、回数・端末・最後に見た日時と、
      * 同じ手がかりを使った他のアカウント（最大 TRACE_OTHER_ACCOUNTS_LIMIT 件）を返す。新しい手がかりが先。
      * 他のアカウントの探し方: IPv4 は完全一致、IPv6 は /64 の一致（<<= で網に含まれるかを見る）。
      */
     async findTraces(params: {
         userId: string;
-        now?: Date;
+        /** この時刻以降の手がかりだけを読む（残す期間は domain の UserAccessTraceRetention が決める） */
+        since: Date;
     }): Promise<UserAccessTraceRow[]> {
-        const cutoff = new Date(
-            (params.now ?? new Date()).getTime() -
-                ACCESS_TRACE_RETENTION_DAYS * DAY_MS,
-        );
+        const cutoff = params.since;
 
         const own = await this.traceRepository
             .createQueryBuilder('t')

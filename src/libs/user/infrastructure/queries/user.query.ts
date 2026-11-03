@@ -23,8 +23,8 @@ export type UserSummaryRow = {
     banned: boolean;
 };
 
-/** BAN・解除の対象。lastBanFromRole は直近の BAN（to_role = viewer）の from_role */
-export type BanTargetRow = {
+/** 集約 User を組む材料。lastBanFromRole は直近の BAN（to_role = viewer）の from_role */
+export type UserWithLastBanRow = {
     userId: string;
     role: string;
     lastBanFromRole: string | null;
@@ -91,17 +91,17 @@ export class UserQuery {
     }
 
     /**
-     * BAN・解除の対象を行ロックして引く（同じ人への同時の BAN で記録が二重にならないように）。
+     * 集約 User の材料（役割と直近の BAN の from_role）を行ロックして引く（同じ人への同時の BAN で記録が二重にならないように）。
      * 呼び出し側のトランザクションの manager で、2 つのステートメントに分けて流す。
      * 1 本で読むと、ロック待ちが解けたとき profiles の行は最新になるが user_role_changes の副問い合わせは
      * 元のスナップショットのままで、同時に commit された BAN の記録が見えない（READ COMMITTED）。
      * profiles（FOR UPDATE）を先に読み、ロックを得た後の新しいステートメントで BAN の記録を引く。
      * profiles が無ければ null
      */
-    async findBanTarget(
+    async findUserWithLastBan(
         params: { userId: string },
         manager: EntityManager,
-    ): Promise<BanTargetRow | null> {
+    ): Promise<UserWithLastBanRow | null> {
         const profile = await manager
             .createQueryBuilder(ProfileModel, 'p')
             .select('p.userId', 'userId')

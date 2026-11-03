@@ -1,20 +1,21 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { BanTarget } from '../domain/ban-target.domain.js';
-import { UserRoleChange } from '../domain/user-role-change.domain.js';
+import { UserAccessTraceRetention } from '../domain/user-access-trace-retention.domain.js';
+import { User } from '../domain/user.domain.js';
+import { UserDomainBuilder } from '../infrastructure/builders/user.domain.builder.js';
+import { UserCommand } from '../infrastructure/command/user.command.js';
 import { UserAccessTraceQuery } from '../infrastructure/queries/user-access-trace.query.js';
 import { UserQuery } from '../infrastructure/queries/user.query.js';
-import { SHARED_TRACE_ACCOUNT_COUNT } from '../user.constants.js';
 import { UserAccessTraceDto } from './dtos/user-access-trace.dto.js';
 import { UserSummaryDto } from './dtos/user-summary.dto.js';
-import { UserRoleChangeService } from './user-role-change.service.js';
+import { UserAccessTraceReadModel } from './read-models/user-access-trace.read-model.js';
 
 @Injectable()
 export class UserV3Service {
     constructor(
         private readonly userQuery: UserQuery,
         private readonly userAccessTraceQuery: UserAccessTraceQuery,
-        private readonly userRoleChangeService: UserRoleChangeService,
+        private readonly userCommand: UserCommand,
         private readonly dataSource: DataSource,
     ) {}
 
@@ -44,8 +45,8 @@ export class UserV3Service {
         changedBy: string;
         reason: string;
     }): Promise<UserSummaryDto> {
-        await this.changeRole(params.userId, (target) =>
-            target.ban({ userId: params.changedBy }, params.reason),
+        await this.changeRole(params.userId, (user) =>
+            user.ban({ userId: params.changedBy }, params.reason),
         );
 
         return this.findUserSummary({ userId: params.userId });
@@ -57,43 +58,42 @@ export class UserV3Service {
         changedBy: string;
         reason?: string;
     }): Promise<UserSummaryDto> {
-        await this.changeRole(params.userId, (target) =>
-            target.unban({ userId: params.changedBy }, params.reason ?? null),
+        await this.changeRole(params.userId, (user) =>
+            user.unban({ userId: params.changedBy }, params.reason ?? null),
         );
 
         return this.findUserSummary({ userId: params.userId });
     }
 
-    /** 同じ IP を使った他のアカウントを手がかりごとに（90 日以内） */
+    /** 同じ IP を使った他のアカウントを手がかりごとに（残す期間の中だけ） */
     async findTraces(params: {
         userId: string;
     }): Promise<UserAccessTraceDto[]> {
-        const rows = await this.userAccessTraceQuery.findTraces(params);
+        const rows = await this.userAccessTraceQuery.findTraces({
+            userId: params.userId,
+            since: UserAccessTraceRetention.cutoff(new Date()),
+        });
 
-        return rows.map((row) => ({
-            ip: row.ip,
-            userAgents: row.userAgents,
-            count: row.count,
-            lastSeenAt: row.lastSeenAt.toISOString(),
-            accountCount: row.accountCount,
-            shared: row.accountCount >= SHARED_TRACE_ACCOUNT_COUNT,
-            otherAccounts: row.otherAccounts,
-        }));
+        return rows.map((row) => UserAccessTraceReadModel.toDto(row));
     }
 
-    /** 対象を行ロックで読み、ドメインの規則を通した記録を書く。規則違反は UseCaseError・対象が無ければ 404 */
+    /** 利用者を行ロックで読んで集約 User を組み、BAN・解除の振る舞いを通して保存する。規則違反は UseCaseError・対象が無ければ 404 */
     private async changeRole(
         userId: string,
-        decide: (target: BanTarget) => UserRoleChange,
+        act: (user: User) => void,
     ): Promise<void> {
         await this.dataSource.transaction(async (manager) => {
-            const row = await this.userQuery.findBanTarget({ userId }, manager);
+            const row = await this.userQuery.findUserWithLastBan(
+                { userId },
+                manager,
+            );
             if (!row) {
                 throw new NotFoundException('指定された利用者が見つかりません');
             }
 
-            const change = decide(BanTarget.create(row));
-            await this.userRoleChangeService.apply(change, manager);
+            const user = UserDomainBuilder.buildFromRow(row);
+            act(user);
+            await this.userCommand.save(user, manager);
         });
     }
 }

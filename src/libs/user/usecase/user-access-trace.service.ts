@@ -1,13 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
+import { UserAccessTraceRetention } from '../domain/user-access-trace-retention.domain.js';
 import { UserAccessTraceCommand } from '../infrastructure/command/user-access-trace.command.js';
 
-/** 手がかりを残す日数 */
-export const ACCESS_TRACE_RETENTION_DAYS = 90;
 /** 古い行を消しに行く間隔 */
 export const ACCESS_TRACE_PURGE_INTERVAL_MS = 60 * 60 * 1000;
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class UserAccessTraceService {
@@ -57,7 +54,7 @@ export class UserAccessTraceService {
         this.#lastPurgedAt = now;
         try {
             await this.command.deleteOlderThan(
-                new Date(now.getTime() - ACCESS_TRACE_RETENTION_DAYS * DAY_MS),
+                UserAccessTraceRetention.cutoff(now),
             );
         } catch (error) {
             this.#logger.warn(
