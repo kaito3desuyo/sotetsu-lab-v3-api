@@ -1,4 +1,4 @@
-export class ModerationTraceAccountDto {
+export class UserAccessTraceAccountDto {
     userId!: string;
     username!: string;
     role!: string;
@@ -6,7 +6,7 @@ export class ModerationTraceAccountDto {
 }
 
 /** 同じ手がかり（IPv4 は完全一致・IPv6 は /64）ごとの 1 件 */
-export class ModerationTraceDto {
+export class UserAccessTraceDto {
     /** IPv6 は /64 の網（例 2001:db8:1:2::/64） */
     ip!: string;
     userAgents!: string[];
@@ -17,5 +17,5 @@ export class ModerationTraceDto {
     /** accountCount が 10 以上（携帯回線などの共用）。弱めて出す */
     shared!: boolean;
     /** 対象を除く・最大 20 */
-    otherAccounts!: ModerationTraceAccountDto[];
+    otherAccounts!: UserAccessTraceAccountDto[];
 }

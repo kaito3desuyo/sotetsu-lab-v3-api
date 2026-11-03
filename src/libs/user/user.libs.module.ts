@@ -4,6 +4,8 @@ import { UserRoleChangeCommand } from './infrastructure/command/user-role-change
 import { UserAccessTraceCommand } from './infrastructure/command/user-access-trace.command.js';
 import { ProfileModel } from './infrastructure/models/profile.model.js';
 import { UserAccessTraceModel } from './infrastructure/models/user-access-trace.model.js';
+import { UserAccessTraceQuery } from './infrastructure/queries/user-access-trace.query.js';
+import { UserQuery } from './infrastructure/queries/user.query.js';
 import { UserRoleQuery } from './infrastructure/queries/user-role.query.js';
 import { UserAccessTraceService } from './usecase/user-access-trace.service.js';
 import { UserRoleChangeService } from './usecase/user-role-change.service.js';
@@ -16,10 +18,18 @@ import { UserRoleService } from './usecase/user-role.service.js';
 @Global()
 @Module({
     imports: [TypeOrmModule.forFeature([UserAccessTraceModel, ProfileModel])],
-    exports: [UserAccessTraceService, UserRoleChangeService, UserRoleService],
+    exports: [
+        UserAccessTraceQuery,
+        UserAccessTraceService,
+        UserQuery,
+        UserRoleChangeService,
+        UserRoleService,
+    ],
     providers: [
         UserAccessTraceCommand,
+        UserAccessTraceQuery,
         UserAccessTraceService,
+        UserQuery,
         UserRoleChangeCommand,
         UserRoleChangeService,
         UserRoleQuery,

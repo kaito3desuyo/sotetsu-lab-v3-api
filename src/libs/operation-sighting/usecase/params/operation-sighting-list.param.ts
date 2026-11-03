@@ -10,7 +10,7 @@ import {
 import {
     SIGHTING_LIST_DEFAULT_LIMIT,
     SIGHTING_LIST_MAX_LIMIT,
-} from '../../moderation.constants.js';
+} from '../../operation-sighting.constants.js';
 
 /**
  * ISO 8601 の週表記（2026-W01）・序数表記（2026-123）は IsISO8601 を通るが Date にできない。
@@ -28,7 +28,7 @@ const IsParsableDate = () =>
     });
 
 /** 目撃の一覧の `?limit=&before=`。before はその時刻より前（created_at）の目撃だけ */
-export class ModerationSightingListParam {
+export class OperationSightingListParam {
     @IsOptional()
     @Type(() => Number)
     @IsInt()

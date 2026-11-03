@@ -1,9 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
-import {
-    UserRoleChange,
-    UserRoleChangeCommand,
-} from '../infrastructure/command/user-role-change.command.js';
+import { UserRoleChange } from '../domain/user-role-change.domain.js';
+import { UserRoleChangeCommand } from '../infrastructure/command/user-role-change.command.js';
 
 @Injectable()
 export class UserRoleChangeService {

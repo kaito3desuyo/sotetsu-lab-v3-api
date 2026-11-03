@@ -1,6 +1,6 @@
 import { IsUUID } from 'class-validator';
 
-export class ModerationSightingIdParam {
+export class UserIdParam {
     @IsUUID()
-    id!: string;
+    userId!: string;
 }

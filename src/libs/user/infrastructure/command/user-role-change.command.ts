@@ -1,16 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
+import { UserRoleChange } from '../../domain/user-role-change.domain.js';
 import { ProfileModel } from '../models/profile.model.js';
 import { UserRoleChangeModel } from '../models/user-role-change.model.js';
-
-/** 役割の書き換え 1 件 */
-export type UserRoleChange = {
-    userId: string;
-    changedBy: string;
-    fromRole: string;
-    toRole: string;
-    reason: string | null;
-};
 
 @Injectable()
 export class UserRoleChangeCommand {

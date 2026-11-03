@@ -1,20 +1,12 @@
 import { UseCaseError } from '../../../core/classes/custom-error.js';
 import { Role } from '../../../core/modules/rbac/role.enum.js';
-import { ROLE_CHANGE_REASON_MAX_LENGTH } from '../moderation.constants.js';
+import { ROLE_CHANGE_REASON_MAX_LENGTH } from '../user.constants.js';
+import { UserRoleChange } from './user-role-change.domain.js';
 
 /** 解除したとき、BAN の記録が無い viewer を戻す先 */
 const DEFAULT_RESTORED_ROLE = Role.REPORTER;
 
-/** 役割の書き換え 1 件。profiles.role の更新と user_role_changes の行はこれから作る */
-export type RoleChange = {
-    userId: string;
-    changedBy: string;
-    fromRole: string;
-    toRole: string;
-    reason: string | null;
-};
-
-type ModerationTargetProps = {
+type BanTargetProps = {
     userId: string;
     role: string;
     /** 直近の BAN（to_role = viewer）の from_role。記録が無ければ null */
@@ -22,17 +14,17 @@ type ModerationTargetProps = {
 };
 
 /**
- * 投稿管理の対象（投稿者）。BAN ＝ viewer への格下げ・解除 ＝ 直近の BAN の from_role へ戻す、の規則をここ 1 か所に置く。
+ * BAN・解除の対象（利用者）。BAN ＝ viewer への格下げ・解除 ＝ 直近の BAN の from_role へ戻す、の規則をここ 1 か所に置く。
  * 自分と MANAGER は BAN できない。すでに viewer の人は BAN できない。
  */
-export class ModerationTarget {
-    private constructor(private readonly props: ModerationTargetProps) {}
+export class BanTarget {
+    private constructor(private readonly props: BanTargetProps) {}
 
-    static create(props: ModerationTargetProps): ModerationTarget {
-        return new ModerationTarget(props);
+    static create(props: BanTargetProps): BanTarget {
+        return new BanTarget(props);
     }
 
-    ban(by: { userId: string }, reason: string): RoleChange {
+    ban(by: { userId: string }, reason: string): UserRoleChange {
         const { userId, role } = this.props;
         if (userId === by.userId) {
             throw new UseCaseError('自分自身は BAN できません', {
@@ -63,7 +55,7 @@ export class ModerationTarget {
         };
     }
 
-    unban(by: { userId: string }, reason: string | null): RoleChange {
+    unban(by: { userId: string }, reason: string | null): UserRoleChange {
         const { userId, role, lastBanFromRole } = this.props;
         if (role !== Role.VIEWER) {
             throw new UseCaseError('BAN されていません', {

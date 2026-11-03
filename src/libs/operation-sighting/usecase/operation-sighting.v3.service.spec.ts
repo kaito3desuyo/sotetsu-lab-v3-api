@@ -13,6 +13,7 @@ import { UserAccessTraceService } from '../../user/usecase/user-access-trace.ser
 import { CdnInvalidation } from '../../../core/modules/cdn-invalidation/cdn-invalidation.js';
 import { SocketSignal } from '../../../core/modules/socket-signal/socket-signal.js';
 import { OperationSightingLatestCacheQuery } from '../infrastructure/queries/operation-sighting-latest-cache.query.js';
+import { OperationSightingAuthorQuery } from '../infrastructure/queries/operation-sighting-author.query.js';
 import { OperationSightingQuery } from '../infrastructure/queries/operation-sighting.query.js';
 import { CalendarQuery } from '../../calendar/infrastructure/queries/calendar.query.js';
 import { FormationQuery } from '../../formation/infrastructure/queries/formation.query.js';
@@ -66,6 +67,11 @@ const mockOperationSightingQuery = {
     findManyBySightingTimeRange: vi.fn() as AnyMock,
     findManyBySpecificPeriod: vi.fn() as AnyMock,
 };
+const mockAuthorQuery = {
+    findManyByUserId: vi.fn() as AnyMock,
+    findAuthorUserId: vi.fn() as AnyMock,
+    findManyRecent: vi.fn() as AnyMock,
+};
 const mockItinerarySegmentQuery = { findManyByCalendarId: vi.fn() as AnyMock };
 const mockDataSource = {
     transaction: vi.fn().mockImplementation(async (fn: any) => fn(mockManager)) as AnyMock,
@@ -112,6 +118,10 @@ async function buildService(): Promise<OperationSightingV3Service> {
             {
                 provide: OperationSightingQuery,
                 useValue: mockOperationSightingQuery,
+            },
+            {
+                provide: OperationSightingAuthorQuery,
+                useValue: mockAuthorQuery,
             },
             { provide: CalendarQuery, useValue: mockCalendarQuery },
             { provide: FormationQuery, useValue: mockFormationQuery },
@@ -2012,5 +2022,105 @@ describe('OperationSightingV3Service - 無効化（1 件・まとめて）', () 
         expect(result.invalidated).toEqual([]);
         expect(mockSignalSend).not.toHaveBeenCalled();
         expect(mockInvalidate).not.toHaveBeenCalled();
+    });
+});
+
+describe('OperationSightingV3Service - 投稿者ごとの一覧・投稿者・新着', () => {
+    let service: OperationSightingV3Service;
+
+    const sightingRow = {
+        operationSightingId: 's-1',
+        sightingTime: new Date('2026-11-02T01:00:00.000Z'),
+        createdAt: new Date('2026-11-02T01:05:00.000Z'),
+        operationNumber: '41',
+        formationNumber: '8701',
+        invalidated: false,
+        invalidatedByUserId: null,
+        invalidatedByUsername: null,
+    };
+
+    beforeEach(async () => {
+        vi.clearAllMocks();
+        service = await buildService();
+    });
+
+    it('投稿者の目撃は日時を ISO にし、無効化した人を入れ子で返す', async () => {
+        mockAuthorQuery.findManyByUserId.mockResolvedValue([
+            {
+                ...sightingRow,
+                invalidated: true,
+                invalidatedByUserId: 'e-1',
+                invalidatedByUsername: 'editor',
+            },
+            sightingRow,
+        ]);
+        const result = await service.findManyByUserId({
+            userId: 'u-1',
+            limit: 100,
+        });
+        expect(result[0]).toEqual({
+            operationSightingId: 's-1',
+            sightingTime: '2026-11-02T01:00:00.000Z',
+            createdAt: '2026-11-02T01:05:00.000Z',
+            operationNumber: '41',
+            formationNumber: '8701',
+            invalidated: true,
+            invalidatedBy: { userId: 'e-1', username: 'editor' },
+        });
+        expect(result[1].invalidatedBy).toBeNull();
+        expect(mockAuthorQuery.findManyByUserId).toHaveBeenCalledWith({
+            userId: 'u-1',
+            limit: 100,
+            before: null,
+        });
+    });
+
+    it('before は Date にして query に渡す', async () => {
+        mockAuthorQuery.findManyByUserId.mockResolvedValue([]);
+        await service.findManyByUserId({
+            userId: 'u-1',
+            limit: 10,
+            before: '2026-11-01T00:00:00.000Z',
+        });
+        expect(mockAuthorQuery.findManyByUserId).toHaveBeenCalledWith({
+            userId: 'u-1',
+            limit: 10,
+            before: new Date('2026-11-01T00:00:00.000Z'),
+        });
+    });
+
+    it('目撃の投稿者が無ければ userId: null', async () => {
+        mockAuthorQuery.findAuthorUserId.mockResolvedValue(null);
+        expect(
+            await service.findAuthor({ operationSightingId: 's-1' }),
+        ).toEqual({ userId: null });
+    });
+
+    it('新着はゲストの目撃の author が null、登録者は印つき', async () => {
+        mockAuthorQuery.findManyRecent.mockResolvedValue([
+            { ...sightingRow, author: null },
+            {
+                ...sightingRow,
+                operationSightingId: 's-2',
+                author: {
+                    userId: 'u-1',
+                    username: 'alice',
+                    displayName: 'Alice',
+                    role: 'reporter',
+                    newAccount: true,
+                    burst: false,
+                },
+            },
+        ]);
+        const result = await service.findManyRecent({ limit: 100 });
+        expect(result[0].author).toBeNull();
+        expect(result[1].author).toEqual({
+            userId: 'u-1',
+            username: 'alice',
+            displayName: 'Alice',
+            role: 'reporter',
+            newAccount: true,
+            burst: false,
+        });
     });
 });

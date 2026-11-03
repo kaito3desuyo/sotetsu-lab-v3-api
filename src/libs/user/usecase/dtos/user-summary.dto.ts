@@ -1,4 +1,4 @@
-export class ModerationUserSummaryDto {
+export class UserSummaryDto {
     userId!: string;
     username!: string;
     displayName!: string;

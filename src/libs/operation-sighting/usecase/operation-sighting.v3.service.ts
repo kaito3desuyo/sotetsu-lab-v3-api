@@ -30,17 +30,25 @@ import { UserAccessTraceService } from '../../user/usecase/user-access-trace.ser
 import { pastSightingDateCacheTags } from '../../../core/modules/cdn-invalidation/cache-tags.js';
 import { CdnInvalidation } from '../../../core/modules/cdn-invalidation/cdn-invalidation.js';
 import { SocketSignal } from '../../../core/modules/socket-signal/socket-signal.js';
+import {
+    OperationSightingAuthorQuery,
+    type OperationSightingSummaryRow,
+} from '../infrastructure/queries/operation-sighting-author.query.js';
 import { OperationSightingLatestCacheQuery } from '../infrastructure/queries/operation-sighting-latest-cache.query.js';
 import { OperationSightingQuery } from '../infrastructure/queries/operation-sighting.query.js';
 import { OperationSightingDomainBuilder } from './builders/operation-sighting.domain.builder.js';
+import { OperationSightingAuthorDto } from './dtos/operation-sighting-author.dto.js';
 import { OperationSightingDetailsDto } from './dtos/operation-sighting-details.dto.js';
 import { OperationSightingLatestCacheDto } from './dtos/operation-sighting-latest-cache.dto.js';
+import { OperationSightingRecentDto } from './dtos/operation-sighting-recent.dto.js';
+import { OperationSightingSummaryDto } from './dtos/operation-sighting-summary.dto.js';
 import { OperationSightingTimeCrossSectionDto } from './dtos/operation-sighting-time-cross-section.dto.js';
 import { PostOperationSightingDto } from './dtos/post-operation-sighting.dto.js';
 import {
     CacheAction,
     selectMostRecentCandidateForOperationNumber,
 } from './operation-sighting.v3.circulation.js';
+import { SIGHTING_LIST_DEFAULT_LIMIT } from '../operation-sighting.constants.js';
 import { OPERATION_SIGHTING_TIME_CROSS_SECTION_SELECTION_TREE } from './operation-sighting-time-cross-section-selection.js';
 import { OPERATION_SIGHTINGS_BY_PERIOD_SELECTION_TREE } from './operation-sightings-by-period-selection.js';
 import { SightingCarryOver } from './read-models/sighting-carry-over.read-model.js';
@@ -89,6 +97,7 @@ export class OperationSightingV3Service {
         private readonly operationSightingLatestCacheCommand: OperationSightingLatestCacheCommand,
         private readonly operationSightingLatestCacheQuery: OperationSightingLatestCacheQuery,
         private readonly operationSightingQuery: OperationSightingQuery,
+        private readonly operationSightingAuthorQuery: OperationSightingAuthorQuery,
         private readonly calendarQuery: CalendarQuery,
         private readonly operationQuery: OperationQuery,
         private readonly formationQuery: FormationQuery,
@@ -98,6 +107,46 @@ export class OperationSightingV3Service {
         private readonly accessTraces: UserAccessTraceService,
         private readonly cdnInvalidation: CdnInvalidation,
     ) {}
+
+    /** 投稿者（利用者）ごとの目撃を created_at の新しい順に。無効化したものも含む */
+    async findManyByUserId(params: {
+        userId: string;
+        limit?: number;
+        before?: string;
+    }): Promise<OperationSightingSummaryDto[]> {
+        const rows = await this.operationSightingAuthorQuery.findManyByUserId({
+            userId: params.userId,
+            limit: params.limit ?? SIGHTING_LIST_DEFAULT_LIMIT,
+            before: params.before ? new Date(params.before) : null,
+        });
+
+        return rows.map(toSummaryDto);
+    }
+
+    async findAuthor(params: {
+        operationSightingId: string;
+    }): Promise<OperationSightingAuthorDto> {
+        const userId =
+            await this.operationSightingAuthorQuery.findAuthorUserId(params);
+
+        return { userId };
+    }
+
+    /** 新着の目撃を投稿者つきで created_at の新しい順に（ゲストの目撃も含む。newAccount・burst の印つき） */
+    async findManyRecent(params: {
+        limit?: number;
+        before?: string;
+    }): Promise<OperationSightingRecentDto[]> {
+        const rows = await this.operationSightingAuthorQuery.findManyRecent({
+            limit: params.limit ?? SIGHTING_LIST_DEFAULT_LIMIT,
+            before: params.before ? new Date(params.before) : null,
+        });
+
+        return rows.map((row) => ({
+            ...toSummaryDto(row),
+            author: row.author,
+        }));
+    }
 
     /** `include`・`fields` があれば、作った一覧を選んだ関連・列だけに削る（docs/adr/0010-v3-include-and-fields.md） */
     async findManyBySpecificPeriod(params: {
@@ -1283,4 +1332,23 @@ function skippableReason(
     return reason === 'not_found' || reason === 'already_invalidated'
         ? reason
         : null;
+}
+
+function toSummaryDto(
+    row: OperationSightingSummaryRow,
+): OperationSightingSummaryDto {
+    return {
+        operationSightingId: row.operationSightingId,
+        sightingTime: row.sightingTime.toISOString(),
+        createdAt: row.createdAt.toISOString(),
+        operationNumber: row.operationNumber,
+        formationNumber: row.formationNumber,
+        invalidated: row.invalidated,
+        invalidatedBy: row.invalidatedByUserId
+            ? {
+                  userId: row.invalidatedByUserId,
+                  username: row.invalidatedByUsername ?? '',
+              }
+            : null,
+    };
 }

@@ -5,7 +5,6 @@ import { AgencyV3Module } from '../../../libs/agency/agency.v3.module.js';
 import { CalendarDateV3Module } from '../../../libs/calendar/calendar-date.v3.module.js';
 import { CalendarV3Module } from '../../../libs/calendar/calendar.v3.module.js';
 import { FormationV3Module } from '../../../libs/formation/formation.v3.module.js';
-import { ModerationV3Module } from '../../../libs/moderation/moderation.v3.module.js';
 import { OperationSightingV3Module } from '../../../libs/operation-sighting/operation-sighting.v3.module.js';
 import { OperationV3Module } from '../../../libs/operation/operation.v3.module.js';
 import { RouteV3Module } from '../../../libs/route/route.v3.module.js';
@@ -14,6 +13,7 @@ import { StationV3Module } from '../../../libs/station/station.v3.module.js';
 import { TripBlockV3Module } from '../../../libs/trip-block/trip-block.v3.module.js';
 import { TripClassV3Module } from '../../../libs/trip-class/trip-class.v3.module.js';
 import { TripV3Module } from '../../../libs/trip/trip.v3.module.js';
+import { UserV3Module } from '../../../libs/user/user.v3.module.js';
 
 const routes: Routes = [
     {
@@ -38,10 +38,6 @@ const routes: Routes = [
             {
                 path: '/formations',
                 module: FormationV3Module,
-            },
-            {
-                path: '/moderation',
-                module: ModerationV3Module,
             },
             {
                 path: '/operations',
@@ -75,6 +71,10 @@ const routes: Routes = [
                 path: '/trips',
                 module: TripV3Module,
             },
+            {
+                path: '/users',
+                module: UserV3Module,
+            },
         ],
     },
 ];
@@ -87,7 +87,6 @@ const routes: Routes = [
         CalendarDateV3Module,
         FeatureFlagV3Module,
         FormationV3Module,
-        ModerationV3Module,
         OperationV3Module,
         OperationSightingV3Module,
         RouteV3Module,
@@ -96,6 +95,7 @@ const routes: Routes = [
         TripBlockV3Module,
         TripClassV3Module,
         TripV3Module,
+        UserV3Module,
     ],
 })
 export class ApiV3Module {}

@@ -1,6 +1,6 @@
 import { UseCaseError } from '../../../core/classes/custom-error.js';
 import { Role } from '../../../core/modules/rbac/role.enum.js';
-import { ModerationTarget } from './moderation-target.domain.js';
+import { BanTarget } from './ban-target.domain.js';
 
 const MANAGER_ID = 'm-1';
 const TARGET_ID = 'u-1';
@@ -9,7 +9,7 @@ const create = (
     role: string,
     lastBanFromRole: string | null = null,
     userId = TARGET_ID,
-) => ModerationTarget.create({ userId, role, lastBanFromRole });
+) => BanTarget.create({ userId, role, lastBanFromRole });
 
 const reasonOf = (fn: () => unknown): unknown => {
     try {
@@ -21,7 +21,7 @@ const reasonOf = (fn: () => unknown): unknown => {
     throw new Error('投げられなかった');
 };
 
-describe('ModerationTarget', () => {
+describe('BanTarget', () => {
     describe('ban', () => {
         it('reporter を BAN すると viewer にする記録を返す', () => {
             const change = create(Role.REPORTER).ban(

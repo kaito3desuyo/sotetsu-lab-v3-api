@@ -10,10 +10,10 @@ import {
 import {
     INVALIDATE_REASON_MAX_LENGTH,
     INVALIDATE_SIGHTINGS_MAX_COUNT,
-} from '../../moderation.constants.js';
+} from '../../operation-sighting.constants.js';
 
 /** まとめての無効化の body */
-export class InvalidateModerationSightingsDto {
+export class InvalidateManyOperationSightingsDto {
     @IsArray()
     @ArrayMinSize(1)
     @ArrayMaxSize(INVALIDATE_SIGHTINGS_MAX_COUNT)

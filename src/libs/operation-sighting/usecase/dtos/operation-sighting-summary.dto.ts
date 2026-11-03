@@ -1,4 +1,4 @@
-export class ModerationSightingDto {
+export class OperationSightingSummaryDto {
     operationSightingId!: string;
     sightingTime!: string;
     createdAt!: string;
