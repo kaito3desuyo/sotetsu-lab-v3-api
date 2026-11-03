@@ -33,30 +33,40 @@
   - Lambda の実体ごとに 1 時間に 1 回まで `created_at < now() - interval '90 days'` を消す（`purgeExpiredIfDue`）。失敗は warn で握る。
   - `recordPost` の中では消さない。トランザクション中に別接続の DELETE を待たないよう、消すのは投稿の commit の後（`session` の記録の後も同じ）。
   - 読む口も 90 日より古い行を返さない。
-- 手がかりの読みは MANAGER だけの `GET /v3/moderation/users/:userId/traces`。IP・端末・回数と、同じ手がかりの他のアカウント（BAN 済みかも）を返す。
+- 手がかりの読みは MANAGER だけの `GET /v3/users/:userId/traces`（`UserV3Controller`・`UserV3Service.findTraces`・`UserAccessTraceQuery`）。IP・端末・回数と、同じ手がかりの他のアカウント（BAN 済みかも）を返す。
   - 同じ手がかりは IP の一致。IPv4 は完全一致、IPv6 は /64 で同じとみなす。UA は並べて見せるだけで、一致の条件にしない。
   - その IP を使ったアカウントが 10 以上なら `shared: true`（携帯回線などで弱めて出す）。
 - BAN の記録は新しい表 `user_role_changes`（`id`・`user_id`・`changed_by`・`from_role`・`to_role`・`reason`・`created_at`）。
-  - 置き場は利用者のドメイン `src/libs/user/`（モデル・`UserRoleChangeCommand`・usecase の `UserRoleChangeService`）。moderation の service は `UserRoleChangeService.apply` を、BAN・解除のトランザクションの `manager` を渡して呼ぶ。
-  - `POST /v3/moderation/users/:userId/ban`（理由必須）と `…/unban`。`profiles.role` の書き換えと記録は 1 つのトランザクション。
+  - 置き場は利用者のドメイン `src/libs/user/`（モデル・`UserRoleChangeCommand`・usecase の `UserRoleChangeService`）。`UserV3Service`（`banUser`・`unbanUser`）は `UserRoleChangeService.apply` を、BAN・解除のトランザクションの `manager` を渡して呼ぶ。
+  - `POST /v3/users/:userId/ban`（理由必須）と `…/unban`（どちらも `UserV3Controller`。BAN の規則は `libs/user/domain/ban-target.domain.ts` の `BanTarget`）。`profiles.role` の書き換えと記録は 1 つのトランザクション。
   - 自分・MANAGER・すでに viewer の人は BAN できない（`UseCaseError`・400 系）。
   - 解除は直近の BAN の `from_role` に戻し、記録が無ければ `reporter`。
   - BAN・解除は、`profiles` を `FOR UPDATE` で読んでから、直近の BAN を別の文で読む。同じ人への BAN・解除の同時実行で `from_role` が食い違わないようにする。
   - `user_id` の FK は ON DELETE CASCADE。利用者は消さず BAN で処分するので、記録は残る。アカウント自体が消えたら記録も一緒に消える（対象が居ないので、監査の意味もない）。
   - `changed_by` の FK は ON DELETE NO ACTION。処分した MANAGER の記録は残る。MANAGER を消すことはまず無く、消すときに先にその記録を消す手間が増えるだけ。
-- まとめての無効化は `POST /v3/moderation/sightings/invalidate`（`ids`・`reason`）。1 件ずつの無効化を順に呼ぶ。
-  - 繰り返しは `OperationSightingV3Service.invalidateMany` に置き、moderation の service は委ねるだけ。最新目撃のキャッシュの付け替えを、今の 1 件ずつの処理が正しく扱うので、それを使い回す。spec の「1 トランザクション」は取らない。
+- まとめての無効化は `POST /v3/operation-sightings/invalidate`（`ids`・`reason`。`OperationSightingV3Controller`）。1 件ずつの無効化を順に呼ぶ。
+  - 繰り返しは `OperationSightingV3Service.invalidateMany` に置き、controller から直接呼ぶ。最新目撃のキャッシュの付け替えを、今の 1 件ずつの処理が正しく扱うので、それを使い回す。spec の「1 トランザクション」は取らない。
   - CDN の失効（日付を重複なく）と socket の合図は、1 件ごとでなく、最後に 1 回だけ出す。
   - api の Lambda の timeout は 3 秒。ループ開始から 1,000ms を超えたら、残りに手を付けず `pending`（id の配列）を応答に入れて返す。client は `pending` を送り直す。
   - すでに無効・存在しない id は `skipped`（id と `already_invalidated`・`not_found`）に入れて、残りは続ける。予期しない失敗は、その 1 件を `failed`（id とメッセージ）に入れてそこで止め、残りを `pending` に返す。成功は `invalidated`。
   - 1 回に受ける id は 200 件まで。201 件以上は 422（このリポの ValidationPipe は 422）。
   - すでに無効な目撃は、`invalidate` の中で `UseCaseError`（reason: `already_invalidated`）を投げる。今まではドメインが素の `Error` を投げていて、単体の無効化の口も 500 だった。それが UseCaseError の応答に変わる。
-- 読み取りの口は `GET /v3/moderation/users/:userId`（要約）・`/users/:userId/sightings`・`/sightings/:id/author`・`/recent-sightings`（新着）。応答は保存させない（個人情報を含む）。
+- 読み取りの口は次の 4 つ。応答は保存させない（個人情報を含む。`@CacheControl(CACHE_CONTROL.REALTIME)`）。
+  - `GET /v3/users/:userId`（要約）と `GET /v3/users/:userId/operation-sightings`（投稿者ごとの一覧）は `UserV3Controller`。後者は `OperationSightingV3Service.findManyByUserId` を呼ぶ。
+  - `GET /v3/operation-sightings/:id/author`（投稿者）と `GET /v3/operation-sightings/recent`（新着）は `OperationSightingV3Controller`。query は `OperationSightingAuthorQuery`。
   - 新着には印を付ける。登録して 24 時間以内なら `newAccount`、その目撃までの 1 時間に同じ人の投稿が 5 件以上なら `burst`。
   - 印は投稿者の役割が `reporter`・`viewer` のときだけ計算し、`editor`・`manager` は両方 false。信頼済みの EDITOR の朝の投稿には `burst` がほぼ全件付き、印の意味が無くなるため（2026-11-02 の実データ）。
 - BAN の後は socket の合図と CDN の失効を出さない。役割が変わるだけで、画面のデータは変わらない。
 - ゲスト（匿名）は対象の外。`profiles` も `operation_sighting_authors` も持たない（本番 662 行すべて登録者）。投稿管理の一覧では投稿者の無い目撃を「ゲスト」と出す。
 - backend は触らない。登録・ログインの手がかりは api が取る（spec の backend 分は不要）。
+
+## 口の置き場
+
+- 投稿管理は画面の名前でドメインではないので、口は user と operation-sighting に置く（2026-11-03）。`libs/moderation` は無く、URL も各ドメインの形にした（未デプロイなので互換は要らない）。
+  - `libs/user/`: `UserV3Controller`・`UserV3Module`（`/v3/users`）・`UserV3Service`・`UserQuery`・`UserAccessTraceQuery`・`BanTarget`・`UserRoleChange`（型は 1 つ）。
+  - `libs/operation-sighting/`: 既存の `OperationSightingV3Controller` と `OperationSightingV3Service` に口と処理を足し、query は `OperationSightingAuthorQuery`。
+  - 依存の向きは user → operation-sighting（`/users/:userId/operation-sightings`）。operation-sighting から user へは `ProfileModel` を query で読むだけ。
+- RBAC は口ごとに以前と同じ（要約・一覧・新着・投稿者・まとめての無効化は EDITOR・MANAGER、BAN・解除・手がかりは MANAGER）。
 
 ## 根拠
 
@@ -92,8 +102,8 @@
   3. client: 画面。
   - spec の「backend: 登録・ログインの手がかり」は不要になったので外した。
 - 格上げ（片付けていた EDITOR を MANAGER にする）は、SQL で `profiles.role` を書き換える。この作業の外。
-- `RBACGuard` が `@RBAC` の口のたびに `profiles` を 1 回引くようになった。`@RBAC` が付いているのは書き込みの口と投稿管理の口だけで、一般の読み取りの口には付いていない。
-- `ModerationUserSummaryDto.banned` は、`user_role_changes` に BAN の記録があって今 viewer の人を指す。
+- `RBACGuard` が `@RBAC` の口のたびに `profiles` を 1 回引くようになった。`@RBAC` が付いているのは書き込みの口と、利用者・目撃情報の管理の口だけで、一般の読み取りの口には付いていない。
+- `UserSummaryDto.banned` は、`user_role_changes` に BAN の記録があって今 viewer の人を指す。
 - 手がかりの読みの SQL・新着の `CASE` の印は、本番の表が出来てから手元の API で確かめる。
 - マージ前の確認: 手元の API を起動して、Nest の DI が通ること、`RBACGuard` の役割の読み直しが実 DB で動くことを確かめる（ユニットテストでは未確認）。
 - 確かめ方:
