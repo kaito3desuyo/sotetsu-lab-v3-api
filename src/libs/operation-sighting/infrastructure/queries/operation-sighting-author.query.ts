@@ -32,6 +32,20 @@ export type OperationSightingRecentRow = OperationSightingSummaryRow & {
     } | null;
 };
 
+export type OperationSightingCorroborationFactsRow = {
+    operationSightingId: string;
+    /** 本人の目撃の運用番号 */
+    operationNumber: string;
+    /** 本人の目撃が今無効か */
+    invalidated: boolean;
+    /** 同じ運行日・同じ編成・本人以外・有効な目撃の運用番号（重複を除く。無ければ []） */
+    otherOperationNumbers: string[];
+};
+
+/** 運行日（日本時間にして 4 時間引いた日付）。3:59 は前日、4:00 は当日 */
+const serviceDay = (alias: string) =>
+    `(("${alias}"."sighting_time" AT TIME ZONE 'Asia/Tokyo') - interval '4 hours')::date`;
+
 /** 無効化の取り消し（復元）は行を消すので、行があれば今も無効 */
 const INVALIDATION_ACTION = 'invalidation';
 
@@ -63,6 +77,84 @@ export class OperationSightingAuthorQuery {
         const rows = await qb.getRawMany();
 
         return rows.map(toSightingRow);
+    }
+
+    /**
+     * 本人の目撃ごとに、裏付けの材料（事実）を返す。判定の規則は持たない（読み取り側が行う）。
+     * 材料: 同じ運行日・同じ編成・本人以外（author 行が無いゲストの目撃を含む）・有効・自分自身を除く目撃の運用番号。
+     * operationSightingIds が null なら本人の全投稿、配列ならそのうち本人の投稿だけ（空配列は問い合わせない）。
+     */
+    async findCorroborationFacts(params: {
+        userId: string;
+        operationSightingIds: string[] | null;
+    }): Promise<OperationSightingCorroborationFactsRow[]> {
+        if (params.operationSightingIds?.length === 0) {
+            return [];
+        }
+
+        const qb = this.operationSightingRepository
+            .createQueryBuilder('s')
+            .innerJoin('s.operation', 'o')
+            .innerJoin(
+                OperationSightingAuthorModel,
+                'a',
+                'a.operationSightingId = s.id AND a.userId = :userId',
+                { userId: params.userId },
+            );
+
+        const ownInvalidationExists = qb
+            .subQuery()
+            .select('1')
+            .from(OperationSightingInvalidationModel, 'inv')
+            .where('inv.operationSightingId = "s"."id"')
+            .getQuery();
+        const otherAuthorExists = qb
+            .subQuery()
+            .select('1')
+            .from(OperationSightingAuthorModel, 'a2')
+            .where('a2.operationSightingId = "s2"."id"')
+            .andWhere('a2.userId = :userId')
+            .getQuery();
+        const otherInvalidationExists = qb
+            .subQuery()
+            .select('1')
+            .from(OperationSightingInvalidationModel, 'inv2')
+            .where('inv2.operationSightingId = "s2"."id"')
+            .getQuery();
+        const otherOperationNumbers = qb
+            .subQuery()
+            .select('array_agg(DISTINCT "o2"."operation_number")')
+            .from(OperationSightingModel, 's2')
+            .innerJoin('s2.operation', 'o2')
+            .where('"s2"."formation_id" = "s"."formation_id"')
+            .andWhere(`${serviceDay('s2')} = ${serviceDay('s')}`)
+            .andWhere('"s2"."id" <> "s"."id"')
+            .andWhere(`NOT EXISTS ${otherAuthorExists}`)
+            .andWhere(`NOT EXISTS ${otherInvalidationExists}`)
+            .getQuery();
+
+        qb.select('s.id', 'operationSightingId')
+            .addSelect('o.operationNumber', 'operationNumber')
+            .addSelect(`EXISTS ${ownInvalidationExists}`, 'invalidated')
+            .addSelect(
+                `COALESCE(${otherOperationNumbers}, '{}')`,
+                'otherOperationNumbers',
+            );
+
+        if (params.operationSightingIds) {
+            qb.andWhere('s.id IN (:...operationSightingIds)', {
+                operationSightingIds: params.operationSightingIds,
+            });
+        }
+
+        const rows = await qb.getRawMany();
+
+        return rows.map((raw) => ({
+            operationSightingId: raw.operationSightingId,
+            operationNumber: raw.operationNumber,
+            invalidated: raw.invalidated === true,
+            otherOperationNumbers: raw.otherOperationNumbers ?? [],
+        }));
     }
 
     /** 投稿者の行が無ければ（ゲスト・2026-10-23 より前）null */
