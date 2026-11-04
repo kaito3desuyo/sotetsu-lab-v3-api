@@ -248,4 +248,150 @@ describe('OperationSightingAuthorQuery（生成される SQL）', () => {
         });
         expect(result).toBeNull();
     });
+
+    describe('findCorroborationFacts（裏付けの材料）', () => {
+        const serviceDay = (alias: string) =>
+            `(("${alias}"."sighting_time" AT TIME ZONE 'Asia/Tokyo') - interval '4 hours')::date`;
+
+        it('同じ運行日・同じ編成の他人の有効な目撃の運用番号を返す', async () => {
+            rawRows = [
+                {
+                    operationSightingId: 's-1',
+                    operationNumber: '41',
+                    invalidated: false,
+                    otherOperationNumbers: ['41', '42'],
+                },
+            ];
+
+            const result = await query.findCorroborationFacts({
+                userId: 'user-1',
+                operationSightingIds: null,
+            });
+
+            const { sql, parameters } = captured[0];
+            expect(sql).toContain('"s2"."formation_id" = "s"."formation_id"');
+            expect(sql).toContain(`${serviceDay('s2')} = ${serviceDay('s')}`);
+            expect(sql).toContain(
+                'array_agg(DISTINCT "o2"."operation_number")',
+            );
+            expect(parameters).toContain('user-1');
+            expect(result).toEqual([
+                {
+                    operationSightingId: 's-1',
+                    operationNumber: '41',
+                    invalidated: false,
+                    otherOperationNumbers: ['41', '42'],
+                },
+            ]);
+        });
+
+        it('3:59 の目撃と 4:00 の目撃は別の運行日として扱う', async () => {
+            await query.findCorroborationFacts({
+                userId: 'user-1',
+                operationSightingIds: null,
+            });
+
+            const { sql } = captured[0];
+            // 日本時間にして 4 時間引いた日付で比べる（3:59 は前日・4:00 は当日になる）
+            expect(sql).toContain(serviceDay('s'));
+            expect(sql).toContain(serviceDay('s2'));
+            expect(sql).not.toContain('date_trunc');
+        });
+
+        it('本人の別の投稿・自分自身・他人の無効な目撃は材料にしない', async () => {
+            await query.findCorroborationFacts({
+                userId: 'user-1',
+                operationSightingIds: null,
+            });
+
+            const { sql } = captured[0];
+            // 自分自身の行を除く
+            expect(sql).toContain('"s2"."id" <> "s"."id"');
+            // 本人以外: 本人の author 行がある目撃は除く（本人の別の投稿も入らない）
+            expect(sql).toMatch(
+                /NOT EXISTS \(SELECT 1 FROM "operation_sighting_authors" "a2" WHERE "a2"\."operation_sighting_id" = "s2"\."id" AND "a2"\."user_id" = \$\d+\)/,
+            );
+            // 有効: 無効化の行がある他人の目撃は除く
+            expect(sql).toMatch(
+                /NOT EXISTS \(SELECT 1 FROM "operation_sighting_invalidations" "inv2" WHERE "inv2"\."operation_sighting_id" = "s2"\."id"\)/,
+            );
+            // 本人側の無効は EXISTS の真偽
+            expect(sql).toMatch(
+                /EXISTS \(SELECT 1 FROM "operation_sighting_invalidations" "inv" WHERE "inv"\."operation_sighting_id" = "s"\."id"\) AS "invalidated"/,
+            );
+        });
+
+        it('author 行の無い目撃（ゲスト）は材料にする', async () => {
+            await query.findCorroborationFacts({
+                userId: 'user-1',
+                operationSightingIds: null,
+            });
+
+            const { sql } = captured[0];
+            // 材料側は author を JOIN せず NOT EXISTS で本人を除くだけなので、author 行の無い目撃は残る
+            const subquery = sql.slice(
+                sql.indexOf('array_agg'),
+                sql.indexOf(`AS "otherOperationNumbers"`),
+            );
+            expect(subquery).not.toMatch(
+                /(INNER|LEFT) JOIN "operation_sighting_authors"/,
+            );
+            expect(subquery).not.toContain('"a2"."user_id" IS NOT NULL');
+            // 本人の目撃の側は author を INNER JOIN で本人に絞る
+            expect(sql).toMatch(
+                /INNER JOIN "operation_sighting_authors" "a" ON "a"\."operation_sighting_id" = "s"\."id" AND "a"\."user_id" = \$\d+/,
+            );
+        });
+
+        it('operationSightingIds があれば本人の投稿のうちその id だけに絞る', async () => {
+            await query.findCorroborationFacts({
+                userId: 'user-1',
+                operationSightingIds: ['s-1', 's-2'],
+            });
+
+            const { sql, parameters } = captured[0];
+            expect(sql).toMatch(/"s"\."id" IN \(\$\d+, \$\d+\)/);
+            expect(parameters).toEqual(
+                expect.arrayContaining(['user-1', 's-1', 's-2']),
+            );
+        });
+
+        it('operationSightingIds が null なら id で絞らない', async () => {
+            await query.findCorroborationFacts({
+                userId: 'user-1',
+                operationSightingIds: null,
+            });
+
+            expect(captured[0].sql).not.toMatch(/"s"\."id" IN/);
+        });
+
+        it('operationSightingIds が空配列なら DB に問い合わせず [] を返す', async () => {
+            const result = await query.findCorroborationFacts({
+                userId: 'user-1',
+                operationSightingIds: [],
+            });
+
+            expect(result).toEqual([]);
+            expect(captured).toHaveLength(0);
+        });
+
+        it('他の目撃が無ければ otherOperationNumbers は []、invalidated は真偽で返す', async () => {
+            rawRows = [
+                {
+                    operationSightingId: 's-1',
+                    operationNumber: '41',
+                    invalidated: true,
+                    otherOperationNumbers: null,
+                },
+            ];
+
+            const [row] = await query.findCorroborationFacts({
+                userId: 'user-1',
+                operationSightingIds: null,
+            });
+
+            expect(row.otherOperationNumbers).toEqual([]);
+            expect(row.invalidated).toBe(true);
+        });
+    });
 });

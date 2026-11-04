@@ -21,6 +21,7 @@ import { OperationQuery } from '../../operation/infrastructure/queries/operation
 import { ItinerarySegmentQuery } from '../../operation/infrastructure/queries/itinerary-segment.query.js';
 import { ItinerarySegment } from '../../operation/domain/itinerary-link-rule.domain.js';
 import { UseCaseError } from '../../../core/classes/custom-error.js';
+import { UnexpectedError } from '../../../core/classes/unexpected-error.js';
 import {
     INVALIDATE_MANY_TIME_BUDGET_MS,
     INVALIDATE_MANY_UNEXPECTED_MESSAGE,
@@ -71,6 +72,7 @@ const mockAuthorQuery = {
     findManyByUserId: vi.fn() as AnyMock,
     findAuthorUserId: vi.fn() as AnyMock,
     findManyRecent: vi.fn() as AnyMock,
+    findCorroborationFacts: vi.fn() as AnyMock,
 };
 const mockItinerarySegmentQuery = { findManyByCalendarId: vi.fn() as AnyMock };
 const mockDataSource = {
@@ -2147,5 +2149,152 @@ describe('OperationSightingV3Service - 投稿者ごとの一覧・投稿者・�
         ]);
         const [row] = await service.findManyRecent({});
         expect(row.author).toMatchObject({ newAccount: false, burst: false });
+    });
+});
+
+describe('OperationSightingV3Service - 本人の目撃と裏付け', () => {
+    let service: OperationSightingV3Service;
+
+    const row = (id: string, operationNumber = '41') => ({
+        operationSightingId: id,
+        sightingTime: new Date('2026-11-02T01:00:00.000Z'),
+        createdAt: new Date('2026-11-02T01:05:00.000Z'),
+        operationNumber,
+        formationNumber: '8701',
+        invalidated: false,
+        invalidatedByUserId: null,
+        invalidatedByUsername: null,
+    });
+    const facts = (
+        id: string,
+        over: {
+            operationNumber?: string;
+            invalidated?: boolean;
+            otherOperationNumbers?: string[];
+        } = {},
+    ) => ({
+        operationSightingId: id,
+        operationNumber: '41',
+        invalidated: false,
+        otherOperationNumbers: [],
+        ...over,
+    });
+
+    beforeEach(async () => {
+        vi.clearAllMocks();
+        service = await buildService();
+    });
+
+    it('一覧の id で裏付けの材料を 1 回だけ引き、各行に corroboration を付ける', async () => {
+        mockAuthorQuery.findManyByUserId.mockResolvedValue([
+            row('s-1'),
+            row('s-2'),
+            row('s-3'),
+            row('s-4'),
+        ]);
+        // 材料は一覧と違う順で返ってもよい（id で突き合わせる）
+        mockAuthorQuery.findCorroborationFacts.mockResolvedValue([
+            facts('s-4', { invalidated: true, otherOperationNumbers: ['41'] }),
+            facts('s-3'),
+            facts('s-2', { otherOperationNumbers: ['42'] }),
+            facts('s-1', { otherOperationNumbers: ['41', '42'] }),
+        ]);
+
+        const result = await service.findManyMine({ userId: 'u-1' });
+
+        expect(mockAuthorQuery.findCorroborationFacts).toHaveBeenCalledTimes(1);
+        expect(mockAuthorQuery.findCorroborationFacts).toHaveBeenCalledWith({
+            userId: 'u-1',
+            operationSightingIds: ['s-1', 's-2', 's-3', 's-4'],
+        });
+        expect(
+            result.map((r) => [r.operationSightingId, r.corroboration]),
+        ).toEqual([
+            ['s-1', 'corroborated'],
+            ['s-2', 'conflicting'],
+            ['s-3', 'uncorroborated'],
+            ['s-4', 'invalidated'],
+        ]);
+        // 一覧の形は findManyByUserId と同じ（日時は ISO）
+        expect(result[0]).toMatchObject({
+            sightingTime: '2026-11-02T01:00:00.000Z',
+            createdAt: '2026-11-02T01:05:00.000Z',
+            operationNumber: '41',
+            formationNumber: '8701',
+            invalidated: false,
+            invalidatedBy: null,
+        });
+    });
+
+    it('一覧は findManyByUserId と同じ limit の既定・before の扱い', async () => {
+        mockAuthorQuery.findManyByUserId.mockResolvedValue([]);
+        await service.findManyMine({
+            userId: 'u-1',
+            limit: 10,
+            before: '2026-11-01T00:00:00.000Z',
+        });
+        await service.findManyMine({ userId: 'u-1' });
+        expect(mockAuthorQuery.findManyByUserId).toHaveBeenNthCalledWith(1, {
+            userId: 'u-1',
+            limit: 10,
+            before: new Date('2026-11-01T00:00:00.000Z'),
+        });
+        expect(mockAuthorQuery.findManyByUserId).toHaveBeenNthCalledWith(2, {
+            userId: 'u-1',
+            limit: 100,
+            before: null,
+        });
+    });
+
+    it('投稿が 0 件なら [] を返し、材料の query を呼ばない', async () => {
+        mockAuthorQuery.findManyByUserId.mockResolvedValue([]);
+        expect(await service.findManyMine({ userId: 'u-1' })).toEqual([]);
+        expect(mockAuthorQuery.findCorroborationFacts).not.toHaveBeenCalled();
+    });
+
+    it('一覧の行に材料が無ければ UnexpectedError（データの不整合）', async () => {
+        mockAuthorQuery.findManyByUserId.mockResolvedValue([row('s-1')]);
+        mockAuthorQuery.findCorroborationFacts.mockResolvedValue([]);
+        await expect(service.findManyMine({ userId: 'u-1' })).rejects.toThrow(
+            UnexpectedError,
+        );
+    });
+
+    it('countCorroborationsByUserId は本人の全投稿（operationSightingIds: null）を数える', async () => {
+        mockAuthorQuery.findCorroborationFacts.mockResolvedValue([
+            facts('s-1', { otherOperationNumbers: ['41'] }),
+            facts('s-2', { otherOperationNumbers: ['41'] }),
+            facts('s-3', { otherOperationNumbers: ['42'] }),
+            facts('s-4'),
+            facts('s-5', { invalidated: true }),
+        ]);
+
+        const counts = await service.countCorroborationsByUserId({
+            userId: 'u-1',
+        });
+
+        expect(mockAuthorQuery.findCorroborationFacts).toHaveBeenCalledTimes(1);
+        expect(mockAuthorQuery.findCorroborationFacts).toHaveBeenCalledWith({
+            userId: 'u-1',
+            operationSightingIds: null,
+        });
+        expect(counts).toEqual({
+            corroborated: 2,
+            conflicting: 1,
+            uncorroborated: 1,
+            invalidated: 1,
+        });
+    });
+
+    it('0 件なら 4 つとも 0', async () => {
+        mockAuthorQuery.findCorroborationFacts.mockResolvedValue([]);
+        expect(
+            await service.countCorroborationsByUserId({ userId: 'u-1' }),
+        ).toEqual({
+            corroborated: 0,
+            conflicting: 0,
+            uncorroborated: 0,
+            invalidated: 0,
+        });
     });
 });

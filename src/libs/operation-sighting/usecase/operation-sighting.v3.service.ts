@@ -37,6 +37,7 @@ import {
 import { OperationSightingLatestCacheQuery } from '../infrastructure/queries/operation-sighting-latest-cache.query.js';
 import { OperationSightingQuery } from '../infrastructure/queries/operation-sighting.query.js';
 import { OperationSightingDomainBuilder } from './builders/operation-sighting.domain.builder.js';
+import { MyOperationSightingDto } from './dtos/my-operation-sighting.dto.js';
 import { OperationSightingAuthorDto } from './dtos/operation-sighting-author.dto.js';
 import { OperationSightingDetailsDto } from './dtos/operation-sighting-details.dto.js';
 import { OperationSightingLatestCacheDto } from './dtos/operation-sighting-latest-cache.dto.js';
@@ -53,6 +54,10 @@ import { OPERATION_SIGHTING_TIME_CROSS_SECTION_SELECTION_TREE } from './operatio
 import { OPERATION_SIGHTINGS_BY_PERIOD_SELECTION_TREE } from './operation-sightings-by-period-selection.js';
 import { SightingCarryOver } from './read-models/sighting-carry-over.read-model.js';
 import { SightingAuthorMarks } from './read-models/sighting-author-marks.read-model.js';
+import {
+    SightingCorroboration,
+    type SightingCorroborationCounts,
+} from './read-models/sighting-corroboration.read-model.js';
 
 /**
  * まとめての無効化が新しい件を始めてよい経過時間（ミリ秒）。
@@ -122,6 +127,50 @@ export class OperationSightingV3Service {
         });
 
         return rows.map(toSummaryDto);
+    }
+
+    /**
+     * 本人の目撃を findManyByUserId と同じ一覧（同じ limit・before）で返し、各行に裏付けの判定を付ける。
+     * 判定の材料は一覧の id でまとめて 1 回だけ引く（N+1 にしない）。
+     */
+    async findManyMine(params: {
+        userId: string;
+        limit?: number;
+        before?: string;
+    }): Promise<MyOperationSightingDto[]> {
+        const sightings = await this.findManyByUserId(params);
+        if (sightings.length === 0) {
+            return [];
+        }
+
+        const facts = await this.operationSightingAuthorQuery.findCorroborationFacts({
+            userId: params.userId,
+            operationSightingIds: sightings.map((s) => s.operationSightingId),
+        });
+        const factsById = new Map(facts.map((f) => [f.operationSightingId, f]));
+
+        return sightings.map((sighting) => {
+            const fact = factsById.get(sighting.operationSightingId);
+            if (!fact) {
+                throw new UnexpectedError(
+                    '本人の目撃情報の裏付けの材料が見つからない',
+                    { operationSightingId: sighting.operationSightingId },
+                );
+            }
+            return { ...sighting, corroboration: SightingCorroboration.of(fact) };
+        });
+    }
+
+    /** 本人の全投稿（無効なものを含む）を、裏付けの判定ごとに数える */
+    async countCorroborationsByUserId(params: {
+        userId: string;
+    }): Promise<SightingCorroborationCounts> {
+        const facts = await this.operationSightingAuthorQuery.findCorroborationFacts({
+            userId: params.userId,
+            operationSightingIds: null,
+        });
+
+        return SightingCorroboration.count(facts.map(SightingCorroboration.of));
     }
 
     async findAuthor(params: {
