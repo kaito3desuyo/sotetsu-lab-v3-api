@@ -1,4 +1,4 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import {
     ExpressAdapter,
@@ -12,6 +12,14 @@ import utc from 'dayjs/plugin/utc.js';
 import helmet from 'helmet';
 import { AppModule } from './app.module.js';
 import { corsOptions } from './core/configs/cors-options.js';
+import {
+    assertNotProdOutsideLambda,
+    assertTargetsAgree,
+    type DatabaseTarget,
+    describeDatabaseTarget,
+    isOnLambda,
+    resolveDatabaseTarget,
+} from './core/configs/database-target.js';
 import { configureExpress } from './core/configs/express-settings.js';
 import { validationPipeOptions } from './core/configs/validator-options.js';
 import { UnexpectedErrorFilter } from './core/filters/unexpected-error.filter.js';
@@ -23,7 +31,25 @@ dayjs.extend(timezone);
 dayjs.extend(customParseFormat);
 dayjs.tz.setDefault('Asia/Tokyo');
 
+function resolveTarget(): DatabaseTarget | undefined {
+    if (isOnLambda(process.env)) {
+        try {
+            return resolveDatabaseTarget(process.env);
+        } catch {
+            return undefined;
+        }
+    }
+    const target = resolveDatabaseTarget(process.env);
+    assertTargetsAgree(target);
+    return target;
+}
+
 export async function createApp(): Promise<INestApplication> {
+    // 手元から本番の DB につながない。つなぐ前（Nest を立てる前）に止める
+    assertNotProdOutsideLambda(process.env);
+    // 接続先を決めてから Nest を立てる。Lambda（本番の通常運用）では判定できなくても止めない
+    const target = resolveTarget();
+
     const app = await NestFactory.create<NestExpressApplication>(
         AppModule,
         new ExpressAdapter(),
@@ -38,6 +64,14 @@ export async function createApp(): Promise<INestApplication> {
     app.use(helmet());
     app.enableCors(corsOptions(process.env.CORS_HEADER_ORIGIN));
     app.useLogger(app.get(LoggerService));
+    if (target) {
+        const targetMessage = describeDatabaseTarget(target);
+        if (target.db === 'production' || target.auth === 'production') {
+            Logger.warn(targetMessage, 'DatabaseTarget');
+        } else {
+            Logger.log(targetMessage, 'DatabaseTarget');
+        }
+    }
     app.useGlobalPipes(new ValidationPipe(validationPipeOptions));
     // app.useGlobalFilters(new ErrorFilter());
     // app.useGlobalFilters(new HttpExceptionFilter());

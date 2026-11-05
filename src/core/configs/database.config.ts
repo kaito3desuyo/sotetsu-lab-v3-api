@@ -2,6 +2,10 @@ import { DataSourceOptions } from 'typeorm';
 import { ENTITIES } from './entities.js';
 import { TypeOrmNamingStrategy } from './typeorm-naming-strategy.js';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { assertNotProdOutsideLambda } from './database-target.js';
+
+// 接続設定の根元の守り。AppModule を直接組む経路（e2e など）でも、接続を開く前に本番向きを止める
+assertNotProdOutsideLambda(process.env);
 
 // migrations はアプリでは使わないので、CLI 用の src/core/utils/data-source.ts だけで渡す
 export const DataSourceConfig: DataSourceOptions = {

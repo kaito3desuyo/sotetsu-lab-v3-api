@@ -13,11 +13,18 @@ import { isRole } from '../rbac/role.enum.js';
 import { AuthContext } from './auth-context.js';
 import { readUnverifiedIssuer } from './jwt-issuer.js';
 
-const supabaseIssuer = `${process.env.SUPABASE_URL}/auth/v1`;
+const supabaseAuthUrl = `${process.env.SUPABASE_URL}/auth/v1`;
+
+/**
+ * トークンの iss として期待する値。既定は SUPABASE_URL から組み立てる（本番）。
+ * 手元の Supabase はホストから見た URL（127.0.0.1）を iss にするが、コンテナの api は
+ * host.docker.internal で JWKS を取りに行くので、食い違うときだけ SUPABASE_JWT_ISSUER で与える。
+ */
+const supabaseIssuer = process.env.SUPABASE_JWT_ISSUER || supabaseAuthUrl;
 
 /** 公開鍵は Lambda の 1 実体の中で持ち回る（jose が取得とキャッシュをする） */
 const supabaseJwks = createRemoteJWKSet(
-    new URL(`${supabaseIssuer}/.well-known/jwks.json`),
+    new URL(`${supabaseAuthUrl}/.well-known/jwks.json`),
 );
 
 /**

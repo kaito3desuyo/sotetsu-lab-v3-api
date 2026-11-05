@@ -1,0 +1,37 @@
+# 本番の public の表のうち、手元へ写す表（copy）と写さない表（skip）の一覧。
+# copy-from-prod.sh が読む。写す表を列挙する方式なので、ここに無い表は写されない。
+# 本番に新しい表が増えると、スクリプトの最後に「copy にも skip にも無い表」として知らせる。
+# 書式: `copy <表名>` / `skip <表名>`（# から後ろはコメント）
+
+# --- 写す（公共のデータ。設定の性格を持つ feature_flags・calendar_dates・migrations も含む）---
+copy agencies
+copy calendar_dates
+copy calendars
+copy feature_flags
+copy formations
+copy migrations
+copy operating_systems
+copy operation_sighting_invalidations
+copy operation_sighting_latest_caches
+copy operation_sightings
+copy operations
+copy route_station_lists
+copy routes
+copy services
+copy stations
+copy stops
+copy times
+copy trip_blocks
+copy trip_classes
+copy trip_operation_lists
+copy trips
+copy vehicle_formations
+copy vehicles
+
+# --- 写さない（利用者の id・IP・メール・投稿者を持つ表など）。auth・storage などの中身はそもそも public ではないので写さない ---
+skip profiles                            # 試験アカウント 4 行だけ seed-dev-accounts.sql で作る
+skip operation_sighting_authors          # 目撃の投稿者の記録
+skip operation_sighting_management_logs  # 投稿管理の記録
+skip user_access_traces                  # IP・端末の手がかり
+skip user_role_changes                   # 役割の変更記録
+skip m6_fix_20261024                     # 本番の一回限りの修正の控え
