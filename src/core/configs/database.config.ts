@@ -2,6 +2,7 @@ import { DataSourceOptions } from 'typeorm';
 import { ENTITIES } from './entities.js';
 import { TypeOrmNamingStrategy } from './typeorm-naming-strategy.js';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { resolveReadOnlyExtra } from './database-target.js';
 
 // migrations はアプリでは使わないので、CLI 用の src/core/utils/data-source.ts だけで渡す
 export const DataSourceConfig: DataSourceOptions = {
@@ -22,6 +23,8 @@ export const DataSourceConfig: DataSourceOptions = {
         max: 1,
         // connectionTimeoutMillis: 1000,
         idleTimeoutMillis: 1000 * 60 * 5,
+        // 本番 DB を Lambda の外から見るときは DB が書き込みを拒む
+        ...resolveReadOnlyExtra(process.env),
     },
 };
 
