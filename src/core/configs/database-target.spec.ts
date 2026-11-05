@@ -1,3 +1,4 @@
+import { ReadOnlyClient } from './read-only-client.js';
 import {
     assertTargetsAgree,
     classifyUrl,
@@ -182,9 +183,9 @@ describe('describeDatabaseTarget', () => {
 });
 
 describe('readOnlyConnectionExtra', () => {
-    it('読み取り専用なら接続のオプションを返す', () => {
+    it('読み取り専用なら、接続のたびに SET する pg の Client を返す（pooler は options を無視するため）', () => {
         expect(readOnlyConnectionExtra({ readOnly: true })).toEqual({
-            options: '-c default_transaction_read_only=on',
+            Client: ReadOnlyClient,
         });
     });
 
@@ -194,9 +195,9 @@ describe('readOnlyConnectionExtra', () => {
 });
 
 describe('resolveReadOnlyExtra', () => {
-    it('本番 DB・Lambda 外ならオプションを返す（SUPABASE_URL が無くてもよい）', () => {
+    it('本番 DB・Lambda 外なら読み取り専用の Client を返す（SUPABASE_URL が無くてもよい）', () => {
         expect(resolveReadOnlyExtra({ DATABASE_URL: PROD_DB })).toEqual({
-            options: '-c default_transaction_read_only=on',
+            Client: ReadOnlyClient,
         });
     });
 

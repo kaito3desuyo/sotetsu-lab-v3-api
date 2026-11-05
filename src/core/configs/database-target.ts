@@ -1,3 +1,5 @@
+import { ReadOnlyClient } from './read-only-client.js';
+
 export type DbTarget = 'local' | 'production';
 
 export interface DatabaseTarget {
@@ -5,8 +7,6 @@ export interface DatabaseTarget {
     auth: DbTarget;
     readOnly: boolean;
 }
-
-const READ_ONLY_OPTIONS = '-c default_transaction_read_only=on';
 
 /** 接続先のホストが Supabase のクラウド（*.supabase.com / *.supabase.co）なら本番、それ以外は手元 */
 export function classifyUrl(
@@ -70,7 +70,7 @@ export function describeDatabaseTarget(t: DatabaseTarget): string {
 export function readOnlyConnectionExtra(
     t: Pick<DatabaseTarget, 'readOnly'>,
 ): Record<string, unknown> {
-    return t.readOnly ? { options: READ_ONLY_OPTIONS } : {};
+    return t.readOnly ? { Client: ReadOnlyClient } : {};
 }
 
 /**
