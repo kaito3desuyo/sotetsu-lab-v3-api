@@ -37,6 +37,8 @@
         "migration:show:prod": "npm run dotenv:prod -- npm run typeorm -- migration:show -d src/core/utils/data-source.ts",
         "migration:run:prod": "bash db/scripts/migration-run-prod.sh",
         "migration:revert": "npm run dotenv -- npm run typeorm -- migration:revert -d src/core/utils/data-source.ts",
+        "db:copy-from-prod": "bash db/scripts/copy-from-prod.sh",
+        "db:compare-schema": "bash db/scripts/compare-schema.sh",
         "cli": "npm run dotenv -- node --import @swc-node/register/esm-register src/cli.ts",
         "seed:calendar-dates:holidays": "npm run dotenv -- node --import @swc-node/register/esm-register db/seeds/seed-calendar-dates-holidays.ts",
         "seed:calendar-dates:special": "npm run dotenv -- node --import @swc-node/register/esm-register db/seeds/seed-calendar-dates-special.ts",
