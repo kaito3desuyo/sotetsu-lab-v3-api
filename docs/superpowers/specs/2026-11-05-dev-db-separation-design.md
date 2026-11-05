@@ -52,12 +52,14 @@
 ### 4.2 接続先の切り替え
 
 - **既定は手元。** api の `.env.local`・backend・socket の手元用の設定の既定を、手元の Supabase に向ける。コンテナからは `host.docker.internal:54321` / `:54322` で届く。
-- 本番を見たいときは、明示の切り替えで向ける（例: 別の env ファイル `.env.local.prod` を選ぶ npm script。名前は着手時に決めてよい）。
-- **本番に向けたときは接続を読み取り専用にする。** Postgres の `default_transaction_read_only=on` を接続のオプションで渡し（TypeORM の `extra` か接続文字列の `options`）、手元から本番への書き込みを DB が拒むようにする。これは「本番 DB を指していて、かつ本番の Lambda の上でない」ときに必ずかかるようにし、外す口は下の migration の 1 本だけにする。
-  - **例外は本番への migration だけ（ユーザー決定 2026-11-05）。** 今はユーザーが手元から `.env.local` で本番へ `migration:run` を流している（ADR-0008・0009・0013）。これを専用の npm script 1 本（例 `migration:run:prod`）にし、本番へ書ける口はこれだけにする。流す前に接続先と、流す migration の一覧を出し、`yes` と打たせてから実行する。`migration:revert` を本番に流す口は作らない（私の判断。要るときは同じ形で足す）。CLI（`rebuild-latest-cache` など）を本番に流す口も今は作らない。
-  - `NODE_ENV=production` を付けて手元から動かしても読み取り専用が外れないよう、判定は `NODE_ENV` でなく「Lambda の上で動いているか」（`AWS_LAMBDA_FUNCTION_NAME` の有無など）で行う（私の判断。着手時に本番の実行環境の変数を確かめて決めてよい）。
+- **手元の api は本番の DB に一切つながない（ユーザー決定 2026-11-05 改）。** 本番の DB を指していて、かつ本番の Lambda の上でないときは、api・CLI・TypeORM の CLI は**起動を止める**。外せるのは本番への migration の 1 本だけ。
+  - 改めた経緯: 最初は「本番に向けたら読み取り専用で立てる」にしていた。実装してみると、Supavisor（pooler）は接続時の `options=-c default_transaction_read_only=on` を :6543・:5432 とも黙って無視し、代わりに接続直後に `SET` を投げると **transaction mode の共有の裏 backend に設定が残り、本番の api の書き込みを止めかけた**（2026-11-05 11:31〜12:0x JST。ユーザーが `pg_terminate_backend` で解消。拒まれた本物の書き込みは記録に無し）。本番に読み取り専用のロールを作る案も出したが、ユーザー「使うことあるんかな」— 手元の api を本番に向ける場面はほぼ無く（本番の再現は写し直しで足りる）、口ごと無くす方が単純で安全なので、こちらにした。
+  - **本番の pooler にセッションの状態を変える文（`SET` など）を投げない。** 読み取り専用が要る所は、そのトランザクションだけに効く `BEGIN READ ONLY`（`pg_dump` は自分で張る）で行う。
+  - **例外は本番への migration だけ（ユーザー決定 2026-11-05）。** 今はユーザーが手元から `.env.local` で本番へ `migration:run` を流している（ADR-0008・0009・0013）。これを専用の npm script 1 本（`migration:run:prod`）にし、本番へ書ける口はこれだけにする。流す前に接続先と、流す migration の一覧を出し、`yes` と打たせてから実行する。`migration:revert` を本番に流す口は作らない（私の判断。要るときは同じ形で足す）。CLI（`rebuild-latest-cache` など）を本番に流す口も今は作らない。
+  - 本番の接続情報は `.env.local.prod` に置き、使うのは migration の script と写し直しの script だけ。
+  - `NODE_ENV=production` を付けて手元から動かしても止まるよう、判定は `NODE_ENV` でなく「Lambda の上で動いているか」（`AWS_LAMBDA_FUNCTION_NAME` の有無）で行う（私の判断）。
   - 本番の判定は接続先のホスト（`*.supabase.com` / `*.supabase.co` で、手元の Supabase でない）で行う。
-- **起動時に接続先を見せる。** api は起動時に、DB の向き先（手元 / 本番）と読み取り専用かどうかをログに目立つ形で出す。
+- **起動時に接続先を見せる。** api は起動時に、DB と Auth の向き先（手元 / 本番）をログに出す。
 - DB 以外の外への書き込みも、手元の既定では手元に向けるか止める（私の判断）: socket への合図（`SOCKET_BROADCAST_*`）は手元の serverless-offline へ、CDN の失効（`CDN_DISTRIBUTION_ID`）は手元の既定では空にして呼ばない、backend は手元の Supabase Auth へ。使っていない `COGNITO_*` は手元の既定から外す。向き先の表示と食い違いの停止は api だけに入れ、backend・socket は設定を分けるだけにする。
 - Auth も同じ向きにそろえる。DB は手元なのに Auth は本番、のような混ざった状態にならないよう、api は起動時に `DATABASE_URL` と `SUPABASE_URL` の向きが食い違っていたら起動を止める（私の判断）。
 
@@ -75,7 +77,7 @@
   - 一覧はコードとスキーマから作り、設計の付録としてスクリプトに書く（写さない表を足し忘れないよう、**写す表を列挙する方式**にする。私の判断）。
 - `feature_flags`・`calendar_dates` など設定の性格を持つ公共の表も写す（私の判断。手元を本番と同じ挙動にする。手元で切り替えて試すのは写した後に手元の DB で書き換えればよい）。
 - `pg_dump` / `psql` は手元の Supabase の DB コンテナの中のもの（本番と同じ主版）を使い、ホストに入れない（私の判断）。本番への接続は session mode（:5432）か直結で、pooler の transaction mode（:6543）は使わない。
-- 本番の接続情報は、4.2 の「本番を見る」切り替えと同じファイルから読む。スクリプトの本番への接続も読み取り専用にかかる。
+- 本番の接続情報は `.env.local.prod` から読む。本番への問い合わせは `pg_dump`（自分で読み取り専用のトランザクションを張る）と、1 本ずつ `BEGIN READ ONLY; ...; COMMIT;` で包んだ `psql` だけ。`SET` や `PGOPTIONS` は使わない。
 - ダンプの一時ファイルは `.context/` に置き、終わったら消す。
 - かかる時間を測って手順書に書く（354 MB なら数分の見込みだが未測定）。
 
@@ -108,18 +110,17 @@
 
 - **JWT の issuer の食い違い。** 手元の Auth が出すトークンの `iss` は CLI の既定で `http://127.0.0.1:54321/auth/v1`。コンテナの api が `SUPABASE_URL=http://host.docker.internal:54321` だと、`AuthGuard` の issuer と合わない。issuer を設定で合わせる（`config.toml` の `jwt_issuer` など）か、api に「JWKS を取りに行く URL」と「期待する issuer」を別の変数で持たせるかを、実物で確かめて決める。
 - 本番の Auth の設定（hook・匿名・署名方式・トークンの寿命）を読み、手元に写す方法。
-- 手元から本番を読み取り専用で見る切り替えが、pooler（6543・transaction mode）で `default_transaction_read_only` を受け付けるか。受け付けなければ session mode（5432）か、接続直後の `SET` で代える。
 - socket の手元の起動（serverless-offline・`dev:host`）が手元の Supabase で通るか。
 
 ## 6.1 確かめを誰が流すか
 
 - docker・`supabase start`・SWC を使う migration や CLI は、Claude がサンドボックスの外で流してよい（私の判断）。
-- 本番への接続は読み取りだけ。「本番に向けると書き込みが拒まれる」の実地の確かめは、行を変えない文（`UPDATE feature_flags SET ... WHERE false` など）で行い、拒まれることを見る。本番の行数の前後比べは Supabase MCP（読み取り）で。
+- 本番への接続は読み取りだけ。本番に書き込みを試す確かめはしない（2026-11-05 の事故の後）。本番の行数の前後比べは Supabase MCP（読み取り）で。
 
 ## 7. 完了の条件
 
 - 既定の設定のまま手元で目撃を投稿・時刻表を編集でき、本番の DB に何も入らないこと（本番の行数の前後で確かめる）。
-- 本番に切り替えて書き込もうとすると、DB が拒むこと（実際に 1 回試す）。
+- `.env.local.prod` の値で手元の api を立てようとすると、起動が止まること。
 - 起動時のログで向き先が分かること。DB と Auth の向きが食い違うと起動しないこと。
 - 写し直しのスクリプトが通り、写さない表・列が手元に無いこと（SQL で確かめる）。かかった時間を記録。
 - 試験アカウント 4 つでログインでき、役割どおりに通る・弾かれること。ゲストも。
