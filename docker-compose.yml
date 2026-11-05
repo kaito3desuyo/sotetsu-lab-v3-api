@@ -1,34 +1,15 @@
 version: '3.7'
 
-volumes:
-    development-db-data:
 networks:
     development-network:
 
 services:
-    development-db:
-        build:
-            context: ./db
-        ports:
-            - '5432:5432'
-        tty: true
-        volumes:
-            - development-db-data:/var/lib/postgresql/data
-        networks:
-            - development-network
-        environment:
-            POSTGRES_USER: postgres
-            POSTGRES_PASSWORD: s0tetsu-L@b-v3
-            POSTGRES_INITDB_ARGS: '--encoding=UTF-8 --locale=C'
-
     development-api:
         build:
             context: .
             target: development-base
         ports:
             - '3000:3000'
-        depends_on:
-            - development-db
         tty: true
         command: sh -c "npm run start:dev"
         volumes:
@@ -36,5 +17,7 @@ services:
             - /home/node/sotetsu-lab-v3-api/node_modules
         networks:
             - development-network
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
         env_file:
             - .env.local
