@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # copy-from-prod.sh と compare-schema.sh の共通部分（source して使う）。
 # 本番へは読み取りだけ。pg_dump / psql は手元の Supabase の DB コンテナの中のものを使う。
+# 本番の pooler（Supavisor）に SET・PGOPTIONS などセッションの状態を変える文は投げない（共有の裏 backend に残って本番を巻き込む・2026-11-05 の事故）。
+# 読み取り専用は、そのトランザクションだけに効く BEGIN READ ONLY（prod_sql）と、pg_dump が自分で張る読み取り専用のトランザクションで保つ。
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
@@ -40,27 +42,21 @@ load_prod_env() {
         ;;
     esac
     export PGPORT=5432
-    # pooler は options を捨てる（Task 1 で実測）が、直結の場合に効くので付ける。実際の保証は prod_sql の SET と pg_dump の READ ONLY
-    export PGOPTIONS='-c default_transaction_read_only=on'
     # session mode で繋がらなければ直結（db.<ref>.supabase.co）を試す
     PROD_REF="${PGUSER#*.}"
     PROD_DIRECT_HOST="db.${PROD_REF}.supabase.co"
     PROD_DIRECT_USER="${PGUSER%%.*}"
 }
 
-# マスク: 接続情報が混ざり得る出力から、ユーザー名の ref とパスワードを伏せる
-mask() {
-    sed -E 's/(postgres)\.[a-z0-9]{12,}/\1.****/g; s#(://[^:/@]+:)[^@]+@#\1****@#g'
-}
-
 # コンテナの中で本番に向けてコマンドを流す
 prod_exec() {
-    docker exec -i -e PGHOST -e PGPORT -e PGUSER -e PGPASSWORD -e PGDATABASE -e PGOPTIONS "$DB_CONTAINER" "$@"
+    docker exec -i -e PGHOST -e PGPORT -e PGUSER -e PGPASSWORD -e PGDATABASE "$DB_CONTAINER" "$@"
 }
 
-# 標準入力の SQL を本番で流す（先頭で読み取り専用にする。結果は区切り '|' の素のテキスト）
+# 標準入力の SQL を本番で流す。呼び出しごとに BEGIN READ ONLY; ... COMMIT; で包む（このトランザクションだけが読み取り専用で、セッションには何も残さない）。
+# 結果は区切り '|' の素のテキスト
 prod_sql() {
-    { echo 'SET default_transaction_read_only = on;'; cat; } |
+    { echo 'BEGIN READ ONLY;'; cat; echo 'COMMIT;'; } |
         prod_exec psql -X -A -t -F '|' -q -v ON_ERROR_STOP=1 -f -
 }
 

@@ -6,26 +6,46 @@
 #       3) スキーマ・データを入れる → 4) 試験アカウントを作る → 5) 一覧に無い表を知らせる → 6) スキーマの比べ
 # 取り出しが全部済んでから手元を作り直す。途中で本番に届かなくなっても手元を空のまま残さない。
 # 写す表・写さない表は copy-from-prod.tables.txt。ダンプは .context/ に置き、終わったら消す。
-set -Eeuo pipefail
+set -euo pipefail
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 START_SECONDS=$SECONDS
 WORK_DIR=".context/copy-from-prod"
-LOCAL_REBUILD_STARTED=0
 
-on_error() {
+# いまどこまで進んだか。終わるとき（成功・失敗・Ctrl-C のどれでも）に状態を 3 つのどれかで知らせ、取り出したダンプを必ず消す
+#   extract: 本番から取り出し中（手元の DB には触れていない）
+#   rebuild: 手元の作り直し中（supabase db reset の開始から試験アカウントを作り終えるまで。手元は中途半端になりうる）
+#   done:    手元の作り直しは済んだ（残りは行数・スキーマの確認だけ）
+STAGE="extract"
+
+# 取り出し中の Ctrl-C などで終わるとき、実行中の命令の stderr のリダイレクトが残っていることがある。状態表示は退避した fd 3（元の stderr）に出す
+exec 3>&2
+
+finish() {
     local code=$?
-    echo >&2
-    if [[ "$LOCAL_REBUILD_STARTED" -eq 1 ]]; then
-        echo "手元の作り直しの途中で失敗した（終了コード $code）。手元は中途半端な状態。もう一度 npm run db:copy-from-prod を流すと本番から取り直して作り直す" >&2
-    else
-        echo "本番からの取り出しの途中で失敗した（終了コード $code）。手元の DB には触れていない" >&2
+    trap - EXIT INT TERM
+    rm -r -f -- "$WORK_DIR"
+    if [[ "$code" -ne 0 ]]; then
+        echo >&3
+        case "$STAGE" in
+        extract)
+            echo "本番からの取り出しの途中で止まった（終了コード $code）。手元の DB には触れていない（前の状態のまま）" >&3
+            ;;
+        rebuild)
+            echo "手元の作り直しの途中で止まった（終了コード $code）。手元は中途半端な状態。もう一度 npm run db:copy-from-prod を流すと、本番から取り直して作り直す" >&3
+            ;;
+        done)
+            echo "手元の作り直しは済んでいる。そのあとの確認（行数・スキーマの比べ）の途中で止まった（終了コード $code）" >&3
+            ;;
+        esac
+        echo "取り出したダンプは消した" >&3
     fi
-    echo "途中のダンプは $WORK_DIR に残してある" >&2
     exit "$code"
 }
-trap on_error ERR
+trap finish EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 step() {
     echo
@@ -36,7 +56,7 @@ require_local_db
 load_prod_env
 step "本番への接続"
 check_prod_connection
-echo "接続: ${PROD_CONNECT_MODE} user=${PGUSER%%.*}.**** db=${PGDATABASE}（読み取り専用）"
+echo "接続: ${PROD_CONNECT_MODE} user=${PGUSER%%.*}.**** db=${PGDATABASE}（問い合わせは BEGIN READ ONLY、pg_dump は自前の読み取り専用トランザクション）"
 
 rm -rf "$WORK_DIR"
 mkdir -p "$WORK_DIR"
@@ -140,7 +160,7 @@ du -h "$WORK_DIR/extensions.sql" "$WORK_DIR/schema.sql" "$WORK_DIR/extras.sql" "
 
 # ---------------------------------------------------------------------------
 step "2. 手元を作り直す（supabase db reset）"
-LOCAL_REBUILD_STARTED=1
+STAGE="rebuild"
 npx supabase db reset 2>&1 | tail -n 15
 
 # Auth のコンテナが auth スキーマを作り終えるのを待つ
@@ -192,7 +212,7 @@ order by u.email;
 SQL
 
 # 手元は使える状態になった。これ以降の失敗は「手元が中途半端」ではない
-LOCAL_REBUILD_STARTED=0
+STAGE="done"
 
 # ---------------------------------------------------------------------------
 step "5. 行数と、一覧に無い表"
@@ -239,6 +259,5 @@ step "6. スキーマの比べ"
 bash "$REPO_ROOT/db/scripts/compare-schema.sh"
 
 # ---------------------------------------------------------------------------
-rm -rf "$WORK_DIR"
 echo
 echo "完了: $((SECONDS - START_SECONDS)) 秒かかった（ダンプの一時ファイルは消した）"
