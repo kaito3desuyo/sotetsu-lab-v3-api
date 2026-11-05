@@ -45,6 +45,8 @@ node_modules
 # Env file
 .env
 .env.*
+!.env.local.example
+!.env.local.prod.example
 
 # SQL Backup file
 *.sql!db/maintenance/*.sql
