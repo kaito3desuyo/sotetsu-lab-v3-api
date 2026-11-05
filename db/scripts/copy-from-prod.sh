@@ -13,11 +13,12 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 START_SECONDS=$SECONDS
 WORK_DIR=".context/copy-from-prod"
 
-# いまどこまで進んだか。終わるとき（成功・失敗・Ctrl-C のどれでも）に状態を 3 つのどれかで知らせ、取り出したダンプを必ず消す
+# いまどこまで進んだか。終わるとき（成功・失敗・Ctrl-C のどれでも）に状態を init・extract・rebuild・done のどれかで知らせ、取り出したダンプを必ず消す
+#   init:    事前の確認中（手元の Supabase が動いているか・本番に届くか。まだ何も取り出していない）
 #   extract: 本番から取り出し中（手元の DB には触れていない）
 #   rebuild: 手元の作り直し中（supabase db reset の開始から試験アカウントを作り終えるまで。手元は中途半端になりうる）
 #   done:    手元の作り直しは済んだ（残りは行数・スキーマの確認だけ）
-STAGE="extract"
+STAGE="init"
 
 # 取り出し中の Ctrl-C などで終わるとき、実行中の命令の stderr のリダイレクトが残っていることがある。状態表示は退避した fd 3（元の stderr）に出す
 exec 3>&2
@@ -29,6 +30,9 @@ finish() {
     if [[ "$code" -ne 0 ]]; then
         echo >&3
         case "$STAGE" in
+        init)
+            echo "事前の確認で止まった（終了コード $code）。まだ何も取り出していない。手元の DB には触れていない" >&3
+            ;;
         extract)
             echo "本番からの取り出しの途中で止まった（終了コード $code）。手元の DB には触れていない（前の状態のまま）" >&3
             ;;
@@ -39,7 +43,9 @@ finish() {
             echo "手元の作り直しは済んでいる。そのあとの確認（行数・スキーマの比べ）の途中で止まった（終了コード $code）" >&3
             ;;
         esac
-        echo "取り出したダンプは消した" >&3
+        if [[ "$STAGE" != "init" ]]; then
+            echo "取り出したダンプは消した" >&3
+        fi
     fi
     exit "$code"
 }
@@ -58,7 +64,8 @@ step "本番への接続"
 check_prod_connection
 echo "接続: ${PROD_CONNECT_MODE} user=${PGUSER%%.*}.**** db=${PGDATABASE}（問い合わせは BEGIN READ ONLY、pg_dump は自前の読み取り専用トランザクション）"
 
-rm -rf "$WORK_DIR"
+STAGE="extract"
+rm -r -f -- "$WORK_DIR"
 mkdir -p "$WORK_DIR"
 
 mapfile -t COPY_TABLES < <(table_list copy)
