@@ -69,7 +69,7 @@ docker が動いていること。
 
 ### 本番のデータを写し直す
 
-`npm run db:copy-from-prod`。本番の公共のデータ（時刻表・運用・編成・駅・目撃など）を手元に取り直し、手元の DB を作り直す。本番へは**読み取りだけ**（`pg_dump` と `BEGIN READ ONLY` で包んだ `psql`。`SET` などセッションの状態を変える文は送らない）。
+`npm run db:copy-from-prod`。本番の公共のデータ（時刻表・運用・編成・駅・目撃など）を手元に取り直し、手元の DB を作り直す。本番へは**読み取りだけ**（`pg_dump` と `BEGIN READ ONLY` で包んだ `psql` だけ。こちらから `SET`・`PGOPTIONS` は送らない。ただし `pg_dump` は自分でセッション設定（`row_security`・`statement_timeout` など）を送る。これが安全なのは、接続を pooler の session mode（`:5432`）に固定していて、切断で消えるから。**transaction mode（`:6543`）には絶対につながない**。`db/scripts/lib.sh` の `PGPORT=5432` を外さない）。
 
 - 手元の DB は作り直すので、手元で書いたものは消える。取り出しの途中で失敗しても、手元には触れない。作り直しの途中で止まったら、もう一度流せば取り直す。
 - 写す表は `db/scripts/copy-from-prod.tables.txt` に列挙してある。利用者に結びつくもの（`auth.*` の中身・`profiles`・目撃の投稿者の記録・投稿管理の記録・手がかりの記録・役割の変更記録）は写さない。本番に表が増えて一覧に無いときは、最後に知らせる。
@@ -96,7 +96,7 @@ docker が動いていること。
 - `DATABASE_URL` と `SUPABASE_URL` の向き（手元 / 本番）が食い違っても起動しない。
 - 起動時のログに向き先が出る: `DB: 手元 / Auth: 手元`。
 - 手元の既定では CDN の失効（`CDN_DISTRIBUTION_ID` が空）は呼ばず、socket への合図は手元の serverless-offline に送る。
-- 本番の pooler（Supavisor）に `SET` などセッションの状態を変える文を投げない。共有の裏 backend に設定が残り、本番の api を巻き込んだことがある（ADR-0015）。
+- 本番の pooler（Supavisor）の transaction mode（`:6543`）には、セッションの状態を変える文（`SET` など）を一切つながない・投げない。共有の裏 backend に設定が残り、本番の api を巻き込んだことがある。写し直しの `pg_dump` が自分で送るセッション設定は、session mode（`:5432`）に固定しているので切断で消える（2026-11-05 実測・ADR-0015）。
 
 ### 本番へ migration を流す
 

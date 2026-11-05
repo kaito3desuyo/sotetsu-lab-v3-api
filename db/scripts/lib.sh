@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # copy-from-prod.sh と compare-schema.sh の共通部分（source して使う）。
 # 本番へは読み取りだけ。pg_dump / psql は手元の Supabase の DB コンテナの中のものを使う。
-# 本番の pooler（Supavisor）に SET・PGOPTIONS などセッションの状態を変える文は投げない（共有の裏 backend に残って本番を巻き込む・2026-11-05 の事故）。
-# 読み取り専用は、そのトランザクションだけに効く BEGIN READ ONLY（prod_sql）と、pg_dump が自分で張る読み取り専用のトランザクションで保つ。
+# こちらから本番に SET・PGOPTIONS は送らない。読み取り専用は、そのトランザクションだけに効く BEGIN READ ONLY（prod_sql）と、pg_dump が自分で張る読み取り専用のトランザクションで保つ。
+# ただし pg_dump 自身は接続ごとにセッション設定（row_security・statement_timeout・search_path など）を送る。これが安全なのは、接続を pooler の session mode（:5432）か直結に固定していて、切断で設定が消えるから
+# （2026-11-05 に実測。写し直しの後の 40 本の見本が search_path も含め既定のまま・ADR-0015）。transaction mode（:6543）には絶対につながないこと。共有の裏 backend に設定が残り本番を巻き込む（同日の事故）。
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
@@ -41,6 +42,7 @@ load_prod_env() {
         exit 1
         ;;
     esac
+    # 安全の要: session mode（:5432）に固定する。pg_dump が送るセッション設定は切断で消える。:6543 に変えない・外さない（上の説明・ADR-0015）
     export PGPORT=5432
     # session mode で繋がらなければ直結（db.<ref>.supabase.co）を試す
     PROD_REF="${PGUSER#*.}"

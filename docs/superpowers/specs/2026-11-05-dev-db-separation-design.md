@@ -77,7 +77,7 @@
   - 一覧はコードとスキーマから作り、設計の付録としてスクリプトに書く（写さない表を足し忘れないよう、**写す表を列挙する方式**にする。私の判断）。
 - `feature_flags`・`calendar_dates` など設定の性格を持つ公共の表も写す（私の判断。手元を本番と同じ挙動にする。手元で切り替えて試すのは写した後に手元の DB で書き換えればよい）。
 - `pg_dump` / `psql` は手元の Supabase の DB コンテナの中のもの（本番と同じ主版）を使い、ホストに入れない（私の判断）。本番への接続は session mode（:5432）か直結で、pooler の transaction mode（:6543）は使わない。
-- 本番の接続情報は `.env.local.prod` から読む。本番への問い合わせは `pg_dump`（自分で読み取り専用のトランザクションを張る）と、1 本ずつ `BEGIN READ ONLY; ...; COMMIT;` で包んだ `psql` だけ。`SET` や `PGOPTIONS` は使わない。
+- 本番の接続情報は `.env.local.prod` から読む。本番への問い合わせは `pg_dump`（自分で読み取り専用のトランザクションを張る）と、1 本ずつ `BEGIN READ ONLY; ...; COMMIT;` で包んだ `psql` だけ。こちらから `SET` や `PGOPTIONS` は送らない。ただし `pg_dump` 自身が接続ごとにセッション設定（`row_security`・`statement_timeout`・`search_path` など）を送る。これが安全なのは、接続を session mode（:5432）か直結に固定していて、切断で設定が消えるから（2026-11-05 に実測。写し直しの後の 40 本の見本が `search_path` も含め既定のまま）。transaction mode（:6543）には絶対につながない（`lib.sh` の `PGPORT=5432` が要）。
 - ダンプの一時ファイルは `.context/` に置き、終わったら消す。
 - かかる時間を測って手順書に書く（354 MB なら数分の見込みだが未測定）。
 
@@ -99,7 +99,7 @@
 
 ## 5. 関わるリポ
 
-- **api**: Supabase CLI の設定・切り替えと読み取り専用・起動時の表示と食い違いの停止・写し直しのスクリプト・試験アカウント・スキーマの比べ・docker-compose・手順書・ADR。
+- **api**: Supabase CLI の設定・本番 DB への起動拒否と本番への migration の口・起動時の表示と食い違いの停止・写し直しのスクリプト・試験アカウント・スキーマの比べ・docker-compose・手順書・ADR。
 - **backend**: 手元用の設定を手元の Supabase に（URL・publishable key・secret key）。本番向けの設定は別に残す。
 - **socket**: 手元用の `SUPABASE_URL` を手元に。
 - client は変えない（backend と api の向きで決まる）。

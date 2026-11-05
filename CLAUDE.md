@@ -77,6 +77,8 @@ npm run migration:create     # マイグレーション作成
 npm run migration:run        # 実行
 npm run migration:revert     # ロールバック
 ```
+- 本番へ流す口は `npm run migration:run:prod` だけ（対話端末で `yes` と打つ。`.env.local.prod` を読む）。流す前の未適用の一覧は `npm run migration:show:prod`（`--show`）で見る。手元の api・CLI・TypeORM の CLI は、本番の DB を向くと起動しない（ADR-0015）。
+- 手元の Supabase は `npm run supabase:start`、本番の公共のデータの写し直しは `npm run db:copy-from-prod`（手順は README「手元の開発環境」）。
 
 ### CLI
 ```bash

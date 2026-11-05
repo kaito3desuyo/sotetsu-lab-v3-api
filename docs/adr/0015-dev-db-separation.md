@@ -2,7 +2,7 @@
 
 - **日時**: 2026-11-05
 - **Agent**: claude-sonnet-5-5（設計と判断は claude-opus-5-5 が controller として行い、実装と文書は sonnet が分担した）
-- **ステータス**: 採用済み（手元の開発環境の変更。本番へのデプロイは無い）
+- **ステータス**: 採用済み（手元の開発環境の変更。ただし api の起動時の拒否（`database.config.ts`・`app.ts`）は次の api のリリースで本番の Lambda にも入る。デプロイ後の確かめと戻し方は下の「本番へ出すとき」）
 - **ブランチ**: chore/dev-db-separation（backend・socket も同名のブランチ）
 - **spec**: docs/superpowers/specs/2026-11-05-dev-db-separation-design.md（計画: docs/superpowers/plans/2026-11-05-dev-db-separation.md）
 
@@ -63,14 +63,30 @@
 - **未知のホストは local 扱い。** 本番の判定は `*.supabase.com` / `*.supabase.co` だけ。本番を独自ドメインに変える、あるいは別の名前の本番ができると、黙って「手元」と見なされて拒否が外れる。そのときは判定を足すこと。似た名前（`evilsupabase.co`）は本番にしない。
 - **Auth の細かい設定は CLI の既定のまま**（`jwt_expiry` は 3600 など）。本番の Auth 設定を読む道具が無く（Management API はトークンが要る）、署名方式（ES256）・匿名ログイン・hook だけを本番に合わせた。トークンの寿命などは本番と違う可能性がある。手元で動いて本番で落ちたら、まずここを疑う。手元の Supabase は `realtime`・`storage`・`edge_runtime`・`analytics` を止めた（Studio・Inbucket は残した）。
 - **裁定 6: 本番は Lambda だけで動くとみなす。** CI の deploy は `serverless deploy` のみで、ECS へイメージを出す道が無い。`taskdef.json` は env の更新に付いてきた名残とみなした。もし ECS で動く api が現役なら、`AWS_LAMBDA_FUNCTION_NAME` が無いので、次のイメージから起動を拒む。そのときは「本番の実行基盤」の判定（例 `ECS_CONTAINER_METADATA_URI_V4`）を拒否の例外に足す。確かめはユーザーに残した。
-- 本番の Lambda（Web Adapter の `run.sh` の子プロセス）で `AWS_LAMBDA_FUNCTION_NAME` が見えることは、AWS のドキュメントでは予約変数として全ランタイムに設定されるが、実環境のログでは確かめていない。デプロイ後に、起動ログの `DatabaseTarget` が出る（拒否されず起動する）ことを見ること。
+- **本番の Lambda で `AWS_LAMBDA_FUNCTION_NAME` が見えること**（実環境のログでは未確認。ブランチ全体の最終レビューが一次情報から「見える」と判断した）。根拠:
+  - AWS のドキュメント（Lambda の環境変数「Defined runtime environment variables」）で、`AWS_LAMBDA_FUNCTION_NAME` は Lambda が初期化時に設定する予約変数。`_HANDLER`・`LAMBDA_TASK_ROOT`・`AWS_ACCESS_KEY_ID`・`AWS_SESSION_TOKEN` と同じ一覧にあり、同じ仕組みで渡る。関数の設定で上書き・削除はできない。
+  - Web Adapter の `layer/bootstrap` は `exec -- "${LAMBDA_TASK_ROOT}/${_HANDLER}"` で `dist/run.sh` を起動する。wrapper 自身が予約変数を読んでいるので、見えていなければ今の本番は起動できない。`exec` なので環境はそのまま引き継がれ、`src/run.sh` は `env -i` などで環境を消さずに `node` を起動する。
+  - `socket-signal.ts`・`cdn-invalidation.ts` の AWS SDK は認証情報を明示せず、同じ予約変数（`AWS_ACCESS_KEY_ID` など）から取っている。本番で socket への合図と CDN の失効が動いている時点で、同じ node プロセスに予約変数が届いている。
+  - 判定は `Boolean(env.AWS_LAMBDA_FUNCTION_NAME)` で、関数名の値には依存しない。
+  - 保険の変数（`SOTETSU_ON_LAMBDA` など）は足さない（裁定 9）。拒否の抜け道が増えるのと、予約変数で足りるため。
+
+## 本番へ出すとき
+
+`database.config.ts` は import 時に、本番の DB を向いて Lambda の外なら throw する。Lambda の上で万一判定が偽になると `main.js` が読み込みで落ち、Web Adapter の readiness が通らず全リクエストが落ちる。上の根拠から起きないと判断するが、このブランチを含む api のリリース（feat コミットがあるので版が上がる）は「本番に関係ない」変更ではない。
+
+- **デプロイ直後の確かめ:**
+  1. CloudWatch Logs に起動ログの `DatabaseTarget` が出ていて、`DB: 本番 / Auth: 本番`（warn）になっている。
+  2. `/health-check` が 200 を返す。
+  3. 書き込みが 1 つ通る（目撃の投稿など、通常の操作）。
+- **戻し方:** 落ちた、または 1〜3 のどれかが満たされなければ、1 つ前の版を `npm run deploy` し直す（または `serverless rollback`）。ECS の道（裁定 6）が現役だった場合も、同じ症状（起動を拒む）になるので、まずここに戻す。
 
 ## 事故（2026-11-05）— 本番の pooler にセッションの状態を変える文を投げない
 
 - 経緯: 最初の実装は、本番に向けた api を読み取り専用で立てるため、接続時に `options=-c default_transaction_read_only=on` を渡し、写し直しの `pg_dump` / `psql` にも `PGOPTIONS` で同じものを渡していた。
 - 確かめると、Supavisor（pooler）は接続時の startup parameter（`options`）を session mode（:5432）・transaction mode（:6543）とも**黙って捨てた**。読み取り専用が効かず、`UPDATE ... WHERE false` が通った（0 行・害なし）。
 - 代わりに接続直後に `SET default_transaction_read_only = on` を投げる作りにして確かめたところ、**transaction mode の共有の裏 backend に設定が残った。** 11:31〜12:0x JST に本番の pooler :6543 の backend 1 つに `default_transaction_read_only=on` が居座り、その backend に当たった本番の api の書き込みを止めかけた（見本取りの SELECT 60 本が全部 `on` だった）。拒まれた本物の書き込みは記録に無い（最後の目撃は 10:27）。ユーザーが `pg_terminate_backend` で解消し、:6543・:5432 とも 60/60 が `off` に戻ったことを確かめた。
-- 教訓: **本番の pooler にセッションの状態を変える文（`SET`・`PGOPTIONS`・prepare・temp table など）を投げない。** pooler は接続を共有するので、状態は他の利用者に残る。読み取り専用が要る所は、そのトランザクションだけに効く `BEGIN READ ONLY; ...; COMMIT;` で行う（`pg_dump` は自分で読み取り専用のトランザクションを張る）。この教訓と、読み取り専用の仕組みごと取り下げた決定が、上の「手元の api は本番の DB に一切つながない」である。
+- 教訓: **本番の pooler（特に transaction mode :6543）にセッションの状態を変える文（`SET`・`PGOPTIONS`・prepare・temp table など）を投げない。** pooler は接続を共有するので、状態は他の利用者に残る。読み取り専用が要る所は、そのトランザクションだけに効く `BEGIN READ ONLY; ...; COMMIT;` で行う（`pg_dump` は自分で読み取り専用のトランザクションを張る）。この教訓と、読み取り専用の仕組みごと取り下げた決定が、上の「手元の api は本番の DB に一切つながない」である。
+- 「こちらから `SET` を送らない」と「本番に `SET` が届かない」は別。`pg_dump` は接続ごとに自分で `SET statement_timeout = 0`・`SET lock_timeout = 0`・`SET idle_in_transaction_session_timeout = 0`・`SET row_security = off`・`SET extra_float_digits TO 3`・`set_config('search_path', '', false)` などを送る（`copy-from-prod.sh` と `compare-schema.sh` の合わせて 3 回、本番の pooler に届く）。安全なのは、`lib.sh` の `load_prod_env` が `PGPORT=5432`（session mode）に固定していて、切断で戻るから。**写し直しは :6543 に絶対につながない**（変えると、この事故そのものを自分で繰り返す）。
 - 写し直しで残る `pg_dump` 自身のセッション設定（`statement_timeout`・`row_security` など）は、本番の session mode（:5432）に残らないことを実測した。写し直しの後、本番 :5432 を `SELECT` だけで 40 本見本取りして、`statement_timeout=2min`・`row_security=on`・`extra_float_digits=0`・`default_transaction_read_only=off`・`search_path="$user", public, extensions` という既定のままだった（`pg_dump` の `SET` の 0 / off / 3 や空の `search_path` は残っていない）。session mode は切断で戻る。
 
 ## 却下した案
@@ -84,7 +100,7 @@
 
 ## 結果
 
-- migration は無い。本番の DB・Lambda への変更は無い（`auth.guard.ts` の `SUPABASE_JWT_ISSUER` は未設定なら従来どおり）。
+- migration は無い。本番の DB への変更は無い。本番の Lambda では `AWS_LAMBDA_FUNCTION_NAME` があるので拒否を通る（起動の道に判定が 1 つ増える。確かめと戻し方は「本番へ出すとき」）。`auth.guard.ts` の `SUPABASE_JWT_ISSUER` は未設定なら従来どおり。
 - 手順書は api の `README.md` の「手元の開発環境」。clone 直後は `.env.local` を作る → `.env.local.prod` を置く → 署名鍵を作る → `npm run supabase:start` → `npm run db:copy-from-prod`（約 1 分）→ `docker compose up`。`docker compose up` の流れは今までと同じで、足したのは最初の `supabase:start` と写し直しの 2 つ。
 - 実地の確かめ（2026-11-05・spec §7）:
   - 既定の設定のまま、手元の api に試験アカウントのトークンで目撃を投稿（reporter・editor は 201）・時刻表を編集（editor は 200）し、手元の DB に入ることを確かめた。本番の行は、この作業の前後で controller が Supabase MCP で数えた（api は本番に向かう口を持たないので、本番に入る道が無い）。
@@ -106,4 +122,11 @@
   - `docker-compose.yml` の改行が CRLF から LF に変わった。`package-lock.json` で dev 依存の `@noble/hashes` が 1.6.0 から 1.8.0 に上がった。
   - `.env.local.example` の `postgres:postgres@` が GitGuardian に反応しうる（spec のダミーと同じ性質の、CLI の既定の値）。
   - 手元の Postgres は 15.19、本番は 15.6.1.141（主版は一致）。マイナー版の違いで動きが食い違う可能性は残る。
+  - `.env.local.prod` に `SOTETSU_PROD_MIGRATION` か `AWS_LAMBDA_FUNCTION_NAME` が書かれていると、`dotenv:prod` 経由の何でも拒否を素通りする（`migration-run-prod.sh` は環境しか見ていない）。この 2 つは書かない。直すなら `migration-run-prod.sh` と `lib.sh` の `load_prod_env` でファイルを検査して中止する。
+  - `classifyUrl` は URL の `?host=` を見ない。`postgresql://…@localhost/postgres?host=<本番>` は「手元」になる（うっかりでは作らない形）。
+  - 本番への接続が `sslmode=prefer`（証明書を確かめない）。直すなら `load_prod_env` に `PGSSLMODE=require` を足し、`prod_exec` に `-e PGSSLMODE` を足す（`SET` ではなく接続時のパラメータ）。
+  - `lib.sh` の直結への切り替えで、`DATABASE_URL` が最初から直結（`PGUSER` に `.` が無い）だと `PROD_REF` が `postgres` になる。最初の session mode が通れば使われないので実害は小さい。
+  - `migration:run:prod` は「見せた一覧」ではなく「流す時点の未適用」を流す。`yes` を待つ間に `db/migrations` が変わる（ブランチの切り替え・pull）と、見せていない migration も流れる。直すなら `yes` の直後にもう一度一覧を取って比べる。
+  - backend・socket の README が `npx supabase start`、api の README が `npm run supabase:start` と、表記がそろっていない。
+  - ADR の Agent 欄は sonnet だが、本文の判断は controller（opus）が中心。未追跡の `v12_backup.sql`（70 MB）がリポ直下にある（このブランチの物ではない。`.gitignore` の `*.sql` で守られている）。
   - ブランチ `backup/dev-db-before-trailer` が残っている（コミットのトレーラーを直す前の履歴。消すのはユーザー）。
