@@ -1,12 +1,10 @@
-import { ReadOnlyClient } from './read-only-client.js';
 import {
+    assertNotProdOutsideLambda,
     assertTargetsAgree,
     classifyUrl,
     describeDatabaseTarget,
     isOnLambda,
-    readOnlyConnectionExtra,
     resolveDatabaseTarget,
-    resolveReadOnlyExtra,
 } from './database-target.js';
 
 const PROD_DB =
@@ -57,52 +55,22 @@ describe('isOnLambda', () => {
 });
 
 describe('resolveDatabaseTarget', () => {
-    const prod = { DATABASE_URL: PROD_DB, SUPABASE_URL: PROD_AUTH };
-
-    it('本番 DB・Lambda 外は読み取り専用', () => {
-        expect(resolveDatabaseTarget(prod)).toEqual({
-            db: 'production',
-            auth: 'production',
-            readOnly: true,
-        });
-    });
-
-    it('本番 DB・Lambda の上は読み取り専用でない', () => {
-        expect(
-            resolveDatabaseTarget({ ...prod, AWS_LAMBDA_FUNCTION_NAME: 'fn' })
-                .readOnly,
-        ).toBe(false);
-    });
-
-    it('本番 DB・SOTETSU_PROD_MIGRATION=confirmed は読み取り専用でない', () => {
+    it('本番の DB と Auth を本番と判定する', () => {
         expect(
             resolveDatabaseTarget({
-                ...prod,
-                SOTETSU_PROD_MIGRATION: 'confirmed',
-            }).readOnly,
-        ).toBe(false);
+                DATABASE_URL: PROD_DB,
+                SUPABASE_URL: PROD_AUTH,
+            }),
+        ).toEqual({ db: 'production', auth: 'production' });
     });
 
-    it('SOTETSU_PROD_MIGRATION が confirmed 以外なら読み取り専用のまま', () => {
-        expect(
-            resolveDatabaseTarget({ ...prod, SOTETSU_PROD_MIGRATION: 'yes' })
-                .readOnly,
-        ).toBe(true);
-    });
-
-    it('手元は読み取り専用でない', () => {
+    it('手元の DB と Auth を手元と判定する', () => {
         expect(
             resolveDatabaseTarget({
                 DATABASE_URL: LOCAL_DB,
                 SUPABASE_URL: LOCAL_AUTH,
             }),
-        ).toEqual({ db: 'local', auth: 'local', readOnly: false });
-    });
-
-    it('NODE_ENV=production でも Lambda 外なら読み取り専用', () => {
-        expect(
-            resolveDatabaseTarget({ ...prod, NODE_ENV: 'production' }).readOnly,
-        ).toBe(true);
+        ).toEqual({ db: 'local', auth: 'local' });
     });
 
     it('DATABASE_URL が無ければ例外', () => {
@@ -118,13 +86,83 @@ describe('resolveDatabaseTarget', () => {
     });
 });
 
+describe('assertNotProdOutsideLambda', () => {
+    it('本番 DB・Lambda の外・確認なしなら起動を止める', () => {
+        expect(() =>
+            assertNotProdOutsideLambda({ DATABASE_URL: PROD_DB }),
+        ).toThrow(/本番/);
+    });
+
+    it('止めるときのメッセージに接続文字列（パスワード・ホスト）を含めない', () => {
+        let message = '';
+        try {
+            assertNotProdOutsideLambda({ DATABASE_URL: PROD_DB });
+        } catch (e) {
+            message = e instanceof Error ? e.message : String(e);
+        }
+        expect(message).not.toBe('');
+        expect(message).not.toMatch(/u:p@|pooler|supabase/);
+    });
+
+    it('NODE_ENV=production でも Lambda の外なら止める', () => {
+        expect(() =>
+            assertNotProdOutsideLambda({
+                DATABASE_URL: PROD_DB,
+                NODE_ENV: 'production',
+            }),
+        ).toThrow(/本番/);
+    });
+
+    it('SOTETSU_PROD_MIGRATION が confirmed 以外なら止める', () => {
+        expect(() =>
+            assertNotProdOutsideLambda({
+                DATABASE_URL: PROD_DB,
+                SOTETSU_PROD_MIGRATION: 'yes',
+            }),
+        ).toThrow(/本番/);
+    });
+
+    it('Lambda の上なら通す', () => {
+        expect(() =>
+            assertNotProdOutsideLambda({
+                DATABASE_URL: PROD_DB,
+                AWS_LAMBDA_FUNCTION_NAME: 'fn',
+            }),
+        ).not.toThrow();
+    });
+
+    it('SOTETSU_PROD_MIGRATION=confirmed なら通す', () => {
+        expect(() =>
+            assertNotProdOutsideLambda({
+                DATABASE_URL: PROD_DB,
+                SOTETSU_PROD_MIGRATION: 'confirmed',
+            }),
+        ).not.toThrow();
+    });
+
+    it('手元の DB なら通す', () => {
+        expect(() =>
+            assertNotProdOutsideLambda({ DATABASE_URL: LOCAL_DB }),
+        ).not.toThrow();
+    });
+
+    it('DATABASE_URL が無ければ通す（つなぐ先が無い）', () => {
+        expect(() => assertNotProdOutsideLambda({})).not.toThrow();
+    });
+
+    it('DATABASE_URL が URL として読めなければ例外', () => {
+        expect(() =>
+            assertNotProdOutsideLambda({ DATABASE_URL: 'not a url' }),
+        ).toThrow();
+    });
+});
+
 describe('assertTargetsAgree', () => {
     it('DB と Auth の向きが違えば、両方の向き先を含めて例外', () => {
         expect(() =>
             assertTargetsAgree({
                 db: 'local',
                 auth: 'production',
-                readOnly: false,
             }),
         ).toThrow(/DATABASE_URL.*手元.*SUPABASE_URL.*本番/s);
     });
@@ -134,7 +172,6 @@ describe('assertTargetsAgree', () => {
             assertTargetsAgree({
                 db: 'production',
                 auth: 'local',
-                readOnly: true,
             }),
         ).toThrow(/DATABASE_URL.*本番.*SUPABASE_URL.*手元/s);
     });
@@ -144,73 +181,21 @@ describe('assertTargetsAgree', () => {
             assertTargetsAgree({
                 db: 'local',
                 auth: 'local',
-                readOnly: false,
             }),
         ).not.toThrow();
     });
 });
 
 describe('describeDatabaseTarget', () => {
-    it('本番・読み取り専用', () => {
+    it('本番', () => {
         expect(
-            describeDatabaseTarget({
-                db: 'production',
-                auth: 'production',
-                readOnly: true,
-            }),
-        ).toBe('DB: 本番（読み取り専用） / Auth: 本番');
-    });
-
-    it('本番・書き込み可（Lambda など）', () => {
-        expect(
-            describeDatabaseTarget({
-                db: 'production',
-                auth: 'production',
-                readOnly: false,
-            }),
+            describeDatabaseTarget({ db: 'production', auth: 'production' }),
         ).toBe('DB: 本番 / Auth: 本番');
     });
 
     it('手元', () => {
-        expect(
-            describeDatabaseTarget({
-                db: 'local',
-                auth: 'local',
-                readOnly: false,
-            }),
-        ).toBe('DB: 手元 / Auth: 手元');
-    });
-});
-
-describe('readOnlyConnectionExtra', () => {
-    it('読み取り専用なら、接続のたびに SET する pg の Client を返す（pooler は options を無視するため）', () => {
-        expect(readOnlyConnectionExtra({ readOnly: true })).toEqual({
-            Client: ReadOnlyClient,
-        });
-    });
-
-    it('そうでなければ空', () => {
-        expect(readOnlyConnectionExtra({ readOnly: false })).toEqual({});
-    });
-});
-
-describe('resolveReadOnlyExtra', () => {
-    it('本番 DB・Lambda 外なら読み取り専用の Client を返す（SUPABASE_URL が無くてもよい）', () => {
-        expect(resolveReadOnlyExtra({ DATABASE_URL: PROD_DB })).toEqual({
-            Client: ReadOnlyClient,
-        });
-    });
-
-    it('Lambda の上では DATABASE_URL を解釈せず空', () => {
-        expect(
-            resolveReadOnlyExtra({
-                DATABASE_URL: PROD_DB,
-                AWS_LAMBDA_FUNCTION_NAME: 'fn',
-            }),
-        ).toEqual({});
-    });
-
-    it('DATABASE_URL が無ければ空（接続しないテストが config を読めるように）', () => {
-        expect(resolveReadOnlyExtra({})).toEqual({});
+        expect(describeDatabaseTarget({ db: 'local', auth: 'local' })).toBe(
+            'DB: 手元 / Auth: 手元',
+        );
     });
 });

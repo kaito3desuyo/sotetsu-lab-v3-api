@@ -2,9 +2,13 @@ import { join } from 'node:path';
 import { DataSource } from 'typeorm';
 import { DataSourceConfig } from '../configs/database.config.js';
 import {
+    assertNotProdOutsideLambda,
     describeDatabaseTarget,
     resolveDatabaseTarget,
 } from '../configs/database-target.js';
+
+// 手元から本番の DB につながない（migration:run:prod の SOTETSU_PROD_MIGRATION=confirmed だけ通す）
+assertNotProdOutsideLambda(process.env);
 
 try {
     console.warn(describeDatabaseTarget(resolveDatabaseTarget(process.env)));

@@ -13,6 +13,7 @@ import helmet from 'helmet';
 import { AppModule } from './app.module.js';
 import { corsOptions } from './core/configs/cors-options.js';
 import {
+    assertNotProdOutsideLambda,
     assertTargetsAgree,
     type DatabaseTarget,
     describeDatabaseTarget,
@@ -44,6 +45,8 @@ function resolveTarget(): DatabaseTarget | undefined {
 }
 
 export async function createApp(): Promise<INestApplication> {
+    // 手元から本番の DB につながない。つなぐ前（Nest を立てる前）に止める
+    assertNotProdOutsideLambda(process.env);
     // 接続先を決めてから Nest を立てる。Lambda（本番の通常運用）では判定できなくても止めない
     const target = resolveTarget();
 

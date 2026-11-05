@@ -1,11 +1,8 @@
-import { ReadOnlyClient } from './read-only-client.js';
-
 export type DbTarget = 'local' | 'production';
 
 export interface DatabaseTarget {
     db: DbTarget;
     auth: DbTarget;
-    readOnly: boolean;
 }
 
 /** 接続先のホストが Supabase のクラウド（*.supabase.com / *.supabase.co）なら本番、それ以外は手元 */
@@ -35,19 +32,10 @@ export function isOnLambda(env: NodeJS.ProcessEnv): boolean {
     return Boolean(env.AWS_LAMBDA_FUNCTION_NAME);
 }
 
-/** 本番 DB を Lambda の外から見るときは読み取り専用。外せるのは migration:run:prod（SOTETSU_PROD_MIGRATION=confirmed）だけ */
-function isReadOnly(db: DbTarget, env: NodeJS.ProcessEnv): boolean {
-    return (
-        db === 'production' &&
-        !isOnLambda(env) &&
-        env.SOTETSU_PROD_MIGRATION !== 'confirmed'
-    );
-}
-
 export function resolveDatabaseTarget(env: NodeJS.ProcessEnv): DatabaseTarget {
     const db = classifyUrl(env.DATABASE_URL, 'DATABASE_URL');
     const auth = classifyUrl(env.SUPABASE_URL, 'SUPABASE_URL');
-    return { db, auth, readOnly: isReadOnly(db, env) };
+    return { db, auth };
 }
 
 const LABEL: Record<DbTarget, string> = { local: '手元', production: '本番' };
@@ -63,27 +51,27 @@ export function assertTargetsAgree(t: DatabaseTarget): void {
 }
 
 export function describeDatabaseTarget(t: DatabaseTarget): string {
-    const db = `${LABEL[t.db]}${t.readOnly ? '（読み取り専用）' : ''}`;
-    return `DB: ${db} / Auth: ${LABEL[t.auth]}`;
-}
-
-export function readOnlyConnectionExtra(
-    t: Pick<DatabaseTarget, 'readOnly'>,
-): Record<string, unknown> {
-    return t.readOnly ? { Client: ReadOnlyClient } : {};
+    return `DB: ${LABEL[t.db]} / Auth: ${LABEL[t.auth]}`;
 }
 
 /**
- * database.config.ts 用。読み取り専用の判定は DB の向きだけで決まるので SUPABASE_URL は見ない。
- * Lambda の上では DATABASE_URL を解釈せず空を返す（本番を巻き込まない）。
- * DATABASE_URL が無いときも空（接続しないテストが設定を読めるように。起動の停止は createApp が受け持つ）。
+ * 手元の api・CLI・TypeORM の CLI は本番の DB につながない。
+ * 本番 DB を指していて、Lambda の上でなく、SOTETSU_PROD_MIGRATION=confirmed（migration:run:prod の中だけ）でもなければ、起動を止める。
+ * pooler（Supavisor）は接続時の読み取り専用の指定を無視し、SET は共有の裏 backend に残るので、読み取り専用で立てる方式は取らない。
+ * DATABASE_URL が無ければつなぐ先が無いので通す。メッセージに接続文字列は含めない。
  */
-export function resolveReadOnlyExtra(
-    env: NodeJS.ProcessEnv,
-): Record<string, unknown> {
+export function assertNotProdOutsideLambda(env: NodeJS.ProcessEnv): void {
     if (isOnLambda(env) || !env.DATABASE_URL) {
-        return {};
+        return;
     }
-    const db = classifyUrl(env.DATABASE_URL, 'DATABASE_URL');
-    return readOnlyConnectionExtra({ readOnly: isReadOnly(db, env) });
+    if (env.SOTETSU_PROD_MIGRATION === 'confirmed') {
+        return;
+    }
+    if (classifyUrl(env.DATABASE_URL, 'DATABASE_URL') === 'production') {
+        throw new Error(
+            'DATABASE_URL が本番の DB を向いているので起動しない。' +
+                '手元の api は本番につながない（.env.local を手元の Supabase に向けること）。' +
+                '本番への migration は npm run migration:run:prod を使う',
+        );
+    }
 }
