@@ -316,14 +316,44 @@ export class SightingCarryOver {
         if (!itinerary || !run) return undefined;
         const assignments = this.assignmentsOf(params.sightings, searchTime);
         const assigned = assignments.of(run);
-        if (assigned)
+        if (assigned) {
+            if (
+                this.movedAway(
+                    params.sightings,
+                    assigned,
+                    itinerary,
+                    searchTime,
+                )
+            )
+                return null;
             return {
                 sighting: assigned.sighting,
                 sightedAsOperation: assigned.inferred
                     ? sourceOf(assigned.sighting)
                     : null,
             };
+        }
         return assignments.hasSightingIn(itinerary) ? null : 'unsighted';
+    }
+
+    /**
+     * 割り当てた編成が、割り当ての目撃より後に別の行程・枠の無い運番（休車 100 など）で目撃されているか（車両交換）。
+     * 一番新しい目撃だけを見る（別の行程へ行って戻ってきたなら追い出しにしない）。編成カード（3.4）と食い違わないようにする
+     */
+    private movedAway<S extends CarrySighting>(
+        sightings: S[],
+        assigned: RunAssignment<S>,
+        itinerary: VehicleItinerary,
+        searchTime: dayjs.Dayjs,
+    ): boolean {
+        const { formationNumber } = assigned;
+        if (!formationNumber) return false;
+        const newest = usable(sightings, searchTime).find(
+            (s) => s.formation?.formationNumber === formationNumber,
+        );
+        if (!newest || compareSightings(newest, assigned.sighting) <= 0)
+            return false;
+        return this.placementOf(newest)?.itinerary !== itinerary;
     }
 
     /**
