@@ -200,6 +200,83 @@ describe('SightingCarryOver.resolveForOperation', () => {
             }),
         ).toBeNull();
     });
+    describe('その枠で実目撃した編成が、あとで別の行程・枠の無い運番で目撃された（車両交換）', () => {
+        const both = VehicleItineraryReadModel.create([
+            ...ebina.segments(),
+            ...akabane.segments(),
+        ]);
+        it('別の行程で目撃されていれば不明', () => {
+            const sightings = [
+                sighting('s2', '02K', '10701', '07:30'),
+                sighting('s1', '11K', '10701', '07:00'),
+            ];
+            expect(
+                SightingCarryOver.create(both).resolveForOperation({
+                    sightings,
+                    operationNumber: '11K',
+                    searchTime: at('07:40'),
+                }),
+            ).toBeNull();
+        });
+        it('枠の無い運番（休車 100）で目撃されていれば不明', () => {
+            const sightings = [
+                sighting('s2', '100', '10701', '07:30'),
+                sighting('s1', '11K', '10701', '07:00'),
+            ];
+            expect(
+                SightingCarryOver.create(both).resolveForOperation({
+                    sightings,
+                    operationNumber: '11K',
+                    searchTime: at('07:40'),
+                }),
+            ).toBeNull();
+        });
+        it('別の行程の目撃が実目撃より前なら、その枠の実目撃のまま（この運用へ移ってきた）', () => {
+            const sightings = [
+                sighting('s2', '02K', '10701', '06:30'),
+                sighting('s1', '11K', '10701', '07:00'),
+            ];
+            expect(
+                hit(
+                    SightingCarryOver.create(both).resolveForOperation({
+                        sightings,
+                        operationNumber: '11K',
+                        searchTime: at('07:40'),
+                    }),
+                )?.sighting.id,
+            ).toBe('s1');
+        });
+        it('同じ行程のほかの枠での目撃は追い出しにならない', () => {
+            const sightings = [
+                sighting('s2', '12K', '10701', '09:00'),
+                sighting('s1', '11K', '10701', '07:00'),
+            ];
+            expect(
+                hit(
+                    SightingCarryOver.create(both).resolveForOperation({
+                        sightings,
+                        operationNumber: '11K',
+                        searchTime: at('09:30'),
+                    }),
+                )?.sighting.id,
+            ).toBe('s1');
+        });
+        it('検索時刻より後の別の行程の目撃は使わない', () => {
+            const sightings = [
+                sighting('s2', '02K', '10701', '08:00'),
+                sighting('s1', '11K', '10701', '07:00'),
+            ];
+            expect(
+                hit(
+                    SightingCarryOver.create(both).resolveForOperation({
+                        sightings,
+                        operationNumber: '11K',
+                        searchTime: at('07:40'),
+                    }),
+                )?.sighting.id,
+            ).toBe('s1');
+        });
+    });
     it('検索時刻より後の目撃は使わない', () => {
         expect(
             SightingCarryOver.create(ebina).resolveForOperation({
