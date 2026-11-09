@@ -8,8 +8,8 @@
 
 ## やること
 
-1. **UUID の形でない値は 400 で返す**
-   - パスでもクエリでも、DB に届く前に 400 にする。
+1. **UUID の形でない値は 4xx で返す**
+   - パスでもクエリでも、500 にしない。DTO で弾いたものは今までの ValidationPipe のきまりどおり 422、網で拾ったものは 400（2026-11-10 の計画で決めた）。
    - 30 日で実際に来た経路は必ず塞ぐ。
      - `/v3/trip-blocks?calendarId=`
      - `/v3/calendars/:id`
@@ -23,7 +23,7 @@
      - 足りない DTO に `@IsUUID()` を足して、今ある経路の入口で弾く。
      - `QueryFailedError` の `22P02`（`invalid_text_representation`）を 400 に変える網を張って、将来の経路の取りこぼしを拾う。
    - 網が 400 にするのは `22P02` だけ。それ以外の `QueryFailedError` は今までどおり 500 にして、`UnexpectedErrorFilter` が拾っていた本物の 500 を隠さない。
-   - e2e テストは、上に列挙した経路について書く。
+   - テストは DTO と filter の単体テストで書き、上に列挙した経路は手元の api に curl して確かめる（今の e2e は DB に繋ぐ骨組みしか無いため。2026-11-10 の計画で決めた）。
 2. **アラームを 2 本足す**（`serverless.ts` の `resources`）
    - `api-lambda` の `Url5xxCount`：1 時間に 5 件以上
    - `api-lambda` の `Errors`：1 時間に 3 件以上
@@ -37,9 +37,9 @@
 
 ## 終わりの条件
 
-- UUID でない値を送ると 400 が返り、ログに `QueryFailedError` が出ない（spec と、本番での確認）。
+- UUID でない値を送ると 422 か 400 が返り、`Url5xxCount` に数えられない（単体テストと、本番での確認）。
 - `aws cloudwatch set-alarm-state` で 2 本とも ALARM・OK を切り替え、Discord に届く。
 
 ## ADR
 
-`docs/adr/` に「UUID でない入力を 400 で返す」と「アラームを api のスタックに置く」を残す。
+`docs/adr/` に「UUID でない入力を 4xx で返す」と「アラームを api のスタックに置く」を残す。
