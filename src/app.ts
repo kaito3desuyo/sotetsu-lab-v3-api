@@ -24,6 +24,7 @@ import { configureExpress } from './core/configs/express-settings.js';
 import { validationPipeOptions } from './core/configs/validator-options.js';
 import { UnexpectedErrorFilter } from './core/filters/unexpected-error.filter.js';
 import { UseCaseErrorFilter } from './core/filters/usecase-error.filter.js';
+import { InvalidTextRepresentationFilter } from './core/filters/invalid-text-representation.filter.js';
 import { LoggerService } from './core/modules/logger/logger.service.js';
 
 dayjs.extend(utc);
@@ -77,6 +78,7 @@ export async function createApp(): Promise<INestApplication> {
     // app.useGlobalFilters(new HttpExceptionFilter());
     app.useGlobalFilters(new UnexpectedErrorFilter());
     app.useGlobalFilters(new UseCaseErrorFilter());
+    app.useGlobalFilters(new InvalidTextRepresentationFilter());
 
     return app;
 }
