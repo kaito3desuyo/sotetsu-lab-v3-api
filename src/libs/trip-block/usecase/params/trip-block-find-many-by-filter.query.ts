@@ -1,9 +1,8 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsInt, IsOptional, IsUUID } from 'class-validator';
 
 export class TripBlockFindManyByFilterQuery {
-    @IsString()
-    @IsNotEmpty()
+    @IsUUID()
     calendarId!: string;
 
     @Type(() => Number)

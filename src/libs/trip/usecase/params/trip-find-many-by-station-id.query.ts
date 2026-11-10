@@ -1,9 +1,8 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsString } from 'class-validator';
+import { IsInt, IsUUID } from 'class-validator';
 
 export class TripFindManyByStationIdQuery {
-    @IsString()
-    @IsNotEmpty()
+    @IsUUID()
     calendarId!: string;
 
     @Type(() => Number)

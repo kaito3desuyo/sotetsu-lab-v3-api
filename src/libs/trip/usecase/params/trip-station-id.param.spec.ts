@@ -19,10 +19,11 @@ describe('TripStationIdParam', () => {
     it.each(['not-a-uuid', '', '123'])(
         'UUID でない stationId（%s）は 422 になる',
         async (value) => {
-            await expect(transform({ stationId: value })).rejects.toMatchObject({
-                status: validationPipeOptions.errorHttpStatusCode,
-            });
+            await expect(transform({ stationId: value })).rejects.toMatchObject(
+                {
+                    status: validationPipeOptions.errorHttpStatusCode,
+                },
+            );
         },
     );
 });
-
