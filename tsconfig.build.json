@@ -10,6 +10,7 @@
         "dist",
         "**/*spec.ts",
         "serverless.ts",
+        "serverless-alarms.ts",
         "vitest.config*.ts",
         "db"
     ]

@@ -1,6 +1,27 @@
 import type { AWS } from '@serverless/typescript';
+import { lambdaAlarms } from './serverless-alarms';
 
 const system = 'sotetsu-lab-v3' as const;
+
+const alarms = lambdaAlarms([
+    {
+        logicalId: 'ApiUrl5xxAlarm',
+        alarmName: 'sotetsu-lab-v3-prod-api-url5xx',
+        description: 'api が 1 時間に 5xx を 5 件以上返した',
+        functionLogicalId: 'AppLambdaFunction',
+        metricName: 'Url5xxCount',
+        threshold: 5,
+    },
+    {
+        logicalId: 'ApiErrorsAlarm',
+        alarmName: 'sotetsu-lab-v3-prod-api-errors',
+        description:
+            'api の Lambda が 1 時間に 3 回以上エラーで終わった（タイムアウトを含む）',
+        functionLogicalId: 'AppLambdaFunction',
+        metricName: 'Errors',
+        threshold: 3,
+    },
+]);
 
 const serverlessConfiguration: AWS = {
     service: `${system}-api`,
@@ -170,7 +191,9 @@ const serverlessConfiguration: AWS = {
         },
     },
     resources: {
+        Conditions: alarms.Conditions,
         Resources: {
+            ...alarms.Resources,
             AppCloudFrontDistribution: {
                 Type: 'AWS::CloudFront::Distribution',
                 Properties: {
