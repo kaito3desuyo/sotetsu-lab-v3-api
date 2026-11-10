@@ -1,5 +1,5 @@
 import type { AWS } from '@serverless/typescript';
-import { lambdaAlarms } from './serverless-alarms';
+import { lambdaAlarms } from './serverless-alarms.js';
 
 const system = 'sotetsu-lab-v3' as const;
 
