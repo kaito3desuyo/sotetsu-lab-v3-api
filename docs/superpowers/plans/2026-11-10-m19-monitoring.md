@@ -87,4 +87,4 @@
 - [ ] **Step 1: ADR を書く**（`docs/adr/` の次の番号）。「UUID でない入力を 4xx で返す（DTO は 422・網は 400）」と「アラームを api のスタックに置く」。30 日の実測（5 時間の空振りが全部 `22P02`）を根拠に書く。
 - [ ] **Step 2: コミット** — `docs: :memo: ADR に M19 の判断を書く`
 - [ ] **Step 3: 版を上げてデプロイ**（api の版上げとデプロイのいつもの手順。push とデプロイはユーザーの明示の指示を待つ）。monitoring が先にデプロイ済みであること。
-- [ ] **Step 4: 実地で確かめる** — 本番に `calendarId=undefined` を 1 回送る → 422。`aws cloudwatch set-alarm-state --alarm-name sotetsu-lab-v3-prod-api-url5xx --state-value ALARM --state-reason テスト` → Discord に「鳴った」。次の評価で OK に戻り「直った」が届く。`-errors` も同じ。
+- [ ] **Step 4: 実地で確かめる** — 本番に `calendarId=undefined` を 1 回送る → 422。`aws cloudwatch set-alarm-state --alarm-name sotetsu-lab-v3-prod-api-url5xx --state-value ALARM --state-reason テスト` → Discord に「障害発生」。次の評価で OK に戻り「復旧」が届く。`-errors` も同じ。
