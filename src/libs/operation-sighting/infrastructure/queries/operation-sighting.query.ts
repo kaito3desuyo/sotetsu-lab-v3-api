@@ -39,10 +39,10 @@ export class OperationSightingQuery {
             .second(0)
             .millisecond(0);
 
+        // ゲストも読む一覧なので、管理の記録（無効化した人と理由）は引かない
         let qb = this.operationSightingRepository
             .createQueryBuilder('sighting')
             .leftJoinAndSelect('sighting.invalidations', 'invalidations')
-            .leftJoinAndSelect('sighting.managementLogs', 'managementLogs')
             .where('sighting.sightingTime BETWEEN :start AND :end', {
                 start: startDate.toISOString(),
                 end: endDate.toISOString(),

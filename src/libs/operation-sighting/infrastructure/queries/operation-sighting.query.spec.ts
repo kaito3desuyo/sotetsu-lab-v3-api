@@ -244,3 +244,29 @@ describe('OperationSightingQuery - findManyBySightingTimeRange', () => {
         expect(currentQueryBuilder.andWhere).not.toHaveBeenCalled();
     });
 });
+
+describe('OperationSightingQuery - findManyBySpecificPeriod', () => {
+    let query: OperationSightingQuery;
+
+    beforeEach(async () => {
+        vi.clearAllMocks();
+        currentQueryBuilder = buildChainableQueryBuilder();
+        mockCreateQueryBuilder.mockReturnValue(currentQueryBuilder);
+        mockGetMany.mockResolvedValue([]);
+        query = await buildQuery();
+    });
+
+    it('ゲストも読む一覧なので、管理の記録（無効化した人と理由）は引かない', async () => {
+        await query.findManyBySpecificPeriod({
+            start: '2026-11-01',
+            end: '2026-11-12',
+            includeInvalidated: true,
+        });
+
+        expect(currentQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('sighting.invalidations', 'invalidations');
+        expect(currentQueryBuilder.leftJoinAndSelect).not.toHaveBeenCalledWith(
+            'sighting.managementLogs',
+            'managementLogs',
+        );
+    });
+});

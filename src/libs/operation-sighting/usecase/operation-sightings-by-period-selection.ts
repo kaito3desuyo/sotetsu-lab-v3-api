@@ -4,7 +4,6 @@ import { OPERATION_COLUMNS } from '../../operation/usecase/operation-selection-c
 import {
     OPERATION_SIGHTING_COLUMNS,
     OPERATION_SIGHTING_INVALIDATION_COLUMNS,
-    OPERATION_SIGHTING_MANAGEMENT_LOG_COLUMNS,
     SIGHTED_AS_OPERATION_COLUMNS,
 } from './operation-sighting-selection-columns.js';
 
@@ -41,13 +40,6 @@ export const OPERATION_SIGHTINGS_BY_PERIOD_SELECTION_TREE = defineSelectionTree(
                 resource: 'operationSightingInvalidation',
                 columns: OPERATION_SIGHTING_INVALIDATION_COLUMNS,
                 alwaysKeys: ['operationSightingInvalidationId'],
-            },
-            managementLogs: {
-                property: 'managementLogs',
-                many: true,
-                resource: 'operationSightingManagementLog',
-                columns: OPERATION_SIGHTING_MANAGEMENT_LOG_COLUMNS,
-                alwaysKeys: ['operationSightingManagementLogId'],
             },
             // 引き継いだ目撃の印なので外せない。fields だけのときも全項目を返すよう、全項目を alwaysKeys にする
             sightedAsOperation: {
