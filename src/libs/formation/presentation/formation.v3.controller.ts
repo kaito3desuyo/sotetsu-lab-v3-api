@@ -5,6 +5,7 @@ import { CacheControl } from '../../../core/modules/cache-control/cache-control.
 import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
 import { FormationDetailsDto } from '../usecase/dtos/formation-details.dto.js';
 import { FormationV3Service } from '../usecase/formation.v3.service.js';
+import { DateParam } from '../usecase/params/date.param.js';
 import { FormationFindManyBySpecificPeriodParam } from '../usecase/params/formation-find-many-by-specific-period.param.js';
 
 @Controller()
@@ -16,12 +17,12 @@ export class FormationV3Controller {
     @Get('/as/of/:date')
     @CacheControl(CACHE_CONTROL.MASTER)
     async findManyBySpecificDate(
-        @Param('date') date: string,
+        @Param() param: DateParam,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
     ): Promise<FormationDetailsDto[] | Record<string, unknown>[]> {
         const result = await this.formationV3Service.findManyBySpecificDate({
-            date,
+            date: param.date,
             include,
             fields,
         });

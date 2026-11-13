@@ -6,6 +6,7 @@ import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
 import { CalendarV3Service } from '../usecase/calendar.v3.service.js';
 import { CalendarDetailsDto } from '../usecase/dtos/calendar-details.dto.js';
 import { CalendarIdParam } from '../usecase/params/calendar-id.param.js';
+import { DateParam } from '../usecase/params/date.param.js';
 
 @Controller()
 @UseGuards(AuthGuard, RBACGuard)
@@ -33,12 +34,12 @@ export class CalendarV3Controller {
     @Get('/as/of/:date')
     @CacheControl(CACHE_CONTROL.MASTER)
     async findOneBySpecificDate(
-        @Param('date') date: string,
+        @Param() param: DateParam,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
     ): Promise<CalendarDetailsDto | Record<string, unknown> | undefined> {
         const result = await this.calendarV3Service.findOneBySpecificDate({
-            date,
+            date: param.date,
             include,
             fields,
         });
