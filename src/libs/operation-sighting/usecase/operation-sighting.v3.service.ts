@@ -23,6 +23,7 @@ import {
 } from '../../operation/usecase/operation-number-circulation.js';
 import { DataSource, EntityManager } from 'typeorm';
 import { OperationSightingLatestCache } from '../domain/operation-sighting-latest-cache.domain.js';
+import { lockFormationCache } from '../infrastructure/command/formation-cache-lock.js';
 import { OperationSightingLatestCacheCommand } from '../infrastructure/command/operation-sighting-latest-cache.command.js';
 import { OperationSightingCommand } from '../infrastructure/command/operation-sighting.command.js';
 import { OperationSightingAuthorCommand } from '../infrastructure/command/operation-sighting-author.command.js';
@@ -886,27 +887,22 @@ export class OperationSightingV3Service {
             sightingTime: sightingTimeInstance.toDate(),
         });
 
-        const currentCache =
-            await this.operationSightingLatestCacheQuery.findOneByFormationNumber(
-                { formationNumber: formation.formationNumber },
-            );
-        const cacheAction: CacheAction =
-            !currentCache ||
-            dayjs(currentCache.sightingTime).isBefore(sightingTimeInstance)
-                ? {
-                      type: 'upsert',
-                      cacheId: currentCache?.id,
-                      formationNumber: formation.formationNumber,
-                      operationNumber: operation.operationNumber,
-                  }
-                : { type: 'none' };
-
         // 投稿者の手がかり（IP・端末）を書くのは、登録者で IP が分かるときだけ
         const traceTarget =
             params.userId && params.viewer.ip
                 ? { userId: params.userId, ip: params.viewer.ip }
                 : null;
         const saved = await this.dataSource.transaction(async (manager) => {
+            // 同じ編成への書き込みを並べる。キャッシュは lock を取ってから読む
+            await lockFormationCache(manager, formation.formationNumber);
+            const cacheAction = await this.#decideCacheActionForPost(
+                {
+                    formationNumber: formation.formationNumber,
+                    operationNumber: operation.operationNumber,
+                    sightingTime: sightingTimeInstance,
+                },
+                manager,
+            );
             const saved = await this.operationSightingCommand.save(
                 domain,
                 manager,
@@ -1053,10 +1049,6 @@ export class OperationSightingV3Service {
             });
         }
 
-        const domain = OperationSightingDomainBuilder.buildFromDetailsDto(dto);
-
-        domain.invalidate(userId, reason);
-
         if (!dto.formation?.formationNumber) {
             throw new UnexpectedError('目撃情報に編成情報が存在しない', {
                 operationSightingId,
@@ -1064,52 +1056,37 @@ export class OperationSightingV3Service {
         }
         const formationNumber = dto.formation.formationNumber;
 
-        const currentCache =
-            await this.operationSightingLatestCacheQuery.findOneByFormationNumber(
-                { formationNumber },
-            );
-        let cacheAction: CacheAction = { type: 'none' };
-        if (currentCache?.operationSightingId === operationSightingId) {
-            const prevSighting =
-                await this.operationSightingQuery.findOneLatestByFormationNumberAndBeforeSightingTime(
-                    {
-                        formationNumber,
-                        sightingTime: dayjs(dto.sightingTime).subtract(1, 'ms'),
-                    },
-                );
-            if (!prevSighting) {
-                cacheAction = {
-                    type: 'delete',
-                    domain: OperationSightingLatestCache.create(
-                        {
-                            operationSightingId:
-                                currentCache.operationSightingId,
-                            operationNumber: currentCache.operationNumber,
-                            formationNumber: currentCache.formationNumber,
-                        },
-                        new UniqueEntityId(currentCache.id),
-                    ),
-                };
-            } else if (!prevSighting.operation?.operationNumber) {
-                throw new UnexpectedError(
-                    '直前目撃情報に運用情報が存在しない',
-                    {
-                        operationSightingId,
-                        prevSightingId: prevSighting.operationSightingId,
-                    },
-                );
-            } else {
-                cacheAction = {
-                    type: 'rollback',
-                    cacheId: currentCache.id,
-                    formationNumber,
-                    operationNumber: prevSighting.operation.operationNumber,
-                    operationSightingId: prevSighting.operationSightingId,
-                };
-            }
-        }
-
         const saved = await this.dataSource.transaction(async (manager) => {
+            // 同じ編成への書き込みを並べる。lock を取ってから、状態を読み直して判断する
+            await lockFormationCache(manager, formationNumber);
+            const current = await this.operationSightingQuery.findOneById(
+                { id: operationSightingId },
+                manager,
+            );
+            if (!current) {
+                throw new UseCaseError('目撃情報が見つかりません', {
+                    operationSightingId,
+                    reason: 'not_found',
+                });
+            }
+            if (current.invalidation) {
+                throw new UseCaseError('目撃情報はすでに無効です', {
+                    operationSightingId,
+                    reason: 'already_invalidated',
+                });
+            }
+            const domain =
+                OperationSightingDomainBuilder.buildFromDetailsDto(current);
+            domain.invalidate(userId, reason);
+
+            const cacheAction = await this.#decideCacheActionForInvalidation(
+                {
+                    operationSightingId,
+                    formationNumber,
+                    sightingTime: current.sightingTime,
+                },
+                manager,
+            );
             const saved = await this.operationSightingCommand.save(
                 domain,
                 manager,
@@ -1150,39 +1127,49 @@ export class OperationSightingV3Service {
             });
         }
 
-        const domain = OperationSightingDomainBuilder.buildFromDetailsDto(dto);
-
-        domain.restore(userId, reason);
-
         if (!dto.formation?.formationNumber) {
             throw new UnexpectedError('目撃情報に編成情報が存在しない', {
                 operationSightingId,
             });
         }
-        if (!dto.operation?.operationNumber) {
-            throw new UnexpectedError('目撃情報に運用情報が存在しない', {
-                operationSightingId,
-            });
-        }
         const formationNumber = dto.formation.formationNumber;
-        const operationNumber = dto.operation.operationNumber;
-
-        const currentCache =
-            await this.operationSightingLatestCacheQuery.findOneByFormationNumber(
-                { formationNumber },
-            );
-        const cacheAction: CacheAction =
-            !currentCache ||
-            dayjs(currentCache.sightingTime).isBefore(dayjs(dto.sightingTime))
-                ? {
-                      type: 'upsert',
-                      cacheId: currentCache?.id,
-                      formationNumber,
-                      operationNumber,
-                  }
-                : { type: 'none' };
 
         const saved = await this.dataSource.transaction(async (manager) => {
+            // 同じ編成への書き込みを並べる。lock を取ってから、状態を読み直して判断する
+            await lockFormationCache(manager, formationNumber);
+            const current = await this.operationSightingQuery.findOneById(
+                { id: operationSightingId },
+                manager,
+            );
+            if (!current) {
+                throw new UseCaseError('目撃情報が見つかりません', {
+                    operationSightingId,
+                    reason: 'not_found',
+                });
+            }
+            if (!current.invalidation) {
+                throw new UseCaseError('目撃情報は有効です', {
+                    operationSightingId,
+                    reason: 'already_valid',
+                });
+            }
+            if (!current.operation?.operationNumber) {
+                throw new UnexpectedError('目撃情報に運用情報が存在しない', {
+                    operationSightingId,
+                });
+            }
+            const domain =
+                OperationSightingDomainBuilder.buildFromDetailsDto(current);
+            domain.restore(userId, reason);
+
+            const cacheAction = await this.#decideCacheActionForRestore(
+                {
+                    formationNumber,
+                    operationNumber: current.operation.operationNumber,
+                    sightingTime: current.sightingTime,
+                },
+                manager,
+            );
             const saved = await this.operationSightingCommand.save(
                 domain,
                 manager,
@@ -1216,6 +1203,112 @@ export class OperationSightingV3Service {
             return;
         }
         await this.cdnInvalidation.invalidate({ tags });
+    }
+
+    /** 投稿の後のキャッシュ。lock を取った transaction の manager で読む */
+    async #decideCacheActionForPost(
+        params: {
+            formationNumber: string;
+            operationNumber: string;
+            sightingTime: dayjs.Dayjs;
+        },
+        manager: EntityManager,
+    ): Promise<CacheAction> {
+        const { formationNumber, operationNumber, sightingTime } = params;
+        const currentCache =
+            await this.operationSightingLatestCacheQuery.findOneByFormationNumber(
+                { formationNumber },
+                manager,
+            );
+        return !currentCache ||
+            dayjs(currentCache.sightingTime).isBefore(sightingTime)
+            ? {
+                  type: 'upsert',
+                  cacheId: currentCache?.id,
+                  formationNumber,
+                  operationNumber,
+              }
+            : { type: 'none' };
+    }
+
+    /** 無効化の後のキャッシュ。lock を取った transaction の manager で読む */
+    async #decideCacheActionForInvalidation(
+        params: {
+            operationSightingId: string;
+            formationNumber: string;
+            sightingTime: Date;
+        },
+        manager: EntityManager,
+    ): Promise<CacheAction> {
+        const { operationSightingId, formationNumber, sightingTime } = params;
+        const currentCache =
+            await this.operationSightingLatestCacheQuery.findOneByFormationNumber(
+                { formationNumber },
+                manager,
+            );
+        if (currentCache?.operationSightingId !== operationSightingId) {
+            return { type: 'none' };
+        }
+        const prevSighting =
+            await this.operationSightingQuery.findOneLatestByFormationNumberAndBeforeSightingTime(
+                {
+                    formationNumber,
+                    sightingTime: dayjs(sightingTime).subtract(1, 'ms'),
+                },
+                manager,
+            );
+        if (!prevSighting) {
+            return {
+                type: 'delete',
+                domain: OperationSightingLatestCache.create(
+                    {
+                        operationSightingId: currentCache.operationSightingId,
+                        operationNumber: currentCache.operationNumber,
+                        formationNumber: currentCache.formationNumber,
+                    },
+                    new UniqueEntityId(currentCache.id),
+                ),
+            };
+        }
+        if (!prevSighting.operation?.operationNumber) {
+            throw new UnexpectedError('直前目撃情報に運用情報が存在しない', {
+                operationSightingId,
+                prevSightingId: prevSighting.operationSightingId,
+            });
+        }
+        return {
+            type: 'rollback',
+            cacheId: currentCache.id,
+            formationNumber,
+            operationNumber: prevSighting.operation.operationNumber,
+            operationSightingId: prevSighting.operationSightingId,
+        };
+    }
+
+    /** 復元の後のキャッシュ。lock を取った transaction の manager で読む */
+    async #decideCacheActionForRestore(
+        params: {
+            formationNumber: string;
+            operationNumber: string;
+            sightingTime: Date;
+        },
+        manager: EntityManager,
+    ): Promise<CacheAction> {
+        const { formationNumber, operationNumber, sightingTime } = params;
+        const currentCache =
+            await this.operationSightingLatestCacheQuery.findOneByFormationNumber(
+                { formationNumber },
+                manager,
+            );
+        return !currentCache ||
+            dayjs(currentCache.sightingTime).isBefore(dayjs(sightingTime))
+            ? {
+                  type: 'upsert',
+                  cacheId: currentCache?.id,
+                  formationNumber,
+                  operationNumber,
+              }
+            : { type: 'none' };
     }
 
     async #applyCacheAction(

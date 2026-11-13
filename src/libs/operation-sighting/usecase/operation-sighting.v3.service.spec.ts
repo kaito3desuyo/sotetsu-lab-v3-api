@@ -6,6 +6,7 @@ import customParseFormat from 'dayjs/plugin/customParseFormat.js';
 import timezone from 'dayjs/plugin/timezone.js';
 import utc from 'dayjs/plugin/utc.js';
 import { DataSource } from 'typeorm';
+import { lockFormationCache } from '../infrastructure/command/formation-cache-lock.js';
 import { OperationSightingLatestCacheCommand } from '../infrastructure/command/operation-sighting-latest-cache.command.js';
 import { OperationSightingCommand } from '../infrastructure/command/operation-sighting.command.js';
 import { OperationSightingAuthorCommand } from '../infrastructure/command/operation-sighting-author.command.js';
@@ -32,6 +33,13 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(customParseFormat);
 dayjs.tz.setDefault('Asia/Tokyo');
+
+vi.mock('../infrastructure/command/formation-cache-lock.js', () => ({
+    lockFormationCache: vi.fn().mockResolvedValue(undefined),
+}));
+const mockLock = lockFormationCache as unknown as MockedFunction<
+    (...args: any[]) => any
+>;
 
 type AnyMock = MockedFunction<(...args: any[]) => any>;
 
@@ -321,6 +329,198 @@ describe('OperationSightingV3Service - write side cache', () => {
         expect(savedCache.props.operationSightingId).toBe(sightingId);
         expect(savedCache.props.operationNumber).toBe('62');
         expect(mockSignalSend).toHaveBeenCalledWith({ type: 'sighting' });
+    });
+});
+
+describe('OperationSightingV3Service - 編成ごとの lock', () => {
+    let service: OperationSightingV3Service;
+    const sightingId = 'sighting-uuid';
+    const baseDto = {
+        operationSightingId: sightingId,
+        formationId: 'f-id',
+        operationId: 'o-id',
+        sightingTime: new Date('2026-05-02T10:00:00+09:00'),
+        operation: { operationNumber: '62' },
+        formation: { formationNumber: '8001' },
+        invalidation: null as any,
+        managementLogs: [],
+    };
+    const invalidated = {
+        operationSightingId: sightingId,
+        operationSightingInvalidationId: 'inv-id',
+    };
+    const params = {
+        operationSightingId: sightingId,
+        userId: 'u1',
+        reason: 'r',
+    };
+
+    beforeEach(async () => {
+        vi.clearAllMocks();
+        mockDataSource.transaction.mockImplementation(async (fn: any) =>
+            fn(mockManager),
+        );
+        service = await buildService();
+        mockSave.mockResolvedValue({ operationSightingId: sightingId });
+    });
+
+    it('post: transaction の中で lock → 同じ manager でキャッシュを読む。外では読まない', async () => {
+        const order: string[] = [];
+        mockCalendarQuery.findOneBySpecificDate.mockResolvedValue({
+            id: 'cal-1',
+        });
+        mockFormationQuery.findOneByAgencyIdAndFormationNumberAndDate.mockResolvedValue(
+            { id: 'f-1', formationNumber: '10708' },
+        );
+        mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
+            { id: 'op-100', operationNumber: '100' },
+        );
+        mockOperationQuery.findOneFirstDepartureTimeByOperationIdAndDate.mockResolvedValue(
+            null,
+        );
+        mockDataSource.transaction.mockImplementation(async (fn: any) => {
+            order.push('tx-start');
+            const r = await fn(mockManager);
+            order.push('tx-end');
+            return r;
+        });
+        mockLock.mockImplementation(async () => {
+            order.push('lock');
+        });
+        mockOperationSightingLatestCacheQuery.findOneByFormationNumber.mockImplementation(
+            async () => {
+                order.push('read-cache');
+                return null;
+            },
+        );
+        mockSave.mockImplementation(async () => {
+            order.push('save');
+            return { operationSightingId: 'n' };
+        });
+
+        await service.post({
+            agencyId: 'agency-uuid',
+            formationOrVehicleNumber: '10708',
+            operationNumber: '100',
+            sightingTime: '2026-05-01T10:00:00+09:00',
+            viewer: { ip: null, userAgent: null },
+            userId: null,
+        });
+
+        expect(order).toEqual([
+            'tx-start',
+            'lock',
+            'read-cache',
+            'save',
+            'tx-end',
+        ]);
+        expect(mockLock).toHaveBeenCalledWith(mockManager, '10708');
+        expect(
+            mockOperationSightingLatestCacheQuery.findOneByFormationNumber,
+        ).toHaveBeenCalledWith({ formationNumber: '10708' }, mockManager);
+    });
+
+    it('invalidate: lock の後に manager で目撃・キャッシュ・直前の目撃を読み直す', async () => {
+        const order: string[] = [];
+        mockOperationSightingQuery.findOneById.mockImplementation(
+            async (_p: any, manager?: any) => {
+                order.push(manager ? 'reread' : 'first-read');
+                return { ...baseDto };
+            },
+        );
+        mockLock.mockImplementation(async () => {
+            order.push('lock');
+        });
+        mockOperationSightingLatestCacheQuery.findOneByFormationNumber.mockResolvedValue(
+            {
+                id: 'cache-uuid',
+                operationSightingId: sightingId,
+                operationNumber: '62',
+                formationNumber: '8001',
+                sightingTime: '2026-05-02T10:00:00+09:00',
+            },
+        );
+        mockOperationSightingQuery.findOneLatestByFormationNumberAndBeforeSightingTime.mockResolvedValue(
+            null,
+        );
+
+        await service.invalidate(params);
+
+        expect(order).toEqual(['first-read', 'lock', 'reread']);
+        expect(mockLock).toHaveBeenCalledWith(mockManager, '8001');
+        expect(mockOperationSightingQuery.findOneById).toHaveBeenLastCalledWith(
+            { id: sightingId },
+            mockManager,
+        );
+        expect(
+            mockOperationSightingLatestCacheQuery.findOneByFormationNumber,
+        ).toHaveBeenCalledWith({ formationNumber: '8001' }, mockManager);
+        expect(
+            mockOperationSightingQuery.findOneLatestByFormationNumberAndBeforeSightingTime,
+        ).toHaveBeenCalledWith(expect.anything(), mockManager);
+    });
+
+    it('invalidate: lock の後に無効になっていたら already_invalidated・保存も合図もしない', async () => {
+        mockOperationSightingQuery.findOneById
+            .mockResolvedValueOnce({ ...baseDto })
+            .mockResolvedValueOnce({ ...baseDto, invalidation: invalidated });
+
+        const error = await service.invalidate(params).catch((e) => e);
+
+        expect(error).toBeInstanceOf(UseCaseError);
+        expect(error.context.reason).toBe('already_invalidated');
+        expect(mockSave).not.toHaveBeenCalled();
+        expect(mockSignalSend).not.toHaveBeenCalled();
+    });
+
+    it('restore: lock の後に manager で目撃・キャッシュを読み直す', async () => {
+        const order: string[] = [];
+        mockOperationSightingQuery.findOneById.mockImplementation(
+            async (_p: any, manager?: any) => {
+                order.push(manager ? 'reread' : 'first-read');
+                return { ...baseDto, invalidation: invalidated };
+            },
+        );
+        mockLock.mockImplementation(async () => {
+            order.push('lock');
+        });
+        mockOperationSightingLatestCacheQuery.findOneByFormationNumber.mockResolvedValue(
+            null,
+        );
+
+        await service.restore(params);
+
+        expect(order).toEqual(['first-read', 'lock', 'reread']);
+        expect(mockLock).toHaveBeenCalledWith(mockManager, '8001');
+        expect(
+            mockOperationSightingLatestCacheQuery.findOneByFormationNumber,
+        ).toHaveBeenCalledWith({ formationNumber: '8001' }, mockManager);
+        expect(mockOperationSightingLatestCacheCommand.save).toHaveBeenCalled();
+    });
+
+    it('restore: 読み直した目撃が有効なら already_valid・保存しない', async () => {
+        mockOperationSightingQuery.findOneById
+            .mockResolvedValueOnce({ ...baseDto, invalidation: invalidated })
+            .mockResolvedValueOnce({ ...baseDto });
+
+        const error = await service.restore(params).catch((e) => e);
+
+        expect(error).toBeInstanceOf(UseCaseError);
+        expect(error.context.reason).toBe('already_valid');
+        expect(mockSave).not.toHaveBeenCalled();
+        expect(mockSignalSend).not.toHaveBeenCalled();
+    });
+
+    it('restore: 最初から有効な目撃も already_valid（素の Error にしない）', async () => {
+        mockOperationSightingQuery.findOneById.mockResolvedValue({
+            ...baseDto,
+        });
+
+        const error = await service.restore(params).catch((e) => e);
+
+        expect(error).toBeInstanceOf(UseCaseError);
+        expect(error.context.reason).toBe('already_valid');
+        expect(mockSave).not.toHaveBeenCalled();
     });
 });
 
@@ -1874,7 +2074,8 @@ describe('OperationSightingV3Service - 無効化（1 件・まとめて）', () 
         });
 
         expect(result.invalidated).toEqual(['a', 'b']);
-        expect(mockOperationSightingQuery.findOneById).toHaveBeenCalledTimes(2);
+        // 1 件につき、最初の読みと lock の後の読み直しの 2 回。重複した id は処理しない
+        expect(mockOperationSightingQuery.findOneById).toHaveBeenCalledTimes(4);
     });
 
     it('invalidateMany: 予期しない例外で止まり、failed に入れ、未処理は pending に残す', async () => {

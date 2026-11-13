@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { FormationModel } from '../../../formation/infrastructure/models/formation.model.js';
 import { OperationModel } from '../../../operation/infrastructure/models/operation.model.js';
 import { OperationSightingDetailsDto } from '../../usecase/dtos/operation-sighting-details.dto.js';
@@ -103,10 +103,15 @@ export class OperationSightingQuery {
         return OperationSightingsDtoBuilder.buildFromModel(models);
     }
 
-    async findOneById(params: {
-        id: string;
-    }): Promise<OperationSightingDetailsDto | null> {
-        const model = await this.operationSightingRepository
+    /** manager を渡すと、そのトランザクションの接続で読む */
+    async findOneById(
+        params: { id: string },
+        manager?: EntityManager,
+    ): Promise<OperationSightingDetailsDto | null> {
+        const repository = manager
+            ? manager.getRepository(OperationSightingModel)
+            : this.operationSightingRepository;
+        const model = await repository
             .createQueryBuilder('sighting')
             .leftJoinAndSelect('sighting.invalidations', 'invalidations')
             .leftJoinAndSelect('sighting.managementLogs', 'managementLogs')
@@ -352,13 +357,17 @@ export class OperationSightingQuery {
         return OperationSightingDtoBuilder.buildFromModel(result);
     }
 
-    async findOneLatestByFormationNumberAndBeforeSightingTime(params: {
-        formationNumber: string;
-        sightingTime: dayjs.Dayjs;
-    }): Promise<OperationSightingDetailsDto | null> {
+    /** manager を渡すと、そのトランザクションの接続で読む */
+    async findOneLatestByFormationNumberAndBeforeSightingTime(
+        params: { formationNumber: string; sightingTime: dayjs.Dayjs },
+        manager?: EntityManager,
+    ): Promise<OperationSightingDetailsDto | null> {
         const { formationNumber, sightingTime } = params;
+        const repository = manager
+            ? manager.getRepository(OperationSightingModel)
+            : this.operationSightingRepository;
 
-        const result = await this.operationSightingRepository
+        const result = await repository
             .createQueryBuilder('sighting')
             .leftJoinAndSelect('sighting.operation', 'operation')
             .leftJoinAndSelect('sighting.formation', 'formation')
