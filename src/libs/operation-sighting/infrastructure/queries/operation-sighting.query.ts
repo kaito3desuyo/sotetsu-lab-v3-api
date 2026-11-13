@@ -435,8 +435,14 @@ export class OperationSightingQuery {
         return OperationSightingDtoBuilder.buildFromModel(result);
     }
 
-    async findManyLatestPerFormation(): Promise<OperationSightingDetailsDto[]> {
-        const models = await this.operationSightingRepository
+    /** manager を渡すと、そのトランザクションの接続で読む */
+    async findManyLatestPerFormation(
+        manager?: EntityManager,
+    ): Promise<OperationSightingDetailsDto[]> {
+        const repository = manager
+            ? manager.getRepository(OperationSightingModel)
+            : this.operationSightingRepository;
+        const models = await repository
             .createQueryBuilder('s')
             .distinctOn(['"formation"."formation_number"'])
             .innerJoinAndSelect('s.operation', 'operation')
