@@ -898,6 +898,44 @@ describe('OperationSightingV3Service - post', () => {
         expect(mockSignalSend).toHaveBeenCalledWith({ type: 'sighting' });
     });
 
+    describe('端末の時計の進み', () => {
+        const NOW = '2026-05-01T10:00:00.000+09:00';
+
+        beforeEach(() => {
+            vi.useFakeTimers({ toFake: ['Date'] });
+            vi.setSystemTime(new Date(NOW));
+            mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
+                { id: 'op-100', operationNumber: '100' },
+            );
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        it('60 秒以内の未来の時刻は受け付け、受け付けた時刻で保存する', async () => {
+            await service.post({
+                ...baseParams,
+                userId: 'user-1',
+                sightingTime: '2026-05-01T10:00:59.000+09:00',
+            });
+
+            const saved = mockSave.mock.calls[0][0].props.sightingTime as Date;
+            expect(saved.toISOString()).toBe(new Date(NOW).toISOString());
+        });
+
+        it('60 秒を超える未来の時刻は弾く', async () => {
+            await expect(
+                service.post({
+                    ...baseParams,
+                    userId: 'user-1',
+                    sightingTime: '2026-05-01T10:01:01.000+09:00',
+                }),
+            ).rejects.toThrow('未来の時刻は指定できません');
+            expect(mockSave).not.toHaveBeenCalled();
+        });
+    });
+
     it('post: userId が null なら投稿者を記録せず、合図は送る', async () => {
         mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
             { id: 'op-100', operationNumber: '100' },
