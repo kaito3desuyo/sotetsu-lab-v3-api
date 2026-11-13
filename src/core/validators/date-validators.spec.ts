@@ -59,12 +59,17 @@ describe('日付・期間・時刻の検証', () => {
             expect(await errors(InstantSample, { at })).toHaveLength(0);
         },
     );
-    it.each(['2026-11-14T12:00:00', '2026-11-14', 'garbage', '2026-W01'])(
-        'IsInstant は %s を通さない',
-        async (at) => {
-            expect(await errors(InstantSample, { at })).toHaveLength(1);
-        },
-    );
+    it.each([
+        '2026-11-14T12:00:00',
+        '2026-11-14',
+        'garbage',
+        '2026-W01',
+        '2026-11-14T24:00:00Z',
+        '2026-11-14T25:00:00Z',
+        '2026-11-14T12:00:00+0900',
+    ])('IsInstant は %s を通さない', async (at) => {
+        expect(await errors(InstantSample, { at })).toHaveLength(1);
+    });
 
     it('IsParsableDate は週表記を通さない', async () => {
         expect(await errors(ParsableSample, { at: '2026-W01' })).toHaveLength(

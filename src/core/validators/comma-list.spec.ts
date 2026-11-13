@@ -16,4 +16,17 @@ describe('CommaList', () => {
         const result = plainToInstance(Sample, {});
         expect(result.numbers).toBeUndefined();
     });
+
+    it('空文字列は空配列にする', () => {
+        expect(plainToInstance(Sample, { numbers: '' }).numbers).toEqual([]);
+    });
+
+    it('配列・オブジェクトは例外にせずそのまま返す', () => {
+        expect(
+            plainToInstance(Sample, { numbers: ['1', '2'] }).numbers,
+        ).toEqual(['1', '2']);
+        expect(
+            plainToInstance(Sample, { numbers: { a: '1' } }).numbers,
+        ).toEqual({ a: '1' });
+    });
 });

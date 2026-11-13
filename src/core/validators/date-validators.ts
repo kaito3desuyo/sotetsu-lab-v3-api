@@ -1,10 +1,9 @@
 import dayjs from 'dayjs';
-import { ValidateBy } from 'class-validator';
+import { isISO8601, ValidateBy } from 'class-validator';
 import type { ValidationArguments } from 'class-validator';
 
 const DATE_ONLY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
-const INSTANT_PATTERN =
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/;
+const OFFSET_PATTERN = /(Z|[+-]\d{2}:\d{2})$/;
 
 function isDateOnly(value: unknown): value is string {
     if (typeof value !== 'string') return false;
@@ -37,7 +36,8 @@ export const IsInstant = (): PropertyDecorator =>
         validator: {
             validate: (value: unknown) =>
                 typeof value === 'string' &&
-                INSTANT_PATTERN.test(value) &&
+                isISO8601(value, { strict: true, strictSeparator: true }) &&
+                OFFSET_PATTERN.test(value) &&
                 !Number.isNaN(new Date(value).getTime()),
             defaultMessage: () =>
                 '$property must be an ISO 8601 date-time with a time zone offset',
