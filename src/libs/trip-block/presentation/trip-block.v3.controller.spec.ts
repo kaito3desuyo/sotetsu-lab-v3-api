@@ -9,6 +9,7 @@ import { FeatureFlags } from '../../../core/modules/feature-flag/feature-flags.j
 import { UserRoleService } from '../../user/usecase/user-role.service.js';
 import { Role } from '../../../core/modules/rbac/role.enum.js';
 import { TripBlockV3Service } from '../usecase/trip-block.v3.service.js';
+import { CreateTripBlockDto } from '../usecase/dtos/create-trip-block.dto.js';
 import { TripBlockV3Controller } from './trip-block.v3.controller.js';
 
 vi.mock('../../../core/modules/auth/auth.guard.js', () => ({
@@ -16,6 +17,36 @@ vi.mock('../../../core/modules/auth/auth.guard.js', () => ({
 }));
 
 const ID = '3f0b6a5e-8a52-4c1c-9d0a-2b5d1b8e7a11';
+
+const validTripBlock = () => ({
+    trips: [
+        {
+            serviceId: ID,
+            tripNumber: '101A',
+            tripClassId: ID,
+            tripName: null,
+            tripDirection: 0,
+            depotIn: false,
+            depotOut: false,
+            calendarId: null,
+            extraCalendarId: null,
+            times: [
+                {
+                    stationId: ID,
+                    stopId: null,
+                    stopSequence: 1,
+                    pickupType: 0,
+                    dropoffType: 0,
+                    arrivalDays: null,
+                    arrivalTime: null,
+                    departureDays: null,
+                    departureTime: '05:00',
+                },
+            ],
+            tripOperationLists: [],
+        },
+    ],
+});
 
 describe('TripBlockV3Controller（書き込みの役割）', () => {
     let app: INestApplication;
@@ -107,5 +138,58 @@ describe('TripBlockV3Controller（書き込みの役割）', () => {
         auth = { userId: 'editor-1', role: Role.EDITOR, sessionId: null };
         const res = await request(app.getHttpServer()).post('/bulk').send([]);
         expect(res.status).not.toBe(403);
+    });
+
+    describe('POST /bulk の配列の中身', () => {
+        const UNPROCESSABLE = validationPipeOptions.errorHttpStatusCode;
+
+        beforeEach(() => {
+            auth = { userId: 'editor-1', role: Role.EDITOR, sessionId: null };
+        });
+
+        it('正しい要素は CreateTripBlockDto の配列として service に渡す', async () => {
+            const res = await request(app.getHttpServer())
+                .post('/bulk')
+                .send([validTripBlock()]);
+            expect(res.status).toBe(201);
+            const [dtos] = service.createManyTripBlocks.mock.calls[0];
+            expect(dtos).toHaveLength(1);
+            expect(dtos[0]).toBeInstanceOf(CreateTripBlockDto);
+        });
+
+        it('trips の無い要素は 422', async () => {
+            const res = await request(app.getHttpServer())
+                .post('/bulk')
+                .send([{}]);
+            expect(res.status).toBe(UNPROCESSABLE);
+            expect(service.createManyTripBlocks).not.toHaveBeenCalled();
+        });
+
+        it('trips[0].serviceId が UUID でない要素は 422', async () => {
+            const block = validTripBlock();
+            block.trips[0].serviceId = 'not-a-uuid';
+            const res = await request(app.getHttpServer())
+                .post('/bulk')
+                .send([block]);
+            expect(res.status).toBe(UNPROCESSABLE);
+            expect(service.createManyTripBlocks).not.toHaveBeenCalled();
+        });
+
+        it('配列でない body は 422', async () => {
+            const res = await request(app.getHttpServer())
+                .post('/bulk')
+                .send({});
+            expect(res.status).toBe(UNPROCESSABLE);
+            expect(service.createManyTripBlocks).not.toHaveBeenCalled();
+        });
+
+        it('要素の中の知らない項目は落とす', async () => {
+            const res = await request(app.getHttpServer())
+                .post('/bulk')
+                .send([{ ...validTripBlock(), unknown: 1 }]);
+            expect(res.status).toBe(201);
+            const [dtos] = service.createManyTripBlocks.mock.calls[0];
+            expect(dtos[0]).not.toHaveProperty('unknown');
+        });
     });
 });
