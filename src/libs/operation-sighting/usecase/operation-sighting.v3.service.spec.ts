@@ -37,9 +37,7 @@ dayjs.tz.setDefault('Asia/Tokyo');
 vi.mock('../infrastructure/command/formation-cache-lock.js', () => ({
     lockFormationCache: vi.fn().mockResolvedValue(undefined),
 }));
-const mockLock = lockFormationCache as unknown as MockedFunction<
-    (...args: any[]) => any
->;
+const mockLock = vi.mocked(lockFormationCache);
 
 type AnyMock = MockedFunction<(...args: any[]) => any>;
 
@@ -342,7 +340,7 @@ describe('OperationSightingV3Service - 編成ごとの lock', () => {
         sightingTime: new Date('2026-05-02T10:00:00+09:00'),
         operation: { operationNumber: '62' },
         formation: { formationNumber: '8001' },
-        invalidation: null as any,
+        invalidation: undefined,
         managementLogs: [],
     };
     const invalidated = {
