@@ -19,6 +19,7 @@ import { Role } from '../../../core/modules/rbac/role.enum.js';
 import { CalendarDateV3Service } from '../usecase/calendar-date.v3.service.js';
 import { CalendarDateDetailsDto } from '../usecase/dtos/calendar-date-details.dto.js';
 import { CreateCalendarDateDto } from '../usecase/dtos/create-calendar-date.dto.js';
+import { CalendarDateFindManyParam } from '../usecase/params/calendar-date-find-many.param.js';
 import { CalendarDateIdParam } from '../usecase/params/calendar-date-id.param.js';
 
 @Controller()
@@ -32,16 +33,14 @@ export class CalendarDateV3Controller {
     @Get('/')
     @CacheControl(CACHE_CONTROL.MASTER)
     async findMany(
-        @Query('calendarId') calendarId?: string,
-        @Query('from') from?: string,
-        @Query('to') to?: string,
+        @Query() query: CalendarDateFindManyParam,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
     ): Promise<CalendarDateDetailsDto[] | Record<string, unknown>[]> {
         const result = await this.calendarDateV3Service.findMany({
-            calendarId,
-            from,
-            to,
+            calendarId: query.calendarId,
+            from: query.from,
+            to: query.to,
             include,
             fields,
         });

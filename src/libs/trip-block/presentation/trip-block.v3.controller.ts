@@ -3,12 +3,14 @@ import {
     Controller,
     Get,
     Param,
+    ParseArrayPipe,
     Patch,
     Post,
     Put,
     Query,
     UseGuards,
 } from '@nestjs/common';
+import { validationPipeOptions } from '../../../core/configs/validator-options.js';
 import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
 import { CACHE_CONTROL } from '../../../core/modules/cache-control/cache-control.constants.js';
 import { CacheControl } from '../../../core/modules/cache-control/cache-control.decorator.js';
@@ -68,7 +70,13 @@ export class TripBlockV3Controller {
     @Post('/bulk')
     @RBAC(Role.EDITOR, Role.MANAGER)
     async createManyTripBlocks(
-        @Body() dtos: CreateTripBlockDto[],
+        @Body(
+            new ParseArrayPipe({
+                items: CreateTripBlockDto,
+                ...validationPipeOptions,
+            }),
+        )
+        dtos: CreateTripBlockDto[],
     ): Promise<TripBlockDetailsDto[]> {
         const result = await this.tripBlockV3Service.createManyTripBlocks(dtos);
 

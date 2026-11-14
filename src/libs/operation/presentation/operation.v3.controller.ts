@@ -3,7 +3,6 @@ import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
 import { CACHE_CONTROL } from '../../../core/modules/cache-control/cache-control.constants.js';
 import { CacheControl } from '../../../core/modules/cache-control/cache-control.decorator.js';
 import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
-import { parseCommaList } from '../../../core/utils/comma-list.js';
 import { NextSegmentCandidateDto } from '../usecase/dtos/next-segment-candidate.dto.js';
 import { OperationItineraryLinkDto } from '../usecase/dtos/operation-itinerary-link.dto.js';
 import { OperationCurrentPositionDto } from '../usecase/dtos/operation-current-position.dto.js';
@@ -14,6 +13,9 @@ import { NextOperationCandidatesQuery } from '../usecase/params/next-operation-c
 import { OperationCalendarIdParam } from '../usecase/params/operation-calendar-id.param.js';
 import { OperationIdParam } from '../usecase/params/operation-id.param.js';
 import { OperationCalendarQuery } from '../usecase/params/operation-calendar.query.js';
+import { OperationCurrentPositionsQuery } from '../usecase/params/operation-current-positions.query.js';
+import { PeriodParam } from '../usecase/params/period.param.js';
+import { SearchTimeQuery } from '../usecase/params/search-time.query.js';
 import { OperationV3Service } from '../usecase/operation.v3.service.js';
 
 @Controller()
@@ -110,15 +112,14 @@ export class OperationV3Controller {
     @Get('/current-positions')
     @CacheControl(CACHE_CONTROL.REALTIME)
     async findManyWithCurrentPosition(
-        @Query('operationIds') operationIds: string,
-        @Query('searchTime') searchTime?: string,
+        @Query() query: OperationCurrentPositionsQuery,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
     ): Promise<OperationCurrentPositionDto[] | Record<string, unknown>[]> {
         const result =
             await this.operationV3Service.findManyWithCurrentPosition({
-                operationIds: parseCommaList(operationIds),
-                searchTime,
+                operationIds: query.operationIds,
+                searchTime: query.searchTime,
                 include,
                 fields,
             });
@@ -130,14 +131,13 @@ export class OperationV3Controller {
     @Get('/from/:start/to/:end')
     @CacheControl(CACHE_CONTROL.TIMETABLE)
     async findManyBySpecificPeriod(
-        @Param('start') start: string,
-        @Param('end') end: string,
+        @Param() param: PeriodParam,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
     ): Promise<OperationDetailsDto[] | Record<string, unknown>[]> {
         const result = await this.operationV3Service.findManyBySpecificPeriod({
-            start,
-            end,
+            start: param.start,
+            end: param.end,
             include,
             fields,
         });
@@ -167,14 +167,14 @@ export class OperationV3Controller {
     @CacheControl(CACHE_CONTROL.REALTIME)
     async findOneWithCurrentPosition(
         @Param() param: OperationIdParam,
-        @Query('searchTime') searchTime?: string,
+        @Query() query: SearchTimeQuery,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
     ): Promise<OperationCurrentPositionDto | Record<string, unknown> | null> {
         const result = await this.operationV3Service.findOneWithCurrentPosition(
             {
                 operationId: param.id,
-                searchTime,
+                searchTime: query.searchTime,
                 include,
                 fields,
             },

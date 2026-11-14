@@ -1,4 +1,5 @@
-import { IsISO8601, IsOptional, IsUUID } from 'class-validator';
+import { IsOptional, IsUUID } from 'class-validator';
+import { IsDateOnly } from '../../../../core/validators/date-validators.js';
 
 export class CalendarDateFindManyParam {
     @IsOptional()
@@ -6,10 +7,10 @@ export class CalendarDateFindManyParam {
     calendarId?: string;
 
     @IsOptional()
-    @IsISO8601()
+    @IsDateOnly()
     from?: string;
 
     @IsOptional()
-    @IsISO8601()
+    @IsDateOnly()
     to?: string;
 }

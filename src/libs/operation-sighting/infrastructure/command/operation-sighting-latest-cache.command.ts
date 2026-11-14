@@ -50,4 +50,11 @@ export class OperationSightingLatestCacheCommand {
             OperationSightingLatestCacheModelBuilder.buildFromDomain(domain),
         );
     }
+
+    async removeAll(manager?: EntityManager): Promise<void> {
+        const repo = manager
+            ? manager.getRepository(OperationSightingLatestCacheModel)
+            : this.repository;
+        await repo.createQueryBuilder().delete().execute();
+    }
 }

@@ -11,6 +11,9 @@ import { QueryFailedError } from 'typeorm';
 /** PostgreSQL の invalid_text_representation（UUID の形でない値など） */
 const INVALID_TEXT_REPRESENTATION = '22P02';
 
+/** PostgreSQL の lock_not_available（lock_timeout を超えた） */
+const LOCK_NOT_AVAILABLE = '55P03';
+
 function getDriverErrorCode(exception: QueryFailedError): string | undefined {
     const driverError: unknown = exception.driverError;
     if (
@@ -37,6 +40,17 @@ export class InvalidTextRepresentationFilter implements ExceptionFilter {
             response.status(status).json({
                 statusCode: status,
                 message: '入力の形が正しくありません',
+            });
+            return;
+        }
+
+        if (getDriverErrorCode(exception) === LOCK_NOT_AVAILABLE) {
+            const status = HttpStatus.SERVICE_UNAVAILABLE;
+            this.#logger.warn(exception.message);
+            response.status(status).json({
+                statusCode: status,
+                message:
+                    '混み合っています。少し待ってからもう一度お試しください',
             });
             return;
         }

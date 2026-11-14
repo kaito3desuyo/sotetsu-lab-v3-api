@@ -1,5 +1,7 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
+import { configureExpress } from '../../../core/configs/express-settings.js';
 import request from 'supertest';
 import { AuthContext } from '../../../core/modules/auth/auth-context.js';
 import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
@@ -419,6 +421,215 @@ describe('OperationSightingV3Controller（投稿者つきの読み取りの口�
                 .post(PATH)
                 .send({ ids: [ID_A], reason: 'あ'.repeat(200) });
             expect(res.status).toBe(200);
+        });
+    });
+});
+
+describe('OperationSightingV3Controller（日付・期間・時刻・番号の並びの検証）', () => {
+    let app: NestExpressApplication;
+    const service = {
+        findManyBySpecificPeriod: vi.fn(),
+        findManyTimeCrossSectionsByOperationNumbers: vi.fn(),
+        findManyTimeCrossSectionsByFormationNumbers: vi.fn(),
+        findOneTimeCrossSectionByOperationNumber: vi.fn(),
+        findOneTimeCrossSectionByFormationNumber: vi.fn(),
+    };
+
+    beforeAll(async () => {
+        const moduleRef = await Test.createTestingModule({
+            imports: [CacheControlModule],
+            controllers: [OperationSightingV3Controller],
+            providers: [
+                { provide: OperationSightingV3Service, useValue: service },
+                { provide: FeatureFlags, useValue: { isEnabled: vi.fn() } },
+                {
+                    provide: UserRoleService,
+                    useValue: { findRole: vi.fn().mockResolvedValue(null) },
+                },
+            ],
+        })
+            .overrideGuard(AuthGuard)
+            .useValue({ canActivate: () => true })
+            .compile();
+        app = moduleRef.createNestApplication<NestExpressApplication>();
+        configureExpress(app);
+        app.useGlobalPipes(new ValidationPipe(validationPipeOptions));
+        await app.init();
+    });
+
+    afterAll(async () => {
+        await app.close();
+    });
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        service.findManyBySpecificPeriod.mockResolvedValue([]);
+        service.findManyTimeCrossSectionsByOperationNumbers.mockResolvedValue(
+            {},
+        );
+        service.findManyTimeCrossSectionsByFormationNumbers.mockResolvedValue(
+            {},
+        );
+        service.findOneTimeCrossSectionByOperationNumber.mockResolvedValue({});
+        service.findOneTimeCrossSectionByFormationNumber.mockResolvedValue({});
+    });
+
+    const UNPROCESSABLE = validationPipeOptions.errorHttpStatusCode;
+    const makeNumbers = (n: number) =>
+        Array.from({ length: n }, (_, i) => `n${i}`).join(',');
+
+    describe('期間 /from/:start/to/:end', () => {
+        it('31 日（両端を含む）は通り、start・end・既存の query を service に渡す', async () => {
+            const res = await request(app.getHttpServer()).get(
+                '/from/2026-11-01/to/2026-12-01?includeInvalidated=true&includeCarriedOver=true',
+            );
+            expect(res.status).toBe(200);
+            expect(service.findManyBySpecificPeriod).toHaveBeenCalledWith({
+                start: '2026-11-01',
+                end: '2026-12-01',
+                includeInvalidated: true,
+                includeCarriedOver: true,
+            });
+        });
+
+        it.each([
+            ['/from/2026-11-01/to/2026-12-02'],
+            ['/from/garbage/to/2026-11-14'],
+            ['/from/2026-02-30/to/2026-03-01'],
+            ['/from/2026-11-14/to/2026-11-13'],
+        ])('%s は 422 で service を呼ばない', async (path) => {
+            const res = await request(app.getHttpServer()).get(path);
+            expect(res.status).toBe(UNPROCESSABLE);
+            expect(service.findManyBySpecificPeriod).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('時刻断面のまとめ取り', () => {
+        it('operationNumbers=11,31G は ["11","31G"] を渡す', async () => {
+            const res = await request(app.getHttpServer()).get(
+                '/time-cross-section/operation-numbers?operationNumbers=11,31G',
+            );
+            expect(res.status).toBe(200);
+            expect(
+                service.findManyTimeCrossSectionsByOperationNumbers,
+            ).toHaveBeenCalledWith({
+                operationNumbers: ['11', '31G'],
+                searchTime: undefined,
+            });
+        });
+
+        it('formationNumbers=10701,10702 は配列を渡す', async () => {
+            const res = await request(app.getHttpServer()).get(
+                '/time-cross-section/formation-numbers?formationNumbers=10701,10702',
+            );
+            expect(res.status).toBe(200);
+            expect(
+                service.findManyTimeCrossSectionsByFormationNumbers,
+            ).toHaveBeenCalledWith({
+                formationNumbers: ['10701', '10702'],
+                searchTime: undefined,
+            });
+        });
+
+        it('200 件は通り、201 件は 422', async () => {
+            const ok = await request(app.getHttpServer()).get(
+                `/time-cross-section/operation-numbers?operationNumbers=${makeNumbers(200)}`,
+            );
+            expect(ok.status).toBe(200);
+            service.findManyTimeCrossSectionsByOperationNumbers.mockClear();
+            const ng = await request(app.getHttpServer()).get(
+                `/time-cross-section/operation-numbers?operationNumbers=${makeNumbers(201)}`,
+            );
+            expect(ng.status).toBe(UNPROCESSABLE);
+            expect(
+                service.findManyTimeCrossSectionsByOperationNumbers,
+            ).not.toHaveBeenCalled();
+        });
+
+        it.each([
+            ['/time-cross-section/operation-numbers?operationNumbers='],
+            ['/time-cross-section/operation-numbers'],
+            ['/time-cross-section/formation-numbers?formationNumbers='],
+            ['/time-cross-section/formation-numbers'],
+        ])('%s は 422', async (path) => {
+            const res = await request(app.getHttpServer()).get(path);
+            expect(res.status).toBe(UNPROCESSABLE);
+            expect(
+                service.findManyTimeCrossSectionsByOperationNumbers,
+            ).not.toHaveBeenCalled();
+            expect(
+                service.findManyTimeCrossSectionsByFormationNumbers,
+            ).not.toHaveBeenCalled();
+        });
+
+        it.each([
+            ['/time-cross-section/operation-numbers?operationNumbers[a]=1'],
+            ['/time-cross-section/operation-numbers?operationNumbers[0][a]=1'],
+            ['/time-cross-section/formation-numbers?formationNumbers[a]=1'],
+            ['/time-cross-section/formation-numbers?formationNumbers[0][a]=1'],
+        ])('%s のようなオブジェクト・入れ子は 422', async (path) => {
+            const res = await request(app.getHttpServer()).get(path);
+            expect(res.status).toBe(UNPROCESSABLE);
+            expect(
+                service.findManyTimeCrossSectionsByOperationNumbers,
+            ).not.toHaveBeenCalled();
+            expect(
+                service.findManyTimeCrossSectionsByFormationNumbers,
+            ).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('searchTime', () => {
+        it.each([
+            [
+                '/time-cross-section/operation-numbers?operationNumbers=11',
+                'findManyTimeCrossSectionsByOperationNumbers',
+            ],
+            [
+                '/time-cross-section/formation-numbers?formationNumbers=10701',
+                'findManyTimeCrossSectionsByFormationNumbers',
+            ],
+            [
+                '/time-cross-section/operation-number/11?x=1',
+                'findOneTimeCrossSectionByOperationNumber',
+            ],
+            [
+                '/time-cross-section/formation-number/10701?x=1',
+                'findOneTimeCrossSectionByFormationNumber',
+            ],
+        ] as const)(
+            '%s は時差付きなら通し、時差なしは 422',
+            async (path, method) => {
+                const sep = path.includes('?') ? '&' : '?';
+                const ok = await request(app.getHttpServer()).get(
+                    `${path}${sep}searchTime=2026-11-14T12:00:00%2B09:00`,
+                );
+                expect(ok.status).toBe(200);
+                expect(service[method]).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        searchTime: '2026-11-14T12:00:00+09:00',
+                    }),
+                );
+                service[method].mockClear();
+                const ng = await request(app.getHttpServer()).get(
+                    `${path}${sep}searchTime=2026-11-14T12:00:00`,
+                );
+                expect(ng.status).toBe(UNPROCESSABLE);
+                expect(service[method]).not.toHaveBeenCalled();
+            },
+        );
+
+        it('単体の口は運用番号・編成番号と include・fields も渡す', async () => {
+            await request(app.getHttpServer()).get(
+                '/time-cross-section/operation-number/11?fields[operationSightingTimeCrossSection]=a',
+            );
+            expect(
+                service.findOneTimeCrossSectionByOperationNumber,
+            ).toHaveBeenCalledWith({
+                operationNumber: '11',
+                searchTime: undefined,
+                fields: { operationSightingTimeCrossSection: 'a' },
+            });
         });
     });
 });

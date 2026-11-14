@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { OperationSightingLatestCacheDto } from '../../usecase/dtos/operation-sighting-latest-cache.dto.js';
 import {
     OperationSightingLatestCacheDtoBuilder,
@@ -16,12 +16,17 @@ export class OperationSightingLatestCacheQuery {
         private readonly repository: Repository<OperationSightingLatestCacheModel>,
     ) {}
 
-    async findOneByFormationNumber(params: {
-        formationNumber: string;
-    }): Promise<OperationSightingLatestCacheDto | null> {
+    /** manager を渡すと、そのトランザクションの接続で読む */
+    async findOneByFormationNumber(
+        params: { formationNumber: string },
+        manager?: EntityManager,
+    ): Promise<OperationSightingLatestCacheDto | null> {
         const { formationNumber } = params;
+        const repository = manager
+            ? manager.getRepository(OperationSightingLatestCacheModel)
+            : this.repository;
 
-        const model = await this.repository
+        const model = await repository
             .createQueryBuilder('cache')
             .innerJoinAndSelect('cache.operationSighting', 'sighting')
             .where('cache.formationNumber = :formationNumber', { formationNumber })

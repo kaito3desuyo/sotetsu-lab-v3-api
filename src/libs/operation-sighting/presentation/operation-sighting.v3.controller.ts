@@ -22,7 +22,6 @@ import { Role } from '../../../core/modules/rbac/role.enum.js';
 import { InvalidateManyOperationSightingsDto } from '../usecase/dtos/invalidate-many-operation-sightings.dto.js';
 import { InvalidateOperationSightingDto } from '../usecase/dtos/invalidate-operation-sighting.dto.js';
 import { OperationSightingDetailsDto } from '../usecase/dtos/operation-sighting-details.dto.js';
-import { parseCommaList } from '../../../core/utils/comma-list.js';
 import { OperationSightingTimeCrossSectionDto } from '../usecase/dtos/operation-sighting-time-cross-section.dto.js';
 import { OperationSightingAuthorDto } from '../usecase/dtos/operation-sighting-author.dto.js';
 import { OperationSightingRecentDto } from '../usecase/dtos/operation-sighting-recent.dto.js';
@@ -33,7 +32,11 @@ import {
     OperationSightingV3Service,
 } from '../usecase/operation-sighting.v3.service.js';
 import { OperationSightingIdParam } from '../usecase/params/operation-sighting-id.param.js';
+import { FormationNumbersTimeCrossSectionQuery } from '../usecase/params/formation-numbers-time-cross-section.query.js';
+import { OperationNumbersTimeCrossSectionQuery } from '../usecase/params/operation-numbers-time-cross-section.query.js';
 import { OperationSightingListParam } from '../usecase/params/operation-sighting-list.param.js';
+import { PeriodParam } from '../usecase/params/period.param.js';
+import { SearchTimeQuery } from '../usecase/params/search-time.query.js';
 
 @Controller()
 @UseGuards(AuthGuard, RBACGuard)
@@ -46,8 +49,7 @@ export class OperationSightingV3Controller {
     @Get('/from/:start/to/:end')
     @CacheControl(CACHE_CONTROL.REALTIME)
     async findManyBySpecificPeriod(
-        @Param('start') start: string,
-        @Param('end') end: string,
+        @Param() param: PeriodParam,
         @Query('includeInvalidated') includeInvalidated?: boolean,
         @Query('includeCarriedOver') includeCarriedOver?: string,
         @Query('include') include?: unknown,
@@ -55,8 +57,8 @@ export class OperationSightingV3Controller {
     ): Promise<OperationSightingDetailsDto[] | Record<string, unknown>[]> {
         const result =
             await this.operationSightingV3Service.findManyBySpecificPeriod({
-                start,
-                end,
+                start: param.start,
+                end: param.end,
                 includeInvalidated,
                 includeCarriedOver: includeCarriedOver === 'true',
                 include,
@@ -70,8 +72,7 @@ export class OperationSightingV3Controller {
     @Get('/time-cross-section/operation-numbers')
     @CacheControl(CACHE_CONTROL.REALTIME)
     async findManyTimeCrossSectionsByOperationNumbers(
-        @Query('operationNumbers') operationNumbers: string,
-        @Query('searchTime') searchTime?: string,
+        @Query() query: OperationNumbersTimeCrossSectionQuery,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
     ): Promise<
@@ -83,8 +84,8 @@ export class OperationSightingV3Controller {
         const result =
             await this.operationSightingV3Service.findManyTimeCrossSectionsByOperationNumbers(
                 {
-                    operationNumbers: parseCommaList(operationNumbers),
-                    searchTime,
+                    operationNumbers: query.operationNumbers,
+                    searchTime: query.searchTime,
                     include,
                     fields,
                 },
@@ -97,8 +98,7 @@ export class OperationSightingV3Controller {
     @Get('/time-cross-section/formation-numbers')
     @CacheControl(CACHE_CONTROL.REALTIME)
     async findManyTimeCrossSectionsByFormationNumbers(
-        @Query('formationNumbers') formationNumbers: string,
-        @Query('searchTime') searchTime?: string,
+        @Query() query: FormationNumbersTimeCrossSectionQuery,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
     ): Promise<
@@ -110,8 +110,8 @@ export class OperationSightingV3Controller {
         const result =
             await this.operationSightingV3Service.findManyTimeCrossSectionsByFormationNumbers(
                 {
-                    formationNumbers: parseCommaList(formationNumbers),
-                    searchTime,
+                    formationNumbers: query.formationNumbers,
+                    searchTime: query.searchTime,
                     include,
                     fields,
                 },
@@ -125,7 +125,7 @@ export class OperationSightingV3Controller {
     @CacheControl(CACHE_CONTROL.REALTIME)
     async findOneTimeCrossSectionByOperationNumber(
         @Param('operationNumber') operationNumber: string,
-        @Query('searchTime') searchTime?: string,
+        @Query() query: SearchTimeQuery,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
     ): Promise<OperationSightingTimeCrossSectionDto | Record<string, unknown>> {
@@ -133,7 +133,7 @@ export class OperationSightingV3Controller {
             await this.operationSightingV3Service.findOneTimeCrossSectionByOperationNumber(
                 {
                     operationNumber,
-                    searchTime,
+                    searchTime: query.searchTime,
                     include,
                     fields,
                 },
@@ -146,7 +146,7 @@ export class OperationSightingV3Controller {
     @Get('/time-cross-section/formation-number/:formationNumber')
     async findOneTimeCrossSectionByFormationNumber(
         @Param('formationNumber') formationNumber: string,
-        @Query('searchTime') searchTime?: string,
+        @Query() query: SearchTimeQuery,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
     ): Promise<OperationSightingTimeCrossSectionDto | Record<string, unknown>> {
@@ -154,7 +154,7 @@ export class OperationSightingV3Controller {
             await this.operationSightingV3Service.findOneTimeCrossSectionByFormationNumber(
                 {
                     formationNumber,
-                    searchTime,
+                    searchTime: query.searchTime,
                     include,
                     fields,
                 },
