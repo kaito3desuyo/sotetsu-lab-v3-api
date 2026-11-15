@@ -17,7 +17,7 @@ import { RBAC } from '../../../core/modules/rbac/rbac.decorator.js';
 import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
 import { Role } from '../../../core/modules/rbac/role.enum.js';
 import { OperationSightingSummaryDto } from '../../operation-sighting/usecase/dtos/operation-sighting-summary.dto.js';
-import { OperationSightingV3Service } from '../../operation-sighting/usecase/operation-sighting.v3.service.js';
+import { OperationSightingV3ListService } from '../../operation-sighting/usecase/operation-sighting.v3.list.service.js';
 import { OperationSightingListParam } from '../../operation-sighting/usecase/params/operation-sighting-list.param.js';
 import { MyOperationSightingDto } from '../../operation-sighting/usecase/dtos/my-operation-sighting.dto.js';
 import { BanUserDto } from '../usecase/dtos/ban-user.dto.js';
@@ -38,7 +38,7 @@ import { UserV3Service } from '../usecase/user.v3.service.js';
 export class UserV3Controller {
     constructor(
         private readonly userV3Service: UserV3Service,
-        private readonly operationSightingV3Service: OperationSightingV3Service,
+        private readonly operationSightingV3ListService: OperationSightingV3ListService,
     ) {}
 
     /** 本人の要約。本人の id は認証から取り、URL・query では受けない */
@@ -49,7 +49,7 @@ export class UserV3Controller {
         const userId = req.auth!.userId!;
         const [summary, corroboration] = await Promise.all([
             this.userV3Service.findUserSummary({ userId }),
-            this.operationSightingV3Service.countCorroborationsByUserId({
+            this.operationSightingV3ListService.countCorroborationsByUserId({
                 userId,
             }),
         ]);
@@ -70,7 +70,7 @@ export class UserV3Controller {
         @Req() req: Request,
         @Query() query: OperationSightingListParam,
     ): Promise<MyOperationSightingDto[]> {
-        return this.operationSightingV3Service.findManyMine({
+        return this.operationSightingV3ListService.findManyMine({
             userId: req.auth!.userId!,
             limit: query.limit,
             before: query.before,
@@ -93,7 +93,7 @@ export class UserV3Controller {
         @Param() param: UserIdParam,
         @Query() query: OperationSightingListParam,
     ): Promise<OperationSightingSummaryDto[]> {
-        return this.operationSightingV3Service.findManyByUserId({
+        return this.operationSightingV3ListService.findManyByUserId({
             userId: param.userId,
             limit: query.limit,
             before: query.before,

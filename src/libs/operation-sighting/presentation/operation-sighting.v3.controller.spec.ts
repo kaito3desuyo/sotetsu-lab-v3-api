@@ -10,7 +10,9 @@ import { validationPipeOptions } from '../../../core/configs/validator-options.j
 import { FeatureFlags } from '../../../core/modules/feature-flag/feature-flags.js';
 import { UserRoleService } from '../../user/usecase/user-role.service.js';
 import { Role } from '../../../core/modules/rbac/role.enum.js';
+import { OperationSightingV3ListService } from '../usecase/operation-sighting.v3.list.service.js';
 import { OperationSightingV3Service } from '../usecase/operation-sighting.v3.service.js';
+import { OperationSightingV3TimeCrossSectionService } from '../usecase/operation-sighting.v3.time-cross-section.service.js';
 import { OperationSightingV3Controller } from './operation-sighting.v3.controller.js';
 
 vi.mock('../../../core/modules/auth/auth.guard.js', () => ({
@@ -42,6 +44,11 @@ describe('OperationSightingV3Controller（書き込みの役割と利用者）',
             controllers: [OperationSightingV3Controller],
             providers: [
                 { provide: OperationSightingV3Service, useValue: service },
+                { provide: OperationSightingV3ListService, useValue: service },
+                {
+                    provide: OperationSightingV3TimeCrossSectionService,
+                    useValue: service,
+                },
                 { provide: FeatureFlags, useValue: featureFlags },
                 // profiles に行が無い扱い（null）なら JWT の役割のまま
                 {
@@ -192,6 +199,11 @@ describe('OperationSightingV3Controller（投稿者つきの読み取りの口�
             controllers: [OperationSightingV3Controller],
             providers: [
                 { provide: OperationSightingV3Service, useValue: service },
+                { provide: OperationSightingV3ListService, useValue: service },
+                {
+                    provide: OperationSightingV3TimeCrossSectionService,
+                    useValue: service,
+                },
                 { provide: FeatureFlags, useValue: { isEnabled: vi.fn() } },
                 {
                     provide: UserRoleService,
@@ -441,6 +453,11 @@ describe('OperationSightingV3Controller（日付・期間・時刻・番号の�
             controllers: [OperationSightingV3Controller],
             providers: [
                 { provide: OperationSightingV3Service, useValue: service },
+                { provide: OperationSightingV3ListService, useValue: service },
+                {
+                    provide: OperationSightingV3TimeCrossSectionService,
+                    useValue: service,
+                },
                 { provide: FeatureFlags, useValue: { isEnabled: vi.fn() } },
                 {
                     provide: UserRoleService,
