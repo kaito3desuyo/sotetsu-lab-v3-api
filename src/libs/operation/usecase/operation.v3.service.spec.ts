@@ -3,7 +3,6 @@ import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ItinerarySegmentQuery } from '../infrastructure/queries/itinerary-segment.query.js';
 import { OperationQuery } from '../infrastructure/queries/operation.query.js';
-import { OperationCurrentPositionDto } from './dtos/operation-current-position.dto.js';
 import { OperationDetailsDto } from './dtos/operation-details.dto.js';
 import { OperationWithTripsDto } from './dtos/operation-with-trips.dto.js';
 import { OperationV3Service } from './operation.v3.service.js';
@@ -16,8 +15,8 @@ const mockOperationQuery = {
     findManyBySpecificPeriodWithSelection: vi.fn() as AnyMock,
     findOneWithTrips: vi.fn() as AnyMock,
     findOneWithTripsWithSelection: vi.fn() as AnyMock,
-    findOneWithCurrentPosition: vi.fn() as AnyMock,
-    findManyWithCurrentPosition: vi.fn() as AnyMock,
+    findOneForCurrentPosition: vi.fn() as AnyMock,
+    findManyForCurrentPosition: vi.fn() as AnyMock,
     findManyWithTrips: vi.fn() as AnyMock,
     findManyWithTripsWithSelection: vi.fn() as AnyMock,
 };
@@ -130,47 +129,44 @@ describe('OperationV3Service', () => {
     });
 
     describe('findOneWithCurrentPosition', () => {
-        it('operationId と searchTime を OperationQuery に渡してそのまま返す', async () => {
-            const expected = {
-                operationId: 'op-3',
-            } as unknown as OperationCurrentPositionDto;
-            mockOperationQuery.findOneWithCurrentPosition.mockResolvedValue(
-                expected,
-            );
-
-            const result = await service.findOneWithCurrentPosition({
-                operationId: 'op-3',
-                searchTime: '12:00:00',
-            });
-
-            expect(
-                mockOperationQuery.findOneWithCurrentPosition,
-            ).toHaveBeenCalledWith({
-                operationId: 'op-3',
-                searchTime: '12:00:00',
-            });
-            expect(result).toBe(expected);
+        const modelOf = (id: string) => ({
+            id,
+            calendarId: 'cal-1',
+            operationNumber: '11K',
+            tripOperationLists: [],
         });
 
-        it('searchTime を省略しても OperationQuery に渡す', async () => {
-            const expected = {
-                operationId: 'op-4',
-            } as unknown as OperationCurrentPositionDto;
-            mockOperationQuery.findOneWithCurrentPosition.mockResolvedValue(
-                expected,
+        it('operationId を OperationQuery に渡し、引いた model から現在位置を組み立てて返す', async () => {
+            mockOperationQuery.findOneForCurrentPosition.mockResolvedValue(
+                modelOf('op-3'),
+            );
+
+            const result = await service.findOneWithCurrentPosition({
+                operationId: 'op-3',
+                searchTime: '2026-10-21T12:00:00+09:00',
+            });
+
+            expect(
+                mockOperationQuery.findOneForCurrentPosition,
+            ).toHaveBeenCalledWith({ operationId: 'op-3' });
+            expect(result).toMatchObject({
+                operation: { id: 'op-3' },
+                prev: null,
+                current: null,
+                next: null,
+            });
+        });
+
+        it('searchTime を省略しても現在位置を組み立てる', async () => {
+            mockOperationQuery.findOneForCurrentPosition.mockResolvedValue(
+                modelOf('op-4'),
             );
 
             const result = await service.findOneWithCurrentPosition({
                 operationId: 'op-4',
             });
 
-            expect(
-                mockOperationQuery.findOneWithCurrentPosition,
-            ).toHaveBeenCalledWith({
-                operationId: 'op-4',
-                searchTime: undefined,
-            });
-            expect(result).toBe(expected);
+            expect(result).toMatchObject({ operation: { id: 'op-4' } });
         });
     });
 
@@ -259,15 +255,21 @@ describe('OperationV3Service', () => {
     });
 
     describe('findManyWithCurrentPosition', () => {
-        it('運用 id と時刻を OperationQuery にまとめて渡してそのまま返す', async () => {
-            const expected = [
+        it('運用 id を OperationQuery にまとめて渡し、model ごとに現在位置を組み立てて返す', async () => {
+            mockOperationQuery.findManyForCurrentPosition.mockResolvedValue([
                 {
-                    operation: { operationId: 'op-1' },
-                } as OperationCurrentPositionDto,
-            ];
-            mockOperationQuery.findManyWithCurrentPosition.mockResolvedValue(
-                expected,
-            );
+                    id: 'op-1',
+                    calendarId: 'cal-1',
+                    operationNumber: '11K',
+                    tripOperationLists: [],
+                },
+                {
+                    id: 'op-2',
+                    calendarId: 'cal-1',
+                    operationNumber: '12K',
+                    tripOperationLists: [],
+                },
+            ]);
 
             const result = await service.findManyWithCurrentPosition({
                 operationIds: ['op-1', 'op-2'],
@@ -275,27 +277,22 @@ describe('OperationV3Service', () => {
             });
 
             expect(
-                mockOperationQuery.findManyWithCurrentPosition,
-            ).toHaveBeenCalledWith({
-                operationIds: ['op-1', 'op-2'],
-                searchTime: '2026-05-30T15:00:00+09:00',
-            });
-            expect(result).toBe(expected);
+                mockOperationQuery.findManyForCurrentPosition,
+            ).toHaveBeenCalledWith({ operationIds: ['op-1', 'op-2'] });
+            expect(result).toMatchObject([
+                { operation: { id: 'op-1' }, prev: null },
+                { operation: { id: 'op-2' }, prev: null },
+            ]);
         });
 
-        it('時刻を指定しなければその瞬間の時刻を 1 つ決めて渡す', async () => {
-            mockOperationQuery.findManyWithCurrentPosition.mockResolvedValue(
-                [],
-            );
+        it('時刻を指定しなくても、問い合わせ結果が無ければ空配列', async () => {
+            mockOperationQuery.findManyForCurrentPosition.mockResolvedValue([]);
 
-            await service.findManyWithCurrentPosition({
+            const result = await service.findManyWithCurrentPosition({
                 operationIds: ['op-1'],
             });
 
-            expect(
-                mockOperationQuery.findManyWithCurrentPosition.mock.calls[0][0]
-                    .searchTime,
-            ).toEqual(expect.any(String));
+            expect(result).toEqual([]);
         });
     });
 });
@@ -350,6 +347,31 @@ describe('OperationV3Service - 運用の from/to・:id/trips の選択', () => {
 
 describe('OperationV3Service - read-model の fields', () => {
     let service: OperationV3Service;
+    // 検索時刻 05:00 に tol1（04:39 → 05:10）を走っている運用の model
+    const operationModel = {
+        id: 'op1',
+        calendarId: 'c1',
+        operationNumber: '54',
+        createdAt: new Date(0),
+        updatedAt: new Date(0),
+        tripOperationLists: [
+            {
+                id: 'tol1',
+                tripId: 't1',
+                trip: { id: 't1', tripNumber: '6000', depotIn: false },
+                startTime: {
+                    id: 'tm1',
+                    departureDays: 1,
+                    departureTime: '04:39:00',
+                },
+                endTime: {
+                    id: 'tm2',
+                    arrivalDays: 1,
+                    arrivalTime: '05:10:00',
+                },
+            },
+        ],
+    };
     const position = {
         operation: {
             id: 'op1',
@@ -363,8 +385,12 @@ describe('OperationV3Service - read-model の fields', () => {
             id: 'tol1',
             tripId: 't1',
             trip: { id: 't1', tripNumber: '6000', depotIn: false },
-            startTime: { id: 'tm1', departureTime: '04:39:00' },
-            endTime: { id: 'tm2', arrivalTime: '05:10:00' },
+            startTime: {
+                id: 'tm1',
+                departureDays: 1,
+                departureTime: '04:39:00',
+            },
+            endTime: { id: 'tm2', arrivalDays: 1, arrivalTime: '05:10:00' },
         },
         next: null,
     };
@@ -375,8 +401,8 @@ describe('OperationV3Service - read-model の fields', () => {
     });
 
     it('現在位置(複数): fields に挙げた資源だけを削り、挙げない資源は全項目', async () => {
-        mockOperationQuery.findManyWithCurrentPosition.mockResolvedValue([
-            position,
+        mockOperationQuery.findManyForCurrentPosition.mockResolvedValue([
+            operationModel,
         ]);
 
         const result = await service.findManyWithCurrentPosition({
@@ -392,16 +418,24 @@ describe('OperationV3Service - read-model の fields', () => {
                     id: 'tol1',
                     tripId: 't1',
                     trip: { id: 't1', tripNumber: '6000' },
-                    startTime: { id: 'tm1', departureTime: '04:39:00' },
-                    endTime: { id: 'tm2', arrivalTime: '05:10:00' },
+                    startTime: {
+                        id: 'tm1',
+                        departureDays: 1,
+                        departureTime: '04:39:00',
+                    },
+                    endTime: {
+                        id: 'tm2',
+                        arrivalDays: 1,
+                        arrivalTime: '05:10:00',
+                    },
                 },
             },
         ]);
     });
 
     it('現在位置(1 件): fields で削る。運用が無ければ null のまま', async () => {
-        mockOperationQuery.findOneWithCurrentPosition.mockResolvedValue(
-            position,
+        mockOperationQuery.findOneForCurrentPosition.mockResolvedValue(
+            operationModel,
         );
         await expect(
             service.findOneWithCurrentPosition({
@@ -412,7 +446,7 @@ describe('OperationV3Service - read-model の fields', () => {
             operation: { id: 'op1', operationNumber: '54' },
         });
 
-        mockOperationQuery.findOneWithCurrentPosition.mockResolvedValue(null);
+        mockOperationQuery.findOneForCurrentPosition.mockResolvedValue(null);
         await expect(
             service.findOneWithCurrentPosition({
                 operationId: 'op1',
@@ -421,9 +455,9 @@ describe('OperationV3Service - read-model の fields', () => {
         ).resolves.toBeNull();
     });
 
-    it('現在位置: fields が無ければ query の結果をそのまま返す', async () => {
-        mockOperationQuery.findManyWithCurrentPosition.mockResolvedValue([
-            position,
+    it('現在位置: fields が無ければ組み立てた現在位置をそのまま返す', async () => {
+        mockOperationQuery.findManyForCurrentPosition.mockResolvedValue([
+            operationModel,
         ]);
 
         const result = await service.findManyWithCurrentPosition({
@@ -431,13 +465,10 @@ describe('OperationV3Service - read-model の fields', () => {
             searchTime: '2026-10-24T05:00:00+09:00',
         });
 
-        expect(result).toEqual([position]);
+        expect(result).toMatchObject([position]);
         expect(
-            mockOperationQuery.findManyWithCurrentPosition,
-        ).toHaveBeenCalledWith({
-            operationIds: ['op1'],
-            searchTime: '2026-10-24T05:00:00+09:00',
-        });
+            mockOperationQuery.findManyForCurrentPosition,
+        ).toHaveBeenCalledWith({ operationIds: ['op1'] });
     });
 
     it('現在位置: include は 400', async () => {
@@ -448,7 +479,7 @@ describe('OperationV3Service - read-model の fields', () => {
             }),
         ).rejects.toThrow(BadRequestException);
         expect(
-            mockOperationQuery.findOneWithCurrentPosition,
+            mockOperationQuery.findOneForCurrentPosition,
         ).not.toHaveBeenCalled();
     });
 
