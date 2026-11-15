@@ -11,7 +11,7 @@ import timezone from 'dayjs/plugin/timezone.js';
 import utc from 'dayjs/plugin/utc.js';
 import helmet from 'helmet';
 import { AppModule } from './app.module.js';
-import { corsOptions } from './core/configs/cors-options.js';
+import { corsOptions, timingAllowOrigin } from './core/configs/cors-options.js';
 import {
     assertNotProdOutsideLambda,
     assertTargetsAgree,
@@ -64,6 +64,7 @@ export async function createApp(): Promise<INestApplication> {
     // app.use(compression());
     app.use(helmet());
     app.enableCors(corsOptions(process.env.CORS_HEADER_ORIGIN));
+    app.use(timingAllowOrigin(process.env.CORS_HEADER_ORIGIN));
     app.useLogger(app.get(LoggerService));
     if (target) {
         const targetMessage = describeDatabaseTarget(target);
