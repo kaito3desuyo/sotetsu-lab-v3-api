@@ -46,6 +46,16 @@ export type OperationSightingCorroborationFactsRow = {
 const serviceDay = (alias: string) =>
     `(("${alias}"."sighting_time" AT TIME ZONE 'Asia/Tokyo') - interval '4 hours')::date`;
 
+/**
+ * 運行日の始まり（その日の 4:00 JST）と終わり（翌日の 4:00 JST）の時刻。
+ * 相手の目撃の時刻をこの範囲と比べれば、式で包まずに (formation_id, sighting_time) の索引に乗る。
+ * 日本に夏時間は無いので、運行日の式どうしを比べるのと結果は同じ（2026-11-16 本番の 1,962 件で一致を確かめた）
+ */
+const serviceDayStart = (alias: string) =>
+    `((${serviceDay(alias)} + interval '4 hours') AT TIME ZONE 'Asia/Tokyo')`;
+const serviceDayEnd = (alias: string) =>
+    `((${serviceDay(alias)} + interval '28 hours') AT TIME ZONE 'Asia/Tokyo')`;
+
 /** 無効化の取り消し（復元）は行を消すので、行があれば今も無効 */
 const INVALIDATION_ACTION = 'invalidation';
 
@@ -127,7 +137,8 @@ export class OperationSightingAuthorQuery {
             .from(OperationSightingModel, 's2')
             .innerJoin('s2.operation', 'o2')
             .where('"s2"."formation_id" = "s"."formation_id"')
-            .andWhere(`${serviceDay('s2')} = ${serviceDay('s')}`)
+            .andWhere(`"s2"."sighting_time" >= ${serviceDayStart('s')}`)
+            .andWhere(`"s2"."sighting_time" < ${serviceDayEnd('s')}`)
             .andWhere('"s2"."id" <> "s"."id"')
             .andWhere(`NOT EXISTS ${otherAuthorExists}`)
             .andWhere(`NOT EXISTS ${otherInvalidationExists}`)

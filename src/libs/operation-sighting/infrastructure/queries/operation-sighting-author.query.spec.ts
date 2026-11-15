@@ -252,6 +252,9 @@ describe('OperationSightingAuthorQuery（生成される SQL）', () => {
     describe('findCorroborationFacts（裏付けの材料）', () => {
         const serviceDay = (alias: string) =>
             `(("${alias}"."sighting_time" AT TIME ZONE 'Asia/Tokyo') - interval '4 hours')::date`;
+        /** 本人の目撃 s の運行日の始まり（その日の 4:00 JST）と終わり（翌日の 4:00 JST）の時刻 */
+        const serviceDayStart = `((${serviceDay('s')} + interval '4 hours') AT TIME ZONE 'Asia/Tokyo')`;
+        const serviceDayEnd = `((${serviceDay('s')} + interval '28 hours') AT TIME ZONE 'Asia/Tokyo')`;
 
         it('同じ運行日・同じ編成の他人の有効な目撃の運用番号を返す', async () => {
             rawRows = [
@@ -270,7 +273,6 @@ describe('OperationSightingAuthorQuery（生成される SQL）', () => {
 
             const { sql, parameters } = captured[0];
             expect(sql).toContain('"s2"."formation_id" = "s"."formation_id"');
-            expect(sql).toContain(`${serviceDay('s2')} = ${serviceDay('s')}`);
             expect(sql).toContain(
                 'array_agg(DISTINCT "o2"."operation_number")',
             );
@@ -292,10 +294,22 @@ describe('OperationSightingAuthorQuery（生成される SQL）', () => {
             });
 
             const { sql } = captured[0];
-            // 日本時間にして 4 時間引いた日付で比べる（3:59 は前日・4:00 は当日になる）
-            expect(sql).toContain(serviceDay('s'));
-            expect(sql).toContain(serviceDay('s2'));
+            // 本人の目撃の運行日（日本時間にして 4 時間引いた日付。3:59 は前日・4:00 は当日）の
+            // 4:00 から翌日の 4:00 の手前までに入る目撃を同じ運行日とする
+            expect(sql).toContain(`"s2"."sighting_time" >= ${serviceDayStart}`);
+            expect(sql).toContain(`"s2"."sighting_time" < ${serviceDayEnd}`);
             expect(sql).not.toContain('date_trunc');
+        });
+
+        it('他人の目撃の時刻は式で包まずに比べる（編成・時刻の索引に乗せる）', async () => {
+            await query.findCorroborationFacts({
+                userId: 'user-1',
+                operationSightingIds: null,
+            });
+
+            const { sql } = captured[0];
+            // 以前は s2 の側も運行日の式にして比べ、索引に乗らず 842 件で 3.2 秒かかった（2026-11-16 本番で EXPLAIN）
+            expect(sql).not.toContain(serviceDay('s2'));
         });
 
         it('本人の別の投稿・自分自身・他人の無効な目撃は材料にしない', async () => {
