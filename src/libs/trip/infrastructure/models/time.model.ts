@@ -78,6 +78,7 @@ export class TimeModel {
     @ManyToOne(() => TripModel, (trip) => trip.times, {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
+        orphanedRowAction: 'delete',
     })
     @JoinColumn({ name: 'trip_id' })
     readonly trip?: Relation<TripModel>;
