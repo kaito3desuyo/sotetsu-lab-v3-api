@@ -156,6 +156,25 @@ describe('OperationSightingV3ListService - findManyBySpecificPeriod includeCarri
         });
     });
 
+    it('fields[operationSighting] で carriedFromSightingId を選べる（写しにだけ付く）', async () => {
+        const result = (await service.findManyBySpecificPeriod({
+            start: '2026-10-12',
+            end: '2026-10-12',
+            includeCarriedOver: true,
+            fields: { operationSighting: 'carriedFromSightingId' },
+        })) as Record<string, unknown>[];
+
+        expect(result.find((o) => o.id === 'a#12K')).toEqual({
+            id: 'a#12K',
+            carriedFromSightingId: 'a',
+            sightedAsOperation: {
+                operationId: 'op-11K',
+                operationNumber: '11K',
+            },
+        });
+        expect(result.find((o) => o.id === 'a')).toEqual({ id: 'a' });
+    });
+
     it('fields だけでも無効化の印は ID だけで残り、無効化の無い目撃には invalidation が付かない', async () => {
         const invalidated = {
             ...(sighting('a', '11K', '10701', '07:00') as object),
@@ -231,6 +250,9 @@ describe('OperationSightingV3ListService - findManyBySpecificPeriod includeCarri
             operationNumber: '11K',
         });
         expect(result[0].sightedAsOperation).toBeUndefined();
+        expect(result[1].carriedFromSightingId).toBe('a');
+        expect(result[0].carriedFromSightingId).toBeUndefined();
+        expect(result[2].carriedFromSightingId).toBeUndefined();
         const range =
             mockOperationSightingQuery.findManyBySightingTimeRange.mock
                 .calls[0][0];

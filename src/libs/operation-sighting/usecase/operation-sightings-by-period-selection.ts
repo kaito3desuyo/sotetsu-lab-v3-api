@@ -10,7 +10,7 @@ import {
 /**
  * `GET /v3/operation-sightings/from/:start/to/:end` の `include`・`fields` で選べる範囲
  * （docs/adr/0010-v3-include-and-fields.md）。作った DTO を削るので、別名は DTO の同じ名前の項目を指す。
- * `operation`・`formation`・`sightedAsOperation` は引き継いだ目撃にだけある。
+ * `operation`・`formation`・`sightedAsOperation`・`carriedFromSightingId` は引き継いだ目撃にだけある。
  */
 export const OPERATION_SIGHTINGS_BY_PERIOD_SELECTION_TREE = defineSelectionTree(
     {

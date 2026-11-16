@@ -398,7 +398,8 @@ export class SightingCarryOver {
 
     /**
      * 過去の運用情報（spec 3.5）。推測した枠ごとに、推測の元の目撃を写した「引き継いだ目撃」を作る。
-     * id は `元の id#運番`、同じ行程に同じ運番の枠が 2 つ目以降なら `元の id#運番#2`
+     * id は `元の id#運番`、同じ行程に同じ運番の枠が 2 つ目以降なら `元の id#運番#2`。
+     * 写しであること・元の id は `carriedFromSightingId`（id の形に頼らない）
      */
     buildCarried<
         S extends CarrySighting,
@@ -427,6 +428,7 @@ export class SightingCarryOver {
                     operationId: operation.operationId,
                     operation,
                     sightedAsOperation: sourceOf(s),
+                    carriedFromSightingId: s.operationSightingId,
                 } as S;
                 this.carriedPlacements.set(carried, {
                     itinerary,

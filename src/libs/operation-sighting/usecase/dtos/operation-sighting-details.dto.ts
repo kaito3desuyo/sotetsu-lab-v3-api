@@ -50,4 +50,8 @@ export class OperationSightingDetailsDto extends BaseOperationSightingDto {
     /** 引き継いだ目撃のとき、目撃されたときの運用。直接の目撃には無い */
     @Expose()
     sightedAsOperation?: { operationId: string; operationNumber: string };
+
+    /** 引き継いだ目撃（写し）のとき、元の目撃の operationSightingId（`#` の付かない id）。直接の目撃には無い */
+    @Expose()
+    carriedFromSightingId?: string;
 }

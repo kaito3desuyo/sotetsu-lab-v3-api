@@ -367,6 +367,7 @@ describe('SightingCarryOver.buildCarried', () => {
         expect(out).toEqual([
             expect.objectContaining({
                 id: 'a#12K',
+                carriedFromSightingId: 'a',
                 operationId: 'op-12K',
                 sightedAsOperation: {
                     operationId: 'op-11K',
@@ -456,6 +457,7 @@ describe('SightingCarryOver.buildCarried（運番が戻る行程）', () => {
             expect.objectContaining({
                 id: 'a#18K#2',
                 operationSightingId: 'a#18K#2',
+                carriedFromSightingId: 'a',
                 operationId: 'op-18K',
                 sightedAsOperation: {
                     operationId: 'op-18K',
@@ -470,6 +472,7 @@ describe('SightingCarryOver.buildCarried（運番が戻る行程）', () => {
             operations: operationsBack,
         });
         expect(out.map((o) => o.id)).toEqual(['a#18K', 'a#18K#2']);
+        expect(out.map((o) => o.carriedFromSightingId)).toEqual(['a', 'a']);
     });
     it('戻った後の 18K が直接目撃されていれば、そこには作らない', () => {
         const out = SightingCarryOver.create(back18).buildCarried({

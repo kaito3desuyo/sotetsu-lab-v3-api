@@ -9,6 +9,8 @@ export const OPERATION_SIGHTING_COLUMNS = columnsOf(
     'sightingTime',
     'createdAt',
     'updatedAt',
+    // 引き継いだ目撃（写し）にだけある。元の目撃の operationSightingId
+    'carriedFromSightingId',
 );
 
 /** `fields[operationSightingInvalidation]` で選べる列 */
