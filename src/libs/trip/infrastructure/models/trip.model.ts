@@ -86,7 +86,9 @@ export class TripModel {
     @JoinColumn({ name: 'trip_class_id' })
     readonly tripClass?: Relation<TripClassModel>;
 
-    @ManyToOne(() => TripBlockModel, (tripBlock) => tripBlock.trips)
+    @ManyToOne(() => TripBlockModel, (tripBlock) => tripBlock.trips, {
+        orphanedRowAction: 'delete',
+    })
     @JoinColumn({ name: 'trip_block_id' })
     readonly tripBlock?: Relation<TripBlockModel>;
 

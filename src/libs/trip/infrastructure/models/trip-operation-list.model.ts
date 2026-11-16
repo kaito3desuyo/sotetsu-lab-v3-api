@@ -64,6 +64,7 @@ export class TripOperationListModel {
 
     @ManyToOne(() => TripModel, (trip) => trip.tripOperationLists, {
         onDelete: 'CASCADE',
+        orphanedRowAction: 'delete',
     })
     @JoinColumn({ name: 'trip_id' })
     readonly trip?: Relation<TripModel>;
