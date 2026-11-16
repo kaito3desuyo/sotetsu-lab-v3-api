@@ -42,3 +42,26 @@ export function selectMostRecentCandidateForOperationNumber(
             dayjs(b.sightingTime).valueOf() - dayjs(a.sightingTime).valueOf(),
     )[0];
 }
+
+/**
+ * 投稿・復元の後のキャッシュ。その編成の現在のキャッシュより新しい目撃なら upsert、そうでなければ何もしない。
+ * 現在のキャッシュは、lock を取った transaction の中で読んだものを渡す。
+ */
+export function decideCacheAction(
+    current: OperationSightingLatestCacheDto | null,
+    incoming: {
+        formationNumber: string;
+        operationNumber: string;
+        sightingTime: dayjs.ConfigType;
+    },
+): CacheAction {
+    const { formationNumber, operationNumber, sightingTime } = incoming;
+    return !current || dayjs(current.sightingTime).isBefore(dayjs(sightingTime))
+        ? {
+              type: 'upsert',
+              cacheId: current?.id,
+              formationNumber,
+              operationNumber,
+          }
+        : { type: 'none' };
+}

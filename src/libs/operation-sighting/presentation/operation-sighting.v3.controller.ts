@@ -31,6 +31,8 @@ import {
     InvalidateManyResult,
     OperationSightingV3Service,
 } from '../usecase/operation-sighting.v3.service.js';
+import { OperationSightingV3ListService } from '../usecase/operation-sighting.v3.list.service.js';
+import { OperationSightingV3TimeCrossSectionService } from '../usecase/operation-sighting.v3.time-cross-section.service.js';
 import { OperationSightingIdParam } from '../usecase/params/operation-sighting-id.param.js';
 import { FormationNumbersTimeCrossSectionQuery } from '../usecase/params/formation-numbers-time-cross-section.query.js';
 import { OperationNumbersTimeCrossSectionQuery } from '../usecase/params/operation-numbers-time-cross-section.query.js';
@@ -43,6 +45,8 @@ import { SearchTimeQuery } from '../usecase/params/search-time.query.js';
 export class OperationSightingV3Controller {
     constructor(
         private readonly operationSightingV3Service: OperationSightingV3Service,
+        private readonly operationSightingV3ListService: OperationSightingV3ListService,
+        private readonly operationSightingV3TimeCrossSectionService: OperationSightingV3TimeCrossSectionService,
     ) {}
 
     /** `include`・`fields` で返す関連・列を選べる（docs/adr/0010-v3-include-and-fields.md） */
@@ -56,7 +60,7 @@ export class OperationSightingV3Controller {
         @Query('fields') fields?: unknown,
     ): Promise<OperationSightingDetailsDto[] | Record<string, unknown>[]> {
         const result =
-            await this.operationSightingV3Service.findManyBySpecificPeriod({
+            await this.operationSightingV3ListService.findManyBySpecificPeriod({
                 start: param.start,
                 end: param.end,
                 includeInvalidated,
@@ -82,7 +86,7 @@ export class OperationSightingV3Controller {
         >
     > {
         const result =
-            await this.operationSightingV3Service.findManyTimeCrossSectionsByOperationNumbers(
+            await this.operationSightingV3TimeCrossSectionService.findManyTimeCrossSectionsByOperationNumbers(
                 {
                     operationNumbers: query.operationNumbers,
                     searchTime: query.searchTime,
@@ -108,7 +112,7 @@ export class OperationSightingV3Controller {
         >
     > {
         const result =
-            await this.operationSightingV3Service.findManyTimeCrossSectionsByFormationNumbers(
+            await this.operationSightingV3TimeCrossSectionService.findManyTimeCrossSectionsByFormationNumbers(
                 {
                     formationNumbers: query.formationNumbers,
                     searchTime: query.searchTime,
@@ -130,7 +134,7 @@ export class OperationSightingV3Controller {
         @Query('fields') fields?: unknown,
     ): Promise<OperationSightingTimeCrossSectionDto | Record<string, unknown>> {
         const result =
-            await this.operationSightingV3Service.findOneTimeCrossSectionByOperationNumber(
+            await this.operationSightingV3TimeCrossSectionService.findOneTimeCrossSectionByOperationNumber(
                 {
                     operationNumber,
                     searchTime: query.searchTime,
@@ -151,7 +155,7 @@ export class OperationSightingV3Controller {
         @Query('fields') fields?: unknown,
     ): Promise<OperationSightingTimeCrossSectionDto | Record<string, unknown>> {
         const result =
-            await this.operationSightingV3Service.findOneTimeCrossSectionByFormationNumber(
+            await this.operationSightingV3TimeCrossSectionService.findOneTimeCrossSectionByFormationNumber(
                 {
                     formationNumber,
                     searchTime: query.searchTime,
@@ -170,7 +174,7 @@ export class OperationSightingV3Controller {
     async findManyRecent(
         @Query() query: OperationSightingListParam,
     ): Promise<OperationSightingRecentDto[]> {
-        return this.operationSightingV3Service.findManyRecent({
+        return this.operationSightingV3ListService.findManyRecent({
             limit: query.limit,
             before: query.before,
         });
@@ -183,7 +187,7 @@ export class OperationSightingV3Controller {
     async findAuthor(
         @Param() param: OperationSightingIdParam,
     ): Promise<OperationSightingAuthorDto> {
-        return this.operationSightingV3Service.findAuthor({
+        return this.operationSightingV3ListService.findAuthor({
             operationSightingId: param.id,
         });
     }

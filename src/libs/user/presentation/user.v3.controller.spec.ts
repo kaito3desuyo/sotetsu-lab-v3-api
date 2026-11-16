@@ -7,7 +7,7 @@ import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
 import { CacheControlModule } from '../../../core/modules/cache-control/cache-control.module.js';
 import { FeatureFlags } from '../../../core/modules/feature-flag/feature-flags.js';
 import { Role } from '../../../core/modules/rbac/role.enum.js';
-import { OperationSightingV3Service } from '../../operation-sighting/usecase/operation-sighting.v3.service.js';
+import { OperationSightingV3ListService } from '../../operation-sighting/usecase/operation-sighting.v3.list.service.js';
 import { UserRoleService } from '../usecase/user-role.service.js';
 import { UserV3Service } from '../usecase/user.v3.service.js';
 import { UserV3Controller } from './user.v3.controller.js';
@@ -53,7 +53,7 @@ describe('UserV3Controller（利用者の読み取りの口・BAN・手がかり
             providers: [
                 { provide: UserV3Service, useValue: service },
                 {
-                    provide: OperationSightingV3Service,
+                    provide: OperationSightingV3ListService,
                     useValue: operationSightingService,
                 },
                 { provide: FeatureFlags, useValue: { isEnabled: vi.fn() } },
@@ -222,13 +222,16 @@ describe('UserV3Controller（利用者の読み取りの口・BAN・手がかり
             service.findUserSummary.mockResolvedValue(FULL_SUMMARY);
         });
 
-        it.each(ME_ROUTES)('%s は REPORTER・EDITOR・MANAGER で 200', async (path) => {
-            for (const role of [Role.REPORTER, Role.EDITOR, Role.MANAGER]) {
-                auth = { userId: 'u-1', role, sessionId: null };
-                const res = await request(app.getHttpServer()).get(path);
-                expect(res.status).toBe(200);
-            }
-        });
+        it.each(ME_ROUTES)(
+            '%s は REPORTER・EDITOR・MANAGER で 200',
+            async (path) => {
+                for (const role of [Role.REPORTER, Role.EDITOR, Role.MANAGER]) {
+                    auth = { userId: 'u-1', role, sessionId: null };
+                    const res = await request(app.getHttpServer()).get(path);
+                    expect(res.status).toBe(200);
+                }
+            },
+        );
 
         it.each(ME_ROUTES)('%s は VIEWER・匿名なら 403', async (path) => {
             auth = { userId: 'u-1', role: Role.VIEWER, sessionId: null };
@@ -240,7 +243,9 @@ describe('UserV3Controller（利用者の読み取りの口・BAN・手がかり
                 403,
             );
             expect(service.findUserSummary).not.toHaveBeenCalled();
-            expect(operationSightingService.findManyMine).not.toHaveBeenCalled();
+            expect(
+                operationSightingService.findManyMine,
+            ).not.toHaveBeenCalled();
         });
 
         it.each(ME_ROUTES)('%s の応答は保存させない', async (path) => {
@@ -291,7 +296,9 @@ describe('UserV3Controller（利用者の読み取りの口・BAN・手がかり
 
         it('/me/operation-sightings は req.auth.userId で findManyMine を呼ぶ', async () => {
             auth = { userId: 'u-1', role: Role.REPORTER, sessionId: null };
-            const mine = [{ operationSightingId: 's-1', corroboration: 'corroborated' }];
+            const mine = [
+                { operationSightingId: 's-1', corroboration: 'corroborated' },
+            ];
             operationSightingService.findManyMine.mockResolvedValue(mine);
             const res = await request(app.getHttpServer()).get(
                 '/me/operation-sightings?limit=5&before=2026-11-01T00:00:00.000Z',
@@ -318,7 +325,9 @@ describe('UserV3Controller（利用者の読み取りの口・BAN・手がかり
                 '/me/operation-sightings?limit=0',
             );
             expect(res.status).toBe(validationPipeOptions.errorHttpStatusCode);
-            expect(operationSightingService.findManyMine).not.toHaveBeenCalled();
+            expect(
+                operationSightingService.findManyMine,
+            ).not.toHaveBeenCalled();
         });
     });
 
