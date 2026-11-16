@@ -13,3 +13,20 @@ export function corsOptions(origin: string | undefined): CorsOptions {
         maxAge: PREFLIGHT_MAX_AGE_SECONDS,
     };
 }
+
+/**
+ * Resource Timing で API の待ち時間と大きさを読めるようにする（Timing-Allow-Origin）。
+ * client は別 origin なので、付けないとブラウザは API の TTFB やサイズを 0 として返す。
+ * CORS と同じ origin に許す。
+ */
+export function timingAllowOrigin(origin: string | undefined) {
+    const value = origin || '*';
+    return (
+        _req: unknown,
+        res: { setHeader(name: string, value: string): unknown },
+        next: () => void,
+    ): void => {
+        res.setHeader('Timing-Allow-Origin', value);
+        next();
+    };
+}
