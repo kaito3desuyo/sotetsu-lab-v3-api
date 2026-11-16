@@ -5,6 +5,7 @@ import {
     parseSelection,
 } from '../../../core/utils/selection/parse-selection.js';
 import { serializeSelection } from '../../../core/utils/selection/serialize-selection.js';
+import { buildOperationCurrentPosition } from './read-models/operation-current-position.read-model.js';
 import { VehicleItineraryReadModel } from './read-models/vehicle-itinerary.read-model.js';
 import { ItinerarySegmentQuery } from '../infrastructure/queries/itinerary-segment.query.js';
 import { OperationQuery } from '../infrastructure/queries/operation.query.js';
@@ -90,12 +91,15 @@ export class OperationV3Service {
         const tree = OPERATION_CURRENT_POSITION_SELECTION_TREE;
         const selection = parseFieldsOnly({ include, fields }, tree);
 
-        const result = await this.operationQuery.findOneWithCurrentPosition({
+        const model = await this.operationQuery.findOneForCurrentPosition({
             operationId,
-            searchTime,
         });
+        if (!model) {
+            return null;
+        }
 
-        if (!selection || !result) {
+        const result = buildOperationCurrentPosition(model, searchTime);
+        if (!selection) {
             return result;
         }
         return serializeSelection(result, tree, selection);
@@ -115,10 +119,13 @@ export class OperationV3Service {
         const tree = OPERATION_CURRENT_POSITION_SELECTION_TREE;
         const selection = parseFieldsOnly(params, tree);
 
-        const result = await this.operationQuery.findManyWithCurrentPosition({
+        const searchTime = params.searchTime ?? dayjs().toISOString();
+        const models = await this.operationQuery.findManyForCurrentPosition({
             operationIds: params.operationIds,
-            searchTime: params.searchTime ?? dayjs().toISOString(),
         });
+        const result = models.map((model) =>
+            buildOperationCurrentPosition(model, searchTime),
+        );
 
         if (!selection) {
             return result;

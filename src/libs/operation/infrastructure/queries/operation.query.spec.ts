@@ -4,7 +4,6 @@ import customParseFormat from 'dayjs/plugin/customParseFormat.js';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { OperationModel } from '../models/operation.model.js';
-import { UnexpectedError } from '../../../../core/classes/unexpected-error.js';
 import { parseSelection } from '../../../../core/utils/selection/parse-selection.js';
 import { OPERATION_WITH_TRIPS_SELECTION_TREE } from '../../usecase/operation-with-trips-selection.js';
 import { OPERATIONS_BY_PERIOD_SELECTION_TREE } from '../../usecase/operations-by-period-selection.js';
@@ -97,7 +96,7 @@ const operationWithoutTrips = {
     tripOperationLists: [],
 };
 
-describe('OperationQuery - findOneWithCurrentPosition', () => {
+describe('OperationQuery - findOneForCurrentPosition', () => {
     let query: OperationQuery;
 
     beforeEach(async () => {
@@ -110,7 +109,7 @@ describe('OperationQuery - findOneWithCurrentPosition', () => {
     it('クエリビルダーで列車と時刻を結合し、時刻順に 1 件引く', async () => {
         mockGetOne.mockResolvedValue(null);
 
-        await query.findOneWithCurrentPosition({ operationId: 'op-1' });
+        await query.findOneForCurrentPosition({ operationId: 'op-1' });
 
         expectCurrentPositionJoinsAndOrder();
         expect(currentQueryBuilder.where).toHaveBeenCalledWith(
@@ -122,28 +121,25 @@ describe('OperationQuery - findOneWithCurrentPosition', () => {
     it('運用が無ければ null を返す', async () => {
         mockGetOne.mockResolvedValue(null);
 
-        const result = await query.findOneWithCurrentPosition({
+        const result = await query.findOneForCurrentPosition({
             operationId: 'op-1',
         });
 
         expect(result).toBeNull();
     });
 
-    it('列車の無い運用は前後・現在とも null で返す', async () => {
+    it('引いた model をそのまま返す（判定は read-model が行う）', async () => {
         mockGetOne.mockResolvedValue(operationWithoutTrips);
 
-        const result = await query.findOneWithCurrentPosition({
+        const result = await query.findOneForCurrentPosition({
             operationId: 'op-1',
         });
 
-        expect(result?.operation.id).toBe('op-1');
-        expect(result?.prev).toBeNull();
-        expect(result?.current).toBeNull();
-        expect(result?.next).toBeNull();
+        expect(result).toBe(operationWithoutTrips);
     });
 });
 
-describe('OperationQuery - findManyWithCurrentPosition', () => {
+describe('OperationQuery - findManyForCurrentPosition', () => {
     let query: OperationQuery;
 
     beforeEach(async () => {
@@ -156,7 +152,7 @@ describe('OperationQuery - findManyWithCurrentPosition', () => {
     it('クエリビルダーで列車と時刻を結合し、運用 ID の一覧でまとめて引く', async () => {
         mockGetMany.mockResolvedValue([]);
 
-        await query.findManyWithCurrentPosition({
+        await query.findManyForCurrentPosition({
             operationIds: ['op-1', 'op-2'],
         });
 
@@ -168,7 +164,7 @@ describe('OperationQuery - findManyWithCurrentPosition', () => {
     });
 
     it('運用 ID が空なら問い合わせずに空配列を返す', async () => {
-        const result = await query.findManyWithCurrentPosition({
+        const result = await query.findManyForCurrentPosition({
             operationIds: [],
         });
 
@@ -182,78 +178,11 @@ describe('OperationQuery - findManyWithCurrentPosition', () => {
             { ...operationWithoutTrips, id: 'op-1' },
         ]);
 
-        const result = await query.findManyWithCurrentPosition({
+        const result = await query.findManyForCurrentPosition({
             operationIds: ['op-1', 'op-missing', 'op-2'],
         });
 
-        expect(result.map((r) => r.operation.id)).toEqual(['op-1', 'op-2']);
-    });
-});
-
-describe('OperationQuery - 現在位置の計算', () => {
-    let query: OperationQuery;
-
-    const tol = (
-        id: string,
-        start: { days: number; time: string } | undefined,
-        end: { days: number; time: string },
-    ) => ({
-        id,
-        startTime: start && {
-            departureDays: start.days,
-            departureTime: start.time,
-        },
-        endTime: { arrivalDays: end.days, arrivalTime: end.time },
-    });
-
-    beforeEach(async () => {
-        vi.clearAllMocks();
-        currentQueryBuilder = buildChainableQueryBuilder();
-        mockCreateQueryBuilder.mockReturnValue(currentQueryBuilder);
-        query = await buildQuery();
-    });
-
-    it('列車の出発から到着までの間なら、その列車を current に入れる', async () => {
-        mockGetOne.mockResolvedValue({
-            ...operationWithoutTrips,
-            tripOperationLists: [
-                tol(
-                    't1',
-                    { days: 1, time: '10:00:00' },
-                    { days: 1, time: '11:00:00' },
-                ),
-                tol(
-                    't2',
-                    { days: 1, time: '12:00:00' },
-                    { days: 1, time: '13:00:00' },
-                ),
-            ],
-        });
-
-        const result = await query.findOneWithCurrentPosition({
-            operationId: 'op-1',
-            searchTime: '2026-10-21T10:30:00+09:00',
-        });
-
-        expect(result?.current?.id).toBe('t1');
-        expect(result?.prev).toBeNull();
-        expect(result?.next).toBeNull();
-    });
-
-    it('出発の時刻（startTime）が結合できない列車があれば UnexpectedError', async () => {
-        mockGetOne.mockResolvedValue({
-            ...operationWithoutTrips,
-            tripOperationLists: [
-                tol('t1', undefined, { days: 1, time: '11:00:00' }),
-            ],
-        });
-
-        await expect(
-            query.findOneWithCurrentPosition({
-                operationId: 'op-1',
-                searchTime: '2026-10-21T10:30:00+09:00',
-            }),
-        ).rejects.toThrow(UnexpectedError);
+        expect(result.map((r) => r.id)).toEqual(['op-1', 'op-2']);
     });
 });
 

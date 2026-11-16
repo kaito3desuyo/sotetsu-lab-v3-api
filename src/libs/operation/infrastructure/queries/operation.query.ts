@@ -3,17 +3,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import omit from 'just-omit';
 import { FindManyOptions, Repository } from 'typeorm';
-import { UnexpectedError } from '../../../../core/classes/unexpected-error.js';
 import type { Selection } from '../../../../core/utils/selection/parse-selection.js';
 import { selectColumns } from '../../../../core/utils/selection/select-columns.js';
 import { serializeSelection } from '../../../../core/utils/selection/serialize-selection.js';
-import { TripOperationListModel } from '../../../trip/infrastructure/models/trip-operation-list.model.js';
-import { OperationCurrentPositionDto } from '../../usecase/dtos/operation-current-position.dto.js';
 import { OperationDetailsDto } from '../../usecase/dtos/operation-details.dto.js';
 import { OperationWithTripsDto } from '../../usecase/dtos/operation-with-trips.dto.js';
 import { OPERATION_WITH_TRIPS_SELECTION_TREE } from '../../usecase/operation-with-trips-selection.js';
 import { OPERATIONS_BY_PERIOD_SELECTION_TREE } from '../../usecase/operations-by-period-selection.js';
-import { OperationCurrentPositionDtoBuilder } from '../builders/operation-current-position.dto.builder.js';
 import {
     OperationDtoBuilder,
     OperationsDtoBuilder,
@@ -135,32 +131,25 @@ export class OperationQuery {
             .addOrderBy('endTime.arrivalTime', 'ASC', 'NULLS LAST');
     }
 
-    async findOneWithCurrentPosition(params: {
+    /** 現在位置の判定に使う運用の model（`tripOperationLists` 付き）を 1 件引く。判定は read-model が行う。 */
+    async findOneForCurrentPosition(params: {
         operationId: string;
-        searchTime?: string;
-    }): Promise<OperationCurrentPositionDto | null> {
-        const { operationId, searchTime } = params;
+    }): Promise<OperationModel | null> {
+        const { operationId } = params;
 
-        const model = await this.#currentPositionQueryBuilder()
+        return this.#currentPositionQueryBuilder()
             .where('operation.id = :operationId', { operationId })
             .getOne();
-
-        if (!model) {
-            return null;
-        }
-
-        return this.#toCurrentPosition(model, searchTime);
     }
 
     /**
-     * findOneWithCurrentPosition の複数版（リアルタイム運用情報用）。運用は 1 回の問い合わせでまとめて引き、
-     * 位置の計算は 1 件ずつの口と同じ。入力の順で返し、見つからない運用は省く。
+     * findOneForCurrentPosition の複数版（リアルタイム運用情報用）。運用は 1 回の問い合わせでまとめて引く。
+     * 入力の順で返し、見つからない運用は省く。
      */
-    async findManyWithCurrentPosition(params: {
+    async findManyForCurrentPosition(params: {
         operationIds: string[];
-        searchTime?: string;
-    }): Promise<OperationCurrentPositionDto[]> {
-        const { operationIds, searchTime } = params;
+    }): Promise<OperationModel[]> {
+        const { operationIds } = params;
         if (operationIds.length === 0) return [];
 
         const models = await this.#currentPositionQueryBuilder()
@@ -170,146 +159,7 @@ export class OperationQuery {
 
         return operationIds
             .map((operationId) => byId.get(operationId))
-            .filter((model) => model !== undefined)
-            .map((model) => this.#toCurrentPosition(model, searchTime));
-    }
-
-    #toCurrentPosition(
-        model: OperationModel,
-        searchTime: string | undefined,
-    ): OperationCurrentPositionDto {
-        let prev: TripOperationListModel | null = null;
-        let current: TripOperationListModel | null = null;
-        let next: TripOperationListModel | null = null;
-        // leftJoinAndSelect しているので、列車が無くても空の配列が入る
-        const tripOperationLists = model.tripOperationLists!;
-
-        // 運用に紐づく列車情報が存在しない場合、現在位置はnullを返す
-        if (!tripOperationLists.length) {
-            return OperationCurrentPositionDtoBuilder.buildFromModel({
-                operation: omit(model, ['tripOperationLists']),
-                prev,
-                current,
-                next,
-            });
-        }
-
-        const searchTimeInstance = searchTime ? dayjs(searchTime) : dayjs();
-        const dateStr = searchTimeInstance.format('YYYY-MM-DD');
-        // 日数・時刻が null の列は、日数を 0 として扱い、時刻は不正な日時になる（比較はどれも成り立たない）
-        const targetTimeInstance = (days: number | null, time: string | null) =>
-            dayjs(`${dateStr} ${time}`, 'YYYY-MM-DD HH:mm:ss')
-                .subtract(searchTimeInstance.hour() < 4 ? 1 : 0, 'day')
-                .add((days ?? 0) - 1, 'day');
-        const departureOf = (item: TripOperationListModel) => {
-            if (!item.startTime) {
-                throw new UnexpectedError(
-                    '運用の列車に出発の時刻が結合できない',
-                    { tripOperationListId: item.id },
-                );
-            }
-            return targetTimeInstance(
-                item.startTime.departureDays,
-                item.startTime.departureTime,
-            );
-        };
-        const arrivalOf = (item: TripOperationListModel) => {
-            if (!item.endTime) {
-                throw new UnexpectedError(
-                    '運用の列車に到着の時刻が結合できない',
-                    { tripOperationListId: item.id },
-                );
-            }
-            return targetTimeInstance(
-                item.endTime.arrivalDays,
-                item.endTime.arrivalTime,
-            );
-        };
-
-        // 検索日時が0番目の列車の発車時刻よりも前の場合
-        if (searchTimeInstance < departureOf(tripOperationLists[0])) {
-            next = tripOperationLists[0];
-            return OperationCurrentPositionDtoBuilder.buildFromModel({
-                operation: omit(model, ['tripOperationLists']),
-                prev,
-                current,
-                next,
-            });
-        }
-
-        // 検索日時が列車間の場合
-        // n番目の列車の到着時刻 <= 検索日時 < n + 1番目の列車の出発時刻
-        const nToNPlus1 = tripOperationLists.find((_, i, arr) => {
-            if (!arr[i + 1]) {
-                return undefined;
-            }
-
-            return (
-                arrivalOf(arr[i]) <= searchTimeInstance &&
-                searchTimeInstance < departureOf(arr[i + 1])
-            );
-        });
-
-        // n - 1番目の列車の到着時刻 <= 検索日時 < n番目の列車の出発時刻
-        const nMinus1ToN = tripOperationLists.find((_, i, arr) => {
-            if (!arr[i - 1]) {
-                return undefined;
-            }
-
-            return (
-                arrivalOf(arr[i - 1]) <= searchTimeInstance &&
-                searchTimeInstance < departureOf(arr[i])
-            );
-        });
-
-        if (nToNPlus1 && nMinus1ToN) {
-            prev = nToNPlus1;
-            next = nMinus1ToN;
-            return OperationCurrentPositionDtoBuilder.buildFromModel({
-                operation: omit(model, ['tripOperationLists']),
-                prev,
-                current,
-                next,
-            });
-        }
-
-        // 検索日時が列車運転中の場合
-        // n番目の列車の出発時刻 <= 検索日時 < n番目の列車の到着時刻
-        const currentRunning = tripOperationLists.find((item) => {
-            return (
-                departureOf(item) <= searchTimeInstance &&
-                searchTimeInstance < arrivalOf(item)
-            );
-        });
-
-        if (currentRunning) {
-            current = currentRunning;
-            return OperationCurrentPositionDtoBuilder.buildFromModel({
-                operation: omit(model, ['tripOperationLists']),
-                prev,
-                current,
-                next,
-            });
-        }
-
-        // 検索日時が最終列車の到着時刻よりも後の場合
-        const last = tripOperationLists[tripOperationLists.length - 1];
-        if (arrivalOf(last) <= searchTimeInstance) {
-            prev = last;
-            return OperationCurrentPositionDtoBuilder.buildFromModel({
-                operation: omit(model, ['tripOperationLists']),
-                prev,
-                current,
-                next,
-            });
-        }
-
-        return OperationCurrentPositionDtoBuilder.buildFromModel({
-            operation: omit(model, ['tripOperationLists']),
-            prev,
-            current,
-            next,
-        });
+            .filter((model) => model !== undefined);
     }
 
     async findOneWithTrips(params: {
