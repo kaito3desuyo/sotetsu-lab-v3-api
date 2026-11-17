@@ -17,6 +17,7 @@ import { OperationSightingLatestCacheQuery } from '../infrastructure/queries/ope
 import { OperationSightingQuery } from '../infrastructure/queries/operation-sighting.query.js';
 import { CalendarQuery } from '../../calendar/infrastructure/queries/calendar.query.js';
 import { FormationQuery } from '../../formation/infrastructure/queries/formation.query.js';
+import { ItinerarySegmentQuery } from '../../operation/infrastructure/queries/itinerary-segment.query.js';
 import { OperationQuery } from '../../operation/infrastructure/queries/operation.query.js';
 import { UseCaseError } from '../../../core/classes/custom-error.js';
 import {
@@ -125,6 +126,10 @@ async function buildService(): Promise<OperationSightingV3Service> {
             { provide: CalendarQuery, useValue: mockCalendarQuery },
             { provide: FormationQuery, useValue: mockFormationQuery },
             { provide: OperationQuery, useValue: mockOperationQuery },
+            {
+                provide: ItinerarySegmentQuery,
+                useValue: mockItinerarySegmentQuery,
+            },
         ],
     }).compile();
     return module.get(OperationSightingV3Service);
@@ -609,6 +614,149 @@ describe('OperationSightingV3Service - post', () => {
                 sightingTime: '2026-05-01T09:00:00+09:00',
             }),
         ).rejects.toThrow('始発時刻の30分前より前の時刻は投稿できません');
+    });
+
+    describe('乗り移りで始まる運用', () => {
+        const seg = (id: string, operationNumber: string, p: object) => ({
+            id,
+            tripId: `trip-${id}`,
+            tripBlockId: `block-${id}`,
+            operationId: `op-${operationNumber}`,
+            operationNumber,
+            startStationId: 'X',
+            endStationId: 'Y',
+            startSeconds: 0,
+            endSeconds: 0,
+            nextTripOperationListId: null,
+            ...p,
+        });
+        // 11K が 8:22 に着き、そのまま 12K（始発 8:30）に乗り移る
+        const transferSegments = [
+            seg('a', '11K', {
+                startSeconds: 7 * 3600 + 30 * 60,
+                endSeconds: 8 * 3600 + 22 * 60,
+                nextTripOperationListId: 'b',
+            }),
+            seg('b', '12K', {
+                startSeconds: 8 * 3600 + 30 * 60,
+                endSeconds: 9 * 3600 + 30 * 60,
+            }),
+        ];
+
+        beforeEach(() => {
+            mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
+                { id: 'op-12K', operationNumber: '12K' },
+            );
+            mockOperationQuery.findOneFirstDepartureTimeByOperationIdAndDate.mockResolvedValue(
+                dayjs('2026-05-01T08:30:00+09:00'),
+            );
+            mockItinerarySegmentQuery.findManyByCalendarId.mockResolvedValue(
+                transferSegments,
+            );
+        });
+
+        it('到着の 1 分前は弾く（始発の 30 分前より後でも）', async () => {
+            const error = await service
+                .post({
+                    ...baseParams,
+                    userId: 'user-1',
+                    operationNumber: '12K',
+                    sightingTime: '2026-05-01T08:21:00+09:00',
+                })
+                .catch((e) => e);
+
+            expect(error).toBeInstanceOf(UseCaseError);
+            expect(error.message).toBe(
+                '前の運用（11K）の列車が着く 08:22 より前は、12K で投稿できません',
+            );
+            expect(error.context).toMatchObject({
+                operationId: 'op-12K',
+                operationNumber: '12K',
+                date: '2026-05-01',
+                earliestPostTime: '2026-05-01 08:22',
+                previousOperationNumber: '11K',
+                reason: 'before_transfer_arrival',
+            });
+            expect(
+                mockItinerarySegmentQuery.findManyByCalendarId,
+            ).toHaveBeenCalledWith({ calendarId: 'cal-1' });
+            expect(mockSave).not.toHaveBeenCalled();
+        });
+
+        it('到着ちょうどは通す', async () => {
+            const result = await service.post({
+                ...baseParams,
+                userId: 'user-1',
+                operationNumber: '12K',
+                sightingTime: '2026-05-01T08:22:00+09:00',
+            });
+
+            expect(result.operationSightingId).toBe('new-sighting-uuid');
+        });
+
+        it('着いてから始発まで間が長い運用は、始発の 30 分前の判定が勝つ（今より早く投稿できるようにはしない）', async () => {
+            // 16K が 11:27 に着き、15K の始発は 16:51（本番の平日ダイヤにある形）
+            mockOperationQuery.findOneFirstDepartureTimeByOperationIdAndDate.mockResolvedValue(
+                dayjs('2026-05-01T16:51:00+09:00'),
+            );
+            mockItinerarySegmentQuery.findManyByCalendarId.mockResolvedValue([
+                seg('a', '11K', {
+                    startSeconds: 10 * 3600,
+                    endSeconds: 11 * 3600 + 27 * 60,
+                    nextTripOperationListId: 'b',
+                }),
+                seg('b', '12K', {
+                    startSeconds: 16 * 3600 + 51 * 60,
+                    endSeconds: 17 * 3600 + 30 * 60,
+                }),
+            ]);
+
+            const error = await service
+                .post({
+                    ...baseParams,
+                    userId: 'user-1',
+                    operationNumber: '12K',
+                    sightingTime: '2026-05-01T12:00:00+09:00',
+                })
+                .catch((e) => e);
+            expect(error.context.reason).toBe('too_early_post');
+            expect(error.context.earliestPostTime).toBe('2026-05-01 16:21');
+
+            const ok = await service.post({
+                ...baseParams,
+                userId: 'user-1',
+                operationNumber: '12K',
+                sightingTime: '2026-05-01T16:21:00+09:00',
+            });
+            expect(ok.operationSightingId).toBe('new-sighting-uuid');
+        });
+
+        it('乗り移りで始まらない運用は、今の始発の 30 分前の判定のまま', async () => {
+            mockOperationQuery.findOneByCalendarIdAndOperationNumber.mockResolvedValue(
+                { id: 'op-12K', operationNumber: '12K' },
+            );
+            mockItinerarySegmentQuery.findManyByCalendarId.mockResolvedValue([
+                transferSegments[1],
+            ]);
+
+            const error = await service
+                .post({
+                    ...baseParams,
+                    userId: 'user-1',
+                    operationNumber: '12K',
+                    sightingTime: '2026-05-01T07:59:00+09:00',
+                })
+                .catch((e) => e);
+            expect(error.context.reason).toBe('too_early_post');
+
+            const ok = await service.post({
+                ...baseParams,
+                userId: 'user-1',
+                operationNumber: '12K',
+                sightingTime: '2026-05-01T08:00:00+09:00',
+            });
+            expect(ok.operationSightingId).toBe('new-sighting-uuid');
+        });
     });
 
     it('post: 投稿者を同じトランザクションで記録し、保存の後に sighting の合図を送る', async () => {
