@@ -30,6 +30,8 @@ export interface CarrySighting {
     formationId?: string;
     operation?: { operationNumber: string } | null;
     formation?: { formationId?: string; formationNumber: string } | null;
+    /** 引き継いだ目撃（写し）だけ。写した枠の始まり（鉄道日の 0 時からの秒） */
+    carriedRunStartSeconds?: number;
 }
 
 const secondsOf = (time: Date) => {
@@ -421,6 +423,7 @@ export class SightingCarryOver {
                 if (!operation) continue;
                 const suffix = nth === 1 ? `#${number}` : `#${number}#${nth}`;
                 const s = assigned.sighting;
+                const start = runStartOf(run);
                 const carried = {
                     ...s,
                     id: `${s.id}${suffix}`,
@@ -429,11 +432,9 @@ export class SightingCarryOver {
                     operation,
                     sightedAsOperation: sourceOf(s),
                     carriedFromSightingId: s.operationSightingId,
+                    carriedRunStartSeconds: start,
                 } as S;
-                this.carriedPlacements.set(carried, {
-                    itinerary,
-                    start: runStartOf(run),
-                });
+                this.carriedPlacements.set(carried, { itinerary, start });
                 out.push(carried);
             }
         }

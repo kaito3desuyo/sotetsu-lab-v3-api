@@ -11,6 +11,8 @@ export const OPERATION_SIGHTING_COLUMNS = columnsOf(
     'updatedAt',
     // 引き継いだ目撃（写し）にだけある。元の目撃の operationSightingId
     'carriedFromSightingId',
+    // 引き継いだ目撃（写し）にだけある。写した枠の始まり（鉄道日の 0 時からの秒）
+    'carriedRunStartSeconds',
 );
 
 /** `fields[operationSightingInvalidation]` で選べる列 */

@@ -54,4 +54,8 @@ export class OperationSightingDetailsDto extends BaseOperationSightingDto {
     /** 引き継いだ目撃（写し）のとき、元の目撃の operationSightingId（`#` の付かない id）。直接の目撃には無い */
     @Expose()
     carriedFromSightingId?: string;
+
+    /** 引き継いだ目撃（写し）のとき、写した枠の始まり（鉄道日の 0 時からの秒）。どの枠の写しかを示す。直接の目撃には無い */
+    @Expose()
+    carriedRunStartSeconds?: number;
 }
