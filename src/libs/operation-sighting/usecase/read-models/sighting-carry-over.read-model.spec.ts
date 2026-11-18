@@ -466,6 +466,18 @@ describe('SightingCarryOver.buildCarried（運番が戻る行程）', () => {
             }),
         ]);
     });
+    it('写しには、写した枠の始まり（鉄道日の 0 時からの秒）を付ける', () => {
+        const out = SightingCarryOver.create(back18).buildCarried({
+            sightings: [sighting('a', '18K', '3122', '05:09')],
+            operations: operationsBack,
+        });
+        expect(
+            out.map((o) => [o.operationSightingId, o.carriedRunStartSeconds]),
+        ).toEqual([
+            ['a#17K', t('09:00')],
+            ['a#18K#2', t('17:09')],
+        ]);
+    });
     it('17K の目撃から、前後の 18K を 2 つ作る', () => {
         const out = SightingCarryOver.create(back18).buildCarried({
             sightings: [sighting('a', '17K', '3122', '10:00')],
