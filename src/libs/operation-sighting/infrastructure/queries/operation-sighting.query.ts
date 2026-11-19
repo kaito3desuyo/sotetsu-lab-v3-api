@@ -58,6 +58,7 @@ export class OperationSightingQuery {
         if (formationNumber !== undefined) {
             qb = qb
                 .innerJoin('sighting.formation', 'formation')
+                .leftJoinAndSelect('sighting.operation', 'operation')
                 .andWhere('formation.formationNumber = :formationNumber', {
                     formationNumber,
                 });

@@ -283,6 +283,22 @@ describe('OperationSightingQuery - findManyBySpecificPeriod', () => {
         });
     });
 
+    it('formationNumber があれば運用も選ぶ（直接の目撃にも operation を付ける）', async () => {
+        await query.findManyBySpecificPeriod({
+            start: '2026-11-01',
+            end: '2026-11-12',
+            formationNumber: '10701',
+        });
+
+        expect(currentQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('sighting.operation', 'operation');
+    });
+
+    it('formationNumber が無ければ運用を選ばない', async () => {
+        await query.findManyBySpecificPeriod({ start: '2026-11-01', end: '2026-11-12' });
+
+        expect(currentQueryBuilder.leftJoinAndSelect).not.toHaveBeenCalledWith('sighting.operation', 'operation');
+    });
+
     it('formationNumber が無ければ編成を join しない', async () => {
         await query.findManyBySpecificPeriod({ start: '2026-11-01', end: '2026-11-12' });
 
