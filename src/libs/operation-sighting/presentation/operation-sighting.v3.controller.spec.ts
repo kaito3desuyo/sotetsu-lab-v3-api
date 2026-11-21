@@ -509,6 +509,16 @@ describe('OperationSightingV3Controller（日付・期間・時刻・番号の�
             });
         });
 
+        it('formationNumber の query をそのまま service に渡す', async () => {
+            const res = await request(app.getHttpServer()).get(
+                '/from/2026-11-01/to/2026-11-30?formationNumber=10701',
+            );
+            expect(res.status).toBe(200);
+            expect(service.findManyBySpecificPeriod).toHaveBeenCalledWith(
+                expect.objectContaining({ formationNumber: '10701' }),
+            );
+        });
+
         it.each([
             ['/from/2026-11-01/to/2026-12-02'],
             ['/from/garbage/to/2026-11-14'],

@@ -148,6 +148,7 @@ export class OperationSightingV3ListService {
         end: string;
         includeInvalidated?: boolean;
         includeCarriedOver?: boolean;
+        formationNumber?: string;
         include?: unknown;
         fields?: unknown;
     }): Promise<OperationSightingDetailsDto[] | Record<string, unknown>[]> {
@@ -166,12 +167,14 @@ export class OperationSightingV3ListService {
         end: string;
         includeInvalidated?: boolean;
         includeCarriedOver?: boolean;
+        formationNumber?: string;
     }): Promise<OperationSightingDetailsDto[]> {
         const {
             start,
             end,
             includeInvalidated = false,
             includeCarriedOver = false,
+            formationNumber,
         } = params;
 
         const direct =
@@ -179,6 +182,7 @@ export class OperationSightingV3ListService {
                 start,
                 end,
                 includeInvalidated,
+                formationNumber,
             });
         if (!includeCarriedOver) return direct;
 
@@ -276,7 +280,14 @@ export class OperationSightingV3ListService {
             );
             return [base.add(entered, 'second').valueOf(), start];
         };
-        return [...direct, ...carried]
+        // 直接の目撃は query で絞り済み。材料は全編成から組むので、写しはここで編成番号で絞る
+        const carriedOfFormation =
+            formationNumber === undefined
+                ? carried
+                : carried.filter(
+                      (o) => o.formation?.formationNumber === formationNumber,
+                  );
+        return [...direct, ...carriedOfFormation]
             .map((o) => ({ o, order: orderOf(o) }))
             .sort(
                 (a, b) =>

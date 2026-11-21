@@ -56,6 +56,7 @@ export class OperationSightingV3Controller {
         @Param() param: PeriodParam,
         @Query('includeInvalidated') includeInvalidated?: boolean,
         @Query('includeCarriedOver') includeCarriedOver?: string,
+        @Query('formationNumber') formationNumber?: string,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
     ): Promise<OperationSightingDetailsDto[] | Record<string, unknown>[]> {
@@ -65,6 +66,7 @@ export class OperationSightingV3Controller {
                 end: param.end,
                 includeInvalidated,
                 includeCarriedOver: includeCarriedOver === 'true',
+                formationNumber,
                 include,
                 fields,
             });

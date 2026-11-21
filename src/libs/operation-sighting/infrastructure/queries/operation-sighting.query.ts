@@ -23,8 +23,14 @@ export class OperationSightingQuery {
         start: string;
         end: string;
         includeInvalidated?: boolean;
+        formationNumber?: string;
     }): Promise<OperationSightingDetailsDto[]> {
-        const { start, end, includeInvalidated = false } = params;
+        const {
+            start,
+            end,
+            includeInvalidated = false,
+            formationNumber,
+        } = params;
 
         const format = 'YYYY-MM-DD';
         const startDate = dayjs(start, format)
@@ -48,6 +54,15 @@ export class OperationSightingQuery {
                 end: endDate.toISOString(),
             })
             .orderBy('sighting.sightingTime', 'ASC');
+
+        if (formationNumber !== undefined) {
+            qb = qb
+                .innerJoin('sighting.formation', 'formation')
+                .leftJoinAndSelect('sighting.operation', 'operation')
+                .andWhere('formation.formationNumber = :formationNumber', {
+                    formationNumber,
+                });
+        }
 
         if (!includeInvalidated) {
             qb = qb.andWhere((qb) => {

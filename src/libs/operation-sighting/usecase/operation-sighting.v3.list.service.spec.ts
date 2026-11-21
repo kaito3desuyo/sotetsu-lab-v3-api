@@ -133,6 +133,99 @@ describe('OperationSightingV3ListService - findManyBySpecificPeriod includeCarri
         ]);
     });
 
+    describe('formationNumber', () => {
+        const range = {
+            start: '2026-10-12',
+            end: '2026-10-12',
+            includeCarriedOver: true,
+        };
+        const a = sighting('a', '11K', '10701', '07:00');
+        const b = sighting('b', '13K', '10702', '07:00');
+
+        beforeEach(() => {
+            mockItinerarySegmentQuery.findManyByCalendarId.mockResolvedValue([
+                ...itineraries,
+                seg('k13', '13K', 6 * 3600, 8 * 3600 + 22 * 60, 'k14'),
+                seg('k14', '14K', 8 * 3600 + 30 * 60, 20 * 3600, null),
+            ]);
+            mockOperationQuery.findManyByCalendarId.mockResolvedValue([
+                { operationId: 'op-11K', operationNumber: '11K' },
+                { operationId: 'op-12K', operationNumber: '12K' },
+                { operationId: 'op-13K', operationNumber: '13K' },
+                { operationId: 'op-14K', operationNumber: '14K' },
+            ]);
+        });
+
+        it('formationNumber を渡すと、その編成の直接の目撃だけを取りに行く', async () => {
+            mockOperationSightingQuery.findManyBySpecificPeriod.mockResolvedValue(
+                [a],
+            );
+            const result = (await service.findManyBySpecificPeriod({
+                start: '2026-10-12',
+                end: '2026-10-12',
+                formationNumber: '10701',
+            })) as { id: string }[];
+
+            expect(
+                mockOperationSightingQuery.findManyBySpecificPeriod,
+            ).toHaveBeenCalledWith(
+                expect.objectContaining({ formationNumber: '10701' }),
+            );
+            expect(result.map((o) => o.id)).toEqual(['a']);
+        });
+
+        it('includeCarriedOver と併せると、その編成の推定も返し、推定の材料は全編成から組む', async () => {
+            mockOperationSightingQuery.findManyBySpecificPeriod.mockResolvedValue(
+                [a],
+            );
+            mockOperationSightingQuery.findManyBySightingTimeRange.mockResolvedValue(
+                [a, b],
+            );
+            const result = (await service.findManyBySpecificPeriod({
+                ...range,
+                formationNumber: '10701',
+            })) as { id: string; carriedFromSightingId?: string }[];
+
+            expect(result.map((o) => o.id)).toEqual(['a', 'a#12K']);
+            expect(result[1].carriedFromSightingId).toBe('a');
+            expect(
+                mockOperationSightingQuery.findManyBySightingTimeRange.mock
+                    .calls[0][0],
+            ).not.toHaveProperty('formationNumber');
+        });
+
+        it('無い編成番号なら空の配列', async () => {
+            mockOperationSightingQuery.findManyBySpecificPeriod.mockResolvedValue(
+                [],
+            );
+            mockOperationSightingQuery.findManyBySightingTimeRange.mockResolvedValue(
+                [a, b],
+            );
+            expect(
+                await service.findManyBySpecificPeriod({
+                    ...range,
+                    formationNumber: '99999',
+                }),
+            ).toEqual([]);
+        });
+
+        it('formationNumber を省くと今までどおり全編成', async () => {
+            mockOperationSightingQuery.findManyBySpecificPeriod.mockResolvedValue(
+                [a, b],
+            );
+            mockOperationSightingQuery.findManyBySightingTimeRange.mockResolvedValue(
+                [a, b],
+            );
+            const result = (await service.findManyBySpecificPeriod(
+                range,
+            )) as { id: string }[];
+
+            expect(result.map((o) => o.id)).toEqual(
+                expect.arrayContaining(['a', 'b', 'a#12K', 'b#14K']),
+            );
+        });
+    });
+
     it('fields があれば作った一覧を削り、引き継いだ目撃の印は全項目で残す', async () => {
         const result = (await service.findManyBySpecificPeriod({
             start: '2026-10-12',

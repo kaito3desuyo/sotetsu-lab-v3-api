@@ -12,7 +12,7 @@ const mockGetMany: AnyMock = vi.fn();
 
 function buildChainableQueryBuilder(): any {
     const qb: any = {};
-    for (const method of ['leftJoinAndSelect', 'where', 'andWhere', 'orderBy', 'addOrderBy']) {
+    for (const method of ['leftJoinAndSelect', 'innerJoin', 'where', 'andWhere', 'orderBy', 'addOrderBy']) {
         qb[method] = vi.fn().mockReturnValue(qb);
     }
     qb.getOne = mockGetOne;
@@ -268,5 +268,40 @@ describe('OperationSightingQuery - findManyBySpecificPeriod', () => {
             'sighting.managementLogs',
             'managementLogs',
         );
+    });
+
+    it('formationNumber があれば編成を join して番号で絞る（列は選ばない）', async () => {
+        await query.findManyBySpecificPeriod({
+            start: '2026-11-01',
+            end: '2026-11-12',
+            formationNumber: '10701',
+        });
+
+        expect(currentQueryBuilder.innerJoin).toHaveBeenCalledWith('sighting.formation', 'formation');
+        expect(currentQueryBuilder.andWhere).toHaveBeenCalledWith('formation.formationNumber = :formationNumber', {
+            formationNumber: '10701',
+        });
+    });
+
+    it('formationNumber があれば運用も選ぶ（直接の目撃にも operation を付ける）', async () => {
+        await query.findManyBySpecificPeriod({
+            start: '2026-11-01',
+            end: '2026-11-12',
+            formationNumber: '10701',
+        });
+
+        expect(currentQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('sighting.operation', 'operation');
+    });
+
+    it('formationNumber が無ければ運用を選ばない', async () => {
+        await query.findManyBySpecificPeriod({ start: '2026-11-01', end: '2026-11-12' });
+
+        expect(currentQueryBuilder.leftJoinAndSelect).not.toHaveBeenCalledWith('sighting.operation', 'operation');
+    });
+
+    it('formationNumber が無ければ編成を join しない', async () => {
+        await query.findManyBySpecificPeriod({ start: '2026-11-01', end: '2026-11-12' });
+
+        expect(currentQueryBuilder.innerJoin).not.toHaveBeenCalled();
     });
 });
