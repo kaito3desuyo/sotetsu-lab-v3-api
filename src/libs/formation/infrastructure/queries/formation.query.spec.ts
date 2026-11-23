@@ -222,4 +222,120 @@ describe('FormationQuery - 選択の取得', () => {
             },
         ]);
     });
+
+    it('from/to: include=vehicleFormations.vehicle.modifications なら改造の記録を modified_on の古い順（NULL が先）で結合する', async () => {
+        const qb = currentQueryBuilder;
+        mockGetMany.mockResolvedValue([
+            {
+                id: 'f1',
+                formationNumber: '10701',
+                vehicleFormations: [
+                    {
+                        id: 'vf1',
+                        carNumber: 1,
+                        vehicle: {
+                            id: 'v1',
+                            vehicleNumber: '10701',
+                            modifications: [
+                                {
+                                    id: 'm1',
+                                    modifiedOn: null,
+                                    kind: 'livery',
+                                    value: '10000-group',
+                                },
+                                {
+                                    id: 'm2',
+                                    modifiedOn: '2020-03-01',
+                                    kind: 'livery',
+                                    value: '10000-ynb',
+                                    description: null,
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        ]);
+        const result = await query.findManyBySpecificPeriodWithSelection(
+            { startDate: '2000-01-01', endDate: '2026-11-24' },
+            parseSelection(
+                {
+                    include: 'vehicleFormations.vehicle.modifications',
+                    fields: {
+                        formation: 'formationNumber',
+                        vehicleFormation: 'carNumber',
+                        vehicle: 'vehicleNumber',
+                        vehicleModification: 'modifiedOn,kind,value',
+                    },
+                },
+                FORMATIONS_BY_PERIOD_SELECTION_TREE,
+            )!,
+        );
+
+        expect(qb.leftJoin).toHaveBeenCalledWith(
+            'vehicle.modifications',
+            'modifications',
+        );
+        expect(qb.addSelect).toHaveBeenCalledWith([
+            'modifications.id',
+            'modifications.modifiedOn',
+            'modifications.kind',
+            'modifications.value',
+        ]);
+        expect(qb.addOrderBy).toHaveBeenCalledWith(
+            'modifications.modified_on',
+            'ASC',
+            'NULLS FIRST',
+        );
+        expect(result).toEqual([
+            {
+                id: 'f1',
+                formationNumber: '10701',
+                vehicleFormations: [
+                    {
+                        id: 'vf1',
+                        carNumber: 1,
+                        vehicle: {
+                            id: 'v1',
+                            vehicleNumber: '10701',
+                            modifications: [
+                                {
+                                    id: 'm1',
+                                    kind: 'livery',
+                                    value: '10000-group',
+                                },
+                                {
+                                    id: 'm2',
+                                    modifiedOn: '2020-03-01',
+                                    kind: 'livery',
+                                    value: '10000-ynb',
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        ]);
+    });
+
+    it('include に modifications が無ければ改造の記録を結合しない', async () => {
+        const qb = currentQueryBuilder;
+        await query.findManyBySpecificPeriodWithSelection(
+            { startDate: '2000-01-01', endDate: '2026-11-24' },
+            parseSelection(
+                { include: 'vehicleFormations.vehicle' },
+                FORMATIONS_BY_PERIOD_SELECTION_TREE,
+            )!,
+        );
+
+        expect(qb.leftJoin).not.toHaveBeenCalledWith(
+            'vehicle.modifications',
+            'modifications',
+        );
+        expect(qb.addOrderBy).not.toHaveBeenCalledWith(
+            'modifications.modified_on',
+            expect.anything(),
+            expect.anything(),
+        );
+    });
 });

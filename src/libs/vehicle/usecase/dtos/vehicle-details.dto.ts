@@ -1,6 +1,7 @@
 import type { Nested } from '../../../../core/types/nested.js';
 import { Expose, Type } from 'class-transformer';
 import { VehicleFormationDetailsDto } from '../../../formation/usecase/dtos/vehicle-formation-details.dto.js';
+import { VehicleModificationDetailsDto } from './vehicle-modification-details.dto.js';
 import { BaseVehicleDto } from './base-vehicle.dto.js';
 
 export class VehicleDetailsDto extends BaseVehicleDto {
@@ -28,4 +29,8 @@ export class VehicleDetailsDto extends BaseVehicleDto {
     @Expose()
     @Type(() => VehicleFormationDetailsDto)
     vehicleFormations?: Nested<VehicleFormationDetailsDto[]>;
+
+    @Expose()
+    @Type(() => VehicleModificationDetailsDto)
+    modifications?: Nested<VehicleModificationDetailsDto[]>;
 }

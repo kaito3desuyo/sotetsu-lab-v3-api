@@ -98,7 +98,7 @@ describe('FormationV3Service - 選択', () => {
             service.findManyBySpecificPeriod({
                 startDate: '2026-10-24',
                 endDate: '2026-10-24',
-                include: 'vehicleFormations',
+                include: 'operationSightings',
             }),
         ).rejects.toThrow(BadRequestException);
     });
