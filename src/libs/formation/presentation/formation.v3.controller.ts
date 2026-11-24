@@ -7,6 +7,7 @@ import { FormationDetailsDto } from '../usecase/dtos/formation-details.dto.js';
 import { FormationV3Service } from '../usecase/formation.v3.service.js';
 import { DateParam } from '../usecase/params/date.param.js';
 import { FormationFindManyBySpecificPeriodParam } from '../usecase/params/formation-find-many-by-specific-period.param.js';
+import { FormationNumberParam } from '../usecase/params/formation-number.param.js';
 
 @Controller()
 @UseGuards(AuthGuard, RBACGuard)
@@ -40,6 +41,26 @@ export class FormationV3Controller {
     ): Promise<FormationDetailsDto[] | Record<string, unknown>[]> {
         const result = await this.formationV3Service.findManyBySpecificPeriod({
             ...params,
+            include,
+            fields,
+        });
+
+        return result;
+    }
+
+    /**
+     * 編成番号ごとに全期間の編成の行を返す（期間の上限は無い）。
+     * `include`・`fields` は期間の取得と同じ（docs/adr/0010-v3-include-and-fields.md）
+     */
+    @Get('/number/:formationNumber')
+    @CacheControl(CACHE_CONTROL.MASTER)
+    async findManyByFormationNumber(
+        @Param() params: FormationNumberParam,
+        @Query('include') include?: unknown,
+        @Query('fields') fields?: unknown,
+    ): Promise<FormationDetailsDto[] | Record<string, unknown>[]> {
+        const result = await this.formationV3Service.findManyByFormationNumber({
+            formationNumber: params.formationNumber,
             include,
             fields,
         });

@@ -13,6 +13,8 @@ const mockFormationQuery = {
     findManyBySpecificDateWithSelection: vi.fn() as AnyMock,
     findManyBySpecificPeriod: vi.fn() as AnyMock,
     findManyBySpecificPeriodWithSelection: vi.fn() as AnyMock,
+    findManyByFormationNumber: vi.fn() as AnyMock,
+    findManyByFormationNumberWithSelection: vi.fn() as AnyMock,
 };
 
 async function buildService(): Promise<FormationV3Service> {
@@ -43,7 +45,9 @@ describe('FormationV3Service', () => {
             const expected: FormationDetailsDto[] = [
                 { formationId: 'f-1' } as FormationDetailsDto,
             ];
-            mockFormationQuery.findManyBySpecificPeriod.mockResolvedValue(expected);
+            mockFormationQuery.findManyBySpecificPeriod.mockResolvedValue(
+                expected,
+            );
 
             const result = await service.findManyBySpecificPeriod(params);
 
@@ -98,6 +102,48 @@ describe('FormationV3Service - 選択', () => {
             service.findManyBySpecificPeriod({
                 startDate: '2026-10-24',
                 endDate: '2026-10-24',
+                include: 'operationSightings',
+            }),
+        ).rejects.toThrow(BadRequestException);
+    });
+
+    it('number: 指定が無ければ編成番号の取得', async () => {
+        mockFormationQuery.findManyByFormationNumber.mockResolvedValue([]);
+        await service.findManyByFormationNumber({ formationNumber: '7710' });
+        expect(
+            mockFormationQuery.findManyByFormationNumber,
+        ).toHaveBeenCalledWith({ formationNumber: '7710' });
+        expect(
+            mockFormationQuery.findManyByFormationNumberWithSelection,
+        ).not.toHaveBeenCalled();
+    });
+
+    it('number: include=vehicleFormations.vehicle.modifications,agency が効く', async () => {
+        mockFormationQuery.findManyByFormationNumberWithSelection.mockResolvedValue(
+            [],
+        );
+        await service.findManyByFormationNumber({
+            formationNumber: '7710',
+            include: 'vehicleFormations.vehicle.modifications,agency',
+        });
+        const [params, selection] =
+            mockFormationQuery.findManyByFormationNumberWithSelection.mock
+                .calls[0];
+        expect(params).toEqual({ formationNumber: '7710' });
+        expect(selection.paths).toEqual(
+            new Set([
+                'vehicleFormations',
+                'vehicleFormations.vehicle',
+                'vehicleFormations.vehicle.modifications',
+                'agency',
+            ]),
+        );
+    });
+
+    it('number: 木に無い道筋は 400', async () => {
+        await expect(
+            service.findManyByFormationNumber({
+                formationNumber: '7710',
                 include: 'operationSightings',
             }),
         ).rejects.toThrow(BadRequestException);

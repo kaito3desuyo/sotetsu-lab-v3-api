@@ -19,6 +19,7 @@ describe('FormationV3Controller（日付・期間の検証）', () => {
     const service = {
         findManyBySpecificDate: vi.fn(),
         findManyBySpecificPeriod: vi.fn(),
+        findManyByFormationNumber: vi.fn(),
     };
 
     beforeAll(async () => {
@@ -46,6 +47,7 @@ describe('FormationV3Controller（日付・期間の検証）', () => {
         vi.clearAllMocks();
         service.findManyBySpecificDate.mockResolvedValue([]);
         service.findManyBySpecificPeriod.mockResolvedValue([]);
+        service.findManyByFormationNumber.mockResolvedValue([]);
     });
 
     const UNPROCESSABLE = validationPipeOptions.errorHttpStatusCode;
@@ -90,5 +92,27 @@ describe('FormationV3Controller（日付・期間の検証）', () => {
         const res = await request(app.getHttpServer()).get(path);
         expect(res.status).toBe(UNPROCESSABLE);
         expect(service.findManyBySpecificPeriod).not.toHaveBeenCalled();
+    });
+
+    it('/number/:formationNumber は編成番号と include を渡す', async () => {
+        const res = await request(app.getHttpServer()).get(
+            '/number/7710?include=vehicleFormations.vehicle.modifications',
+        );
+        expect(res.status).toBe(200);
+        expect(service.findManyByFormationNumber).toHaveBeenCalledWith({
+            formationNumber: '7710',
+            include: 'vehicleFormations.vehicle.modifications',
+        });
+    });
+
+    it.each([
+        ['/number/77-10'],
+        ['/number/7710%20'],
+        ['/number/12345678901234567'],
+        ['/number/%E7%9B%B8%E9%89%84'],
+    ])('%s は 422', async (path) => {
+        const res = await request(app.getHttpServer()).get(path);
+        expect(res.status).toBe(UNPROCESSABLE);
+        expect(service.findManyByFormationNumber).not.toHaveBeenCalled();
     });
 });

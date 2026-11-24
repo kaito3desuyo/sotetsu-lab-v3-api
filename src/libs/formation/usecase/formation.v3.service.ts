@@ -55,4 +55,26 @@ export class FormationV3Service {
             selection,
         );
     }
+
+    /** 編成番号の全期間の行。選べる範囲は期間の取得と同じ（docs/adr/0010-v3-include-and-fields.md） */
+    async findManyByFormationNumber(params: {
+        formationNumber: string;
+        include?: unknown;
+        fields?: unknown;
+    }): Promise<FormationDetailsDto[] | Record<string, unknown>[]> {
+        const { formationNumber, include, fields } = params;
+        const selection = parseSelection(
+            { include, fields },
+            FORMATIONS_BY_PERIOD_SELECTION_TREE,
+        );
+        if (!selection) {
+            return this.formationQuery.findManyByFormationNumber({
+                formationNumber,
+            });
+        }
+        return this.formationQuery.findManyByFormationNumberWithSelection(
+            { formationNumber },
+            selection,
+        );
+    }
 }

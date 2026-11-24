@@ -43,6 +43,7 @@ const TABLE: [AnyController, string, string][] = [
     [CalendarDateV3Controller, 'findMany', MASTER],
     [FormationV3Controller, 'findManyBySpecificDate', MASTER],
     [FormationV3Controller, 'findManyBySpecificPeriod', MASTER],
+    [FormationV3Controller, 'findManyByFormationNumber', MASTER],
     // C 時刻表
     [TripBlockV3Controller, 'findManyByFilter', TIMETABLE],
     [TripBlockV3Controller, 'findOneById', TIMETABLE],
@@ -74,7 +75,7 @@ const TABLE: [AnyController, string, string][] = [
 ];
 
 /**
- * 個人情報を含む口（投稿者つき）。表の 30 本とは別に、REALTIME を付けて応答を保存させない。
+ * 個人情報を含む口（投稿者つき）。表の 31 本とは別に、REALTIME を付けて応答を保存させない。
  * 目撃の投稿者を見せる口は OperationSightingV3Controller、利用者の管理の口は UserV3Controller にある
  */
 const PERSONAL: [AnyController, string][] = [
@@ -91,8 +92,8 @@ const read = (controller: AnyController, method: string) =>
     );
 
 describe('v3 GET の Cache-Control', () => {
-    it('表は 30 本', () => {
-        expect(TABLE).toHaveLength(30);
+    it('表は 31 本', () => {
+        expect(TABLE).toHaveLength(31);
     });
 
     it.each(TABLE.map(([c, m, v]) => [`${c.name}.${m}`, c, m, v] as const))(
