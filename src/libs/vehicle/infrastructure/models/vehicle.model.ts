@@ -8,6 +8,7 @@ import {
     UpdateDateColumn,
     type Relation,
 } from 'typeorm';
+import { VehicleModificationModel } from './vehicle-modification.model.js';
 
 @Entity({
     name: 'vehicles',
@@ -44,4 +45,10 @@ export class VehicleModel {
         },
     )
     vehicleFormations?: Relation<VehicleFormationModel[]>;
+
+    @OneToMany(
+        () => VehicleModificationModel,
+        (modification) => modification.vehicle,
+    )
+    modifications?: Relation<VehicleModificationModel[]>;
 }

@@ -70,34 +70,13 @@ export class FormationQuery {
     ): Promise<Record<string, unknown>[]> {
         const { date } = params;
         const tree = FORMATIONS_AS_OF_SELECTION_TREE;
-        const { vehicleFormations } = tree.relations;
 
         const qb = this.formationRepository
             .createQueryBuilder('formation')
             .select(selectColumns('formation', tree, selection));
         this.#whereActiveOn(qb, date);
         this.#orderByVehicleTypeAndNumber(qb);
-        if (selection.paths.has('vehicleFormations')) {
-            qb.leftJoin(
-                'formation.vehicleFormations',
-                'vehicleFormations',
-            ).addSelect(
-                selectColumns(
-                    'vehicleFormations',
-                    vehicleFormations,
-                    selection,
-                ),
-            );
-        }
-        if (selection.paths.has('vehicleFormations.vehicle')) {
-            qb.leftJoin('vehicleFormations.vehicle', 'vehicle').addSelect(
-                selectColumns(
-                    'vehicle',
-                    vehicleFormations.relations.vehicle,
-                    selection,
-                ),
-            );
-        }
+        this.#joinVehicleFormations(qb, selection);
 
         const models = await qb.getMany();
         return models.map((model) =>
@@ -126,6 +105,7 @@ export class FormationQuery {
                 selectColumns('agency', tree.relations.agency, selection),
             );
         }
+        this.#joinVehicleFormations(qb, selection);
 
         const models = await qb.getMany();
         return models.map((model) =>
@@ -181,6 +161,51 @@ export class FormationQuery {
         }
 
         return FormationDtoBuilder.buildFromModel(model);
+    }
+
+    /**
+     * `include` で選ばれた号車・車両・改造の記録だけを結合する。
+     * 改造の記録は `modified_on` の古い順（NULL が先）に並べる（docs/adr/0020-vehicle-modifications.md）。
+     */
+    #joinVehicleFormations(
+        qb: SelectQueryBuilder<FormationModel>,
+        selection: Selection,
+    ): void {
+        const { vehicleFormations } =
+            FORMATIONS_AS_OF_SELECTION_TREE.relations;
+        if (selection.paths.has('vehicleFormations')) {
+            qb.leftJoin(
+                'formation.vehicleFormations',
+                'vehicleFormations',
+            ).addSelect(
+                selectColumns(
+                    'vehicleFormations',
+                    vehicleFormations,
+                    selection,
+                ),
+            );
+        }
+        if (selection.paths.has('vehicleFormations.vehicle')) {
+            qb.leftJoin('vehicleFormations.vehicle', 'vehicle').addSelect(
+                selectColumns(
+                    'vehicle',
+                    vehicleFormations.relations.vehicle,
+                    selection,
+                ),
+            );
+        }
+        if (selection.paths.has('vehicleFormations.vehicle.modifications')) {
+            qb.leftJoin('vehicle.modifications', 'modifications')
+                .addSelect(
+                    selectColumns(
+                        'modifications',
+                        vehicleFormations.relations.vehicle.relations
+                            .modifications,
+                        selection,
+                    ),
+                )
+                .addOrderBy('modifications.modified_on', 'ASC', 'NULLS FIRST');
+        }
     }
 
     /**

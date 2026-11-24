@@ -146,6 +146,30 @@ describe('FormationQuery - 発行する SQL', () => {
         `);
     });
 
+    it('findManyBySpecificPeriodWithSelection（改造の記録つき）', async () => {
+        await query.findManyBySpecificPeriodWithSelection(
+            { startDate: '2000-01-01', endDate: '2026-11-24' },
+            parseSelection(
+                {
+                    include: 'vehicleFormations.vehicle.modifications',
+                    fields: { formation: 'formationNumber' },
+                },
+                FORMATIONS_BY_PERIOD_SELECTION_TREE,
+            )!,
+        );
+        expect(captured).toMatchInlineSnapshot(`
+          [
+            {
+              "parameters": {
+                "endDate": "2026-11-24",
+                "startDate": "2000-01-01",
+              },
+              "sql": "SELECT "formation"."id" AS "formation_id", "formation"."formationNumber" AS "formation_formationNumber", "vehicleFormations"."id" AS "vehicleFormations_id", "vehicleFormations"."formationId" AS "vehicleFormations_formationId", "vehicleFormations"."vehicleId" AS "vehicleFormations_vehicleId", "vehicleFormations"."carNumber" AS "vehicleFormations_carNumber", "vehicleFormations"."createdAt" AS "vehicleFormations_createdAt", "vehicleFormations"."updatedAt" AS "vehicleFormations_updatedAt", "vehicle"."id" AS "vehicle_id", "vehicle"."vehicleNumber" AS "vehicle_vehicleNumber", "vehicle"."belongs" AS "vehicle_belongs", "vehicle"."productionDate" AS "vehicle_productionDate", "vehicle"."scrappedDate" AS "vehicle_scrappedDate", "vehicle"."createdAt" AS "vehicle_createdAt", "vehicle"."updatedAt" AS "vehicle_updatedAt", "modifications"."id" AS "modifications_id", "modifications"."vehicleId" AS "modifications_vehicleId", "modifications"."modifiedOn" AS "modifications_modifiedOn", "modifications"."kind" AS "modifications_kind", "modifications"."value" AS "modifications_value", "modifications"."description" AS "modifications_description", "modifications"."createdAt" AS "modifications_createdAt", "modifications"."updatedAt" AS "modifications_updatedAt" FROM "formations" "formation" LEFT JOIN "vehicle_formations" "vehicleFormations" ON "vehicleFormations"."formation_id"="formation"."id" LEFT JOIN "vehicles" "vehicle" ON "vehicle"."id"="vehicleFormations"."vehicle_id" LEFT JOIN "vehicle_modifications" "modifications" ON "modifications"."vehicle_id"="vehicle"."id" WHERE (formation.start_date <= :endDate OR formation.start_date IS NULL) AND (formation.end_date >= :startDate OR formation.end_date IS NULL) ORDER BY to_number(formation.vehicle_type, '9999999999999999') ASC, to_number(formation.formation_number, '9999999999999999') ASC, modifications.modified_on ASC NULLS FIRST",
+            },
+          ]
+        `);
+    });
+
     it('findOneByAgencyIdAndFormationNumberAndDate', async () => {
         await query.findOneByAgencyIdAndFormationNumberAndDate({
             agencyId: 'agency-1',

@@ -10,3 +10,15 @@ export const VEHICLE_COLUMNS = columnsOf(
     'createdAt',
     'updatedAt',
 );
+
+/** `fields[vehicleModification]` で選べる列 */
+export const VEHICLE_MODIFICATION_COLUMNS = columnsOf(
+    'id',
+    'vehicleId',
+    'modifiedOn',
+    'kind',
+    'value',
+    'description',
+    'createdAt',
+    'updatedAt',
+);

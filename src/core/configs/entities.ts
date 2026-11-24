@@ -26,6 +26,7 @@ import { UserAccessTraceModel } from '../../libs/user/infrastructure/models/user
 import { UserRoleChangeModel } from '../../libs/user/infrastructure/models/user-role-change.model.js';
 import { VehicleFormationModel } from '../../libs/formation/infrastructure/models/vehicle-formation.model.js';
 import { VehicleModel } from '../../libs/vehicle/infrastructure/models/vehicle.model.js';
+import { VehicleModificationModel } from '../../libs/vehicle/infrastructure/models/vehicle-modification.model.js';
 
 /**
  * TypeORM に渡すエンティティ。glob（*.model.{ts,js}）で探すと TypeORM が素の Node で import するため、
@@ -61,4 +62,5 @@ export const ENTITIES = [
     UserRoleChangeModel,
     VehicleFormationModel,
     VehicleModel,
+    VehicleModificationModel,
 ];
