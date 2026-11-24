@@ -113,6 +113,49 @@ export class FormationQuery {
         );
     }
 
+    /** 編成番号の全期間の行を、始まりの日の古い順（空が先）に返す */
+    async findManyByFormationNumber(params: {
+        formationNumber: string;
+    }): Promise<FormationDetailsDto[]> {
+        const qb = this.formationRepository
+            .createQueryBuilder('formation')
+            .select('formation')
+            .leftJoinAndSelect('formation.agency', 'agency');
+        this.#whereFormationNumber(qb, params.formationNumber);
+        this.#orderByStartDate(qb);
+        const result = await qb.getMany();
+
+        return FormationsDtoBuilder.buildFromModel(result);
+    }
+
+    /**
+     * `findManyByFormationNumber` と同じ条件・並びで、`include`・`fields` で選んだ関連・列だけを返す
+     * （期間の取得と同じ木。docs/adr/0010-v3-include-and-fields.md）。
+     */
+    async findManyByFormationNumberWithSelection(
+        params: { formationNumber: string },
+        selection: Selection,
+    ): Promise<Record<string, unknown>[]> {
+        const tree = FORMATIONS_BY_PERIOD_SELECTION_TREE;
+
+        const qb = this.formationRepository
+            .createQueryBuilder('formation')
+            .select(selectColumns('formation', tree, selection));
+        this.#whereFormationNumber(qb, params.formationNumber);
+        this.#orderByStartDate(qb);
+        if (selection.paths.has('agency')) {
+            qb.leftJoin('formation.agency', 'agency').addSelect(
+                selectColumns('agency', tree.relations.agency, selection),
+            );
+        }
+        this.#joinVehicleFormations(qb, selection);
+
+        const models = await qb.getMany();
+        return models.map((model) =>
+            serializeSelection(model, tree, selection),
+        );
+    }
+
     async findOneByAgencyIdAndFormationNumberAndDate(params: {
         agencyId: string;
         formationNumber: string;
@@ -171,8 +214,7 @@ export class FormationQuery {
         qb: SelectQueryBuilder<FormationModel>,
         selection: Selection,
     ): void {
-        const { vehicleFormations } =
-            FORMATIONS_AS_OF_SELECTION_TREE.relations;
+        const { vehicleFormations } = FORMATIONS_AS_OF_SELECTION_TREE.relations;
         if (selection.paths.has('vehicleFormations')) {
             qb.leftJoin(
                 'formation.vehicleFormations',
@@ -249,6 +291,24 @@ export class FormationQuery {
                 '(formation.end_date >= :startDate OR formation.end_date IS NULL)',
                 { startDate: startDateInstance.format(format) },
             );
+    }
+
+    #whereFormationNumber(
+        qb: SelectQueryBuilder<FormationModel>,
+        formationNumber: string,
+    ): SelectQueryBuilder<FormationModel> {
+        return qb.andWhere('formation.formation_number = :formationNumber', {
+            formationNumber,
+        });
+    }
+
+    /** 始まりの日の古い順（空が先）。同じ日は id で安定させる */
+    #orderByStartDate(
+        qb: SelectQueryBuilder<FormationModel>,
+    ): SelectQueryBuilder<FormationModel> {
+        return qb
+            .orderBy('formation.start_date', 'ASC', 'NULLS FIRST')
+            .addOrderBy('formation.id', 'ASC');
     }
 
     /**

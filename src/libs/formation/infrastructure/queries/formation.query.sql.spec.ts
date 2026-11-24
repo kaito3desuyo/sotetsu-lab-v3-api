@@ -170,6 +170,43 @@ describe('FormationQuery - 発行する SQL', () => {
         `);
     });
 
+    it('findManyByFormationNumber', async () => {
+        await query.findManyByFormationNumber({ formationNumber: '7710' });
+        expect(captured).toMatchInlineSnapshot(`
+          [
+            {
+              "parameters": {
+                "formationNumber": "7710",
+              },
+              "sql": "SELECT "formation"."id" AS "formation_id", "formation"."agencyId" AS "formation_agencyId", "formation"."vehicleType" AS "formation_vehicleType", "formation"."formationNumber" AS "formation_formationNumber", "formation"."formationDescription" AS "formation_formationDescription", "formation"."startDate" AS "formation_startDate", "formation"."endDate" AS "formation_endDate", "formation"."createdAt" AS "formation_createdAt", "formation"."updatedAt" AS "formation_updatedAt", "formation"."agency_id" AS "formation_agency_id", "agency"."id" AS "agency_id", "agency"."agencyNumber" AS "agency_agencyNumber", "agency"."parentAgencyNumber" AS "agency_parentAgencyNumber", "agency"."agencyOfficialName" AS "agency_agencyOfficialName", "agency"."agencyName" AS "agency_agencyName", "agency"."agencyType" AS "agency_agencyType", "agency"."agencyUrl" AS "agency_agencyUrl", "agency"."agencyPhone" AS "agency_agencyPhone", "agency"."agencyFareUrl" AS "agency_agencyFareUrl", "agency"."createdAt" AS "agency_createdAt", "agency"."updatedAt" AS "agency_updatedAt" FROM "formations" "formation" LEFT JOIN "agencies" "agency" ON "agency"."id"="formation"."agency_id" WHERE formation.formation_number = :formationNumber ORDER BY formation.start_date ASC NULLS FIRST, "formation"."id" ASC",
+            },
+          ]
+        `);
+    });
+
+    it('findManyByFormationNumberWithSelection（改造の記録つき）', async () => {
+        await query.findManyByFormationNumberWithSelection(
+            { formationNumber: '7710' },
+            parseSelection(
+                {
+                    include: 'vehicleFormations.vehicle.modifications,agency',
+                    fields: { formation: 'formationNumber' },
+                },
+                FORMATIONS_BY_PERIOD_SELECTION_TREE,
+            )!,
+        );
+        expect(captured).toMatchInlineSnapshot(`
+          [
+            {
+              "parameters": {
+                "formationNumber": "7710",
+              },
+              "sql": "SELECT "formation"."id" AS "formation_id", "formation"."formationNumber" AS "formation_formationNumber", "agency"."id" AS "agency_id", "agency"."agencyNumber" AS "agency_agencyNumber", "agency"."parentAgencyNumber" AS "agency_parentAgencyNumber", "agency"."agencyOfficialName" AS "agency_agencyOfficialName", "agency"."agencyName" AS "agency_agencyName", "agency"."agencyType" AS "agency_agencyType", "agency"."agencyUrl" AS "agency_agencyUrl", "agency"."agencyPhone" AS "agency_agencyPhone", "agency"."agencyFareUrl" AS "agency_agencyFareUrl", "agency"."createdAt" AS "agency_createdAt", "agency"."updatedAt" AS "agency_updatedAt", "vehicleFormations"."id" AS "vehicleFormations_id", "vehicleFormations"."formationId" AS "vehicleFormations_formationId", "vehicleFormations"."vehicleId" AS "vehicleFormations_vehicleId", "vehicleFormations"."carNumber" AS "vehicleFormations_carNumber", "vehicleFormations"."createdAt" AS "vehicleFormations_createdAt", "vehicleFormations"."updatedAt" AS "vehicleFormations_updatedAt", "vehicle"."id" AS "vehicle_id", "vehicle"."vehicleNumber" AS "vehicle_vehicleNumber", "vehicle"."belongs" AS "vehicle_belongs", "vehicle"."productionDate" AS "vehicle_productionDate", "vehicle"."scrappedDate" AS "vehicle_scrappedDate", "vehicle"."createdAt" AS "vehicle_createdAt", "vehicle"."updatedAt" AS "vehicle_updatedAt", "modifications"."id" AS "modifications_id", "modifications"."vehicleId" AS "modifications_vehicleId", "modifications"."modifiedOn" AS "modifications_modifiedOn", "modifications"."kind" AS "modifications_kind", "modifications"."value" AS "modifications_value", "modifications"."description" AS "modifications_description", "modifications"."createdAt" AS "modifications_createdAt", "modifications"."updatedAt" AS "modifications_updatedAt" FROM "formations" "formation" LEFT JOIN "agencies" "agency" ON "agency"."id"="formation"."agency_id"  LEFT JOIN "vehicle_formations" "vehicleFormations" ON "vehicleFormations"."formation_id"="formation"."id" LEFT JOIN "vehicles" "vehicle" ON "vehicle"."id"="vehicleFormations"."vehicle_id" LEFT JOIN "vehicle_modifications" "modifications" ON "modifications"."vehicle_id"="vehicle"."id" WHERE formation.formation_number = :formationNumber ORDER BY formation.start_date ASC NULLS FIRST, "formation_id" ASC, modifications.modified_on ASC NULLS FIRST",
+            },
+          ]
+        `);
+    });
+
     it('findOneByAgencyIdAndFormationNumberAndDate', async () => {
         await query.findOneByAgencyIdAndFormationNumberAndDate({
             agencyId: 'agency-1',
