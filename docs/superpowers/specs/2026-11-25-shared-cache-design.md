@@ -102,7 +102,7 @@ client は、列車情報を書いてから 1 時間、時刻表を `cache: 'rel
 ## 足すもの
 
 - 依存：`@aws-sdk/client-dynamodb`。版は今の `@aws-sdk/client-cloudfront` にそろえる。
-- `serverless.ts`：テーブル（オンデマンド、TTL）、Lambda の `GetItem`・`BatchGetItem`・`PutItem`・`UpdateItem` の権限、環境変数 `SHARED_CACHE_TABLE_NAME`。
+- `serverless.ts`：テーブル（オンデマンド、TTL）、Lambda の `BatchGetItem`・`PutItem`・`UpdateItem` の権限、環境変数 `SHARED_CACHE_TABLE_NAME`。
 - ADR-0021。
 
 ## 確かめ方
