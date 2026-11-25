@@ -959,6 +959,78 @@ describe('TripBlockV3Service - 書き込みで画面の CDN キャッシュを�
         },
     );
 
+    const sharedTagsOf = () => {
+        expect(mockSharedCache.invalidate).toHaveBeenCalledTimes(1);
+        return [...mockSharedCache.invalidate.mock.calls[0][0].tags].sort();
+    };
+
+    it('replaceOneTripBlock は CDN と同じタグで sharedCache.invalidate も呼ぶ', async () => {
+        mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue({
+            trips: [{ calendarId: 'cal-old', tripOperationLists: [] }],
+        });
+        vi.spyOn(TripBlockDomainBuilder, 'buildFromReplaceDto').mockReturnValue(
+            {} as never,
+        );
+        mockTripBlockCommand.replaceOneTripBlockByDomain.mockResolvedValue({});
+        await service.replaceOneTripBlock({
+            id: 'blk',
+            dto: { trips: [{ calendarId: 'cal-new' }] } as never,
+        });
+        expect(sharedTagsOf()).toEqual(tagsOf());
+        expect(sharedTagsOf()).toEqual([
+            'calendar:cal-new',
+            'calendar:cal-old',
+        ]);
+    });
+
+    it('addTripToTripBlock は CDN と同じタグで sharedCache.invalidate も呼ぶ', async () => {
+        setupAdd(['cal-from'], ['cal-to', null]);
+        await service.addTripToTripBlock({
+            id: 'to',
+            dto: { tripId: 't1' } as never,
+        });
+        expect(sharedTagsOf()).toEqual(tagsOf());
+        expect(sharedTagsOf()).toEqual([
+            'calendar:cal-from',
+            'calendar:cal-to',
+        ]);
+    });
+
+    it.each([false, true])(
+        'deleteTripFromTripBlock（holdAsAnotherTripBlock: %s）は CDN と同じタグで sharedCache.invalidate も呼ぶ',
+        async (holdAsAnotherTripBlock) => {
+            setupDelete();
+            await service.deleteTripFromTripBlock({
+                id: 'blk',
+                dto: { tripId: 't1', holdAsAnotherTripBlock } as never,
+            });
+            expect(sharedTagsOf()).toEqual(tagsOf());
+            expect(sharedTagsOf()).toEqual([
+                'calendar:cal-a',
+                'calendar:cal-b',
+            ]);
+        },
+    );
+
+    it('保存が失敗したら sharedCache.invalidate も呼ばない', async () => {
+        mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue({
+            trips: [{ calendarId: 'cal-old' }],
+        });
+        vi.spyOn(TripBlockDomainBuilder, 'buildFromReplaceDto').mockReturnValue(
+            {} as never,
+        );
+        mockTripBlockCommand.replaceOneTripBlockByDomain.mockRejectedValue(
+            new Error('db'),
+        );
+        await expect(
+            service.replaceOneTripBlock({
+                id: 'blk',
+                dto: { trips: [{ calendarId: 'cal-new' }] } as never,
+            }),
+        ).rejects.toThrow('db');
+        expect(mockSharedCache.invalidate).not.toHaveBeenCalled();
+    });
+
     it('deleteTripFromTripBlock が見つからなければ捨てない', async () => {
         mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue(
             null,
