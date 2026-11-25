@@ -101,7 +101,7 @@ describe('SharedCache', () => {
     it('定数とクライアント設定', () => {
         expect(SHARED_CACHE_MAX_BODY_BYTES).toBe(380 * 1024);
         expect(SHARED_CACHE_DEFAULT_TTL_SECONDS).toBe(86_400);
-        expect(SHARED_CACHE_PUT_BUDGET_MS).toBe(2_000);
+        expect(SHARED_CACHE_PUT_BUDGET_MS).toBe(1_500);
         expect(SHARED_CACHE_CLIENT_CONFIG).toEqual({
             maxAttempts: 1,
             requestHandler: {

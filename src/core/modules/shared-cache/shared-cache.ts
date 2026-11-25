@@ -31,15 +31,18 @@ export const SHARED_CACHE_MAX_BODY_BYTES = 380 * 1024;
 export const SHARED_CACHE_DEFAULT_TTL_SECONDS = 86_400;
 /**
  * getOrLoad の始まりからこれ以上経っていたら、置かずに load の結果を返す。
- * Lambda の timeout（3 秒）に対し、PutItem は最長 1.3 秒（接続 0.3 秒＋応答 1 秒）かかるため
+ * 予算を超えていなければ、PutItem（最長 1.3 秒＝接続 0.3 秒＋応答 1 秒）を足しても
+ * 1.5 秒＋1.3 秒＝2.8 秒で、Lambda の timeout（3 秒）に収まる。
+ * 認証などの前後の処理と、stringify・gzip の時間は、残りの 0.2 秒に収まる目安
  */
-export const SHARED_CACHE_PUT_BUDGET_MS = 2_000;
+export const SHARED_CACHE_PUT_BUDGET_MS = 1_500;
 
 type Item = Record<string, AttributeValue>;
 
 /**
  * 実体（Lambda）をまたいで共有する読み取りキャッシュ（DynamoDB）。
- * 値は JSON にできるものに限る。返す値はいつも JSON から作り直した新しいもの。
+ * 値は JSON にできるものに限る。当たった値と置いた値は、JSON から作り直した新しいものを返す。
+ * 置かなかったとき（予算超過・大きすぎ・stringify 失敗）は、load の結果をそのまま返す（DB から取ったばかりで、ほかに共有されない）。
  * 捨てるときは、タグ・名前空間の項目の版を上げる。値は、置いたときの版が今と同じなら当たる。
  * 失敗しても応答は変えない（読めなければ load、置けなくても値を返す、捨てるのに失敗しても reject しない）。
  * テーブル名（SHARED_CACHE_TABLE_NAME）が空なら、load を呼ぶだけ。
