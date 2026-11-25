@@ -20,6 +20,9 @@ function normalizeList(value: unknown): string[] {
     return [...new Set(items)].sort();
 }
 
+/** 指定はあるが中身が空（`?include=` など）の印。指定が無い（''）のと別のキーにする */
+const EMPTY_MARK = '[]';
+
 /** include・fields を、キーの順と項目の並びを揃えた 1 本の文字列にする（無ければ ''） */
 export function selectionCacheKey(params: {
     include?: unknown;
@@ -29,7 +32,7 @@ export function selectionCacheKey(params: {
     const includePart =
         include === undefined || include === null
             ? ''
-            : normalizeList(include).join(',');
+            : normalizeList(include).join(',') || EMPTY_MARK;
     const fieldsPart =
         fields !== null && typeof fields === 'object'
             ? Object.entries(fields)
@@ -38,7 +41,7 @@ export function selectionCacheKey(params: {
                       ([resource, value]) =>
                           `${resource}:${normalizeList(value).join(',')}`,
                   )
-                  .join('|')
+                  .join('|') || EMPTY_MARK
             : '';
     if (includePart === '' && fieldsPart === '') {
         return '';

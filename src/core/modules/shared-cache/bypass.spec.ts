@@ -37,6 +37,24 @@ describe('selectionCacheKey', () => {
         );
     });
 
+    it('include= の空と include 無しは別のキー', () => {
+        expect(selectionCacheKey({ include: '' })).not.toBe(
+            selectionCacheKey({}),
+        );
+        expect(selectionCacheKey({ include: ',' })).toBe(
+            selectionCacheKey({ include: '' }),
+        );
+        expect(selectionCacheKey({ include: '' })).not.toBe(
+            selectionCacheKey({ include: 'trips' }),
+        );
+    });
+
+    it('fields の空のオブジェクトと fields 無しは別のキー', () => {
+        expect(selectionCacheKey({ fields: {} })).not.toBe(
+            selectionCacheKey({}),
+        );
+    });
+
     it('何も無ければ空文字', () => {
         expect(selectionCacheKey({})).toBe('');
         expect(selectionCacheKey({ include: undefined, fields: null })).toBe(
