@@ -58,7 +58,7 @@ sharedCache.invalidateNamespace({ namespace: 'trip-blocks' });
 
 | 項目 | `pk` | 持つもの |
 |---|---|---|
-| 値 | `entry#<namespace>#<key のハッシュ>` | `namespace`・`keyParts`（素の文字列）・`body`（JSON を gzip にした Binary）・`tagVersions`（書いたときのタグと名前空間の版）・`expiresAt` |
+| 値 | `entry#<namespace>#<key のハッシュ>` | `namespace`・`keyParts`（素の文字列）・`body`（JSON を gzip にした Binary。追記で brotli・分割に変更。docs/superpowers/specs/2026-11-25-shared-cache-chunks-design.md）・`tagVersions`（書いたときのタグと名前空間の版）・`expiresAt` |
 | タグ | `tag#<タグ>` | `version`（数） |
 | 名前空間 | `ns#<namespace>` | `version`（数） |
 
@@ -118,5 +118,5 @@ client は、列車情報を書いてから 1 時間、時刻表を `cache: 'rel
 ## 作る人に任せること
 
 - キーのハッシュの作り方（sha256 の先頭など）。
-- gzip と brotli のどちらで縮めるか（Node の `zlib` にある方）。
+- gzip と brotli のどちらで縮めるか（Node の `zlib` にある方）。→ 追記で brotli 6 に決まった（docs/superpowers/specs/2026-11-25-shared-cache-chunks-design.md）。
 - DynamoDB のクライアントの作り方は、`CdnInvalidation` にそろえる。
