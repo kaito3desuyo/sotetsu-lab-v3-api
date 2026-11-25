@@ -149,20 +149,21 @@ export class SharedCache {
         return copy;
     }
 
-    async invalidate(params: { tags: readonly string[] }): Promise<void> {
-        await this.#bump([...new Set(params.tags)].map((tag) => `tag#${tag}`));
+    /** 全ての更新が成功したときだけ true。失敗しても reject しない */
+    async invalidate(params: { tags: readonly string[] }): Promise<boolean> {
+        return this.#bump([...new Set(params.tags)].map((tag) => `tag#${tag}`));
     }
 
-    async invalidateNamespace(params: { namespace: string }): Promise<void> {
-        await this.#bump([`ns#${params.namespace}`]);
+    async invalidateNamespace(params: { namespace: string }): Promise<boolean> {
+        return this.#bump([`ns#${params.namespace}`]);
     }
 
-    async #bump(pks: readonly string[]): Promise<void> {
+    async #bump(pks: readonly string[]): Promise<boolean> {
         // env の読み取りも含め、何が起きても reject しない（書き込みを失敗にしないため）
         try {
             const table = process.env.SHARED_CACHE_TABLE_NAME;
             if (!table || pks.length === 0) {
-                return;
+                return false;
             }
             await Promise.all(
                 pks.map((pk) =>
@@ -176,8 +177,10 @@ export class SharedCache {
                     ),
                 ),
             );
+            return true;
         } catch (e) {
             this.#warn('破棄', e);
+            return false;
         }
     }
 

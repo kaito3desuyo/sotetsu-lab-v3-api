@@ -14,8 +14,8 @@ describe('InvalidateSharedCacheCommand', () => {
         process.env.SHARED_CACHE_TABLE_NAME = 'shared-cache-table';
         process.exitCode = undefined;
         sharedCache = {
-            invalidate: vi.fn().mockResolvedValue(undefined),
-            invalidateNamespace: vi.fn().mockResolvedValue(undefined),
+            invalidate: vi.fn().mockResolvedValue(true),
+            invalidateNamespace: vi.fn().mockResolvedValue(true),
         };
         command = new InvalidateSharedCacheCommand(
             sharedCache as unknown as SharedCache,
@@ -75,5 +75,35 @@ describe('InvalidateSharedCacheCommand', () => {
             expect.stringContaining('SHARED_CACHE_TABLE_NAME'),
         );
         expect(process.exitCode).toBe(1);
+    });
+
+    it('invalidate が false なら失敗を出して exitCode 1', async () => {
+        sharedCache.invalidate.mockResolvedValue(false);
+
+        await command.run([], { tag: ['a'] });
+
+        expect(console.error).toHaveBeenCalledWith(
+            expect.stringContaining('failed'),
+        );
+        expect(console.log).not.toHaveBeenCalled();
+        expect(process.exitCode).toBe(1);
+    });
+
+    it('invalidateNamespace が false でも exitCode 1', async () => {
+        sharedCache.invalidateNamespace.mockResolvedValue(false);
+
+        await command.run([], { namespace: ['x'] });
+
+        expect(process.exitCode).toBe(1);
+    });
+
+    it('@Option のパーサーは繰り返しを溜める', () => {
+        expect(command.parseTag('b', command.parseTag('a'))).toEqual([
+            'a',
+            'b',
+        ]);
+        expect(
+            command.parseNamespace('y', command.parseNamespace('x')),
+        ).toEqual(['x', 'y']);
     });
 });

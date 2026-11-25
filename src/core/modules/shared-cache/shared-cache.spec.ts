@@ -266,13 +266,33 @@ describe('SharedCache', () => {
     it('invalidate は失敗しても reject しない', async () => {
         failWith.update = new Error('boom');
         const cache = new SharedCache(client);
-        await expect(
-            cache.invalidate({ tags: ['calendar:a'] }),
-        ).resolves.toBeUndefined();
+        await expect(cache.invalidate({ tags: ['calendar:a'] })).resolves.toBe(
+            false,
+        );
         await expect(
             cache.invalidateNamespace({ namespace: 'x' }),
-        ).resolves.toBeUndefined();
+        ).resolves.toBe(false);
         expect(warn).toHaveBeenCalled();
+    });
+
+    it('invalidate は全て成功したら true を返す', async () => {
+        const cache = new SharedCache(client);
+        await expect(
+            cache.invalidate({ tags: ['calendar:a', 'calendar:b'] }),
+        ).resolves.toBe(true);
+        await expect(
+            cache.invalidateNamespace({ namespace: 'x' }),
+        ).resolves.toBe(true);
+    });
+
+    it('テーブル名が空なら invalidate は false を返す', async () => {
+        process.env.SHARED_CACHE_TABLE_NAME = '';
+        const cache = new SharedCache(client);
+        await expect(cache.invalidate({ tags: ['a'] })).resolves.toBe(false);
+        await expect(
+            cache.invalidateNamespace({ namespace: 'x' }),
+        ).resolves.toBe(false);
+        expect(send).not.toHaveBeenCalled();
     });
 
     it('タグが空なら何も送らない', async () => {

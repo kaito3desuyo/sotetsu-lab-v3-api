@@ -55,13 +55,29 @@ export class InvalidateSharedCacheCommand extends CommandRunner {
             return;
         }
 
+        let ok = true;
         for (const namespace of namespaces) {
-            await this.sharedCache.invalidateNamespace({ namespace });
-            console.log(`invalidated namespace: ${namespace}`);
+            if (await this.sharedCache.invalidateNamespace({ namespace })) {
+                console.log(`invalidated namespace: ${namespace}`);
+            } else {
+                console.error(
+                    `error: failed to invalidate namespace: ${namespace}`,
+                );
+                ok = false;
+            }
         }
         if (tags.length > 0) {
-            await this.sharedCache.invalidate({ tags });
-            console.log(`invalidated tags: ${tags.join(', ')}`);
+            if (await this.sharedCache.invalidate({ tags })) {
+                console.log(`invalidated tags: ${tags.join(', ')}`);
+            } else {
+                console.error(
+                    `error: failed to invalidate tags: ${tags.join(', ')}`,
+                );
+                ok = false;
+            }
+        }
+        if (!ok) {
+            process.exitCode = 1;
         }
     }
 }
