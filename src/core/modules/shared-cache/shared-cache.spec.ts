@@ -98,7 +98,14 @@ describe('SharedCache', () => {
     it('定数とクライアント設定', () => {
         expect(SHARED_CACHE_MAX_BODY_BYTES).toBe(380 * 1024);
         expect(SHARED_CACHE_DEFAULT_TTL_SECONDS).toBe(86_400);
-        expect(SHARED_CACHE_CLIENT_CONFIG.maxAttempts).toBe(1);
+        expect(SHARED_CACHE_CLIENT_CONFIG).toEqual({
+            maxAttempts: 1,
+            requestHandler: {
+                connectionTimeout: 300,
+                requestTimeout: 1000,
+                throwOnRequestTimeout: true,
+            },
+        });
     });
 
     it('テーブル名が無ければ毎回 load を呼び、DynamoDB に触らない', async () => {
@@ -213,6 +220,23 @@ describe('SharedCache', () => {
         vi.setSystemTime(new Date('2026-11-25T00:01:01Z'));
         await cache.getOrLoad(params({ ttlSeconds: 60, load }));
         expect(load).toHaveBeenCalledTimes(2);
+    });
+
+    it('expiresAt が無い、または数でない値は外れとして load を呼ぶ', async () => {
+        const cache = new SharedCache(client);
+        for (const broken of [undefined, { N: 'abc' }]) {
+            store.clear();
+            const load = vi.fn(async () => 'v');
+            await cache.getOrLoad(params({ load }));
+            const [entry] = [...store.values()];
+            if (broken === undefined) {
+                delete entry.expiresAt;
+            } else {
+                entry.expiresAt = broken;
+            }
+            await cache.getOrLoad(params({ load }));
+            expect(load).toHaveBeenCalledTimes(2);
+        }
     });
 
     it('bypass なら読まずに load し、置き直す', async () => {

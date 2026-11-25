@@ -209,7 +209,8 @@ export class SharedCache {
     }
 
     #isHit(entry: Item, versions: Record<string, number>): boolean {
-        if (Number(entry.expiresAt?.N) <= Date.now() / 1000) {
+        // 期限が無い・数でない値は外れ（NaN との比較は false になるので、当たる側で書く）
+        if (!(Number(entry.expiresAt?.N) > Date.now() / 1000)) {
             return false;
         }
         const stored = entry.tagVersions?.M ?? {};
