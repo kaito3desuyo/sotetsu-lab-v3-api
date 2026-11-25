@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { CdnInvalidationModule } from '../../core/modules/cdn-invalidation/cdn-invalidation.module.js';
+import { SharedCacheModule } from '../../core/modules/shared-cache/shared-cache.module.js';
 import { SocketSignalModule } from '../../core/modules/socket-signal/socket-signal.module.js';
 import { OperationLibsModule } from '../operation/operation.libs.module.js';
 import { TripBlockLibsModule } from './trip-block.libs.module.js';
@@ -12,6 +13,7 @@ import { TripBlockV3Service } from './usecase/trip-block.v3.service.js';
         OperationLibsModule,
         SocketSignalModule,
         CdnInvalidationModule,
+        SharedCacheModule,
     ],
     controllers: [TripBlockV3Controller],
     providers: [TripBlockV3Service],

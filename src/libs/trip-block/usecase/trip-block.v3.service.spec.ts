@@ -2,6 +2,9 @@ import type { MockedFunction } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CdnInvalidation } from '../../../core/modules/cdn-invalidation/cdn-invalidation.js';
+import { SharedCache } from '../../../core/modules/shared-cache/shared-cache.js';
+import { calendarCacheTags } from '../../../core/modules/cdn-invalidation/cache-tags.js';
+import { selectionCacheKey } from '../../../core/modules/shared-cache/bypass.js';
 import { SocketSignal } from '../../../core/modules/socket-signal/socket-signal.js';
 import { ItinerarySegmentQuery } from '../../operation/infrastructure/queries/itinerary-segment.query.js';
 import { TripBlockCommand } from '../infrastructure/commands/trip-block.command.js';
@@ -24,6 +27,10 @@ const mockTripBlockCommand = {
 };
 const mockSignalSend = vi.fn() as AnyMock;
 const mockInvalidate = vi.fn() as AnyMock;
+const mockSharedCache = {
+    getOrLoad: vi.fn() as AnyMock,
+    invalidate: vi.fn() as AnyMock,
+};
 
 const mockTripBlockQuery = {
     findOneTripBlockByTripBlockId: vi.fn() as AnyMock,
@@ -39,6 +46,10 @@ describe('TripBlockV3Service - findManyByFilter', () => {
 
     beforeEach(async () => {
         vi.clearAllMocks();
+        mockSharedCache.getOrLoad.mockImplementation(
+            (params: { load: () => Promise<unknown> }) => params.load(),
+        );
+        mockSharedCache.invalidate.mockResolvedValue(undefined);
         mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue(
             null,
         );
@@ -56,6 +67,7 @@ describe('TripBlockV3Service - findManyByFilter', () => {
                     provide: CdnInvalidation,
                     useValue: { invalidate: mockInvalidate },
                 },
+                { provide: SharedCache, useValue: mockSharedCache },
             ],
         }).compile();
         service = module.get(TripBlockV3Service);
@@ -106,6 +118,62 @@ describe('TripBlockV3Service - findManyByFilter', () => {
         );
         expect(mockTripBlockQuery.findManyByFilter).not.toHaveBeenCalled();
         expect(result).toBe(expected);
+    });
+
+    it('一覧は namespace trip-blocks・key [calendarId, 方向, selectionCacheKey]・タグ calendar:<id> で共有キャッシュを通す', async () => {
+        mockTripBlockQuery.findManyByFilterWithSelection.mockResolvedValue([]);
+
+        await service.findManyByFilter({
+            calendarId: 'Cal-1',
+            tripDirection: 1,
+            fields: { trip: 'tripNumber' },
+        });
+
+        expect(mockSharedCache.getOrLoad).toHaveBeenCalledTimes(1);
+        const arg = mockSharedCache.getOrLoad.mock.calls[0][0];
+        expect(arg.namespace).toBe('trip-blocks');
+        expect(arg.key).toEqual([
+            'Cal-1',
+            1,
+            selectionCacheKey({ fields: { trip: 'tripNumber' } }),
+        ]);
+        expect(arg.tags).toEqual(calendarCacheTags(['Cal-1']));
+    });
+
+    it('bypassCache を getOrLoad の bypass に渡す', async () => {
+        mockTripBlockQuery.findManyByFilter.mockResolvedValue([]);
+
+        await service.findManyByFilter({
+            calendarId: 'c1',
+            tripDirection: 0,
+            bypassCache: true,
+        });
+
+        expect(mockSharedCache.getOrLoad.mock.calls[0][0].bypass).toBe(true);
+    });
+
+    it('include・fields が無い一覧もキャッシュを通す', async () => {
+        mockTripBlockQuery.findManyByFilter.mockResolvedValue([]);
+
+        await service.findManyByFilter({ calendarId: 'c1', tripDirection: 0 });
+
+        expect(mockSharedCache.getOrLoad).toHaveBeenCalledTimes(1);
+        expect(mockSharedCache.getOrLoad.mock.calls[0][0].key).toEqual([
+            'c1',
+            0,
+            '',
+        ]);
+    });
+
+    it('不正な要求はキャッシュに触れずに 400', async () => {
+        await expect(
+            service.findManyByFilter({
+                calendarId: 'c1',
+                tripDirection: 0,
+                fields: { trip: 'password' },
+            }),
+        ).rejects.toThrow(BadRequestException);
+        expect(mockSharedCache.getOrLoad).not.toHaveBeenCalled();
     });
 
     it('許可リストに無い項目は 400', async () => {
@@ -178,6 +246,10 @@ describe('TripBlockV3Service - findOneById の include・fields', () => {
 
     beforeEach(async () => {
         vi.clearAllMocks();
+        mockSharedCache.getOrLoad.mockImplementation(
+            (params: { load: () => Promise<unknown> }) => params.load(),
+        );
+        mockSharedCache.invalidate.mockResolvedValue(undefined);
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 TripBlockV3Service,
@@ -192,6 +264,7 @@ describe('TripBlockV3Service - findOneById の include・fields', () => {
                     provide: CdnInvalidation,
                     useValue: { invalidate: mockInvalidate },
                 },
+                { provide: SharedCache, useValue: mockSharedCache },
             ],
         }).compile();
         service = module.get(TripBlockV3Service);
@@ -249,6 +322,10 @@ describe('TripBlockV3Service - 次の運用の検め', () => {
 
     beforeEach(async () => {
         vi.clearAllMocks();
+        mockSharedCache.getOrLoad.mockImplementation(
+            (params: { load: () => Promise<unknown> }) => params.load(),
+        );
+        mockSharedCache.invalidate.mockResolvedValue(undefined);
         mockTripBlockQuery.findOneTripBlockByTripBlockId.mockResolvedValue(
             null,
         );
@@ -266,6 +343,7 @@ describe('TripBlockV3Service - 次の運用の検め', () => {
                     provide: CdnInvalidation,
                     useValue: { invalidate: mockInvalidate },
                 },
+                { provide: SharedCache, useValue: mockSharedCache },
             ],
         }).compile();
         service = module.get(TripBlockV3Service);
@@ -504,6 +582,10 @@ describe('TripBlockV3Service - 保存を socket に知らせる', () => {
 
     beforeEach(async () => {
         vi.clearAllMocks();
+        mockSharedCache.getOrLoad.mockImplementation(
+            (params: { load: () => Promise<unknown> }) => params.load(),
+        );
+        mockSharedCache.invalidate.mockResolvedValue(undefined);
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 TripBlockV3Service,
@@ -518,6 +600,7 @@ describe('TripBlockV3Service - 保存を socket に知らせる', () => {
                     provide: CdnInvalidation,
                     useValue: { invalidate: mockInvalidate },
                 },
+                { provide: SharedCache, useValue: mockSharedCache },
             ],
         }).compile();
         service = module.get(TripBlockV3Service);
@@ -638,6 +721,10 @@ describe('TripBlockV3Service - 書き込みで画面の CDN キャッシュを�
 
     beforeEach(async () => {
         vi.clearAllMocks();
+        mockSharedCache.getOrLoad.mockImplementation(
+            (params: { load: () => Promise<unknown> }) => params.load(),
+        );
+        mockSharedCache.invalidate.mockResolvedValue(undefined);
         mockInvalidate.mockResolvedValue(undefined);
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -653,6 +740,7 @@ describe('TripBlockV3Service - 書き込みで画面の CDN キャッシュを�
                     provide: CdnInvalidation,
                     useValue: { invalidate: mockInvalidate },
                 },
+                { provide: SharedCache, useValue: mockSharedCache },
             ],
         }).compile();
         service = module.get(TripBlockV3Service);
@@ -699,6 +787,51 @@ describe('TripBlockV3Service - 書き込みで画面の CDN キャッシュを�
         expect(mockInvalidate.mock.invocationCallOrder[0]).toBeLessThan(
             mockSignalSend.mock.invocationCallOrder[0],
         );
+    });
+
+    it('書いたら同じタグで sharedCache.invalidate も呼ぶ', async () => {
+        vi.spyOn(TripBlocksDomainBuilder, 'buildFromCreateDto').mockReturnValue(
+            [] as never,
+        );
+        mockTripBlockCommand.bulkCreate.mockResolvedValue([]);
+        await service.createManyTripBlocks([
+            { trips: [{ calendarId: 'cal-a' }, { calendarId: 'cal-b' }] },
+        ] as never);
+        expect(mockSharedCache.invalidate).toHaveBeenCalledTimes(1);
+        expect(
+            [...mockSharedCache.invalidate.mock.calls[0][0].tags].sort(),
+        ).toEqual(tagsOf());
+    });
+
+    it('書く前の検査は共有キャッシュを通さず itinerarySegmentQuery を直に呼ぶ', async () => {
+        vi.spyOn(TripBlocksDomainBuilder, 'buildFromCreateDto').mockReturnValue(
+            [] as never,
+        );
+        mockTripBlockCommand.bulkCreate.mockResolvedValue([]);
+        mockItinerarySegmentQuery.findManyByCalendarId.mockResolvedValue([]);
+        await service
+            .createManyTripBlocks([
+                {
+                    trips: [
+                        {
+                            calendarId: 'cal-a',
+                            tripOperationLists: [
+                                {
+                                    operationId: 'o',
+                                    startStationId: 's',
+                                    endStationId: 'e',
+                                    nextTripOperationListId: 'x',
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ] as never)
+            .catch(() => undefined);
+        expect(
+            mockItinerarySegmentQuery.findManyByCalendarId,
+        ).toHaveBeenCalledWith({ calendarId: 'cal-a' });
+        expect(mockSharedCache.getOrLoad).not.toHaveBeenCalled();
     });
 
     it('createManyTripBlocks の保存が失敗したら捨てない', async () => {

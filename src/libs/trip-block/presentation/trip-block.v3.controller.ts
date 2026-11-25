@@ -2,6 +2,7 @@ import {
     Body,
     Controller,
     Get,
+    Headers,
     Param,
     ParseArrayPipe,
     Patch,
@@ -14,6 +15,7 @@ import { validationPipeOptions } from '../../../core/configs/validator-options.j
 import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
 import { CACHE_CONTROL } from '../../../core/modules/cache-control/cache-control.constants.js';
 import { CacheControl } from '../../../core/modules/cache-control/cache-control.decorator.js';
+import { wantsFreshRead } from '../../../core/modules/shared-cache/bypass.js';
 import { RBAC } from '../../../core/modules/rbac/rbac.decorator.js';
 import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
 import { Role } from '../../../core/modules/rbac/role.enum.js';
@@ -39,12 +41,15 @@ export class TripBlockV3Controller {
     @CacheControl(CACHE_CONTROL.TIMETABLE)
     async findManyByFilter(
         @Query() query: TripBlockFindManyByFilterQuery,
+        @Headers('cache-control') cacheControl?: string,
+        @Headers('pragma') pragma?: string,
     ): Promise<TripBlockDetailsDto[] | Record<string, unknown>[]> {
         const result = await this.tripBlockV3Service.findManyByFilter({
             calendarId: query.calendarId,
             tripDirection: query.tripDirection,
             include: query.include,
             fields: query.fields,
+            bypassCache: wantsFreshRead({ cacheControl, pragma }),
         });
 
         return result;
