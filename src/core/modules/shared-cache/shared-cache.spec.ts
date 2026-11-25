@@ -1,8 +1,7 @@
-import { randomBytes } from 'node:crypto';
-import { gzipSync } from 'node:zlib';
+import { brotliCompressSync, gzipSync } from 'node:zlib';
 import {
     BatchGetItemCommand,
-    PutItemCommand,
+    BatchWriteItemCommand,
     UpdateItemCommand,
     type AttributeValue,
     type DynamoDBClient,
@@ -12,19 +11,54 @@ import { SHARED_CACHE_INVALIDATE_FAILED_MESSAGE } from './shared-cache.log.js';
 import {
     SHARED_CACHE_CLIENT_CONFIG,
     SHARED_CACHE_DEFAULT_TTL_SECONDS,
-    SHARED_CACHE_MAX_BODY_BYTES,
+    SHARED_CACHE_MAX_PARTS,
+    SHARED_CACHE_PART_BYTES,
     SHARED_CACHE_PUT_BUDGET_MS,
     SharedCache,
 } from './shared-cache.js';
 
+// brotli の結果の長さを境目のテストで固定するため、縮める関数だけ差し替えられるようにする
+// （node:zlib の名前付き import は spyOn できない）。override が空なら本物
+const zlibOverride = vi.hoisted(() => ({
+    compress: undefined as ((input: string) => Buffer) | undefined,
+}));
+vi.mock('node:zlib', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('node:zlib')>();
+    return {
+        ...actual,
+        brotliCompressSync: ((
+            ...args: Parameters<typeof actual.brotliCompressSync>
+        ) =>
+            zlibOverride.compress
+                ? zlibOverride.compress(String(args[0]))
+                : actual.brotliCompressSync(
+                      ...args,
+                  )) as typeof actual.brotliCompressSync,
+    };
+});
+
 type Item = Record<string, AttributeValue>;
+
+/** 決まった種の擬似乱数（mulberry32）。毎回同じ値＝同じ圧縮後の大きさになる */
+const seededBase64 = (bytes: number, seed = 1): string => {
+    const buf = Buffer.alloc(bytes);
+    let a = seed;
+    for (let i = 0; i < bytes; i++) {
+        a = (a + 0x6d2b79f5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        buf[i] = ((t ^ (t >>> 14)) >>> 0) & 0xff;
+    }
+    return buf.toString('base64');
+};
 
 describe('SharedCache', () => {
     const TABLE = 't';
     const ORIGINAL = process.env.SHARED_CACHE_TABLE_NAME;
     let store: Map<string, Item>;
-    let failWith: { [K in 'batchGet' | 'put' | 'update']?: Error };
+    let failWith: { [K in 'batchGet' | 'write' | 'update']?: Error };
     let unprocessed: boolean;
+    let dropWrite: ((item: Item) => boolean) | undefined;
     const send = vi.fn();
     const client = { send } as unknown as DynamoDBClient;
     let warn: ReturnType<typeof vi.spyOn>;
@@ -33,6 +67,20 @@ describe('SharedCache', () => {
         send.mock.calls
             .map((call) => call[0] as unknown)
             .filter((c): c is T => c instanceof type);
+
+    /** 書き込みで送られた項目（先頭と続き） */
+    const written = (): Item[] =>
+        sent(BatchWriteItemCommand).flatMap((c) =>
+            (c.input.RequestItems?.[TABLE] ?? []).map(
+                (r) => r.PutRequest?.Item as Item,
+            ),
+        );
+    const headOf = (): Item => {
+        const [head] = [...store.values()].filter((i) =>
+            /^entry#[^#]+#[0-9a-f]{64}$/.test(i.pk.S as string),
+        );
+        return head;
+    };
 
     const params = (
         over: Partial<Parameters<SharedCache['getOrLoad']>[0]> & {
@@ -52,6 +100,8 @@ describe('SharedCache', () => {
         store = new Map();
         failWith = {};
         unprocessed = false;
+        dropWrite = undefined;
+        zlibOverride.compress = undefined;
         send.mockReset();
         send.mockImplementation(async (command: unknown) => {
             if (command instanceof BatchGetItemCommand) {
@@ -67,11 +117,21 @@ describe('SharedCache', () => {
                         : {},
                 };
             }
-            if (command instanceof PutItemCommand) {
-                if (failWith.put) throw failWith.put;
-                const item = command.input.Item as Item;
-                store.set(item.pk.S as string, item);
-                return {};
+            if (command instanceof BatchWriteItemCommand) {
+                if (failWith.write) throw failWith.write;
+                const requests = command.input.RequestItems?.[TABLE] ?? [];
+                const rest: typeof requests = [];
+                for (const request of requests) {
+                    const item = request.PutRequest?.Item as Item;
+                    if (dropWrite?.(item)) {
+                        rest.push(request);
+                        continue;
+                    }
+                    store.set(item.pk.S as string, item);
+                }
+                return {
+                    UnprocessedItems: rest.length ? { [TABLE]: rest } : {},
+                };
             }
             if (command instanceof UpdateItemCommand) {
                 if (failWith.update) throw failWith.update;
@@ -99,7 +159,6 @@ describe('SharedCache', () => {
     });
 
     it('定数とクライアント設定', () => {
-        expect(SHARED_CACHE_MAX_BODY_BYTES).toBe(380 * 1024);
         expect(SHARED_CACHE_DEFAULT_TTL_SECONDS).toBe(86_400);
         expect(SHARED_CACHE_PUT_BUDGET_MS).toBe(1_500);
         expect(SHARED_CACHE_CLIENT_CONFIG).toEqual({
@@ -257,17 +316,17 @@ describe('SharedCache', () => {
     });
 
     it('圧縮後に上限を超える値は置かず、load の結果を返す', async () => {
-        const big = randomBytes(600 * 1024).toString('base64');
+        const big = seededBase64(1_500_000);
         const load = vi.fn(async () => ({ big }));
         const cache = new SharedCache(client);
         const result = await cache.getOrLoad(params({ load }));
         expect(result).toEqual({ big });
-        expect(sent(PutItemCommand)).toHaveLength(0);
+        expect(sent(BatchWriteItemCommand)).toHaveLength(0);
         expect(warn).toHaveBeenCalled();
     });
 
     it('置けない大きな値は、写しを作らず load の結果をそのまま返す', async () => {
-        const loaded = { big: randomBytes(600 * 1024).toString('base64') };
+        const loaded = { big: seededBase64(1_500_000) };
         const cache = new SharedCache(client);
         const parse = vi.spyOn(JSON, 'parse');
         const result = await cache.getOrLoad(
@@ -278,7 +337,7 @@ describe('SharedCache', () => {
         parse.mockRestore();
     });
 
-    it('load が予算を超えて遅いときは PutItem をせず、load の結果を返して warn する', async () => {
+    it('load が予算を超えて遅いときは 書き込みをせず、load の結果を返して warn する', async () => {
         const loaded = { a: 1 };
         const cache = new SharedCache(client);
         const result = await cache.getOrLoad(
@@ -290,7 +349,7 @@ describe('SharedCache', () => {
             }),
         );
         expect(result).toBe(loaded);
-        expect(sent(PutItemCommand)).toHaveLength(0);
+        expect(sent(BatchWriteItemCommand)).toHaveLength(0);
         expect(warn).toHaveBeenCalledTimes(1);
     });
 
@@ -304,7 +363,7 @@ describe('SharedCache', () => {
                 },
             }),
         );
-        expect(sent(PutItemCommand)).toHaveLength(1);
+        expect(sent(BatchWriteItemCommand)).toHaveLength(1);
     });
 
     it('JSON にできない値（循環）でも reject せず、load の結果を返して warn する', async () => {
@@ -314,7 +373,7 @@ describe('SharedCache', () => {
         await expect(
             cache.getOrLoad(params({ load: async () => loaded })),
         ).resolves.toBe(loaded);
-        expect(sent(PutItemCommand)).toHaveLength(0);
+        expect(sent(BatchWriteItemCommand)).toHaveLength(0);
         expect(warn).toHaveBeenCalled();
     });
 
@@ -331,13 +390,16 @@ describe('SharedCache', () => {
         expect(keys.some((k) => k?.startsWith('entry#'))).toBe(false);
     });
 
-    it('body が gzip でない・JSON でない値は外れとして load を呼ぶ', async () => {
+    it('brotli で戻せない・JSON でない body は外れとして load を呼ぶ', async () => {
         const cache = new SharedCache(client);
-        for (const body of [Buffer.from('not gzip'), gzipSync('{not json')]) {
+        for (const body of [
+            Buffer.from('not brotli'),
+            brotliCompressSync('{not json'),
+        ]) {
             store.clear();
             const load = vi.fn(async () => 'v');
             await cache.getOrLoad(params({ load }));
-            const [entry] = [...store.values()];
+            const entry = headOf();
             entry.body = { B: body };
             warn.mockClear();
             await expect(cache.getOrLoad(params({ load }))).resolves.toBe('v');
@@ -364,7 +426,7 @@ describe('SharedCache', () => {
     });
 
     it('置く失敗でも値を返す', async () => {
-        failWith.put = new Error('boom');
+        failWith.write = new Error('boom');
         const load = vi.fn(async () => 'v');
         const cache = new SharedCache(client);
         await expect(cache.getOrLoad(params({ load }))).resolves.toBe('v');
@@ -434,19 +496,21 @@ describe('SharedCache', () => {
                 }),
             ),
         ).rejects.toThrow('db down');
-        expect(sent(PutItemCommand)).toHaveLength(0);
+        expect(sent(BatchWriteItemCommand)).toHaveLength(0);
     });
 
     it('置く項目の形', async () => {
         const cache = new SharedCache(client);
         await cache.getOrLoad(params({ load: async () => ({ a: 1 }) }));
-        const [put] = sent(PutItemCommand);
-        const item = put.input.Item as Item;
-        expect(put.input.TableName).toBe(TABLE);
-        expect(item.pk.S).toMatch(/^entry#trip-blocks#/);
+        const [batch] = sent(BatchWriteItemCommand);
+        expect(batch.input.RequestItems?.[TABLE]).toHaveLength(1);
+        const item = written()[0];
+        expect(item.pk.S).toMatch(/^entry#trip-blocks#[0-9a-f]{64}$/);
         expect(item.namespace.S).toBe('trip-blocks');
         expect(item.keyParts.S).toBe('["cal-a","up"]');
         expect(item.body.B).toBeInstanceOf(Uint8Array);
+        expect(item.parts.N).toBe('1');
+        expect(item.writeId.S).toMatch(/^[0-9a-f-]{36}$/);
         expect(item.tagVersions.M).toEqual({
             'tag#calendar:a': { N: '0' },
             'ns#trip-blocks': { N: '0' },
@@ -454,5 +518,179 @@ describe('SharedCache', () => {
         expect(item.expiresAt.N).toBe(
             `${Math.floor(Date.now() / 1000) + SHARED_CACHE_DEFAULT_TTL_SECONDS}`,
         );
+    });
+
+    describe('分けて置く', () => {
+        const fixedSize = (bytes: number) => {
+            zlibOverride.compress = () => Buffer.alloc(bytes, 7);
+        };
+        const partsOf = () => written().map((i) => i.body.B?.byteLength);
+
+        it('定数', () => {
+            expect(SHARED_CACHE_PART_BYTES).toBe(350 * 1024);
+            expect(SHARED_CACHE_MAX_PARTS).toBe(4);
+        });
+
+        it('切れ端 2 つ以上の値も置いて当たる（2 回目は load を呼ばない）', async () => {
+            const value = { big: seededBase64(500_000) };
+            const load = vi.fn(async () => value);
+            const cache = new SharedCache(client);
+            expect(await cache.getOrLoad(params({ load }))).toEqual(value);
+            expect(written().length).toBeGreaterThanOrEqual(2);
+            expect(await cache.getOrLoad(params({ load }))).toEqual(value);
+            expect(load).toHaveBeenCalledTimes(1);
+        });
+
+        it('350KB ちょうどは 1 切れ、1 バイト超えると 2 切れで書く', async () => {
+            const cache = new SharedCache(client);
+            fixedSize(SHARED_CACHE_PART_BYTES);
+            await cache.getOrLoad(params({ load: async () => 'a' }));
+            expect(partsOf()).toEqual([SHARED_CACHE_PART_BYTES]);
+            expect(written()[0].parts.N).toBe('1');
+
+            send.mockClear();
+            fixedSize(SHARED_CACHE_PART_BYTES + 1);
+            await cache.getOrLoad(
+                params({ load: async () => 'b', bypass: true }),
+            );
+            expect(partsOf()).toEqual([SHARED_CACHE_PART_BYTES, 1]);
+            const [head, rest] = written();
+            expect(head.parts.N).toBe('2');
+            expect(rest.pk.S).toBe(`${head.pk.S}#1`);
+            expect(rest.writeId.S).toBe(head.writeId.S);
+            expect(rest.expiresAt.N).toBe(head.expiresAt.N);
+            expect(rest.tagVersions).toBeUndefined();
+        });
+
+        it('1.4MB ちょうどは置き、1 バイト超えると置かずに load の結果をそのまま返す', async () => {
+            const cache = new SharedCache(client);
+            const max = SHARED_CACHE_PART_BYTES * SHARED_CACHE_MAX_PARTS;
+            fixedSize(max);
+            await cache.getOrLoad(params({ load: async () => 'a' }));
+            expect(written()).toHaveLength(4);
+            expect(written()[0].parts.N).toBe('4');
+
+            send.mockClear();
+            warn.mockClear();
+            fixedSize(max + 1);
+            const loaded = { a: 1 };
+            const result = await cache.getOrLoad(
+                params({ load: async () => loaded, bypass: true }),
+            );
+            expect(result).toBe(loaded);
+            expect(sent(BatchWriteItemCommand)).toHaveLength(0);
+            expect(warn).toHaveBeenCalled();
+        });
+
+        const writeThreeParts = async (cache: SharedCache) => {
+            const value = { big: seededBase64(800_000) };
+            await cache.getOrLoad(params({ load: async () => value }));
+            expect(headOf().parts.N).toBe('3');
+            return value;
+        };
+
+        it('続きが欠けていれば外れとして load を呼ぶ', async () => {
+            const cache = new SharedCache(client);
+            const value = await writeThreeParts(cache);
+            store.delete(`${headOf().pk.S}#2`);
+            const load = vi.fn(async () => value);
+            await cache.getOrLoad(params({ load }));
+            expect(load).toHaveBeenCalledTimes(1);
+        });
+
+        it('writeId が先頭と違う続きがあれば外れとして load を呼ぶ', async () => {
+            const cache = new SharedCache(client);
+            const value = await writeThreeParts(cache);
+            store.get(`${headOf().pk.S}#1`)!.writeId = { S: 'other' };
+            const load = vi.fn(async () => value);
+            await cache.getOrLoad(params({ load }));
+            expect(load).toHaveBeenCalledTimes(1);
+        });
+
+        it('parts の無い古い項目（gzip の値）は外れとして load を呼ぶ', async () => {
+            const cache = new SharedCache(client);
+            await cache.getOrLoad(params({ load: async () => 'old' }));
+            const entry = headOf();
+            delete entry.parts;
+            delete entry.writeId;
+            entry.body = { B: gzipSync(JSON.stringify('old')) };
+            const load = vi.fn(async () => 'new');
+            expect(await cache.getOrLoad(params({ load }))).toBe('new');
+            expect(load).toHaveBeenCalledTimes(1);
+        });
+
+        it('parts が 1〜4 の整数でなければ外れとして load を呼ぶ', async () => {
+            const cache = new SharedCache(client);
+            for (const parts of ['0', '5', '1.5', 'abc']) {
+                store.clear();
+                await cache.getOrLoad(params({ load: async () => 'v' }));
+                headOf().parts = { N: parts };
+                const load = vi.fn(async () => 'w');
+                await cache.getOrLoad(params({ load }));
+                expect(load).toHaveBeenCalledTimes(1);
+            }
+        });
+
+        it('切れ端を減らして書き直すと、残った古い続きは使わない', async () => {
+            const cache = new SharedCache(client);
+            await writeThreeParts(cache);
+            const pk = headOf().pk.S;
+            await cache.getOrLoad(
+                params({ load: async () => 'small', bypass: true }),
+            );
+            expect(headOf().parts.N).toBe('1');
+            expect(store.has(`${pk}#1`)).toBe(true);
+            expect(store.has(`${pk}#2`)).toBe(true);
+            const load = vi.fn(async () => 'never');
+            expect(await cache.getOrLoad(params({ load }))).toBe('small');
+            expect(load).not.toHaveBeenCalled();
+        });
+
+        it('読みの BatchGetItem は先頭と続き #1〜#3 とタグ・名前空間を 1 回で取る', async () => {
+            const cache = new SharedCache(client);
+            await cache.getOrLoad(params({ load: async () => 'v' }));
+            const pk = headOf().pk.S;
+            send.mockClear();
+            await cache.getOrLoad(params({ load: async () => 'v' }));
+            const batches = sent(BatchGetItemCommand);
+            expect(batches).toHaveLength(1);
+            const keys = (
+                batches[0].input.RequestItems?.[TABLE]?.Keys ?? []
+            ).map((k) => k.pk.S);
+            expect(keys).toEqual([
+                pk,
+                `${pk}#1`,
+                `${pk}#2`,
+                `${pk}#3`,
+                'tag#calendar:a',
+                'ns#trip-blocks',
+            ]);
+        });
+
+        it('bypass なら先頭も続きも Keys に入れない', async () => {
+            const cache = new SharedCache(client);
+            await cache.getOrLoad(params({ load: async () => 'v' }));
+            send.mockClear();
+            await cache.getOrLoad(
+                params({ load: async () => 'w', bypass: true }),
+            );
+            const [batch] = sent(BatchGetItemCommand);
+            const keys = (batch.input.RequestItems?.[TABLE]?.Keys ?? []).map(
+                (k) => k.pk.S,
+            );
+            expect(keys).toEqual(['tag#calendar:a', 'ns#trip-blocks']);
+        });
+
+        it('UnprocessedItems が残っても値を返し、warn を出す。次の読みは外れ', async () => {
+            const cache = new SharedCache(client);
+            dropWrite = (item) => (item.pk.S as string).endsWith('#1');
+            const value = { big: seededBase64(500_000) };
+            const load = vi.fn(async () => value);
+            expect(await cache.getOrLoad(params({ load }))).toEqual(value);
+            expect(warn).toHaveBeenCalled();
+            expect(headOf().parts.N).toBe('2');
+            await cache.getOrLoad(params({ load }));
+            expect(load).toHaveBeenCalledTimes(2);
+        });
     });
 });
