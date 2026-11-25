@@ -9,6 +9,7 @@ import {
     UpdateItemCommand,
 } from '@aws-sdk/client-dynamodb';
 import { Injectable, Logger, Optional } from '@nestjs/common';
+import { SHARED_CACHE_INVALIDATE_FAILED_MESSAGE } from './shared-cache.log.js';
 
 /**
  * DynamoDB への呼び出しは、api Lambda の timeout（3 秒）を食わないよう、
@@ -200,7 +201,10 @@ export class SharedCache {
             );
             return true;
         } catch (e) {
-            this.#warn('破棄', e);
+            const error = e instanceof Error ? e : new Error(String(e));
+            this.#logger.warn(
+                `${SHARED_CACHE_INVALIDATE_FAILED_MESSAGE}: ${error.name} ${error.message}`,
+            );
             return false;
         }
     }

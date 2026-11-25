@@ -8,6 +8,7 @@ import {
     type DynamoDBClient,
 } from '@aws-sdk/client-dynamodb';
 import { Logger } from '@nestjs/common';
+import { SHARED_CACHE_INVALIDATE_FAILED_MESSAGE } from './shared-cache.log.js';
 import {
     SHARED_CACHE_CLIENT_CONFIG,
     SHARED_CACHE_DEFAULT_TTL_SECONDS,
@@ -380,6 +381,19 @@ describe('SharedCache', () => {
             cache.invalidateNamespace({ namespace: 'x' }),
         ).resolves.toBe(false);
         expect(warn).toHaveBeenCalled();
+    });
+
+    it('捨てるのに失敗した warn は、アラームのログのフィルターが数える文言で始まる', async () => {
+        failWith.update = new Error('boom');
+        await new SharedCache(client).invalidate({ tags: ['calendar:a'] });
+        expect(SHARED_CACHE_INVALIDATE_FAILED_MESSAGE).toBe(
+            '共有キャッシュの破棄に失敗しました',
+        );
+        expect(warn).toHaveBeenCalledWith(
+            expect.stringMatching(
+                new RegExp(`^${SHARED_CACHE_INVALIDATE_FAILED_MESSAGE}`),
+            ),
+        );
     });
 
     it('invalidate は全て成功したら true を返す', async () => {
