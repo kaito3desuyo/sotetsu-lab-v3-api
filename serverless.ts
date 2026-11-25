@@ -93,6 +93,15 @@ const serverlessConfiguration: AWS = {
                             `arn:aws:cloudfront::\${aws:accountId}:distribution/\${cf:${system}-\${sls:stage}-client-cfstack.WebDistributionId}`,
                         ],
                     },
+                    {
+                        Effect: 'Allow',
+                        Action: [
+                            'dynamodb:BatchGetItem',
+                            'dynamodb:PutItem',
+                            'dynamodb:UpdateItem',
+                        ],
+                        Resource: [{ 'Fn::GetAtt': ['SharedCacheTable', 'Arn'] }],
+                    },
                 ],
             },
         },
@@ -108,6 +117,7 @@ const serverlessConfiguration: AWS = {
             SUPABASE_URL: '${ssm:sotetsu-lab-v3-supabase-url}',
             SOCKET_BROADCAST_FUNCTION_NAME: `${system}-\${sls:stage}-socket-broadcast-lambda`,
             CDN_DISTRIBUTION_ID: `\${cf:${system}-\${sls:stage}-client-cfstack.WebDistributionId}`,
+            SHARED_CACHE_TABLE_NAME: { Ref: 'SharedCacheTable' },
         },
     },
     // import the function via paths
@@ -194,6 +204,21 @@ const serverlessConfiguration: AWS = {
         Conditions: alarms.Conditions,
         Resources: {
             ...alarms.Resources,
+            SharedCacheTable: {
+                Type: 'AWS::DynamoDB::Table',
+                Properties: {
+                    TableName: '${param:prefix}-shared-cache-table',
+                    BillingMode: 'PAY_PER_REQUEST',
+                    AttributeDefinitions: [
+                        { AttributeName: 'pk', AttributeType: 'S' },
+                    ],
+                    KeySchema: [{ AttributeName: 'pk', KeyType: 'HASH' }],
+                    TimeToLiveSpecification: {
+                        AttributeName: 'expiresAt',
+                        Enabled: true,
+                    },
+                },
+            },
             AppCloudFrontDistribution: {
                 Type: 'AWS::CloudFront::Distribution',
                 Properties: {
