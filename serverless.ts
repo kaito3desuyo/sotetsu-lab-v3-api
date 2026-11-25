@@ -115,7 +115,7 @@ const serverlessConfiguration: AWS = {
                         Effect: 'Allow',
                         Action: [
                             'dynamodb:BatchGetItem',
-                            'dynamodb:PutItem',
+                            'dynamodb:BatchWriteItem',
                             'dynamodb:UpdateItem',
                         ],
                         Resource: [

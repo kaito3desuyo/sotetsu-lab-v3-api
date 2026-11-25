@@ -28,16 +28,16 @@
 1. **実体をまたいで共有する置き場を DynamoDB に作る。** 部品は `src/core/modules/shared-cache/` の `SharedCache`。使う側は `getOrLoad`（キー・タグ・TTL・`bypass`・`load`）と `invalidate`・`invalidateNamespace` を呼ぶ。タグの名前は CDN の失効のタグ（`calendar:<id>`）にそろえ、書き込みの usecase では `cdnInvalidation.invalidate` の隣で同じタグを渡す。
 
 2. **テーブルは 1 つ。** `${param:prefix}-shared-cache-table`。パーティションキー `pk`（文字列）だけで、オンデマンド、TTL の属性は `expiresAt`。項目は 3 種類ある。
-   - 値 `entry#<namespace>#<key のハッシュ>`: `namespace`・`keyParts`・`body`（JSON を gzip にした Binary）・`tagVersions`・`expiresAt`
+   - 値 `entry#<namespace>#<key のハッシュ>`: `namespace`・`keyParts`・`body`（JSON を gzip にした Binary。追記で brotli・分割に変更）・`tagVersions`・`expiresAt`
    - タグ `tag#<タグ>`: `version`（数）
    - 名前空間 `ns#<namespace>`: `version`（数）
 
-3. **捨てるときは版を上げる。** タグや名前空間の項目の `version` を `ADD 1` で上げる。値の項目は探さず、消しもしない。読むときは、値とその版の項目を 1 回の `BatchGetItem` で取り、記録した版が今の版とすべて同じで、期限も過ぎていなければ当たりとする。版の項目が無いときは 0 とみなす。`load` の前に版を読み、値はその版で書くので、読んでいる最中に誰かが書いても、古い値は次に読まれたときに外れになる。
+3. **捨てるときは版を上げる。** タグや名前空間の項目の `version` を `ADD 1` で上げる。値の項目は探さず、消しもしない。読むときは、値とその版の項目を 1 回の `BatchGetItem` で取り（追記で、値の続きの pk もこの 1 回に入れる）、記録した版が今の版とすべて同じで、期限も過ぎていなければ当たりとする。版の項目が無いときは 0 とみなす。`load` の前に版を読み、値はその版で書くので、読んでいる最中に誰かが書いても、古い値は次に読まれたときに外れになる。
 
 4. **壊れないための決まり。**
    - 期限は 24 時間。SQL で直に書き換えても、最長 24 時間で入れ替わる。TTL の削除は遅れるので、読むときにも `expiresAt` を見る。
-   - 圧縮しても 380KB を超える値は置かない（項目の上限は 400KB）。warn のログを出し、`load` の結果を写さずそのまま返す（DB から取ったばかりで、ほかに共有されないため）。
-   - 外れの経路で `getOrLoad` の始まりから 1.5 秒（`SHARED_CACHE_PUT_BUDGET_MS`）を超えていたら、PutItem をせず `load` の結果を返す。予算を超えていなければ、PutItem（最長 1.3 秒＝接続 0.3 秒＋応答 1 秒）を足しても 2.8 秒で、Lambda の timeout 3 秒に収まるため。
+   - 圧縮しても 380KB を超える値は置かない（項目の上限は 400KB）。warn のログを出し、`load` の結果を写さずそのまま返す（DB から取ったばかりで、ほかに共有されないため）。この上限は追記で変わった。
+   - 外れの経路で `getOrLoad` の始まりから 1.5 秒（`SHARED_CACHE_PUT_BUDGET_MS`）を超えていたら、PutItem をせず `load` の結果を返す。予算を超えていなければ、PutItem（最長 1.3 秒＝接続 0.3 秒＋応答 1 秒）を足しても 2.8 秒で、Lambda の timeout 3 秒に収まるため。書き込みは追記で BatchWriteItem になった。予算の見方と計算は追記の「予算と打ち切りの見直し」で変えた。
    - DynamoDB への呼び出しは、再試行なし、接続 300ms、応答 1 秒で打ち切る（`CdnInvalidation` と同じ）。読むのに失敗したら `load` の結果を返し、置くのに失敗しても応答は返す。どちらも warn のログを出す。
    - `invalidate` は reject しない。書き込みの応答を失敗にしないためだ。代わりに成否を boolean で返す。CLI はこれを見て、失敗なら終了コード 1 で止まる。
    - 捨てるのに失敗すると、編集した人以外には最長 24 時間古い値が残る。warn「共有キャッシュの破棄に失敗しました」をロググループのメトリクスフィルターで数え、1 時間に 1 件以上でアラームにする（`serverless.ts`）。
@@ -49,11 +49,11 @@
 
 7. **手で捨てる口は CLI。** `npm run cli -- shared-cache invalidate --namespace <ns>`（`--tag <tag>` も受ける）。テーブル名が空のとき、または捨てるのに失敗したときは終了コード 1 を返す。
 
-8. **本番の資源。** `serverless.ts` にテーブル、Lambda の権限、環境変数 `SHARED_CACHE_TABLE_NAME` を足した。権限は実際に呼ぶ `BatchGetItem`・`PutItem`・`UpdateItem` だけに絞り、`GetItem` は与えない。
+8. **本番の資源。** `serverless.ts` にテーブル、Lambda の権限、環境変数 `SHARED_CACHE_TABLE_NAME` を足した。権限は実際に呼ぶ `BatchGetItem`・`PutItem`（追記で `BatchWriteItem` に変更）・`UpdateItem` だけに絞り、`GetItem` は与えない。
 
 ## 結果
 
-- 費用は月に数円で収まる見込み。約 215KB の値（trip-blocks を gzip にした本番での実測）を結果整合で読むと約 27 RRU、外れたときの書き込みは 1 回約 210 WRU。同じリージョンの Lambda との転送は無料だ。
+- 費用は月に数円で収まる見込み。約 215KB の値（trip-blocks を gzip にした本番での実測。追記前の形式）を結果整合で読むと約 27 RRU、外れたときの書き込みは 1 回約 210 WRU。追記後の形式で上限の 1.4MB まで使った値なら、読みは約 175 RRU（350KB の 4 項目を 4KB 単位で数え、結果整合は半分）、書きは約 1,400 WRU（1KB 単位）になる。続きが無いときの読みにも、最大 1.5 RRU かかる。月の費用の結論は変わらない。同じリージョンの Lambda との転送は無料だ。
 - デプロイの翌日に、pg_stat_statements で trip-blocks と区間の回数を、Supabase で Egress を見て効果を確かめる。
 - 覚える値は JSON にできるものに限る。読み出した値は新しいオブジェクトなので、使う側が書き換えてもほかに影響しない。
 - `namespace` と `keyParts` を素の属性で持つので、中身を一覧したくなったら、GSI を埋め直しなしで足せる。
@@ -68,3 +68,47 @@
 ## 後で考えること
 
 - trip-blocks の問い合わせを分けて、1 回に返す量を減らす。キャッシュが外れたときの Egress は、これで下がる。
+
+---
+
+## 値を分けて置き、brotli で縮める（2026-11-25 追記）
+
+- **設計**: docs/superpowers/specs/2026-11-25-shared-cache-chunks-design.md
+- **ブランチ**: perf/shared-cache-chunks
+
+### なぜやるか
+
+圧縮した値が 380KB を超えると置かない決まりだと、大きな値は毎回 DB へ行く。手元で `include=trips.times` を付けて `fields` 無しで取った一覧（素で 4.3MB）は、gzip で 615KB になり、置けなかった。本番の client が送る取り方（約 215KB）は収まるが、全線時刻表・駅別時刻表の取り方が収まるかは分からず、ダイヤが大きくなれば今収まっているものも超えうる。そこで、上限を超える値も置けるようにする（ユーザーの判断）。
+
+### 測ったこと
+
+上の 4.3MB の一覧を材料にした。
+
+| やり方 | 縮めた後 | 時間 |
+|---|---|---|
+| gzip（今） | 615KB | 32ms |
+| brotli 6 | 462KB | 53ms |
+| brotli 11 | 365KB | 6.6 秒 |
+| 同じキーの並ぶ配列を列の形にまとめる → brotli 6 | 457KB | ほぼ同じ |
+| UUID を表に集めて番号にする → brotli 6 | 420KB | ほぼ同じ |
+
+一覧には 14,548 種類の UUID があり、圧縮した後もその分が大きく残る。データの形を変えても、上限の下には収まらない。
+
+### 決定
+
+1. **brotli 6 で縮める。** gzip と同じくらいの時間で 25% 小さくなる。縮めるときは `BROTLI_PARAM_SIZE_HINT` を付ける。brotli 11 は遅すぎて Lambda の 3 秒に収まらない。列の形・UUID の番号化は効きが小さく、値の形に依存するので採らない。
+2. **値を分けて置く。** 縮めた本体を 350KB（`SHARED_CACHE_PART_BYTES`）ごとに切り、最大 4 項目（`SHARED_CACHE_MAX_PARTS`）に分けて置く。合わせて 1.4MB まで。超える値は置かず、warn を出して `load` の結果を返す。`SHARED_CACHE_MAX_BODY_BYTES` は外した。
+3. **項目の作り。** 先頭は今と同じ `pk` に `body`（1 つ目の切れ端）・`parts`（切れ端の数）・`writeId` を持つ。続きの `pk` は `entry#<namespace>#<key のハッシュ>#<1〜3>` とし、`body`・`writeId`・`expiresAt` を持つ。`writeId` は書くたびに作る乱数で、先頭と続きがそろわなければ外れにする。書きかけの値や、2 つの書き込みが混ざった値を返さないためだ。
+4. **読み書き。** 読みは今の `BatchGetItem` 1 回に続きの 3 つの pk も入れる。書きは `BatchWriteItem` 1 回で、`UnprocessedItems` が残ったら warn を出して応答は返す。残った分は `writeId` の照合で外れになる。打ち切りの設定と書き込みの予算（1.5 秒）は変えない。
+5. **古い値は外れにする。** `parts` を持たない gzip の値は外れにする。24 時間で消えるので、読み替えの作りは入れない。
+6. **権限。** Lambda の権限から `PutItem` を外し、`BatchWriteItem` を足した。`BatchGetItem`・`UpdateItem` はそのまま。
+
+### 変えないこと
+
+`getOrLoad`・`invalidate`・`invalidateNamespace` の形と振る舞い、テーブルの定義、タグと名前空間の版の作りは変えない。
+
+### 予算と打ち切りの見直し（最終レビューの指摘）
+
+- **書き込みの予算は圧縮のあとで測る。** `SHARED_CACHE_PUT_BUDGET_MS`（1.5 秒）との比較を、`load` の直後から、stringify・brotli・写しの `JSON.parse` のあとへ移した。経過は今までどおり `getOrLoad` の始まりから測る。大きな値を置けるようになり、圧縮の時間が無視できなくなったため。超えたら書かずに `load` の結果を返し、warn を出す振る舞いは同じ。
+- **各 send を本体の受け取りまで打ち切る。** `requestTimeout` のタイマーは応答のヘッダーが届くと止まる（`@smithy/node-http-handler` 4.14.2 で確認）。読みの本体は最大約 1.9MB（base64 で送られる量）あり、その受け取りは打ち切れなかった。そこで、各 `send` に `abortSignal: AbortSignal.timeout(SHARED_CACHE_SEND_TIMEOUT_MS)`（1 秒）を付けた。打ち切りで投げられた例外は、これまでの失敗と同じに扱う（読みは外れとして `load`、書きは warn して値を返す、`invalidate` は reject しない）。
+- **時間の見積もり。** 書き込みは、予算 1.5 秒を超えていなければ始まり、`BatchWriteItem` は最長 1 秒で打ち切られる。1.5 秒＋1 秒＝2.5 秒で、Lambda の timeout 3 秒に収まり、残りの 0.5 秒が認証などの前後の処理にあたる。前の「最長 1.3 秒」は、ヘッダーが届くまでの話だった。
