@@ -71,7 +71,7 @@ sharedCache.invalidateNamespace({ namespace: 'trip-blocks' });
 
 ### 壊れないための決まり
 
-- 圧縮しても 380KB を超える値は置かない。warn のログを出して、`load` の結果をそのまま返す（項目の上限は 400KB）。
+- 値の大きさの上限は、分けて置く変更で変わった（2026-11-25 追記・docs/superpowers/specs/2026-11-25-shared-cache-chunks-design.md）。
 - DynamoDB への呼び出しは、再試行なし、接続 300ms、応答 1 秒で打ち切る（`CdnInvalidation` と同じ。Lambda の timeout は 3 秒）。読むのに失敗したら `load` の結果を返す。置くのに失敗しても、応答は返す。どちらも warn のログを出す。
 - `invalidate` も reject しない。書き込みの応答を失敗にしないためだ。
 - テーブル名の環境変数（`SHARED_CACHE_TABLE_NAME`）が空なら、常に `load` を呼ぶだけにする。手元とテストは今のまま動く。
@@ -102,7 +102,7 @@ client は、列車情報を書いてから 1 時間、時刻表を `cache: 'rel
 ## 足すもの
 
 - 依存：`@aws-sdk/client-dynamodb`。版は今の `@aws-sdk/client-cloudfront` にそろえる。
-- `serverless.ts`：テーブル（オンデマンド、TTL）、Lambda の `BatchGetItem`・`PutItem`・`UpdateItem` の権限、環境変数 `SHARED_CACHE_TABLE_NAME`。
+- `serverless.ts`：テーブル（オンデマンド、TTL）、Lambda の `BatchGetItem`・`BatchWriteItem`・`UpdateItem` の権限（追記で `PutItem` から変更）、環境変数 `SHARED_CACHE_TABLE_NAME`。
 - ADR-0021。
 
 ## 確かめ方

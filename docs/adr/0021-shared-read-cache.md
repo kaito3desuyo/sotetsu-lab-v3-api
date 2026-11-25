@@ -36,8 +36,8 @@
 
 4. **壊れないための決まり。**
    - 期限は 24 時間。SQL で直に書き換えても、最長 24 時間で入れ替わる。TTL の削除は遅れるので、読むときにも `expiresAt` を見る。
-   - 圧縮しても 380KB を超える値は置かない（項目の上限は 400KB）。warn のログを出し、`load` の結果を写さずそのまま返す（DB から取ったばかりで、ほかに共有されないため）。
-   - 外れの経路で `getOrLoad` の始まりから 1.5 秒（`SHARED_CACHE_PUT_BUDGET_MS`）を超えていたら、PutItem をせず `load` の結果を返す。予算を超えていなければ、PutItem（最長 1.3 秒＝接続 0.3 秒＋応答 1 秒）を足しても 2.8 秒で、Lambda の timeout 3 秒に収まるため。
+   - 圧縮しても 380KB を超える値は置かない（項目の上限は 400KB）（追記で変更）。warn のログを出し、`load` の結果を写さずそのまま返す（DB から取ったばかりで、ほかに共有されないため）。
+   - 外れの経路で `getOrLoad` の始まりから 1.5 秒（`SHARED_CACHE_PUT_BUDGET_MS`）を超えていたら、PutItem（追記で変更）をせず `load` の結果を返す。予算を超えていなければ、PutItem（最長 1.3 秒＝接続 0.3 秒＋応答 1 秒）を足しても 2.8 秒で、Lambda の timeout 3 秒に収まるため。
    - DynamoDB への呼び出しは、再試行なし、接続 300ms、応答 1 秒で打ち切る（`CdnInvalidation` と同じ）。読むのに失敗したら `load` の結果を返し、置くのに失敗しても応答は返す。どちらも warn のログを出す。
    - `invalidate` は reject しない。書き込みの応答を失敗にしないためだ。代わりに成否を boolean で返す。CLI はこれを見て、失敗なら終了コード 1 で止まる。
    - 捨てるのに失敗すると、編集した人以外には最長 24 時間古い値が残る。warn「共有キャッシュの破棄に失敗しました」をロググループのメトリクスフィルターで数え、1 時間に 1 件以上でアラームにする（`serverless.ts`）。
@@ -49,7 +49,7 @@
 
 7. **手で捨てる口は CLI。** `npm run cli -- shared-cache invalidate --namespace <ns>`（`--tag <tag>` も受ける）。テーブル名が空のとき、または捨てるのに失敗したときは終了コード 1 を返す。
 
-8. **本番の資源。** `serverless.ts` にテーブル、Lambda の権限、環境変数 `SHARED_CACHE_TABLE_NAME` を足した。権限は実際に呼ぶ `BatchGetItem`・`PutItem`・`UpdateItem` だけに絞り、`GetItem` は与えない。
+8. **本番の資源。** `serverless.ts` にテーブル、Lambda の権限、環境変数 `SHARED_CACHE_TABLE_NAME` を足した。権限は実際に呼ぶ `BatchGetItem`・`PutItem`（追記で `BatchWriteItem` に変更）・`UpdateItem` だけに絞り、`GetItem` は与えない。
 
 ## 結果
 
@@ -68,3 +68,41 @@
 ## 後で考えること
 
 - trip-blocks の問い合わせを分けて、1 回に返す量を減らす。キャッシュが外れたときの Egress は、これで下がる。
+
+---
+
+## 値を分けて置き、brotli で縮める（2026-11-25 追記）
+
+- **設計**: docs/superpowers/specs/2026-11-25-shared-cache-chunks-design.md
+- **ブランチ**: perf/shared-cache-chunks
+
+### なぜやるか
+
+圧縮した値が 380KB を超えると置かない決まりだと、大きな値は毎回 DB へ行く。手元で `include=trips.times` を付けて `fields` 無しで取った一覧（素で 4.3MB）は、gzip で 615KB になり、置けなかった。本番の client が送る取り方（約 215KB）は収まるが、全線時刻表・駅別時刻表の取り方が収まるかは分からず、ダイヤが大きくなれば今収まっているものも超えうる。そこで、上限を超える値も置けるようにする（ユーザーの判断）。
+
+### 測ったこと
+
+上の 4.3MB の一覧を材料にした。
+
+| やり方 | 縮めた後 | 時間 |
+|---|---|---|
+| gzip（今） | 615KB | 32ms |
+| brotli 6 | 462KB | 53ms |
+| brotli 11 | 365KB | 6.6 秒 |
+| 同じキーの並ぶ配列を列の形にまとめる → brotli 6 | 457KB | ほぼ同じ |
+| UUID を表に集めて番号にする → brotli 6 | 420KB | ほぼ同じ |
+
+一覧には 14,548 種類の UUID があり、圧縮した後もその分が大きく残る。データの形を変えても、上限の下には収まらない。
+
+### 決定
+
+1. **brotli 6 で縮める。** gzip と同じくらいの時間で 25% 小さくなる。brotli 11 は遅すぎて Lambda の 3 秒に収まらない。列の形・UUID の番号化は効きが小さく、値の形に依存するので採らない。
+2. **値を分けて置く。** 縮めた本体を 350KB（`SHARED_CACHE_PART_BYTES`）ごとに切り、最大 4 項目（`SHARED_CACHE_MAX_PARTS`）に分けて置く。合わせて 1.4MB まで。超える値は置かず、warn を出して `load` の結果を返す。`SHARED_CACHE_MAX_BODY_BYTES` は外した。
+3. **項目の作り。** 先頭は今と同じ `pk` に `body`（1 つ目の切れ端）・`parts`（切れ端の数）・`writeId` を持つ。続きは `pk` の末尾に `#<1〜3>` を付け、`body`・`writeId`・`expiresAt` を持つ。`writeId` は書くたびに作る乱数で、先頭と続きがそろわなければ外れにする。書きかけの値や、2 つの書き込みが混ざった値を返さないためだ。
+4. **読み書き。** 読みは今の `BatchGetItem` 1 回に続きの 3 つの pk も入れる。書きは `BatchWriteItem` 1 回で、`UnprocessedItems` が残ったら warn を出して応答は返す。残った分は `writeId` の照合で外れになる。打ち切りの設定と書き込みの予算（1.5 秒）は変えない。
+5. **古い値は外れにする。** `parts` を持たない gzip の値は外れにする。24 時間で消えるので、読み替えの作りは入れない。
+6. **権限。** Lambda の権限から `PutItem` を外し、`BatchWriteItem` を足した。`BatchGetItem`・`UpdateItem` はそのまま。
+
+### 変えないこと
+
+`getOrLoad`・`invalidate`・`invalidateNamespace` の形と振る舞い、テーブルの定義、タグと名前空間の版の作りは変えない。
