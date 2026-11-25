@@ -28,6 +28,11 @@ export const SHARED_CACHE_CLIENT_CONFIG = {
 /** 圧縮後の本体の上限。DynamoDB の項目の上限 400KB に、ほかの属性の分を残す */
 export const SHARED_CACHE_MAX_BODY_BYTES = 380 * 1024;
 export const SHARED_CACHE_DEFAULT_TTL_SECONDS = 86_400;
+/**
+ * getOrLoad の始まりからこれ以上経っていたら、置かずに load の結果を返す。
+ * Lambda の timeout（3 秒）に対し、PutItem は最長 1.3 秒（接続 0.3 秒＋応答 1 秒）かかるため
+ */
+export const SHARED_CACHE_PUT_BUDGET_MS = 2_000;
 
 type Item = Record<string, AttributeValue>;
 
@@ -60,6 +65,7 @@ export class SharedCache {
             return params.load();
         }
 
+        const startedAt = Date.now();
         const keyParts = JSON.stringify(params.key);
         const entryPk = `entry#${params.namespace}#${createHash('sha256')
             .update(keyParts)
@@ -99,21 +105,36 @@ export class SharedCache {
         }
 
         const loaded = await params.load();
-        const json = JSON.stringify(loaded);
-        if (json === undefined) {
+
+        const elapsed = Date.now() - startedAt;
+        if (elapsed > SHARED_CACHE_PUT_BUDGET_MS) {
+            this.#logger.warn(
+                `共有キャッシュの書き込みを見送りました: ${params.namespace} 経過 ${elapsed}ms`,
+            );
             return loaded;
         }
-        const copy = JSON.parse(json) as T;
 
-        const body = gzipSync(json);
+        let json: string | undefined;
+        let body: Buffer;
+        try {
+            json = JSON.stringify(loaded);
+            if (json === undefined) {
+                return loaded;
+            }
+            body = gzipSync(json);
+        } catch (e) {
+            this.#warn('書き込み', e);
+            return loaded;
+        }
         if (body.byteLength > SHARED_CACHE_MAX_BODY_BYTES) {
+            // DB から取ったばかりの値で他に共有されないので、写さずそのまま返す
             this.#warn(
                 '書き込み',
                 new Error(
                     `値が大きすぎます: ${params.namespace} ${body.byteLength} バイト`,
                 ),
             );
-            return copy;
+            return loaded;
         }
 
         try {
@@ -146,7 +167,7 @@ export class SharedCache {
         } catch (e) {
             this.#warn('書き込み', e);
         }
-        return copy;
+        return JSON.parse(json) as T;
     }
 
     /** 全ての更新が成功したときだけ true。失敗しても reject しない */

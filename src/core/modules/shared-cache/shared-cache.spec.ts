@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { gzipSync } from 'node:zlib';
 import {
     BatchGetItemCommand,
     PutItemCommand,
@@ -11,6 +12,7 @@ import {
     SHARED_CACHE_CLIENT_CONFIG,
     SHARED_CACHE_DEFAULT_TTL_SECONDS,
     SHARED_CACHE_MAX_BODY_BYTES,
+    SHARED_CACHE_PUT_BUDGET_MS,
     SharedCache,
 } from './shared-cache.js';
 
@@ -98,6 +100,7 @@ describe('SharedCache', () => {
     it('定数とクライアント設定', () => {
         expect(SHARED_CACHE_MAX_BODY_BYTES).toBe(380 * 1024);
         expect(SHARED_CACHE_DEFAULT_TTL_SECONDS).toBe(86_400);
+        expect(SHARED_CACHE_PUT_BUDGET_MS).toBe(2_000);
         expect(SHARED_CACHE_CLIENT_CONFIG).toEqual({
             maxAttempts: 1,
             requestHandler: {
@@ -262,6 +265,86 @@ describe('SharedCache', () => {
         expect(warn).toHaveBeenCalled();
     });
 
+    it('置けない大きな値は、写しを作らず load の結果をそのまま返す', async () => {
+        const loaded = { big: randomBytes(600 * 1024).toString('base64') };
+        const cache = new SharedCache(client);
+        const parse = vi.spyOn(JSON, 'parse');
+        const result = await cache.getOrLoad(
+            params({ load: async () => loaded }),
+        );
+        expect(result).toBe(loaded);
+        expect(parse).not.toHaveBeenCalled();
+        parse.mockRestore();
+    });
+
+    it('load が予算を超えて遅いときは PutItem をせず、load の結果を返して warn する', async () => {
+        const loaded = { a: 1 };
+        const cache = new SharedCache(client);
+        const result = await cache.getOrLoad(
+            params({
+                load: async () => {
+                    vi.advanceTimersByTime(SHARED_CACHE_PUT_BUDGET_MS + 1);
+                    return loaded;
+                },
+            }),
+        );
+        expect(result).toBe(loaded);
+        expect(sent(PutItemCommand)).toHaveLength(0);
+        expect(warn).toHaveBeenCalledTimes(1);
+    });
+
+    it('予算ちょうどなら置く', async () => {
+        const cache = new SharedCache(client);
+        await cache.getOrLoad(
+            params({
+                load: async () => {
+                    vi.advanceTimersByTime(SHARED_CACHE_PUT_BUDGET_MS);
+                    return { a: 1 };
+                },
+            }),
+        );
+        expect(sent(PutItemCommand)).toHaveLength(1);
+    });
+
+    it('JSON にできない値（循環）でも reject せず、load の結果を返して warn する', async () => {
+        const loaded: Record<string, unknown> = {};
+        loaded.self = loaded;
+        const cache = new SharedCache(client);
+        await expect(
+            cache.getOrLoad(params({ load: async () => loaded })),
+        ).resolves.toBe(loaded);
+        expect(sent(PutItemCommand)).toHaveLength(0);
+        expect(warn).toHaveBeenCalled();
+    });
+
+    it('bypass なら BatchGetItem の Keys に entry# を含めない', async () => {
+        const cache = new SharedCache(client);
+        await cache.getOrLoad(params({ load: async () => 'v' }));
+        send.mockClear();
+        await cache.getOrLoad(params({ load: async () => 'w', bypass: true }));
+        const [batch] = sent(BatchGetItemCommand);
+        const keys = (batch.input.RequestItems?.[TABLE]?.Keys ?? []).map(
+            (k) => k.pk.S,
+        );
+        expect(keys).toEqual(['tag#calendar:a', 'ns#trip-blocks']);
+        expect(keys.some((k) => k?.startsWith('entry#'))).toBe(false);
+    });
+
+    it('body が gzip でない・JSON でない値は外れとして load を呼ぶ', async () => {
+        const cache = new SharedCache(client);
+        for (const body of [Buffer.from('not gzip'), gzipSync('{not json')]) {
+            store.clear();
+            const load = vi.fn(async () => 'v');
+            await cache.getOrLoad(params({ load }));
+            const [entry] = [...store.values()];
+            entry.body = { B: body };
+            warn.mockClear();
+            await expect(cache.getOrLoad(params({ load }))).resolves.toBe('v');
+            expect(load).toHaveBeenCalledTimes(2);
+            expect(warn).toHaveBeenCalled();
+        }
+    });
+
     it('読む失敗では load の結果を返す', async () => {
         failWith.batchGet = new Error('boom');
         const load = vi.fn(async () => 'v');
@@ -319,8 +402,10 @@ describe('SharedCache', () => {
         expect(send).not.toHaveBeenCalled();
     });
 
-    it('タグが空なら何も送らない', async () => {
-        await new SharedCache(client).invalidate({ tags: [] });
+    it('タグが空なら何も送らず、false を返す', async () => {
+        await expect(
+            new SharedCache(client).invalidate({ tags: [] }),
+        ).resolves.toBe(false);
         expect(send).not.toHaveBeenCalled();
     });
 
