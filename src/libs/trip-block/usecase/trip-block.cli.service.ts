@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
+import { calendarCacheTags } from '../../../core/modules/cdn-invalidation/cache-tags.js';
+import { CdnInvalidation } from '../../../core/modules/cdn-invalidation/cdn-invalidation.js';
+import { SharedCache } from '../../../core/modules/shared-cache/shared-cache.js';
 import { OperationQuery } from '../../operation/infrastructure/queries/operation.query.js';
 import { TripBlockCommand } from '../infrastructure/commands/trip-block.command.js';
 import { TripBlockQuery } from '../infrastructure/queries/trip-block.query.js';
@@ -12,6 +15,8 @@ export class TripBlockCliService {
         private readonly tripBlockCommand: TripBlockCommand,
         private readonly tripBlockQuery: TripBlockQuery,
         private readonly operationQuery: OperationQuery,
+        private readonly cdnInvalidation: CdnInvalidation,
+        private readonly sharedCache: SharedCache,
     ) {}
 
     async copyTripBlocks(
@@ -88,6 +93,13 @@ export class TripBlockCliService {
         }
 
         const result = await this.tripBlockCommand.bulkCreate(tripBlocks);
+
+        // HTTP の書き込みと同じく、コピー先のダイヤの画面の CDN キャッシュと共有キャッシュを捨てる（どちらも reject しない）
+        const tags = calendarCacheTags([toCalendarId]);
+        await Promise.all([
+            this.cdnInvalidation.invalidate({ tags }),
+            this.sharedCache.invalidate({ tags }),
+        ]);
 
         console.log(JSON.stringify(result, null, 2));
     }

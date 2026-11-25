@@ -1,7 +1,7 @@
 import type { MockedFunction } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ItinerarySegmentQuery } from '../infrastructure/queries/itinerary-segment.query.js';
+import { ItinerarySegmentReader } from './itinerary-segment.reader.js';
 import { OperationQuery } from '../infrastructure/queries/operation.query.js';
 import { OperationDetailsDto } from './dtos/operation-details.dto.js';
 import { OperationWithTripsDto } from './dtos/operation-with-trips.dto.js';
@@ -21,7 +21,7 @@ const mockOperationQuery = {
     findManyWithTripsWithSelection: vi.fn() as AnyMock,
 };
 
-const mockItinerarySegmentQuery = {
+const mockItinerarySegmentReader = {
     findManyByCalendarId: vi.fn() as AnyMock,
 };
 
@@ -31,8 +31,8 @@ async function buildService(): Promise<OperationV3Service> {
             OperationV3Service,
             { provide: OperationQuery, useValue: mockOperationQuery },
             {
-                provide: ItinerarySegmentQuery,
-                useValue: mockItinerarySegmentQuery,
+                provide: ItinerarySegmentReader,
+                useValue: mockItinerarySegmentReader,
             },
         ],
     }).compile();
@@ -484,7 +484,7 @@ describe('OperationV3Service - read-model の fields', () => {
     });
 
     it('つながり: fields で削る。include は 400', async () => {
-        mockItinerarySegmentQuery.findManyByCalendarId.mockResolvedValue([
+        mockItinerarySegmentReader.findManyByCalendarId.mockResolvedValue([
             {
                 id: 'a',
                 tripId: 'ta',
@@ -539,7 +539,7 @@ describe('OperationV3Service - read-model の fields', () => {
     });
 
     it('次の運用の候補: fields で削る', async () => {
-        mockItinerarySegmentQuery.findManyByCalendarId.mockResolvedValue([
+        mockItinerarySegmentReader.findManyByCalendarId.mockResolvedValue([
             {
                 id: 'b',
                 tripId: 'tb',
@@ -588,7 +588,7 @@ describe('OperationV3Service - read-model の fields', () => {
             }),
         ).resolves.toEqual([]);
         expect(
-            mockItinerarySegmentQuery.findManyByCalendarId,
+            mockItinerarySegmentReader.findManyByCalendarId,
         ).not.toHaveBeenCalled();
     });
 });

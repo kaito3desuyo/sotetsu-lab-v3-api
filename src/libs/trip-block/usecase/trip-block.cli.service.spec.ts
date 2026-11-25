@@ -1,4 +1,6 @@
 import { Test } from '@nestjs/testing';
+import { CdnInvalidation } from '../../../core/modules/cdn-invalidation/cdn-invalidation.js';
+import { SharedCache } from '../../../core/modules/shared-cache/shared-cache.js';
 import { OperationQuery } from '../../operation/infrastructure/queries/operation.query.js';
 import { TripBlocks } from '../domain/trip-block.domain.js';
 import { TripBlockCommand } from '../infrastructure/commands/trip-block.command.js';
@@ -46,7 +48,19 @@ const trip = (id: string, tripNumber: string, operationId: string) => ({
     ],
 });
 
+const cdnInvalidate = vi.fn();
+const sharedInvalidate = vi.fn();
+const cachePorts = [
+    { provide: CdnInvalidation, useValue: { invalidate: cdnInvalidate } },
+    { provide: SharedCache, useValue: { invalidate: sharedInvalidate } },
+];
+
 describe('TripBlockCliService.copyTripBlocks', () => {
+    beforeEach(() => {
+        cdnInvalidate.mockReset().mockResolvedValue(undefined);
+        sharedInvalidate.mockReset().mockResolvedValue(true);
+    });
+
     it('列車をコピー先のダイヤに付け替え、運用は同じ番号のものへ、無ければ外す', async () => {
         const bulkCreate = vi.fn().mockResolvedValue([]);
         const operationFindMany = vi
@@ -59,6 +73,7 @@ describe('TripBlockCliService.copyTripBlocks', () => {
         const module = await Test.createTestingModule({
             providers: [
                 TripBlockCliService,
+                ...cachePorts,
                 { provide: TripBlockCommand, useValue: { bulkCreate } },
                 {
                     provide: TripBlockQuery,
@@ -122,6 +137,7 @@ describe('TripBlockCliService.copyTripBlocks', () => {
         const module = await Test.createTestingModule({
             providers: [
                 TripBlockCliService,
+                ...cachePorts,
                 { provide: TripBlockCommand, useValue: { bulkCreate } },
                 {
                     provide: TripBlockQuery,
@@ -157,5 +173,55 @@ describe('TripBlockCliService.copyTripBlocks', () => {
         const [tol] = copied.props.tripOperationLists.getItems();
         expect(tol.props.operationId).toBe('opA2');
         expect(tol.props.nextTripOperationListId).toBeNull();
+    });
+});
+
+describe('TripBlockCliService.copyTripBlocks のキャッシュの破棄', () => {
+    const build = async (bulkCreate: ReturnType<typeof vi.fn>) =>
+        (
+            await Test.createTestingModule({
+                providers: [
+                    TripBlockCliService,
+                    ...cachePorts,
+                    { provide: TripBlockCommand, useValue: { bulkCreate } },
+                    {
+                        provide: TripBlockQuery,
+                        useValue: { findMany: vi.fn().mockResolvedValue([]) },
+                    },
+                    {
+                        provide: OperationQuery,
+                        useValue: { findMany: vi.fn().mockResolvedValue([]) },
+                    },
+                ],
+            }).compile()
+        ).get(TripBlockCliService);
+
+    beforeEach(() => {
+        cdnInvalidate.mockReset().mockResolvedValue(undefined);
+        sharedInvalidate.mockReset().mockResolvedValue(true);
+        vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    });
+
+    it('コピー先のダイヤのタグで、CDN と共有キャッシュを保存のあとに捨てる', async () => {
+        const bulkCreate = vi.fn().mockResolvedValue([]);
+        await (await build(bulkCreate)).copyTripBlocks('from', 'To-Cal');
+        expect(cdnInvalidate).toHaveBeenCalledWith({
+            tags: ['calendar:to-cal'],
+        });
+        expect(sharedInvalidate).toHaveBeenCalledWith({
+            tags: ['calendar:to-cal'],
+        });
+        expect(bulkCreate.mock.invocationCallOrder[0]).toBeLessThan(
+            sharedInvalidate.mock.invocationCallOrder[0],
+        );
+    });
+
+    it('保存が失敗したら捨てない', async () => {
+        const bulkCreate = vi.fn().mockRejectedValue(new Error('db'));
+        await expect(
+            (await build(bulkCreate)).copyTripBlocks('from', 'to'),
+        ).rejects.toThrow('db');
+        expect(cdnInvalidate).not.toHaveBeenCalled();
+        expect(sharedInvalidate).not.toHaveBeenCalled();
     });
 });

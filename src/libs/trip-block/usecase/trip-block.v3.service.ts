@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CdnInvalidation } from '../../../core/modules/cdn-invalidation/cdn-invalidation.js';
 import { calendarCacheTags } from '../../../core/modules/cdn-invalidation/cache-tags.js';
+import { SharedCache } from '../../../core/modules/shared-cache/shared-cache.js';
+import { selectionCacheKey } from '../../../core/modules/shared-cache/bypass.js';
 import { SocketSignal } from '../../../core/modules/socket-signal/socket-signal.js';
 import { secondsOfServiceDay } from '../../../core/utils/datetime.js';
 import { UseCaseError } from '../../../core/classes/custom-error.js';
@@ -60,15 +62,18 @@ export class TripBlockV3Service {
         private readonly itinerarySegmentQuery: ItinerarySegmentQuery,
         private readonly socketSignal: SocketSignal,
         private readonly cdnInvalidation: CdnInvalidation,
+        private readonly sharedCache: SharedCache,
     ) {}
 
-    /** そのダイヤの画面の CDN キャッシュを捨てる（CdnInvalidation は reject しない） */
-    #invalidateCalendars(
+    /** そのダイヤの画面の CDN キャッシュと共有キャッシュを捨てる（どちらも reject しない） */
+    async #invalidateCalendars(
         calendarIds: readonly (string | null | undefined)[],
     ): Promise<void> {
-        return this.cdnInvalidation.invalidate({
-            tags: calendarCacheTags(calendarIds),
-        });
+        const tags = calendarCacheTags(calendarIds);
+        await Promise.all([
+            this.cdnInvalidation.invalidate({ tags }),
+            this.sharedCache.invalidate({ tags }),
+        ]);
     }
 
     /**
@@ -166,22 +171,37 @@ export class TripBlockV3Service {
         tripDirection: number;
         include?: unknown;
         fields?: unknown;
+        bypassCache?: boolean;
     }): Promise<TripBlockDetailsDto[] | Record<string, unknown>[]> {
-        const { calendarId, tripDirection, include, fields } = params;
+        const { calendarId, tripDirection, include, fields, bypassCache } =
+            params;
+        // 不正な要求はキャッシュに触らせない
         const selection = parseSelection(
             { include, fields },
             TRIP_BLOCK_SELECTION_TREE,
         );
-        if (!selection) {
-            return this.tripBlockQuery.findManyByFilter({
+        return this.sharedCache.getOrLoad<
+            TripBlockDetailsDto[] | Record<string, unknown>[]
+        >({
+            namespace: 'trip-blocks',
+            key: [
                 calendarId,
                 tripDirection,
-            });
-        }
-        return this.tripBlockQuery.findManyByFilterWithSelection(
-            { calendarId, tripDirection },
-            selection,
-        );
+                selectionCacheKey({ include, fields }),
+            ],
+            tags: calendarCacheTags([calendarId]),
+            bypass: bypassCache,
+            load: () =>
+                selection
+                    ? this.tripBlockQuery.findManyByFilterWithSelection(
+                          { calendarId, tripDirection },
+                          selection,
+                      )
+                    : this.tripBlockQuery.findManyByFilter({
+                          calendarId,
+                          tripDirection,
+                      }),
+        });
     }
 
     /** `include`・`fields` があれば選んだ関連・列だけを返す（docs/adr/0010-v3-include-and-fields.md） */

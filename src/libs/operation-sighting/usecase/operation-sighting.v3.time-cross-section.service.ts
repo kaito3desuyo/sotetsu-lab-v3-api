@@ -10,7 +10,7 @@ import { serializeSelection } from '../../../core/utils/selection/serialize-sele
 import { CalendarQuery } from '../../calendar/infrastructure/queries/calendar.query.js';
 import { FormationQuery } from '../../formation/infrastructure/queries/formation.query.js';
 import { VehicleItineraryReadModel } from '../../operation/usecase/read-models/vehicle-itinerary.read-model.js';
-import { ItinerarySegmentQuery } from '../../operation/infrastructure/queries/itinerary-segment.query.js';
+import { ItinerarySegmentReader } from '../../operation/usecase/itinerary-segment.reader.js';
 import { OperationQuery } from '../../operation/infrastructure/queries/operation.query.js';
 import {
     buildCirculationPath,
@@ -61,7 +61,7 @@ export class OperationSightingV3TimeCrossSectionService {
         private readonly calendarQuery: CalendarQuery,
         private readonly operationQuery: OperationQuery,
         private readonly formationQuery: FormationQuery,
-        private readonly itinerarySegmentQuery: ItinerarySegmentQuery,
+        private readonly itinerarySegmentReader: ItinerarySegmentReader,
     ) {}
 
     /**
@@ -630,7 +630,7 @@ export class OperationSightingV3TimeCrossSectionService {
             operationsOf: (calendarId) =>
                 this.operationQuery.findManyByCalendarId({ calendarId }),
             itineraries: (calendarId) =>
-                this.itinerarySegmentQuery
+                this.itinerarySegmentReader
                     .findManyByCalendarId({ calendarId })
                     .then((segments) =>
                         VehicleItineraryReadModel.create(segments),

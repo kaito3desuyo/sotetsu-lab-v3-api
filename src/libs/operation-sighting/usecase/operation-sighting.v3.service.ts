@@ -6,7 +6,7 @@ import { UseCaseError } from '../../../core/classes/custom-error.js';
 import { UnexpectedError } from '../../../core/classes/unexpected-error.js';
 import { CalendarQuery } from '../../calendar/infrastructure/queries/calendar.query.js';
 import { FormationQuery } from '../../formation/infrastructure/queries/formation.query.js';
-import { ItinerarySegmentQuery } from '../../operation/infrastructure/queries/itinerary-segment.query.js';
+import { ItinerarySegmentReader } from '../../operation/usecase/itinerary-segment.reader.js';
 import { OperationQuery } from '../../operation/infrastructure/queries/operation.query.js';
 import { DataSource, EntityManager } from 'typeorm';
 import { OperationSightingLatestCache } from '../domain/operation-sighting-latest-cache.domain.js';
@@ -62,7 +62,7 @@ export class OperationSightingV3Service {
         private readonly operationSightingQuery: OperationSightingQuery,
         private readonly calendarQuery: CalendarQuery,
         private readonly operationQuery: OperationQuery,
-        private readonly itinerarySegmentQuery: ItinerarySegmentQuery,
+        private readonly itinerarySegmentReader: ItinerarySegmentReader,
         private readonly formationQuery: FormationQuery,
         private readonly operationSightingAuthorCommand: OperationSightingAuthorCommand,
         private readonly socketSignal: SocketSignal,
@@ -592,9 +592,11 @@ export class OperationSightingV3Service {
 
         // 乗り移りで始まる運用は、前の運用の列車が着くまで投稿できない。
         // 始発の 30 分前の判定も当てたまま、遅いほうの時刻から投稿できる（着いてから始発まで間が長い運用で、今より早く投稿できるようにはしない）
-        const segments = await this.itinerarySegmentQuery.findManyByCalendarId({
-            calendarId: calendar.id,
-        });
+        const segments = await this.itinerarySegmentReader.findManyByCalendarId(
+            {
+                calendarId: calendar.id,
+            },
+        );
         const transferStart = TransferStart.find(segments, operation.id);
         if (transferStart) {
             const arrivalTime = dayjs

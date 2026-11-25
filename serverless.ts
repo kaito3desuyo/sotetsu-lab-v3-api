@@ -1,5 +1,6 @@
 import type { AWS } from '@serverless/typescript';
-import { lambdaAlarms } from './serverless-alarms.js';
+import { SHARED_CACHE_INVALIDATE_FAILED_MESSAGE } from './src/core/modules/shared-cache/shared-cache.log.js';
+import { lambdaAlarms, logMetricAlarms } from './serverless-alarms.js';
 
 const system = 'sotetsu-lab-v3' as const;
 
@@ -20,6 +21,23 @@ const alarms = lambdaAlarms([
         functionLogicalId: 'AppLambdaFunction',
         metricName: 'Errors',
         threshold: 3,
+    },
+]);
+
+// 共有キャッシュの破棄に失敗しても書き込みは成功で返す（Errors に出ない）ので、warn のログから数える。
+// 破棄に失敗すると、編集した人以外には最長 24 時間古い値が残る（ADR-0021）。
+// ログは pino の JSON（messageKey は message）
+const sharedCacheAlarms = logMetricAlarms([
+    {
+        logicalIdPrefix: 'SharedCacheInvalidateFailed',
+        alarmName: 'sotetsu-lab-v3-prod-api-shared-cache-invalidate-failed',
+        description:
+            '共有キャッシュの破棄に失敗した（古い値が最長 24 時間残る）。1 時間に 1 件以上',
+        logGroupLogicalId: 'AppLogGroup',
+        filterPattern: `{ $.message = "${SHARED_CACHE_INVALIDATE_FAILED_MESSAGE}*" }`,
+        metricNamespace: 'sotetsu-lab-v3/api',
+        metricName: 'SharedCacheInvalidateFailed',
+        threshold: 1,
     },
 ]);
 
@@ -93,6 +111,17 @@ const serverlessConfiguration: AWS = {
                             `arn:aws:cloudfront::\${aws:accountId}:distribution/\${cf:${system}-\${sls:stage}-client-cfstack.WebDistributionId}`,
                         ],
                     },
+                    {
+                        Effect: 'Allow',
+                        Action: [
+                            'dynamodb:BatchGetItem',
+                            'dynamodb:PutItem',
+                            'dynamodb:UpdateItem',
+                        ],
+                        Resource: [
+                            { 'Fn::GetAtt': ['SharedCacheTable', 'Arn'] },
+                        ],
+                    },
                 ],
             },
         },
@@ -108,6 +137,7 @@ const serverlessConfiguration: AWS = {
             SUPABASE_URL: '${ssm:sotetsu-lab-v3-supabase-url}',
             SOCKET_BROADCAST_FUNCTION_NAME: `${system}-\${sls:stage}-socket-broadcast-lambda`,
             CDN_DISTRIBUTION_ID: `\${cf:${system}-\${sls:stage}-client-cfstack.WebDistributionId}`,
+            SHARED_CACHE_TABLE_NAME: { Ref: 'SharedCacheTable' },
         },
     },
     // import the function via paths
@@ -194,6 +224,22 @@ const serverlessConfiguration: AWS = {
         Conditions: alarms.Conditions,
         Resources: {
             ...alarms.Resources,
+            ...sharedCacheAlarms,
+            SharedCacheTable: {
+                Type: 'AWS::DynamoDB::Table',
+                Properties: {
+                    TableName: '${param:prefix}-shared-cache-table',
+                    BillingMode: 'PAY_PER_REQUEST',
+                    AttributeDefinitions: [
+                        { AttributeName: 'pk', AttributeType: 'S' },
+                    ],
+                    KeySchema: [{ AttributeName: 'pk', KeyType: 'HASH' }],
+                    TimeToLiveSpecification: {
+                        AttributeName: 'expiresAt',
+                        Enabled: true,
+                    },
+                },
+            },
             AppCloudFrontDistribution: {
                 Type: 'AWS::CloudFront::Distribution',
                 Properties: {

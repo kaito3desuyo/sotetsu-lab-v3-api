@@ -10,7 +10,7 @@ import { OperationSightingQuery } from '../infrastructure/queries/operation-sigh
 import { CalendarQuery } from '../../calendar/infrastructure/queries/calendar.query.js';
 import { FormationQuery } from '../../formation/infrastructure/queries/formation.query.js';
 import { OperationQuery } from '../../operation/infrastructure/queries/operation.query.js';
-import { ItinerarySegmentQuery } from '../../operation/infrastructure/queries/itinerary-segment.query.js';
+import { ItinerarySegmentReader } from '../../operation/usecase/itinerary-segment.reader.js';
 import { ItinerarySegment } from '../../operation/domain/itinerary-link-rule.domain.js';
 import { OperationSightingV3TimeCrossSectionService } from './operation-sighting.v3.time-cross-section.service.js';
 
@@ -40,7 +40,7 @@ const mockOperationSightingQuery = {
     findManyBySightingTimeRange: vi.fn() as AnyMock,
     findManyBySpecificPeriod: vi.fn() as AnyMock,
 };
-const mockItinerarySegmentQuery = { findManyByCalendarId: vi.fn() as AnyMock };
+const mockItinerarySegmentReader = { findManyByCalendarId: vi.fn() as AnyMock };
 const mockCalendarQuery = { findOneBySpecificDate: vi.fn() as AnyMock };
 const mockFormationQuery = {
     findManyBySpecificPeriod: vi.fn() as AnyMock,
@@ -55,7 +55,7 @@ const mockOperationQuery = {
 
 async function buildService(): Promise<OperationSightingV3TimeCrossSectionService> {
     // 既定は区間なし・今日の目撃なし（今の判定の経路を使う）
-    mockItinerarySegmentQuery.findManyByCalendarId.mockResolvedValue([]);
+    mockItinerarySegmentReader.findManyByCalendarId.mockResolvedValue([]);
     mockOperationSightingQuery.findManyBySightingTimeRange.mockResolvedValue(
         [],
     );
@@ -74,8 +74,8 @@ async function buildService(): Promise<OperationSightingV3TimeCrossSectionServic
             { provide: FormationQuery, useValue: mockFormationQuery },
             { provide: OperationQuery, useValue: mockOperationQuery },
             {
-                provide: ItinerarySegmentQuery,
-                useValue: mockItinerarySegmentQuery,
+                provide: ItinerarySegmentReader,
+                useValue: mockItinerarySegmentReader,
             },
         ],
     }).compile();
@@ -1014,7 +1014,9 @@ describe('OperationSightingV3TimeCrossSectionService - 目撃の引き継ぎ', (
             id: 'cal-1',
             startDate: '2026-03-13',
         });
-        mockItinerarySegmentQuery.findManyByCalendarId.mockResolvedValue(ebina);
+        mockItinerarySegmentReader.findManyByCalendarId.mockResolvedValue(
+            ebina,
+        );
         mockOperationSightingQuery.findManyBySightingTimeRange.mockResolvedValue(
             [sighting11K],
         );
@@ -1102,7 +1104,7 @@ describe('OperationSightingV3TimeCrossSectionService - 目撃の引き継ぎ', (
             searchTime,
         });
         expect(
-            mockItinerarySegmentQuery.findManyByCalendarId,
+            mockItinerarySegmentReader.findManyByCalendarId,
         ).toHaveBeenCalledTimes(1);
         expect(
             mockOperationSightingQuery.findManyBySightingTimeRange,
@@ -1202,7 +1204,7 @@ describe('OperationSightingV3TimeCrossSectionService - 目撃の引き継ぎで�
         segs: ItinerarySegment[],
         sightings: ReturnType<typeof sighting>[],
     ) => {
-        mockItinerarySegmentQuery.findManyByCalendarId.mockResolvedValue(segs);
+        mockItinerarySegmentReader.findManyByCalendarId.mockResolvedValue(segs);
         mockOperationSightingQuery.findManyBySightingTimeRange.mockResolvedValue(
             sightings,
         );
@@ -1295,7 +1297,7 @@ describe('OperationSightingV3TimeCrossSectionService - 目撃の引き継ぎで�
             result['10701'].expectedSighting?.operation?.operationNumber,
         ).toBe('12K');
         expect(
-            mockItinerarySegmentQuery.findManyByCalendarId,
+            mockItinerarySegmentReader.findManyByCalendarId,
         ).toHaveBeenCalledTimes(1);
         expect(
             mockOperationSightingQuery.findManyBySightingTimeRange,

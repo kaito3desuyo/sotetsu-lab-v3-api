@@ -7,7 +7,7 @@ import {
 import { serializeSelection } from '../../../core/utils/selection/serialize-selection.js';
 import { buildOperationCurrentPosition } from './read-models/operation-current-position.read-model.js';
 import { VehicleItineraryReadModel } from './read-models/vehicle-itinerary.read-model.js';
-import { ItinerarySegmentQuery } from '../infrastructure/queries/itinerary-segment.query.js';
+import { ItinerarySegmentReader } from './itinerary-segment.reader.js';
 import { OperationQuery } from '../infrastructure/queries/operation.query.js';
 import {
     buildNextSegmentCandidates,
@@ -33,7 +33,7 @@ import { OPERATIONS_BY_PERIOD_SELECTION_TREE } from './operations-by-period-sele
 export class OperationV3Service {
     constructor(
         private readonly operationQuery: OperationQuery,
-        private readonly itinerarySegmentQuery: ItinerarySegmentQuery,
+        private readonly itinerarySegmentReader: ItinerarySegmentReader,
     ) {}
 
     findAllGroups(): OperationGroupDto[] {
@@ -185,7 +185,7 @@ export class OperationV3Service {
 
         const result = buildOperationItineraryLinks(
             VehicleItineraryReadModel.create(
-                await this.itinerarySegmentQuery.findManyByCalendarId({
+                await this.itinerarySegmentReader.findManyByCalendarId({
                     calendarId,
                 }),
             ),
@@ -215,7 +215,7 @@ export class OperationV3Service {
         if (!stationId) return [];
 
         const result = buildNextSegmentCandidates(
-            await this.itinerarySegmentQuery.findManyByCalendarId({
+            await this.itinerarySegmentReader.findManyByCalendarId({
                 calendarId,
             }),
             { stationId, afterSeconds },
