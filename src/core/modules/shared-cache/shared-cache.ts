@@ -47,11 +47,16 @@ export const SHARED_CACHE_PUT_BUDGET_MS = 1_500;
 
 type Item = Record<string, AttributeValue>;
 
+/** Uint8Array をコピーせずに Buffer として見る */
+const view = (x: Uint8Array): Buffer =>
+    Buffer.from(x.buffer, x.byteOffset, x.byteLength);
+
 /**
  * 実体（Lambda）をまたいで共有する読み取りキャッシュ（DynamoDB）。
  * 値は JSON にできるものに限る。値は brotli で縮め、350KB ごとに最大 4 項目
  * （先頭 `entry#…` と続き `entry#…#1`〜`#3`）に分けて置く。先頭の `parts` と `writeId` で、
- * 続きがそろい、同じ書き込みのものだけをつなぐ（欠けていたり、別の書き込みが混ざっていたら外れ）。当たった値と置いた値は、JSON から作り直した新しいものを返す。
+ * 続きがそろい、同じ書き込みのものだけをつなぐ（欠けていたり、別の書き込みが混ざっていたら外れ）。
+ * 当たった値と置いた値は、JSON から作り直した新しいものを返す。
  * 置かなかったとき（予算超過・大きすぎ・stringify 失敗）は、load の結果をそのまま返す（DB から取ったばかりで、ほかに共有されない）。
  * 捨てるときは、タグ・名前空間の項目の版を上げる。値は、置いたときの版が今と同じなら当たる。
  * 失敗しても応答は変えない（読めなければ load、置けなくても値を返す、捨てるのに失敗しても reject しない）。
@@ -334,7 +339,7 @@ export class SharedCache {
         if (parts === undefined) {
             return undefined;
         }
-        const buffers = [Buffer.from(entry.body.B as Uint8Array)];
+        const buffers = [view(entry.body.B as Uint8Array)];
         for (let i = 1; i < parts; i++) {
             const rest = items.get(`${entryPk}#${i}`);
             const restBody = rest?.body?.B;
@@ -344,7 +349,7 @@ export class SharedCache {
             ) {
                 return undefined;
             }
-            buffers.push(Buffer.from(restBody));
+            buffers.push(view(restBody));
         }
         return Buffer.concat(buffers);
     }

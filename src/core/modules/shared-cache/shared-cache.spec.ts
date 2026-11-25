@@ -337,7 +337,7 @@ describe('SharedCache', () => {
         parse.mockRestore();
     });
 
-    it('load が予算を超えて遅いときは 書き込みをせず、load の結果を返して warn する', async () => {
+    it('load が予算を超えて遅いときは書き込みをせず、load の結果を返して warn する', async () => {
         const loaded = { a: 1 };
         const cache = new SharedCache(client);
         const result = await cache.getOrLoad(
@@ -616,6 +616,24 @@ describe('SharedCache', () => {
             entry.body = { B: gzipSync(JSON.stringify('old')) };
             const load = vi.fn(async () => 'new');
             expect(await cache.getOrLoad(params({ load }))).toBe('new');
+            expect(load).toHaveBeenCalledTimes(1);
+        });
+
+        it('先頭に writeId が無ければ外れとして load を呼ぶ', async () => {
+            const cache = new SharedCache(client);
+            await cache.getOrLoad(params({ load: async () => 'v' }));
+            delete headOf().writeId;
+            const load = vi.fn(async () => 'w');
+            expect(await cache.getOrLoad(params({ load }))).toBe('w');
+            expect(load).toHaveBeenCalledTimes(1);
+        });
+
+        it('続きの項目に body 属性が無ければ外れとして load を呼ぶ', async () => {
+            const cache = new SharedCache(client);
+            const value = await writeThreeParts(cache);
+            delete store.get(`${headOf().pk.S}#1`)!.body;
+            const load = vi.fn(async () => value);
+            await cache.getOrLoad(params({ load }));
             expect(load).toHaveBeenCalledTimes(1);
         });
 
