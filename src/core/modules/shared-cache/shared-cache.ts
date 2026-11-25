@@ -19,6 +19,8 @@ import { SHARED_CACHE_INVALIDATE_FAILED_MESSAGE } from './shared-cache.log.js';
  * DynamoDB への呼び出しは、api Lambda の timeout（3 秒）を食わないよう、
  * 再試行なし・接続 300ms・応答 1 秒で打ち切る（CdnInvalidation と同じ）。
  * requestTimeout は throwOnRequestTimeout を付けないと警告ログだけで打ち切られない。
+ * requestTimeout は応答のヘッダーが届くと止まるので、本体の受け取りまでは、
+ * 各 send に付ける abortSignal（SHARED_CACHE_SEND_TIMEOUT_MS）で打ち切る。
  * region は Lambda が入れる AWS_REGION から決まる。
  */
 export const SHARED_CACHE_CLIENT_CONFIG = {
@@ -30,6 +32,9 @@ export const SHARED_CACHE_CLIENT_CONFIG = {
     },
 } as const satisfies DynamoDBClientConfig;
 
+/** 各 send の全体（要求の送信から応答の本体の受け取りまで）の期限。requestTimeout と同じ 1 秒 */
+export const SHARED_CACHE_SEND_TIMEOUT_MS = 1_000;
+
 /**
  * 圧縮後の本体を分ける 1 切れの大きさ。DynamoDB の項目の上限 400KB に、ほかの属性の分を残す。
  * 分けて置けるのは最大 SHARED_CACHE_MAX_PARTS 切れ（350KB × 4 = 1.4MB）まで
@@ -39,9 +44,10 @@ export const SHARED_CACHE_MAX_PARTS = 4;
 export const SHARED_CACHE_DEFAULT_TTL_SECONDS = 86_400;
 /**
  * getOrLoad の始まりからこれ以上経っていたら、置かずに load の結果を返す。
- * 予算を超えていなければ、BatchWriteItem（最長 1.3 秒＝接続 0.3 秒＋応答 1 秒）を足しても
- * 1.5 秒＋1.3 秒＝2.8 秒で、Lambda の timeout（3 秒）に収まる。
- * 認証などの前後の処理と、stringify・brotli の時間は、残りの 0.2 秒に収まる目安
+ * 経過は load・stringify・brotli・写しの parse のあとで測る。
+ * 予算を超えていなければ、BatchWriteItem（abortSignal で本体の受け取りまで含め最長 1 秒）を足しても
+ * 1.5 秒＋1 秒＝2.5 秒で、Lambda の timeout（3 秒）に収まる。
+ * 認証などの前後の処理は、残りの 0.5 秒に収まる目安
  */
 export const SHARED_CACHE_PUT_BUDGET_MS = 1_500;
 
@@ -137,14 +143,6 @@ export class SharedCache {
 
         const loaded = await params.load();
 
-        const elapsed = Date.now() - startedAt;
-        if (elapsed > SHARED_CACHE_PUT_BUDGET_MS) {
-            this.#logger.warn(
-                `共有キャッシュの書き込みを見送りました: ${params.namespace} 経過 ${elapsed}ms`,
-            );
-            return loaded;
-        }
-
         let json: string | undefined;
         let body: Buffer;
         try {
@@ -173,6 +171,24 @@ export class SharedCache {
                 new Error(
                     `値が大きすぎます: ${params.namespace} ${body.byteLength} バイト`,
                 ),
+            );
+            return loaded;
+        }
+
+        // 返す写しも先に作る（失敗しても書き込みは済んでいないので、load の結果を返す）
+        let copy: T;
+        try {
+            copy = JSON.parse(json) as T;
+        } catch (e) {
+            this.#warn('書き込み', e);
+            return loaded;
+        }
+
+        // stringify・brotli・写しの時間も含めて、始まりからの経過で見る
+        const elapsed = Date.now() - startedAt;
+        if (elapsed > SHARED_CACHE_PUT_BUDGET_MS) {
+            this.#logger.warn(
+                `共有キャッシュの書き込みを見送りました: ${params.namespace} 経過 ${elapsed}ms`,
             );
             return loaded;
         }
@@ -228,6 +244,11 @@ export class SharedCache {
                         })),
                     },
                 }),
+                {
+                    abortSignal: AbortSignal.timeout(
+                        SHARED_CACHE_SEND_TIMEOUT_MS,
+                    ),
+                },
             );
             if (Object.keys(result.UnprocessedItems ?? {}).length > 0) {
                 this.#warn(
@@ -238,7 +259,7 @@ export class SharedCache {
         } catch (e) {
             this.#warn('書き込み', e);
         }
-        return JSON.parse(json) as T;
+        return copy;
     }
 
     /** 全ての更新が成功したときだけ true。失敗しても reject しない */
@@ -266,6 +287,11 @@ export class SharedCache {
                             UpdateExpression: 'ADD version :one',
                             ExpressionAttributeValues: { ':one': { N: '1' } },
                         }),
+                        {
+                            abortSignal: AbortSignal.timeout(
+                                SHARED_CACHE_SEND_TIMEOUT_MS,
+                            ),
+                        },
                     ),
                 ),
             );
@@ -289,6 +315,7 @@ export class SharedCache {
                     [table]: { Keys: pks.map((pk) => ({ pk: { S: pk } })) },
                 },
             }),
+            { abortSignal: AbortSignal.timeout(SHARED_CACHE_SEND_TIMEOUT_MS) },
         );
         // 読み残しがあると版を取り違えるので、読み出しの失敗として扱う
         if (Object.keys(result.UnprocessedKeys ?? {}).length > 0) {

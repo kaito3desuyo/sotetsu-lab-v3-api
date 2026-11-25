@@ -14,6 +14,7 @@ import {
     SHARED_CACHE_MAX_PARTS,
     SHARED_CACHE_PART_BYTES,
     SHARED_CACHE_PUT_BUDGET_MS,
+    SHARED_CACHE_SEND_TIMEOUT_MS,
     SharedCache,
 } from './shared-cache.js';
 
@@ -161,6 +162,7 @@ describe('SharedCache', () => {
     it('定数とクライアント設定', () => {
         expect(SHARED_CACHE_DEFAULT_TTL_SECONDS).toBe(86_400);
         expect(SHARED_CACHE_PUT_BUDGET_MS).toBe(1_500);
+        expect(SHARED_CACHE_SEND_TIMEOUT_MS).toBe(1_000);
         expect(SHARED_CACHE_CLIENT_CONFIG).toEqual({
             maxAttempts: 1,
             requestHandler: {
@@ -364,6 +366,86 @@ describe('SharedCache', () => {
             }),
         );
         expect(sent(BatchWriteItemCommand)).toHaveLength(1);
+    });
+
+    it('stringify・brotli が遅くて予算を超えたときも、書き込みをせず load の結果を返して warn する', async () => {
+        const loaded = { a: 1 };
+        zlibOverride.compress = (input) => {
+            vi.advanceTimersByTime(SHARED_CACHE_PUT_BUDGET_MS + 1);
+            return Buffer.from(input);
+        };
+        const cache = new SharedCache(client);
+        const result = await cache.getOrLoad(
+            params({ load: async () => loaded }),
+        );
+        expect(result).toBe(loaded);
+        expect(sent(BatchWriteItemCommand)).toHaveLength(0);
+        expect(warn).toHaveBeenCalledTimes(1);
+    });
+
+    it('load と brotli の合計が予算ちょうどなら置く', async () => {
+        zlibOverride.compress = (input) => {
+            vi.advanceTimersByTime(SHARED_CACHE_PUT_BUDGET_MS - 100);
+            return Buffer.from(input);
+        };
+        const cache = new SharedCache(client);
+        await cache.getOrLoad(
+            params({
+                load: async () => {
+                    vi.advanceTimersByTime(100);
+                    return { a: 1 };
+                },
+            }),
+        );
+        expect(sent(BatchWriteItemCommand)).toHaveLength(1);
+    });
+
+    it('各 send に 1 秒の abortSignal を付ける', async () => {
+        const timeout = vi.spyOn(AbortSignal, 'timeout');
+        const cache = new SharedCache(client);
+        await cache.getOrLoad(params({ load: async () => ({ a: 1 }) }));
+        await cache.invalidate({ tags: ['calendar:a'] });
+        expect(send).toHaveBeenCalledTimes(3);
+        for (const call of send.mock.calls) {
+            expect(call[1]?.abortSignal).toBeInstanceOf(AbortSignal);
+        }
+        expect(timeout).toHaveBeenCalledTimes(3);
+        expect(timeout).toHaveBeenCalledWith(SHARED_CACHE_SEND_TIMEOUT_MS);
+        timeout.mockRestore();
+    });
+
+    describe('abortSignal で打ち切られたとき', () => {
+        const aborted = () =>
+            Object.assign(new Error('The operation was aborted'), {
+                name: 'TimeoutError',
+            });
+
+        it('読みなら外れとして load を呼ぶ', async () => {
+            failWith.batchGet = aborted();
+            const load = vi.fn(async () => ({ a: 1 }));
+            const result = await new SharedCache(client).getOrLoad(
+                params({ load }),
+            );
+            expect(result).toEqual({ a: 1 });
+            expect(load).toHaveBeenCalledTimes(1);
+            expect(warn).toHaveBeenCalled();
+        });
+
+        it('書きなら warn して値を返す', async () => {
+            failWith.write = aborted();
+            const result = await new SharedCache(client).getOrLoad(
+                params({ load: async () => ({ a: 1 }) }),
+            );
+            expect(result).toEqual({ a: 1 });
+            expect(warn).toHaveBeenCalledTimes(1);
+        });
+
+        it('invalidate は reject せず false を返す', async () => {
+            failWith.update = aborted();
+            await expect(
+                new SharedCache(client).invalidate({ tags: ['calendar:a'] }),
+            ).resolves.toBe(false);
+        });
     });
 
     it('JSON にできない値（循環）でも reject せず、load の結果を返して warn する', async () => {
