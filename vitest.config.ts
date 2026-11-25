@@ -5,7 +5,7 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'node',
-        include: ['src/**/*.spec.ts'],
+        include: ['src/**/*.spec.ts', 'serverless-alarms.spec.ts'],
         globalSetup: ['./src/test-setup.ts'],
         coverage: { reportsDirectory: './coverage' },
     },
