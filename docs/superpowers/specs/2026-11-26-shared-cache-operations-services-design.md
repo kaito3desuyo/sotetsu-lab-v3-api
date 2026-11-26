@@ -16,7 +16,7 @@ Supabase の Egress を減らすため、共有キャッシュ（ADR-0021）に 
 
 - DB から読む部分（`OperationQuery.findManyForCurrentPosition`）だけを置く。時刻を使う位置の計算（`buildOperationCurrentPosition`）は、毎回その時の時刻でする。client は `searchTime` を送らず、api はその瞬間の時刻を使うので、時刻をキーにすると当たらない
 - キーは、運用の id を重ねずに並べ替えたもの。同じダイヤを見ている人どうしで当たる
-- タグは、その運用のダイヤの `calendar:<id>`。要求には運用の id しか来ないので、置く前に `SELECT DISTINCT calendar_id FROM operations WHERE id IN (...)` を 1 本引く（主キーで引く軽い問い合わせ）。trip-blocks を書き換えると同じタグで捨てられる
+- タグは、その運用のダイヤの `calendar:<id>`。要求には運用の id しか来ないので、置く前に、運用の id とダイヤの id の組を `operations` から `WHERE id IN (...)` で 1 本引く（`OperationQuery.findCalendarIdByOperationIds`。主キーで引く軽い問い合わせ）。trip-blocks を書き換えると同じタグで捨てられる
 - 置く値はモデルを JSON にしたもの。読むと `createdAt` などの `Date` は文字列になる。位置の計算と応答が、置く前と同じ JSON になることをテストで確かめる
 - 存在しない運用の id を含む要求は置かず、DB から直に返す（あとでその運用ができても、含まれる運用のダイヤのタグでは捨てられないため）。置く前に引く id とダイヤの組の数が、重ねない id の数より少なければ、その要求だ
 - 名前空間は `operation-current-positions`
