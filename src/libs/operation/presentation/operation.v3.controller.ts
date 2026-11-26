@@ -1,7 +1,15 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Headers,
+    Param,
+    Query,
+    UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
 import { CACHE_CONTROL } from '../../../core/modules/cache-control/cache-control.constants.js';
 import { CacheControl } from '../../../core/modules/cache-control/cache-control.decorator.js';
+import { wantsFreshRead } from '../../../core/modules/shared-cache/bypass.js';
 import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
 import { NextSegmentCandidateDto } from '../usecase/dtos/next-segment-candidate.dto.js';
 import { OperationItineraryLinkDto } from '../usecase/dtos/operation-itinerary-link.dto.js';
@@ -115,6 +123,8 @@ export class OperationV3Controller {
         @Query() query: OperationCurrentPositionsQuery,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
+        @Headers('cache-control') cacheControl?: string,
+        @Headers('pragma') pragma?: string,
     ): Promise<OperationCurrentPositionDto[] | Record<string, unknown>[]> {
         const result =
             await this.operationV3Service.findManyWithCurrentPosition({
@@ -122,6 +132,7 @@ export class OperationV3Controller {
                 searchTime: query.searchTime,
                 include,
                 fields,
+                bypassCache: wantsFreshRead({ cacheControl, pragma }),
             });
 
         return result;

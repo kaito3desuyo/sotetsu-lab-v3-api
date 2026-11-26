@@ -186,6 +186,51 @@ describe('OperationQuery - findManyForCurrentPosition', () => {
     });
 });
 
+describe('OperationQuery - findCalendarIdsByOperationIds', () => {
+    let query: OperationQuery;
+    let qb: any;
+
+    beforeEach(async () => {
+        vi.clearAllMocks();
+        qb = {};
+        for (const method of ['select', 'distinct', 'where']) {
+            qb[method] = vi.fn().mockReturnValue(qb);
+        }
+        qb.getRawMany = vi
+            .fn()
+            .mockResolvedValue([{ calendarId: 'c1' }, { calendarId: 'c2' }]);
+        mockCreateQueryBuilder.mockReturnValue(qb);
+        query = await buildQuery();
+    });
+
+    it('運用 id のダイヤ（calendar_id）を DISTINCT で引く', async () => {
+        const result = await query.findCalendarIdsByOperationIds({
+            operationIds: ['op-1', 'op-2'],
+        });
+
+        expect(result).toEqual(['c1', 'c2']);
+        expect(mockCreateQueryBuilder).toHaveBeenCalledWith('operation');
+        expect(qb.select).toHaveBeenCalledWith(
+            'operation.calendarId',
+            'calendarId',
+        );
+        expect(qb.distinct).toHaveBeenCalledWith(true);
+        expect(qb.where).toHaveBeenCalledWith(
+            'operation.id IN (:...operationIds)',
+            { operationIds: ['op-1', 'op-2'] },
+        );
+    });
+
+    it('運用 id が空なら問い合わせずに空配列を返す', async () => {
+        const result = await query.findCalendarIdsByOperationIds({
+            operationIds: [],
+        });
+
+        expect(result).toEqual([]);
+        expect(mockCreateQueryBuilder).not.toHaveBeenCalled();
+    });
+});
+
 describe('OperationQuery - findManyWithTripsWithSelection', () => {
     let qb: any;
     let query: OperationQuery;

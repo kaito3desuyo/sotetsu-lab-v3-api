@@ -8,6 +8,7 @@ import { serializeSelection } from '../../../core/utils/selection/serialize-sele
 import { buildOperationCurrentPosition } from './read-models/operation-current-position.read-model.js';
 import { VehicleItineraryReadModel } from './read-models/vehicle-itinerary.read-model.js';
 import { ItinerarySegmentReader } from './itinerary-segment.reader.js';
+import { OperationCurrentPositionReader } from './operation-current-position.reader.js';
 import { OperationQuery } from '../infrastructure/queries/operation.query.js';
 import {
     buildNextSegmentCandidates,
@@ -34,6 +35,7 @@ export class OperationV3Service {
     constructor(
         private readonly operationQuery: OperationQuery,
         private readonly itinerarySegmentReader: ItinerarySegmentReader,
+        private readonly operationCurrentPositionReader: OperationCurrentPositionReader,
     ) {}
 
     findAllGroups(): OperationGroupDto[] {
@@ -115,14 +117,19 @@ export class OperationV3Service {
         searchTime?: string;
         include?: unknown;
         fields?: unknown;
+        bypassCache?: boolean;
     }): Promise<OperationCurrentPositionDto[] | Record<string, unknown>[]> {
         const tree = OPERATION_CURRENT_POSITION_SELECTION_TREE;
         const selection = parseFieldsOnly(params, tree);
 
         const searchTime = params.searchTime ?? dayjs().toISOString();
-        const models = await this.operationQuery.findManyForCurrentPosition({
-            operationIds: params.operationIds,
-        });
+        const models =
+            await this.operationCurrentPositionReader.findManyForCurrentPosition(
+                {
+                    operationIds: params.operationIds,
+                    bypass: params.bypassCache,
+                },
+            );
         const result = models.map((model) =>
             buildOperationCurrentPosition(model, searchTime),
         );

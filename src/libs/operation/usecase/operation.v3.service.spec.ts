@@ -2,6 +2,7 @@ import type { MockedFunction } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ItinerarySegmentReader } from './itinerary-segment.reader.js';
+import { OperationCurrentPositionReader } from './operation-current-position.reader.js';
 import { OperationQuery } from '../infrastructure/queries/operation.query.js';
 import { OperationDetailsDto } from './dtos/operation-details.dto.js';
 import { OperationWithTripsDto } from './dtos/operation-with-trips.dto.js';
@@ -21,6 +22,10 @@ const mockOperationQuery = {
     findManyWithTripsWithSelection: vi.fn() as AnyMock,
 };
 
+const mockOperationCurrentPositionReader = {
+    findManyForCurrentPosition: vi.fn() as AnyMock,
+};
+
 const mockItinerarySegmentReader = {
     findManyByCalendarId: vi.fn() as AnyMock,
 };
@@ -33,6 +38,10 @@ async function buildService(): Promise<OperationV3Service> {
             {
                 provide: ItinerarySegmentReader,
                 useValue: mockItinerarySegmentReader,
+            },
+            {
+                provide: OperationCurrentPositionReader,
+                useValue: mockOperationCurrentPositionReader,
             },
         ],
     }).compile();
@@ -256,20 +265,22 @@ describe('OperationV3Service', () => {
 
     describe('findManyWithCurrentPosition', () => {
         it('運用 id を OperationQuery にまとめて渡し、model ごとに現在位置を組み立てて返す', async () => {
-            mockOperationQuery.findManyForCurrentPosition.mockResolvedValue([
-                {
-                    id: 'op-1',
-                    calendarId: 'cal-1',
-                    operationNumber: '11K',
-                    tripOperationLists: [],
-                },
-                {
-                    id: 'op-2',
-                    calendarId: 'cal-1',
-                    operationNumber: '12K',
-                    tripOperationLists: [],
-                },
-            ]);
+            mockOperationCurrentPositionReader.findManyForCurrentPosition.mockResolvedValue(
+                [
+                    {
+                        id: 'op-1',
+                        calendarId: 'cal-1',
+                        operationNumber: '11K',
+                        tripOperationLists: [],
+                    },
+                    {
+                        id: 'op-2',
+                        calendarId: 'cal-1',
+                        operationNumber: '12K',
+                        tripOperationLists: [],
+                    },
+                ],
+            );
 
             const result = await service.findManyWithCurrentPosition({
                 operationIds: ['op-1', 'op-2'],
@@ -277,8 +288,11 @@ describe('OperationV3Service', () => {
             });
 
             expect(
-                mockOperationQuery.findManyForCurrentPosition,
-            ).toHaveBeenCalledWith({ operationIds: ['op-1', 'op-2'] });
+                mockOperationCurrentPositionReader.findManyForCurrentPosition,
+            ).toHaveBeenCalledWith({
+                operationIds: ['op-1', 'op-2'],
+                bypass: undefined,
+            });
             expect(result).toMatchObject([
                 { operation: { id: 'op-1' }, prev: null },
                 { operation: { id: 'op-2' }, prev: null },
@@ -286,7 +300,9 @@ describe('OperationV3Service', () => {
         });
 
         it('時刻を指定しなくても、問い合わせ結果が無ければ空配列', async () => {
-            mockOperationQuery.findManyForCurrentPosition.mockResolvedValue([]);
+            mockOperationCurrentPositionReader.findManyForCurrentPosition.mockResolvedValue(
+                [],
+            );
 
             const result = await service.findManyWithCurrentPosition({
                 operationIds: ['op-1'],
@@ -401,9 +417,9 @@ describe('OperationV3Service - read-model の fields', () => {
     });
 
     it('現在位置(複数): fields に挙げた資源だけを削り、挙げない資源は全項目', async () => {
-        mockOperationQuery.findManyForCurrentPosition.mockResolvedValue([
-            operationModel,
-        ]);
+        mockOperationCurrentPositionReader.findManyForCurrentPosition.mockResolvedValue(
+            [operationModel],
+        );
 
         const result = await service.findManyWithCurrentPosition({
             operationIds: ['op1'],
@@ -456,9 +472,9 @@ describe('OperationV3Service - read-model の fields', () => {
     });
 
     it('現在位置: fields が無ければ組み立てた現在位置をそのまま返す', async () => {
-        mockOperationQuery.findManyForCurrentPosition.mockResolvedValue([
-            operationModel,
-        ]);
+        mockOperationCurrentPositionReader.findManyForCurrentPosition.mockResolvedValue(
+            [operationModel],
+        );
 
         const result = await service.findManyWithCurrentPosition({
             operationIds: ['op1'],
@@ -467,8 +483,48 @@ describe('OperationV3Service - read-model の fields', () => {
 
         expect(result).toMatchObject([position]);
         expect(
-            mockOperationQuery.findManyForCurrentPosition,
-        ).toHaveBeenCalledWith({ operationIds: ['op1'] });
+            mockOperationCurrentPositionReader.findManyForCurrentPosition,
+        ).toHaveBeenCalledWith({ operationIds: ['op1'], bypass: undefined });
+    });
+
+    it('JSON を通したモデルでも位置の計算の結果が同じ', async () => {
+        const viaJson = JSON.parse(JSON.stringify(operationModel));
+        for (const fields of [undefined, { trip: 'tripNumber' }]) {
+            mockOperationCurrentPositionReader.findManyForCurrentPosition.mockResolvedValueOnce(
+                [operationModel],
+            );
+            const original = await service.findManyWithCurrentPosition({
+                operationIds: ['op1'],
+                searchTime: '2026-10-24T05:00:00+09:00',
+                fields,
+            });
+            mockOperationCurrentPositionReader.findManyForCurrentPosition.mockResolvedValueOnce(
+                [viaJson],
+            );
+            const cached = await service.findManyWithCurrentPosition({
+                operationIds: ['op1'],
+                searchTime: '2026-10-24T05:00:00+09:00',
+                fields,
+            });
+            expect(JSON.parse(JSON.stringify(cached))).toEqual(
+                JSON.parse(JSON.stringify(original)),
+            );
+        }
+    });
+
+    it('bypassCache を reader に渡す', async () => {
+        mockOperationCurrentPositionReader.findManyForCurrentPosition.mockResolvedValue(
+            [],
+        );
+
+        await service.findManyWithCurrentPosition({
+            operationIds: ['op1'],
+            bypassCache: true,
+        });
+
+        expect(
+            mockOperationCurrentPositionReader.findManyForCurrentPosition,
+        ).toHaveBeenCalledWith({ operationIds: ['op1'], bypass: true });
     });
 
     it('現在位置: include は 400', async () => {
