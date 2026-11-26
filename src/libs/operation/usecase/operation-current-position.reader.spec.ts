@@ -7,12 +7,18 @@ type LoadParams = { load: () => Promise<unknown> };
 function build(options?: {
     models?: { id: string }[];
     calendarIds?: string[];
+    pairs?: { operationId: string; calendarId: string }[];
     cached?: { id: string }[];
 }) {
     const query = {
-        findCalendarIdsByOperationIds: vi
-            .fn()
-            .mockResolvedValue(options?.calendarIds ?? ['c1']),
+        findCalendarIdByOperationIds: vi.fn(
+            async (params: { operationIds: string[] }) =>
+                options?.pairs ??
+                params.operationIds.map((operationId) => ({
+                    operationId,
+                    calendarId: (options?.calendarIds ?? ['c1'])[0],
+                })),
+        ),
         findManyForCurrentPosition: vi
             .fn()
             .mockResolvedValue(options?.models ?? []),
@@ -38,7 +44,7 @@ describe('OperationCurrentPositionReader', () => {
             operationIds: ['b', 'a', 'b'],
         });
 
-        expect(query.findCalendarIdsByOperationIds).toHaveBeenCalledWith({
+        expect(query.findCalendarIdByOperationIds).toHaveBeenCalledWith({
             operationIds: ['a', 'b'],
         });
         expect(getOrLoad).toHaveBeenCalledWith(
@@ -79,7 +85,7 @@ describe('OperationCurrentPositionReader', () => {
             reader.findManyForCurrentPosition({ operationIds: [] }),
         ).resolves.toEqual([]);
 
-        expect(query.findCalendarIdsByOperationIds).not.toHaveBeenCalled();
+        expect(query.findCalendarIdByOperationIds).not.toHaveBeenCalled();
         expect(query.findManyForCurrentPosition).not.toHaveBeenCalled();
         expect(getOrLoad).not.toHaveBeenCalled();
     });
@@ -107,5 +113,22 @@ describe('OperationCurrentPositionReader', () => {
         });
 
         expect(result.map((m) => m.id)).toEqual(['c', 'a']);
+    });
+
+    it('存在しない id が混ざると置かずに DB から返す', async () => {
+        const { reader, query, getOrLoad } = build({
+            models: [{ id: 'a' }],
+            pairs: [{ operationId: 'a', calendarId: 'c1' }],
+        });
+
+        const result = await reader.findManyForCurrentPosition({
+            operationIds: ['b', 'a'],
+        });
+
+        expect(getOrLoad).not.toHaveBeenCalled();
+        expect(query.findManyForCurrentPosition).toHaveBeenCalledWith({
+            operationIds: ['a', 'b'],
+        });
+        expect(result.map((m) => m.id)).toEqual(['a']);
     });
 });

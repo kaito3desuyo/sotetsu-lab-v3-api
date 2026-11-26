@@ -489,6 +489,9 @@ describe('OperationV3Service - read-model の fields', () => {
 
     it('JSON を通したモデルでも位置の計算の結果が同じ', async () => {
         const viaJson = JSON.parse(JSON.stringify(operationModel));
+        // createdAt・updatedAt は Date から ISO 文字列になる
+        expect(operationModel.createdAt).toBeInstanceOf(Date);
+        expect(viaJson.createdAt).toBe(new Date(0).toISOString());
         for (const fields of [undefined, { trip: 'tripNumber' }]) {
             mockOperationCurrentPositionReader.findManyForCurrentPosition.mockResolvedValueOnce(
                 [operationModel],

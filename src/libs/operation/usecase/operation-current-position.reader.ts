@@ -24,10 +24,21 @@ export class OperationCurrentPositionReader {
         if (params.operationIds.length === 0) return [];
 
         const sortedIds = [...new Set(params.operationIds)].sort();
-        const calendarIds =
-            await this.operationQuery.findCalendarIdsByOperationIds({
-                operationIds: sortedIds,
-            });
+        const found = await this.operationQuery.findCalendarIdByOperationIds({
+            operationIds: sortedIds,
+        });
+
+        // 存在しない id を含む要求は置かない。あとでその運用ができても、
+        // 含まれる運用のダイヤのタグでは捨てられず、古い値が残るため
+        if (found.length < sortedIds.length) {
+            return this.#sortByRequest(
+                await this.operationQuery.findManyForCurrentPosition({
+                    operationIds: sortedIds,
+                }),
+                params.operationIds,
+            );
+        }
+        const calendarIds = [...new Set(found.map((row) => row.calendarId))];
 
         const models = await this.sharedCache.getOrLoad<OperationModel[]>({
             namespace: 'operation-current-positions',
@@ -40,8 +51,15 @@ export class OperationCurrentPositionReader {
                 }),
         });
 
+        return this.#sortByRequest(models, params.operationIds);
+    }
+
+    #sortByRequest(
+        models: OperationModel[],
+        operationIds: string[],
+    ): OperationModel[] {
         const byId = new Map(models.map((model) => [model.id, model]));
-        return params.operationIds
+        return operationIds
             .map((id) => byId.get(id))
             .filter((model) => model !== undefined);
     }

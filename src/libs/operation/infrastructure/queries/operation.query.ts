@@ -162,21 +162,22 @@ export class OperationQuery {
             .filter((model) => model !== undefined);
     }
 
-    /** 運用の id から、その運用のダイヤ（calendar_id）を重ねずに引く。共有キャッシュのタグ用。 */
-    async findCalendarIdsByOperationIds(params: {
+    /**
+     * 運用の id と、その運用のダイヤ（calendar_id）の組を引く。共有キャッシュのタグ用。
+     * 見つからない運用の組は返らない（呼び出し側が数の違いで気づく）。
+     */
+    async findCalendarIdByOperationIds(params: {
         operationIds: string[];
-    }): Promise<string[]> {
+    }): Promise<{ operationId: string; calendarId: string }[]> {
         const { operationIds } = params;
         if (operationIds.length === 0) return [];
 
-        const rows = await this.operationRepository
+        return this.operationRepository
             .createQueryBuilder('operation')
-            .select('operation.calendarId', 'calendarId')
-            .distinct(true)
+            .select('operation.id', 'operationId')
+            .addSelect('operation.calendarId', 'calendarId')
             .where('operation.id IN (:...operationIds)', { operationIds })
-            .getRawMany<{ calendarId: string }>();
-
-        return rows.map((row) => row.calendarId);
+            .getRawMany<{ operationId: string; calendarId: string }>();
     }
 
     async findOneWithTrips(params: {

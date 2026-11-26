@@ -5,8 +5,8 @@ import { TripOperationListModel } from '../trip/infrastructure/models/trip-opera
 import { OperationModel } from './infrastructure/models/operation.model.js';
 import { ItinerarySegmentQuery } from './infrastructure/queries/itinerary-segment.query.js';
 import { OperationQuery } from './infrastructure/queries/operation.query.js';
-import { OperationCurrentPositionReader } from './usecase/operation-current-position.reader.js';
 import { ItinerarySegmentReader } from './usecase/itinerary-segment.reader.js';
+import { OperationCurrentPositionReader } from './usecase/operation-current-position.reader.js';
 
 @Module({
     imports: [
