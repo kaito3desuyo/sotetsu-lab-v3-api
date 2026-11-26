@@ -123,19 +123,12 @@ describe('ServiceV3Service.findOneStations', () => {
     });
 
     it('キャッシュ越しでも、無い種別は NotFoundException', async () => {
-        mockSharedCache.getOrLoad.mockResolvedValue(null);
-
-        await expect(
-            service.findOneStations({ serviceId: 'none' }),
-        ).rejects.toBeInstanceOf(NotFoundException);
-    });
-
-    it('load が null でも NotFoundException（置かずに投げる）', async () => {
         mockServiceQuery.findOneStationsForService.mockResolvedValue(null);
 
         await expect(
             service.findOneStations({ serviceId: 'none' }),
         ).rejects.toBeInstanceOf(NotFoundException);
+        expect(mockSharedCache.getOrLoad).toHaveBeenCalledTimes(1);
     });
 
     it('bypassCache を getOrLoad の bypass に渡す', async () => {

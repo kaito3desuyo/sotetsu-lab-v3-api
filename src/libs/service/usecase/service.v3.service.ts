@@ -62,7 +62,7 @@ export class ServiceV3Service {
         // 種別の駅は書き込みの口が無く、失効するタグも無い（TTL か手で捨てる）。
         // 無い種別は load で投げて置かない（あとでできても古い「無い」が残らないように）
         const result = await this.sharedCache.getOrLoad<
-            ServiceStationsDto | Record<string, unknown> | null
+            ServiceStationsDto | Record<string, unknown>
         >({
             namespace: 'service-stations',
             key: [serviceId, selectionCacheKey({ include, fields })],
@@ -85,12 +85,6 @@ export class ServiceV3Service {
                 return loaded;
             },
         });
-
-        if (!result) {
-            throw new NotFoundException(
-                `Service with ID "${serviceId}" not found.`,
-            );
-        }
 
         return result;
     }
