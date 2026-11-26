@@ -1,6 +1,8 @@
 import type { MockedFunction } from 'vitest';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { selectionCacheKey } from '../../../core/modules/shared-cache/bypass.js';
+import { SharedCache } from '../../../core/modules/shared-cache/shared-cache.js';
 import { ServiceQuery } from '../infrastructure/queries/service.query.js';
 import { ServiceStationsDto } from './dtos/service-stations.dto.js';
 import { ServiceV3Service } from './service.v3.service.js';
@@ -12,11 +14,17 @@ const mockServiceQuery = {
     findOneStationsForServiceWithSelection: vi.fn() as AnyMock,
 };
 
+const mockSharedCache = { getOrLoad: vi.fn() as AnyMock };
+const passthroughCache = {
+    getOrLoad: (params: { load: () => Promise<unknown> }) => params.load(),
+} as unknown as SharedCache;
+
 async function buildService(): Promise<ServiceV3Service> {
     const module: TestingModule = await Test.createTestingModule({
         providers: [
             ServiceV3Service,
             { provide: ServiceQuery, useValue: mockServiceQuery },
+            { provide: SharedCache, useValue: mockSharedCache },
         ],
     }).compile();
 
@@ -28,6 +36,9 @@ describe('ServiceV3Service.findOneStations', () => {
 
     beforeEach(async () => {
         vi.clearAllMocks();
+        mockSharedCache.getOrLoad.mockImplementation(
+            (params: { load: () => Promise<unknown> }) => params.load(),
+        );
         service = await buildService();
     });
 
@@ -90,11 +101,60 @@ describe('ServiceV3Service.findOneStations', () => {
             mockServiceQuery.findOneStationsForServiceWithSelection,
         ).not.toHaveBeenCalled();
     });
+
+    it('名前空間 service-stations、キーは [serviceId, selectionCacheKey]、タグは無し', async () => {
+        mockServiceQuery.findOneStationsForServiceWithSelection.mockResolvedValue(
+            { stations: [] },
+        );
+
+        await service.findOneStations({
+            serviceId: 'svc',
+            fields: { station: 'stationName' },
+        });
+
+        expect(mockSharedCache.getOrLoad).toHaveBeenCalledTimes(1);
+        const arg = mockSharedCache.getOrLoad.mock.calls[0][0];
+        expect(arg.namespace).toBe('service-stations');
+        expect(arg.key).toEqual([
+            'svc',
+            selectionCacheKey({ fields: { station: 'stationName' } }),
+        ]);
+        expect(arg.tags).toEqual([]);
+    });
+
+    it('キャッシュ越しでも、無い種別は NotFoundException', async () => {
+        mockSharedCache.getOrLoad.mockResolvedValue(null);
+
+        await expect(
+            service.findOneStations({ serviceId: 'none' }),
+        ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('load が null でも NotFoundException（置かずに投げる）', async () => {
+        mockServiceQuery.findOneStationsForService.mockResolvedValue(null);
+
+        await expect(
+            service.findOneStations({ serviceId: 'none' }),
+        ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('bypassCache を getOrLoad の bypass に渡す', async () => {
+        mockServiceQuery.findOneStationsForService.mockResolvedValue({
+            stations: [],
+        });
+
+        await service.findOneStations({ serviceId: 'svc', bypassCache: true });
+
+        expect(mockSharedCache.getOrLoad.mock.calls[0][0].bypass).toBe(true);
+    });
 });
 
 describe('ServiceV3Service - 一覧の fields', () => {
     const query = { findManyByServiceName: vi.fn() };
-    const service = new ServiceV3Service(query as unknown as ServiceQuery);
+    const service = new ServiceV3Service(
+        query as unknown as ServiceQuery,
+        passthroughCache,
+    );
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -129,7 +189,10 @@ describe('ServiceV3Service - 事業者・路線の include・fields', () => {
         findOneWithAgencies: vi.fn(),
         findOneWithRoutes: vi.fn(),
     };
-    const service = new ServiceV3Service(query as unknown as ServiceQuery);
+    const service = new ServiceV3Service(
+        query as unknown as ServiceQuery,
+        passthroughCache,
+    );
     const serviceRow = {
         id: 's1',
         serviceName: '相鉄線',

@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { selectionCacheKey } from '../../../core/modules/shared-cache/bypass.js';
+import { SharedCache } from '../../../core/modules/shared-cache/shared-cache.js';
 import {
     parseFieldsOnly,
     parseSelection,
@@ -18,7 +20,10 @@ import { SERVICE_STATIONS_SELECTION_TREE } from './service-stations-selection.js
 
 @Injectable()
 export class ServiceV3Service {
-    constructor(private readonly serviceQuery: ServiceQuery) {}
+    constructor(
+        private readonly serviceQuery: ServiceQuery,
+        private readonly sharedCache: SharedCache,
+    ) {}
 
     /** `fields` があれば選んだ列だけを返す（docs/adr/0010-v3-include-and-fields.md） */
     async findMany(
@@ -47,18 +52,39 @@ export class ServiceV3Service {
         serviceId: string;
         include?: unknown;
         fields?: unknown;
+        bypassCache?: boolean;
     }): Promise<ServiceStationsDto | Record<string, unknown>> {
-        const { serviceId, include, fields } = params;
+        const { serviceId, include, fields, bypassCache } = params;
         const selection = parseSelection(
             { include, fields },
             SERVICE_STATIONS_SELECTION_TREE,
         );
-        const result = selection
-            ? await this.serviceQuery.findOneStationsForServiceWithSelection(
-                  { serviceId },
-                  selection,
-              )
-            : await this.serviceQuery.findOneStationsForService({ serviceId });
+        // 種別の駅は書き込みの口が無く、失効するタグも無い（TTL か手で捨てる）。
+        // 無い種別は load で投げて置かない（あとでできても古い「無い」が残らないように）
+        const result = await this.sharedCache.getOrLoad<
+            ServiceStationsDto | Record<string, unknown> | null
+        >({
+            namespace: 'service-stations',
+            key: [serviceId, selectionCacheKey({ include, fields })],
+            tags: [],
+            bypass: bypassCache,
+            load: async () => {
+                const loaded = selection
+                    ? await this.serviceQuery.findOneStationsForServiceWithSelection(
+                          { serviceId },
+                          selection,
+                      )
+                    : await this.serviceQuery.findOneStationsForService({
+                          serviceId,
+                      });
+                if (!loaded) {
+                    throw new NotFoundException(
+                        `Service with ID "${serviceId}" not found.`,
+                    );
+                }
+                return loaded;
+            },
+        });
 
         if (!result) {
             throw new NotFoundException(

@@ -1,7 +1,15 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Headers,
+    Param,
+    Query,
+    UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '../../../core/modules/auth/auth.guard.js';
 import { CACHE_CONTROL } from '../../../core/modules/cache-control/cache-control.constants.js';
 import { CacheControl } from '../../../core/modules/cache-control/cache-control.decorator.js';
+import { wantsFreshRead } from '../../../core/modules/shared-cache/bypass.js';
 import { RBACGuard } from '../../../core/modules/rbac/rbac.guard.js';
 import { ServiceAgenciesDto } from '../usecase/dtos/service-agencies.dto.js';
 import { ServiceDetailsDto } from '../usecase/dtos/service-details.dto.js';
@@ -39,11 +47,14 @@ export class ServiceV3Controller {
         @Param() param: ServiceIdParam,
         @Query('include') include?: unknown,
         @Query('fields') fields?: unknown,
+        @Headers('cache-control') cacheControl?: string,
+        @Headers('pragma') pragma?: string,
     ): Promise<ServiceStationsDto | Record<string, unknown>> {
         const result = await this.serviceV3Service.findOneStations({
             serviceId: param.id,
             include,
             fields,
+            bypassCache: wantsFreshRead({ cacheControl, pragma }),
         });
 
         return result;
