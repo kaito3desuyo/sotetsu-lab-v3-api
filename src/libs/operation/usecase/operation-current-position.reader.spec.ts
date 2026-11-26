@@ -7,7 +7,11 @@ type LoadParams = { load: () => Promise<unknown> };
 function build(options?: {
     models?: { id: string }[];
     calendarIds?: string[];
-    pairs?: { operationId: string; calendarId: string }[];
+    pairs?: {
+        operationId: string;
+        calendarId: string;
+        tripCalendarId?: string | null;
+    }[];
     cached?: { id: string }[];
 }) {
     const query = {
@@ -56,6 +60,35 @@ describe('OperationCurrentPositionReader', () => {
         );
         expect(query.findManyForCurrentPosition).toHaveBeenCalledWith({
             operationIds: ['a', 'b'],
+        });
+    });
+
+    it('列車のダイヤが運用のダイヤと違えば、両方をタグにする', async () => {
+        const { reader, getOrLoad } = build({
+            pairs: [
+                { operationId: 'a', calendarId: 'C1', tripCalendarId: 'C1' },
+                { operationId: 'a', calendarId: 'C1', tripCalendarId: 'C2' },
+            ],
+        });
+
+        await reader.findManyForCurrentPosition({ operationIds: ['a'] });
+
+        expect(getOrLoad.mock.calls[0][0]).toMatchObject({
+            tags: ['calendar:c1', 'calendar:c2'],
+        });
+    });
+
+    it('列車のダイヤが null なら無視する', async () => {
+        const { reader, getOrLoad } = build({
+            pairs: [
+                { operationId: 'a', calendarId: 'C1', tripCalendarId: null },
+            ],
+        });
+
+        await reader.findManyForCurrentPosition({ operationIds: ['a'] });
+
+        expect(getOrLoad.mock.calls[0][0]).toMatchObject({
+            tags: ['calendar:c1'],
         });
     });
 

@@ -193,12 +193,18 @@ describe('OperationQuery - findCalendarIdByOperationIds', () => {
     beforeEach(async () => {
         vi.clearAllMocks();
         qb = {};
-        for (const method of ['select', 'addSelect', 'where']) {
+        for (const method of [
+            'select',
+            'addSelect',
+            'distinct',
+            'leftJoin',
+            'where',
+        ]) {
             qb[method] = vi.fn().mockReturnValue(qb);
         }
         qb.getRawMany = vi.fn().mockResolvedValue([
-            { operationId: 'op-1', calendarId: 'c1' },
-            { operationId: 'op-2', calendarId: 'c2' },
+            { operationId: 'op-1', calendarId: 'c1', tripCalendarId: 'c1' },
+            { operationId: 'op-2', calendarId: 'c2', tripCalendarId: null },
         ]);
         mockCreateQueryBuilder.mockReturnValue(qb);
         query = await buildQuery();
@@ -210,10 +216,23 @@ describe('OperationQuery - findCalendarIdByOperationIds', () => {
         });
 
         expect(result).toEqual([
-            { operationId: 'op-1', calendarId: 'c1' },
-            { operationId: 'op-2', calendarId: 'c2' },
+            { operationId: 'op-1', calendarId: 'c1', tripCalendarId: 'c1' },
+            { operationId: 'op-2', calendarId: 'c2', tripCalendarId: null },
         ]);
         expect(mockCreateQueryBuilder).toHaveBeenCalledWith('operation');
+        expect(qb.distinct).toHaveBeenCalledWith(true);
+        expect(qb.leftJoin).toHaveBeenCalledWith(
+            'operation.tripOperationLists',
+            'tripOperationList',
+        );
+        expect(qb.leftJoin).toHaveBeenCalledWith(
+            'tripOperationList.trip',
+            'trip',
+        );
+        expect(qb.addSelect).toHaveBeenCalledWith(
+            'trip.calendarId',
+            'tripCalendarId',
+        );
         expect(qb.select).toHaveBeenCalledWith('operation.id', 'operationId');
         expect(qb.addSelect).toHaveBeenCalledWith(
             'operation.calendarId',

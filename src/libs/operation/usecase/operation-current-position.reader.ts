@@ -7,7 +7,7 @@ import { OperationQuery } from '../infrastructure/queries/operation.query.js';
 /**
  * 運用の現在位置の材料（列車と時刻つきの運用 model）を共有キャッシュ越しに読む。
  * 位置の計算は時刻で変わるので、ここではしない（呼び出し側が毎回する）。
- * キーは並べ替えて重ねない運用の id、タグはその運用のダイヤ（calendar:<id>）。
+ * キーは並べ替えて重ねない運用の id、タグはその運用のダイヤとつながる列車のダイヤ（calendar:<id>）。
  */
 @Injectable()
 export class OperationCurrentPositionReader {
@@ -30,7 +30,9 @@ export class OperationCurrentPositionReader {
 
         // 存在しない id を含む要求は置かない。あとでその運用ができても、
         // 含まれる運用のダイヤのタグでは捨てられず、古い値が残るため
-        if (found.length < sortedIds.length) {
+        if (
+            new Set(found.map((row) => row.operationId)).size < sortedIds.length
+        ) {
             return this.#sortByRequest(
                 await this.operationQuery.findManyForCurrentPosition({
                     operationIds: sortedIds,
@@ -38,7 +40,17 @@ export class OperationCurrentPositionReader {
                 params.operationIds,
             );
         }
-        const calendarIds = [...new Set(found.map((row) => row.calendarId))];
+        // 運用のダイヤに加え、つながる列車のダイヤも足す。trip-blocks の書き換えは
+        // 列車のダイヤでタグを捨てるので、両者が食い違う行でも捨てられるように
+        const calendarIds = [
+            ...new Set(
+                found.flatMap((row) =>
+                    row.tripCalendarId
+                        ? [row.calendarId, row.tripCalendarId]
+                        : [row.calendarId],
+                ),
+            ),
+        ];
 
         const models = await this.sharedCache.getOrLoad<OperationModel[]>({
             namespace: 'operation-current-positions',
