@@ -221,7 +221,18 @@ describe('OperationV3Controller（日付・期間・時刻・UUID の並びの�
         expect(service.findManyWithCurrentPosition).toHaveBeenCalledWith({
             operationIds: [CALENDAR_ID, OTHER_ID],
             searchTime: '2026-11-14T12:00:00+09:00',
+            bypassCache: false,
         });
+    });
+
+    it('/current-positions は Cache-Control: no-cache を bypassCache にする', async () => {
+        const res = await request(app.getHttpServer())
+            .get(`/current-positions?operationIds=${CALENDAR_ID}`)
+            .set('Cache-Control', 'no-cache');
+        expect(res.status).toBe(200);
+        expect(service.findManyWithCurrentPosition).toHaveBeenCalledWith(
+            expect.objectContaining({ bypassCache: true }),
+        );
     });
 
     it.each([

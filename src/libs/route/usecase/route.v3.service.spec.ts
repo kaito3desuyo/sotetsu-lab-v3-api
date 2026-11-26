@@ -1,4 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { selectionCacheKey } from '../../../core/modules/shared-cache/bypass.js';
+import type { SharedCache } from '../../../core/modules/shared-cache/shared-cache.js';
 import type { RouteQuery } from '../infrastructure/queries/route.query.js';
 import { RouteV3Service } from './route.v3.service.js';
 
@@ -14,16 +16,28 @@ const routeStations = {
     ],
 };
 
+const sharedCache = {
+    getOrLoad: vi.fn(),
+};
+const asCache = sharedCache as unknown as SharedCache;
+function resetCache() {
+    sharedCache.getOrLoad.mockReset();
+    sharedCache.getOrLoad.mockImplementation(
+        (params: { load: () => Promise<unknown> }) => params.load(),
+    );
+}
+
 describe('RouteV3Service - 駅一覧の include・fields', () => {
     const query = {
         findOneWithStations: vi.fn(),
         findManyByServiceName: vi.fn(),
         findManyByServiceNameWithSelection: vi.fn(),
     };
-    const service = new RouteV3Service(query as unknown as RouteQuery);
+    const service = new RouteV3Service(query as unknown as RouteQuery, asCache);
 
     beforeEach(() => {
         vi.clearAllMocks();
+        resetCache();
         query.findOneWithStations.mockResolvedValue(routeStations);
     });
 
@@ -94,7 +108,7 @@ describe('RouteV3Service - 一覧の include・fields', () => {
         findManyByServiceName: vi.fn().mockResolvedValue([]),
         findManyByServiceNameWithSelection: vi.fn().mockResolvedValue([]),
     };
-    const service = new RouteV3Service(query as unknown as RouteQuery);
+    const service = new RouteV3Service(query as unknown as RouteQuery, asCache);
 
     beforeEach(() => vi.clearAllMocks());
 
@@ -124,5 +138,49 @@ describe('RouteV3Service - 一覧の include・fields', () => {
         );
         expect(query.findManyByServiceName).not.toHaveBeenCalled();
         expect(query.findManyByServiceNameWithSelection).not.toHaveBeenCalled();
+    });
+});
+
+describe('RouteV3Service.findMany - 共有キャッシュ', () => {
+    const query = {
+        findManyByServiceName: vi.fn(),
+        findManyByServiceNameWithSelection: vi.fn(),
+    };
+    const service = new RouteV3Service(query as unknown as RouteQuery, asCache);
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        resetCache();
+        query.findManyByServiceName.mockResolvedValue([]);
+        query.findManyByServiceNameWithSelection.mockResolvedValue([]);
+    });
+
+    it('名前空間 routes、キーは [serviceName, selectionCacheKey]、タグは無し', async () => {
+        await service.findMany({
+            serviceName: '相鉄線',
+            fields: { route: 'routeName' },
+        });
+
+        expect(sharedCache.getOrLoad).toHaveBeenCalledTimes(1);
+        const arg = sharedCache.getOrLoad.mock.calls[0][0];
+        expect(arg.namespace).toBe('routes');
+        expect(arg.key).toEqual([
+            '相鉄線',
+            selectionCacheKey({ fields: { route: 'routeName' } }),
+        ]);
+        expect(arg.tags).toEqual([]);
+    });
+
+    it('serviceName が無いときのキーは空文字', async () => {
+        await service.findMany();
+
+        const arg = sharedCache.getOrLoad.mock.calls[0][0];
+        expect(arg.key).toEqual(['', selectionCacheKey({})]);
+    });
+
+    it('bypassCache を getOrLoad の bypass に渡す', async () => {
+        await service.findMany({ bypassCache: true });
+
+        expect(sharedCache.getOrLoad.mock.calls[0][0].bypass).toBe(true);
     });
 });

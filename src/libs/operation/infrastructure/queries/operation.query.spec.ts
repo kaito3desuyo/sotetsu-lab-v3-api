@@ -186,6 +186,74 @@ describe('OperationQuery - findManyForCurrentPosition', () => {
     });
 });
 
+describe('OperationQuery - findCalendarIdByOperationIds', () => {
+    let query: OperationQuery;
+    let qb: any;
+
+    beforeEach(async () => {
+        vi.clearAllMocks();
+        qb = {};
+        for (const method of [
+            'select',
+            'addSelect',
+            'distinct',
+            'leftJoin',
+            'where',
+        ]) {
+            qb[method] = vi.fn().mockReturnValue(qb);
+        }
+        qb.getRawMany = vi.fn().mockResolvedValue([
+            { operationId: 'op-1', calendarId: 'c1', tripCalendarId: 'c1' },
+            { operationId: 'op-2', calendarId: 'c2', tripCalendarId: null },
+        ]);
+        mockCreateQueryBuilder.mockReturnValue(qb);
+        query = await buildQuery();
+    });
+
+    it('運用 id と、そのダイヤ（calendar_id）の組を引く', async () => {
+        const result = await query.findCalendarIdByOperationIds({
+            operationIds: ['op-1', 'op-2'],
+        });
+
+        expect(result).toEqual([
+            { operationId: 'op-1', calendarId: 'c1', tripCalendarId: 'c1' },
+            { operationId: 'op-2', calendarId: 'c2', tripCalendarId: null },
+        ]);
+        expect(mockCreateQueryBuilder).toHaveBeenCalledWith('operation');
+        expect(qb.distinct).toHaveBeenCalledWith(true);
+        expect(qb.leftJoin).toHaveBeenCalledWith(
+            'operation.tripOperationLists',
+            'tripOperationList',
+        );
+        expect(qb.leftJoin).toHaveBeenCalledWith(
+            'tripOperationList.trip',
+            'trip',
+        );
+        expect(qb.addSelect).toHaveBeenCalledWith(
+            'trip.calendarId',
+            'tripCalendarId',
+        );
+        expect(qb.select).toHaveBeenCalledWith('operation.id', 'operationId');
+        expect(qb.addSelect).toHaveBeenCalledWith(
+            'operation.calendarId',
+            'calendarId',
+        );
+        expect(qb.where).toHaveBeenCalledWith(
+            'operation.id IN (:...operationIds)',
+            { operationIds: ['op-1', 'op-2'] },
+        );
+    });
+
+    it('運用 id が空なら問い合わせずに空配列を返す', async () => {
+        const result = await query.findCalendarIdByOperationIds({
+            operationIds: [],
+        });
+
+        expect(result).toEqual([]);
+        expect(mockCreateQueryBuilder).not.toHaveBeenCalled();
+    });
+});
+
 describe('OperationQuery - findManyWithTripsWithSelection', () => {
     let qb: any;
     let query: OperationQuery;

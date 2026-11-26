@@ -162,6 +162,39 @@ export class OperationQuery {
             .filter((model) => model !== undefined);
     }
 
+    /**
+     * 運用の id・運用のダイヤ（calendar_id）・つながる列車のダイヤの組を引く。共有キャッシュのタグ用。
+     * 運用に列車が複数あれば、ダイヤの組ごとに行が分かれる（列車が無い、または列車のダイヤが null なら tripCalendarId は null）。
+     * 見つからない運用の行は返らない（呼び出し側が運用の数の違いで気づく）。
+     */
+    async findCalendarIdByOperationIds(params: {
+        operationIds: string[];
+    }): Promise<
+        {
+            operationId: string;
+            calendarId: string;
+            tripCalendarId: string | null;
+        }[]
+    > {
+        const { operationIds } = params;
+        if (operationIds.length === 0) return [];
+
+        return this.operationRepository
+            .createQueryBuilder('operation')
+            .select('operation.id', 'operationId')
+            .addSelect('operation.calendarId', 'calendarId')
+            .addSelect('trip.calendarId', 'tripCalendarId')
+            .distinct(true)
+            .leftJoin('operation.tripOperationLists', 'tripOperationList')
+            .leftJoin('tripOperationList.trip', 'trip')
+            .where('operation.id IN (:...operationIds)', { operationIds })
+            .getRawMany<{
+                operationId: string;
+                calendarId: string;
+                tripCalendarId: string | null;
+            }>();
+    }
+
     async findOneWithTrips(params: {
         operationId: string;
     }): Promise<OperationWithTripsDto | null> {

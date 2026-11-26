@@ -112,3 +112,47 @@
 - **書き込みの予算は圧縮のあとで測る。** `SHARED_CACHE_PUT_BUDGET_MS`（1.5 秒）との比較を、`load` の直後から、stringify・brotli・写しの `JSON.parse` のあとへ移した。経過は今までどおり `getOrLoad` の始まりから測る。大きな値を置けるようになり、圧縮の時間が無視できなくなったため。超えたら書かずに `load` の結果を返し、warn を出す振る舞いは同じ。
 - **各 send を本体の受け取りまで打ち切る。** `requestTimeout` のタイマーは応答のヘッダーが届くと止まる（`@smithy/node-http-handler` 4.14.2 で確認）。読みの本体は最大約 1.9MB（base64 で送られる量）あり、その受け取りは打ち切れなかった。そこで、各 `send` に `abortSignal: AbortSignal.timeout(SHARED_CACHE_SEND_TIMEOUT_MS)`（1 秒）を付けた。打ち切りで投げられた例外は、これまでの失敗と同じに扱う（読みは外れとして `load`、書きは warn して値を返す、`invalidate` は reject しない）。
 - **時間の見積もり。** 書き込みは、予算 1.5 秒を超えていなければ始まり、`BatchWriteItem` は最長 1 秒で打ち切られる。1.5 秒＋1 秒＝2.5 秒で、Lambda の timeout 3 秒に収まり、残りの 0.5 秒が認証などの前後の処理にあたる。前の「最長 1.3 秒」は、ヘッダーが届くまでの話だった。
+
+---
+
+## 運用の現在位置と種別・路線も通す（2026-11-26 追記）
+
+- **設計**: docs/superpowers/specs/2026-11-26-shared-cache-operations-services-design.md
+- **ブランチ**: perf/shared-cache-operations-services
+
+### なぜやるか
+
+trip-blocks の一覧と運用の区間を通したあと、次に行数の多い読み取りは次の 3 つだった（本番の pg_stat_statements、11/9 からの累計）。
+
+| 問い合わせ | 呼び元 | 回数 | 行数 |
+|---|---|---|---|
+| 運用＋行程を `operation.id IN (...)` で読む | `GET /v3/operations/current-positions` | 4,796＋1,769＋7,359 | 895 万＋284 万＋67 万 |
+| 種別＋運行系統＋路線＋駅 | `GET /v3/services/:id/stations` | 8,313 | 295 万 |
+| 種別の名前で路線＋駅を読む | `GET /v3/routes?serviceName=` | 7,766 | 218 万 |
+
+### 決定
+
+| 読み取り | 名前空間 | キー | タグ |
+|---|---|---|---|
+| 運用の現在位置（`OperationCurrentPositionReader`） | `operation-current-positions` | 運用の id を重ねずに並べ替えたもの | `calendar:<運用のダイヤの id>` と `calendar:<つながる列車のダイヤの id>` |
+| 種別の駅（`ServiceV3Service.findOneStations`） | `service-stations` | `[serviceId, selectionCacheKey]` | 無し |
+| 路線（`RouteV3Service.findMany`） | `routes` | `[serviceName（無ければ ''）, selectionCacheKey]` | 無し |
+
+1. **現在位置は DB から読む部分だけを置く。** 時刻を使う位置の計算（`buildOperationCurrentPosition`）は毎回その時の時刻でする。client は `searchTime` を送らず、api はその瞬間の時刻を使うので、時刻をキーに入れると当たらない。置く値はモデルを JSON にしたもので、`Date` は文字列になる。位置の計算と応答が置く前と同じ JSON になることをテストで確かめた。
+2. **現在位置のタグは、置く前に引く。** 要求には運用の id しか来ないので、`OperationQuery.findCalendarIdByOperationIds` で運用の id・運用のダイヤ・つながる列車（`trip_operation_lists` → `trips`）のダイヤを 1 本で引き、タグを `calendarCacheTags(運用のダイヤ ∪ 列車のダイヤ)` にする。trip-blocks の書き換えは列車のダイヤでタグを作るので、運用のダイヤだけをタグにすると、両者が食い違う行（本番に 7 行あった。列車は臨時ダイヤ、運用は平日・土休日）で捨てられない。そのため列車のダイヤも足す。列車のダイヤが null の行は無視する。trip-blocks を書き換えると同じタグで捨てられる。
+   - operations（運用）は api に書き込みの口が無く、SQL で直したときは `npm run cli -- shared-cache invalidate --namespace operation-current-positions`（または `--tag calendar:<id>`）で捨てる。
+3. **見つからない id を含む要求は置かない。** 見つかった運用の数が、重ねない id の数より少なければ、置かずに DB から直に返す。あとでその運用ができても、含まれる運用のダイヤのタグでは捨てられないため。
+4. **種別の駅と路線は、キーに `selectionCacheKey({ include, fields })` を入れる**（trip-blocks と同じ）。無い種別は `load` の中で `NotFoundException` を投げるので、置かれない。
+5. **種別・路線にはタグを付けない。** api に書き込みの口が無く、SQL で直に直しているため。期限は今と同じ 24 時間。SQL で直したら次で捨てる（ユーザーの判断）。
+
+   ```
+   npm run cli -- shared-cache invalidate --namespace service-stations --namespace routes
+   ```
+
+6. **3 つとも、要求の `Cache-Control: no-cache`・`Pragma: no-cache` で読まずに取り直す**（`wantsFreshRead`）。controller から `bypassCache` を渡す。
+7. `SharedCache` の作りは変えない。
+
+### 採らなかった案
+
+- 現在位置を時刻ごとに置く: 上のとおり当たらない。
+- 置いた結果からタグを決める口を `getOrLoad` に足す: `SharedCache` の作りが変わる。ダイヤを引く 1 本は軽いので、作りを変えるほどではない。
