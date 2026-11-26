@@ -134,13 +134,14 @@ trip-blocks の一覧と運用の区間を通したあと、次に行数の多�
 
 | 読み取り | 名前空間 | キー | タグ |
 |---|---|---|---|
-| 運用の現在位置（`OperationCurrentPositionReader`） | `operation-current-positions` | 運用の id を重ねずに並べ替えたもの | `calendar:<ダイヤの id>` |
+| 運用の現在位置（`OperationCurrentPositionReader`） | `operation-current-positions` | 運用の id を重ねずに並べ替えたもの | `calendar:<運用のダイヤの id>` と `calendar:<つながる列車のダイヤの id>` |
 | 種別の駅（`ServiceV3Service.findOneStations`） | `service-stations` | `[serviceId, selectionCacheKey]` | 無し |
 | 路線（`RouteV3Service.findMany`） | `routes` | `[serviceName（無ければ ''）, selectionCacheKey]` | 無し |
 
 1. **現在位置は DB から読む部分だけを置く。** 時刻を使う位置の計算（`buildOperationCurrentPosition`）は毎回その時の時刻でする。client は `searchTime` を送らず、api はその瞬間の時刻を使うので、時刻をキーに入れると当たらない。置く値はモデルを JSON にしたもので、`Date` は文字列になる。位置の計算と応答が置く前と同じ JSON になることをテストで確かめた。
-2. **現在位置のタグは、置く前に引く。** 要求には運用の id しか来ないので、`OperationQuery.findCalendarIdByOperationIds` で運用の id とダイヤの id の組を `operations` から主キーで 1 本引き、タグを `calendarCacheTags(ダイヤの id)` にする。trip-blocks を書き換えると同じタグで捨てられる。
-3. **見つからない id を含む要求は置かない。** 引けた組の数が、重ねない id の数より少なければ、置かずに DB から直に返す。あとでその運用ができても、含まれる運用のダイヤのタグでは捨てられないため。
+2. **現在位置のタグは、置く前に引く。** 要求には運用の id しか来ないので、`OperationQuery.findCalendarIdByOperationIds` で運用の id・運用のダイヤ・つながる列車（`trip_operation_lists` → `trips`）のダイヤを 1 本で引き、タグを `calendarCacheTags(運用のダイヤ ∪ 列車のダイヤ)` にする。trip-blocks の書き換えは列車のダイヤでタグを作るので、運用のダイヤだけをタグにすると、両者が食い違う行（本番に 7 行あった。列車は臨時ダイヤ、運用は平日・土休日）で捨てられない。そのため列車のダイヤも足す。列車のダイヤが null の行は無視する。trip-blocks を書き換えると同じタグで捨てられる。
+   - operations（運用）は api に書き込みの口が無く、SQL で直したときは `npm run cli -- shared-cache invalidate --namespace operation-current-positions`（または `--tag calendar:<id>`）で捨てる。
+3. **見つからない id を含む要求は置かない。** 見つかった運用の数が、重ねない id の数より少なければ、置かずに DB から直に返す。あとでその運用ができても、含まれる運用のダイヤのタグでは捨てられないため。
 4. **種別の駅と路線は、キーに `selectionCacheKey({ include, fields })` を入れる**（trip-blocks と同じ）。無い種別は `load` の中で `NotFoundException` を投げるので、置かれない。
 5. **種別・路線にはタグを付けない。** api に書き込みの口が無く、SQL で直に直しているため。期限は今と同じ 24 時間。SQL で直したら次で捨てる（ユーザーの判断）。
 

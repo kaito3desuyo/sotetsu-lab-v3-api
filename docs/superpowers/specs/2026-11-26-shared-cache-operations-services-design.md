@@ -16,16 +16,16 @@ Supabase の Egress を減らすため、共有キャッシュ（ADR-0021）に 
 
 - DB から読む部分（`OperationQuery.findManyForCurrentPosition`）だけを置く。時刻を使う位置の計算（`buildOperationCurrentPosition`）は、毎回その時の時刻でする。client は `searchTime` を送らず、api はその瞬間の時刻を使うので、時刻をキーにすると当たらない
 - キーは、運用の id を重ねずに並べ替えたもの。同じダイヤを見ている人どうしで当たる
-- タグは、その運用のダイヤの `calendar:<id>`。要求には運用の id しか来ないので、置く前に、運用の id とダイヤの id の組を `operations` から `WHERE id IN (...)` で 1 本引く（`OperationQuery.findCalendarIdByOperationIds`。主キーで引く軽い問い合わせ）。trip-blocks を書き換えると同じタグで捨てられる
+- タグは、その運用のダイヤと、つながる列車のダイヤの `calendar:<id>`（重ねない）。trip-blocks の書き換えは列車のダイヤでタグを捨てるので、列車のダイヤも足す（本番には列車のダイヤと運用のダイヤが食い違う行が 7 行あった）。列車のダイヤが null の行は無視する。要求には運用の id しか来ないので、置く前に、運用の id・運用のダイヤ・列車のダイヤを `operations` から `trip_operation_lists`・`trips` へ LEFT JOIN して 1 本引く（`OperationQuery.findCalendarIdByOperationIds`）。trip-blocks を書き換えると同じタグで捨てられる
 - 置く値はモデルを JSON にしたもの。読むと `createdAt` などの `Date` は文字列になる。位置の計算と応答が、置く前と同じ JSON になることをテストで確かめる
-- 存在しない運用の id を含む要求は置かず、DB から直に返す（あとでその運用ができても、含まれる運用のダイヤのタグでは捨てられないため）。置く前に引く id とダイヤの組の数が、重ねない id の数より少なければ、その要求だ
+- 存在しない運用の id を含む要求は置かず、DB から直に返す（あとでその運用ができても、含まれる運用のダイヤのタグでは捨てられないため）。重ねない id の数より、置く前の問い合わせで見つかった運用の数が少なければ、存在しない id を含む要求として扱う
 - 名前空間は `operation-current-positions`
 
 ### 種別・路線
 
 - `ServiceV3Service.findOneStations`（`GET /v3/services/:id/stations`）と `RouteV3Service.findMany`（`GET /v3/routes`）を置く。キーには `selectionCacheKey({ include, fields })` を入れる（trip-blocks と同じ）
 - 名前空間は `service-stations` と `routes`
-- api に書き込みの口が無く、SQL で直に直しているので、タグは付けない。期限は今と同じ 24 時間。SQL で直したら `npm run cli -- shared-cache invalidate --namespace service-stations --namespace routes` で捨てる（ユーザーの判断）
+- api に書き込みの口が無く、SQL で直に直しているので、タグは付けない。期限は今と同じ 24 時間。SQL で直したら `npm run cli -- shared-cache invalidate --namespace service-stations --namespace routes` で捨てる（ユーザーの判断）。運用（operations）を SQL で直したときも、`--namespace operation-current-positions` で捨てる
 
 ### どれにも共通
 
