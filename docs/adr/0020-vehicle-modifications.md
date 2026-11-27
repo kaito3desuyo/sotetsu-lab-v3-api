@@ -24,7 +24,7 @@
    | `id` | uuid | |
    | `vehicle_id` | uuid・`vehicles` への外部キー（ON DELETE CASCADE・ON UPDATE CASCADE） | 改造した車両。組み換えても記録は車両と一緒に移る |
    | `modified_on` | date・NULL 可 | 改造した日。NULL は「新製のときから」 |
-   | `kind` | varchar | `livery`・`renewal`・`equipment`・`platform-door` から始め、要るときに足す |
+   | `kind` | varchar | `livery`（塗り替え）・`exterior`（外観の変更）・`renewal`（リニューアル）・`equipment`（機器更新）・`platform-door`（ホームドア対応）の 5 つ。種類は増やしすぎない（2026-11-24 に決めた）。`exterior` は前灯の移設や前面の作り替えのように、塗装以外で見た目が変わる改造。パンタグラフの統一のような機器の改造は `equipment` に入れ、細かい中身は `description` に書く |
    | `value` | varchar・NULL 可 | 種類ごとの値。`livery` では塗装の値 |
    | `description` | text・NULL 可 | 中身の説明。日付が月までしか分からないときもここに書く |
    | `created_at`・`updated_at` | timestamptz | |

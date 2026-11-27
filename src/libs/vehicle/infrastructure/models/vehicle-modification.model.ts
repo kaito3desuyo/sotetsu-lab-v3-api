@@ -27,7 +27,7 @@ export class VehicleModificationModel {
     @Column('date', { nullable: true })
     modifiedOn!: string | null;
 
-    /** 改造の種類。`livery`・`renewal`・`equipment`・`platform-door` など */
+    /** 改造の種類。`livery`・`exterior`・`renewal`・`equipment`・`platform-door` の 5 つ（ADR-0020） */
     @Column('varchar')
     kind!: string;
 
